@@ -10,3 +10,5 @@ coverage/
 .vscode/
 .idea/
 .husky/_
+ui/test-results/*
+ui/playwright-report/*
