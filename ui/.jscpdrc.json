@@ -1,0 +1,30 @@
+{
+  "threshold": 10,
+  "reporters": ["console"],
+  "ignore": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/build/**",
+    "**/coverage/**",
+    "**/*.min.js",
+    "**/test-results/**",
+    "**/playwright-report/**",
+    "**/.next/**",
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "**/fixtures/**",
+    "**/__tests__/**",
+    "**/tests/**"
+  ],
+  "minLines": 5,
+  "minTokens": 50,
+  "mode": "strict",
+  "format": [
+    "javascript",
+    "typescript",
+    "jsx",
+    "tsx"
+  ],
+  "absolute": true,
+  "gitignore": true
+}

@@ -4,6 +4,12 @@ npx lint-staged
 # Run type checking
 npm run type-check
 
+# Check for code duplication
+echo "Checking for code duplication in backend..."
+npm run duplication-check
+echo "Checking for code duplication in frontend..."
+cd ui && npm run duplication-check && cd ..
+
 # Run unit tests (management route mocking tests may fail - that's acceptable)
 npm run test || echo "Some test failures are acceptable (management route mocking edge cases)"
 
