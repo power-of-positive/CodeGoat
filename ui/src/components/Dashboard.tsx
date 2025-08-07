@@ -11,6 +11,7 @@ import type { UIModelConfig } from '../types/api';
 export function Dashboard() {
   const [showAddModel, setShowAddModel] = useState(false);
   const [editingModel, setEditingModel] = useState<UIModelConfig | null>(null);
+  const [testingModelIds, setTestingModelIds] = useState<string[]>([]);
   const queryClient = useQueryClient();
 
   const addModelMutation = useMutation({
@@ -34,14 +35,28 @@ export function Dashboard() {
     },
   });
 
+  const updateModelMutation = useMutation({
+    mutationFn: ({ id, model }: { id: string; model: Partial<Parameters<typeof api.updateModel>[1]> }) => 
+      api.updateModel(id, model),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['models'] });
+      setEditingModel(null);
+    },
+    onError: (error) => {
+      console.error('Failed to update model:', error);
+    },
+  });
+
   const testModelMutation = useMutation({
     mutationFn: api.testModel,
     onSuccess: (result) => {
       console.log('Model test result:', result);
+      setTestingModelIds(prev => prev.filter(id => id !== result.modelId));
       queryClient.invalidateQueries({ queryKey: ['models'] });
     },
-    onError: (error) => {
+    onError: (error, modelId) => {
       console.error('Failed to test model:', error);
+      setTestingModelIds(prev => prev.filter(id => id !== modelId));
     },
   });
 
@@ -85,8 +100,10 @@ export function Dashboard() {
             }
           }}
           onTest={(modelId) => {
+            setTestingModelIds(prev => [...prev, modelId]);
             testModelMutation.mutate(modelId);
           }}
+          testingModelIds={testingModelIds}
         />
       </div>
 
@@ -104,10 +121,12 @@ export function Dashboard() {
         <AddModelDialog 
           open={!!editingModel}
           onClose={() => setEditingModel(null)}
+          editingModel={editingModel}
           onAdd={(modelData) => {
-            // TODO: Implement edit functionality
-            console.log('Edit model:', editingModel.id, modelData);
-            setEditingModel(null);
+            updateModelMutation.mutate({ 
+              id: editingModel.id, 
+              model: modelData 
+            });
           }}
         />
       )}

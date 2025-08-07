@@ -7,7 +7,7 @@ test.describe('API Integration Tests', () => {
     expect(modelsResponse.ok()).toBeTruthy();
     const modelsData = await modelsResponse.json();
     expect(modelsData.models).toBeDefined();
-    expect(modelsData.models).toHaveLength(7);
+    expect(modelsData.models).toHaveLength(8);
     
     // Test status endpoint
     const statusResponse = await request.get('http://localhost:3000/api/management/status');
@@ -72,8 +72,8 @@ test.describe('API Integration Tests', () => {
     const statusData = await response.json();
     
     expect(statusData.status).toBe('healthy');
-    expect(statusData.modelsCount).toBe(7);
-    expect(statusData.activeModelsCount).toBe(7);
+    expect(statusData.modelsCount).toBe(8);
+    expect(statusData.activeModelsCount).toBe(8);
     expect(typeof statusData.uptime).toBe('number');
     expect(statusData.uptime).toBeGreaterThan(0);
     expect(statusData.memoryUsage).toBeDefined();
@@ -87,7 +87,7 @@ test.describe('API Integration Tests', () => {
     const modelsData = await response.json();
     
     expect(modelsData.models).toBeDefined();
-    expect(modelsData.models).toHaveLength(7);
+    expect(modelsData.models).toHaveLength(8);
     
     // Validate first model structure
     const firstModel = modelsData.models[0];

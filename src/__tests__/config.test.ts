@@ -7,12 +7,12 @@ const mockFs = fs as jest.Mocked<typeof fs>;
 
 describe('ConfigLoader', () => {
   let configLoader: ConfigLoader;
-  const mockConfigContent = `
+  const mockDefaultConfigContent = `
 model_list:
-  - model_name: test-model
+  - model_name: default-model
     litellm_params:
-      model: openrouter/test/model
-      api_key: test-key
+      model: openrouter/default/model
+      api_key: default-key
 
 router_settings:
   enable_pre_call_checks: true
@@ -23,6 +23,14 @@ litellm_settings:
   allowed_fails: 3
 `;
 
+  const mockUserConfigContent = `
+model_list:
+  - model_name: user-model
+    litellm_params:
+      model: openrouter/user/model
+      api_key: user-key
+`;
+
   beforeEach(() => {
     jest.clearAllMocks();
     configLoader = new ConfigLoader();
@@ -30,7 +38,22 @@ litellm_settings:
 
   describe('load()', () => {
     it('should load and parse valid configuration', () => {
-      mockFs.readFileSync.mockReturnValue(mockConfigContent);
+      // Mock existsSync to return true for both files
+      mockFs.existsSync.mockImplementation((path: fs.PathLike) => {
+        const pathStr = path.toString();
+        return pathStr.includes('config.default.yaml') || pathStr.includes('config.user.yaml');
+      });
+
+      // Mock readFileSync to return appropriate content based on file path
+      mockFs.readFileSync.mockImplementation((path: fs.PathOrFileDescriptor) => {
+        const pathStr = path.toString();
+        if (pathStr.includes('config.default.yaml')) {
+          return mockDefaultConfigContent;
+        } else if (pathStr.includes('config.user.yaml')) {
+          return mockUserConfigContent;
+        }
+        return '';
+      });
 
       const config = configLoader.load();
 
@@ -38,19 +61,30 @@ litellm_settings:
       expect(config.routes).toBeDefined();
       expect(config.routes.length).toBeGreaterThan(0);
       expect(config.modelConfig).toBeDefined();
-      expect(config.modelConfig?.model_list).toHaveLength(1);
+      // Should have 2 models: 1 default + 1 user
+      expect(config.modelConfig?.model_list).toHaveLength(2);
     });
 
     it('should throw error for invalid file path', () => {
-      mockFs.readFileSync.mockImplementation(() => {
-        throw new Error('ENOENT: no such file or directory');
-      });
+      // Mock existsSync to return false for both files
+      mockFs.existsSync.mockReturnValue(false);
 
-      expect(() => configLoader.load()).toThrow(/Failed to load configuration/);
+      // This should not throw - missing configs just result in empty model list
+      expect(() => configLoader.load()).not.toThrow();
+
+      const config = configLoader.load();
+      expect(config.modelConfig?.model_list).toHaveLength(0);
     });
 
     it('should create proper route configuration', () => {
-      mockFs.readFileSync.mockReturnValue(mockConfigContent);
+      mockFs.existsSync.mockReturnValue(true);
+      mockFs.readFileSync.mockImplementation((path: fs.PathOrFileDescriptor) => {
+        const pathStr = path.toString();
+        if (pathStr.includes('config.default.yaml')) {
+          return mockDefaultConfigContent;
+        }
+        return 'model_list: []';
+      });
 
       const config = configLoader.load();
       const routes = config.routes;
@@ -71,10 +105,8 @@ litellm_settings:
     });
 
     it('should validate required configuration fields', () => {
-      const invalidConfig = `
-model_list: []
-`;
-      mockFs.readFileSync.mockReturnValue(invalidConfig);
+      mockFs.existsSync.mockReturnValue(true);
+      mockFs.readFileSync.mockReturnValue('model_list: []');
 
       // Should not throw - empty model list is allowed
       expect(() => configLoader.load()).not.toThrow();
@@ -83,7 +115,14 @@ model_list: []
 
   describe('getConfig()', () => {
     it('should return loaded configuration', () => {
-      mockFs.readFileSync.mockReturnValue(mockConfigContent);
+      mockFs.existsSync.mockReturnValue(true);
+      mockFs.readFileSync.mockImplementation((path: fs.PathOrFileDescriptor) => {
+        const pathStr = path.toString();
+        if (pathStr.includes('config.default.yaml')) {
+          return mockDefaultConfigContent;
+        }
+        return 'model_list: []';
+      });
       configLoader.load();
 
       const config = configLoader.getConfig();
@@ -98,17 +137,30 @@ model_list: []
 
   describe('reload()', () => {
     it('should reload configuration from file', () => {
-      mockFs.readFileSync.mockReturnValue(mockConfigContent);
+      mockFs.existsSync.mockReturnValue(true);
+      mockFs.readFileSync.mockImplementation((path: fs.PathOrFileDescriptor) => {
+        const pathStr = path.toString();
+        if (pathStr.includes('config.default.yaml')) {
+          return mockDefaultConfigContent;
+        }
+        return 'model_list: []';
+      });
       configLoader.load();
 
-      const updatedConfig = `
+      const updatedDefaultConfig = `
 model_list:
   - model_name: updated-model
     litellm_params:
       model: openrouter/updated/model
       api_key: updated-key
 `;
-      mockFs.readFileSync.mockReturnValue(updatedConfig);
+      mockFs.readFileSync.mockImplementation((path: fs.PathOrFileDescriptor) => {
+        const pathStr = path.toString();
+        if (pathStr.includes('config.default.yaml')) {
+          return updatedDefaultConfig;
+        }
+        return 'model_list: []';
+      });
 
       const reloadedConfig = configLoader.reload();
       expect(reloadedConfig.modelConfig?.model_list[0].model_name).toBe('updated-model');

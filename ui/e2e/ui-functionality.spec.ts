@@ -12,7 +12,7 @@ test.describe('UI Functionality Tests', () => {
     
     // Check that we have models displayed
     const modelCards = page.locator('.bg-white.shadow.rounded-lg.overflow-hidden .divide-y > div');
-    await expect(modelCards).toHaveCount(7); // We have 7 models in config.yaml
+    await expect(modelCards).toHaveCount(8); // We have 8 models in config.yaml
 
     // Check first model details - be more specific to avoid duplicates
     await expect(page.getByRole('heading', { name: 'kimi-k2:free' })).toBeVisible();
@@ -44,9 +44,15 @@ test.describe('UI Functionality Tests', () => {
     
     // Check form fields
     await expect(page.getByLabel('Name')).toBeVisible();
-    await expect(page.getByLabel('Base URL')).toBeVisible();
     await expect(page.getByRole('textbox', { name: 'Model' })).toBeVisible();
     await expect(page.getByLabel('API Key')).toBeVisible();
+    
+    // Base URL should only be visible when 'other' provider is selected
+    await expect(page.getByLabel('Base URL')).not.toBeVisible();
+    
+    // Select 'other' provider to see Base URL field
+    await page.getByLabel('Provider').selectOption('other');
+    await expect(page.getByLabel('Base URL')).toBeVisible();
   });
 
   test('should refresh model list', async ({ page }) => {
@@ -68,7 +74,7 @@ test.describe('UI Functionality Tests', () => {
     
     // Count initial models
     const initialCount = await page.locator('.bg-white.shadow.rounded-lg.overflow-hidden .divide-y > div').count();
-    expect(initialCount).toBe(7);
+    expect(initialCount).toBe(8);
     
     // Refresh the page
     await page.reload();

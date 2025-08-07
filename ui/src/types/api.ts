@@ -56,3 +56,22 @@ export interface ModelTestResult {
 export interface ModelsResponse {
   models: UIModelConfig[];
 }
+
+export interface OpenRouterEndpoint {
+  provider: string;
+  contextLength: number;
+  maxTokens: number;
+  uptime: number;
+  pricing: {
+    prompt: string;
+    completion: string;
+  };
+  moderated: boolean;
+}
+
+export interface OpenRouterStats {
+  modelSlug: string;
+  endpoints: OpenRouterEndpoint[];
+  averageUptime: number;
+  providerCount: number;
+}

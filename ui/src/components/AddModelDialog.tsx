@@ -23,11 +23,20 @@ import {
 
 const modelSchema = z.object({
   name: z.string().min(1, 'Name is required'),
-  baseUrl: z.string().min(1, 'Base URL is required'),
+  baseUrl: z.string(),
   model: z.string().min(1, 'Model is required'),
   apiKey: z.string().min(1, 'API Key is required'),
   provider: z.enum(['openrouter', 'openai', 'anthropic', 'other']),
   enabled: z.boolean(),
+}).superRefine((data, ctx) => {
+  // Only require base URL when provider is "other"
+  if (data.provider === 'other' && !data.baseUrl) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Base URL is required for other providers',
+      path: ['baseUrl'],
+    });
+  }
 });
 
 type ModelFormData = z.infer<typeof modelSchema>;
@@ -36,9 +45,17 @@ interface AddModelDialogProps {
   open: boolean;
   onClose: () => void;
   onAdd?: (model: ModelFormData) => void;
+  editingModel?: {
+    id: string;
+    name: string;
+    baseUrl: string;
+    model: string;
+    provider: string;
+    enabled: boolean;
+  } | null;
 }
 
-export function AddModelDialog({ open, onClose, onAdd }: AddModelDialogProps) {
+export function AddModelDialog({ open, onClose, onAdd, editingModel }: AddModelDialogProps) {
   const [showApiKey, setShowApiKey] = useState(false);
 
   const {
@@ -50,7 +67,14 @@ export function AddModelDialog({ open, onClose, onAdd }: AddModelDialogProps) {
     formState: { errors, isSubmitting },
   } = useForm<ModelFormData>({
     resolver: zodResolver(modelSchema),
-    defaultValues: {
+    defaultValues: editingModel ? {
+      name: editingModel.name,
+      baseUrl: editingModel.baseUrl,
+      model: editingModel.model,
+      apiKey: '', // Don't pre-populate API key for security
+      provider: editingModel.provider as ModelFormData['provider'],
+      enabled: editingModel.enabled,
+    } : {
       name: '',
       baseUrl: '',
       model: '',
@@ -64,6 +88,10 @@ export function AddModelDialog({ open, onClose, onAdd }: AddModelDialogProps) {
 
   const onSubmit = async (data: ModelFormData) => {
     try {
+      // Ensure base URL is set for non-"other" providers
+      if (data.provider !== 'other' && !data.baseUrl) {
+        data.baseUrl = getDefaultBaseUrl(data.provider);
+      }
       onAdd?.(data);
       reset();
       onClose();
@@ -92,16 +120,20 @@ export function AddModelDialog({ open, onClose, onAdd }: AddModelDialogProps) {
 
   const handleProviderChange = (value: string) => {
     setValue('provider', value as ModelFormData['provider']);
-    setValue('baseUrl', getDefaultBaseUrl(value));
+    const defaultBaseUrl = getDefaultBaseUrl(value);
+    setValue('baseUrl', defaultBaseUrl);
   };
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Add New Model</DialogTitle>
+          <DialogTitle>{editingModel ? 'Edit Model' : 'Add New Model'}</DialogTitle>
           <DialogDescription>
-            Configure a new AI model for use in the proxy server.
+            {editingModel 
+              ? 'Update the model configuration.'
+              : 'Configure a new AI model for use in the proxy server.'
+            }
           </DialogDescription>
         </DialogHeader>
         
@@ -136,17 +168,19 @@ export function AddModelDialog({ open, onClose, onAdd }: AddModelDialogProps) {
             )}
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="baseUrl">Base URL</Label>
-            <Input
-              id="baseUrl"
-              placeholder="https://api.example.com/v1"
-              {...register('baseUrl')}
-            />
-            {errors.baseUrl && (
-              <p className="text-sm text-red-600">{errors.baseUrl.message}</p>
-            )}
-          </div>
+          {provider === 'other' && (
+            <div className="space-y-2">
+              <Label htmlFor="baseUrl">Base URL</Label>
+              <Input
+                id="baseUrl"
+                placeholder="https://api.example.com/v1"
+                {...register('baseUrl')}
+              />
+              {errors.baseUrl && (
+                <p className="text-sm text-red-600">{errors.baseUrl.message}</p>
+              )}
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="model">Model</Label>
@@ -189,7 +223,10 @@ export function AddModelDialog({ open, onClose, onAdd }: AddModelDialogProps) {
               Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Adding...' : 'Add Model'}
+              {isSubmitting 
+                ? (editingModel ? 'Updating...' : 'Adding...') 
+                : (editingModel ? 'Update Model' : 'Add Model')
+              }
             </Button>
           </DialogFooter>
         </form>

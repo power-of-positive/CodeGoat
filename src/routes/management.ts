@@ -1,0 +1,399 @@
+import { Request, Response, Router } from 'express';
+import { ConfigLoader } from '../config';
+import { Logger } from '../logger';
+
+const router = Router();
+
+// Simple in-memory store for test results
+interface TestResult {
+  modelId: string;
+  status: 'healthy' | 'error' | 'untested';
+  responseTime: number;
+  error: string | null;
+  testedAt: string;
+  model: string;
+}
+
+const testResults: Record<string, TestResult> = {};
+
+interface ModelConfig {
+  model_name?: string;
+  litellm_params: {
+    model: string;
+    api_key?: string;
+  };
+}
+
+export function createManagementRoutes(configLoader: ConfigLoader, logger: Logger): Router {
+  // Get all models
+  router.get('/models', (req: Request, res: Response) => {
+    try {
+      const config = configLoader.load();
+      const modelList = config.modelConfig?.model_list || [];
+
+      // Convert models to UI format with status information
+      const modelsWithStatus = modelList.map((model: ModelConfig, index: number) => {
+        const modelId = index.toString();
+        const testResult = testResults[modelId];
+
+        return {
+          id: modelId,
+          name: model.model_name || `Model ${index + 1}`,
+          baseUrl: 'https://openrouter.ai/api/v1',
+          model: model.litellm_params.model,
+          apiKey: model.litellm_params.api_key ? '***' : '',
+          provider: 'openrouter',
+          enabled: true,
+          status: (testResult?.status || 'untested') as 'healthy' | 'error' | 'untested',
+          lastTested: testResult?.testedAt || null,
+          responseTime: testResult?.responseTime || null,
+        };
+      });
+
+      res.json({ models: modelsWithStatus });
+    } catch (error) {
+      logger.error('Failed to load models', error as Error);
+      res.status(500).json({ error: 'Failed to load models' });
+    }
+  });
+
+  // Get server status
+  router.get('/status', (req: Request, res: Response) => {
+    try {
+      const config = configLoader.load();
+      const uptime = process.uptime();
+
+      res.json({
+        status: 'healthy',
+        uptime,
+        uptimeFormatted: formatUptime(uptime),
+        modelsCount: config.modelConfig?.model_list?.length || 0,
+        activeModelsCount: config.modelConfig?.model_list?.length || 0,
+        memoryUsage: process.memoryUsage(),
+        nodeVersion: process.version,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      logger.error('Failed to get server status', error as Error);
+      res.status(500).json({ error: 'Failed to get server status' });
+    }
+  });
+
+  // Test model endpoint
+  router.post('/test/:id', async (req: Request, res: Response) => {
+    try {
+      const modelId = req.params.id;
+      const startTime = Date.now();
+
+      // Get the model configuration
+      const config = configLoader.load();
+      const modelList = config.modelConfig?.model_list || [];
+      const model = modelList[parseInt(modelId)];
+
+      if (!model) {
+        return res.status(404).json({ error: 'Model not found' });
+      }
+
+      try {
+        // Make a test API call to the model
+        const testPayload = {
+          model: model.litellm_params.model,
+          messages: [{ role: 'user', content: 'Hello' }],
+          max_tokens: 1,
+          temperature: 0.1,
+        };
+
+        // Use the proxy handler to make the request through our configured routes
+        const testResponse = await fetch('http://localhost:3000/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${model.litellm_params.api_key || 'test-key'}`,
+          },
+          body: JSON.stringify(testPayload),
+          signal: AbortSignal.timeout(10000), // 10 second timeout
+        });
+
+        const responseTime = Date.now() - startTime;
+
+        if (testResponse.ok) {
+          const result = {
+            modelId: modelId,
+            status: 'healthy' as const,
+            responseTime,
+            error: null,
+            testedAt: new Date().toISOString(),
+            model: model.litellm_params.model,
+          };
+
+          // Store the test result
+          testResults[modelId] = result;
+
+          res.json(result);
+        } else {
+          const errorText = await testResponse.text();
+          const result = {
+            modelId: modelId,
+            status: 'error' as const,
+            responseTime,
+            error: `HTTP ${testResponse.status}: ${errorText}`,
+            testedAt: new Date().toISOString(),
+            model: model.litellm_params.model,
+          };
+
+          // Store the test result
+          testResults[modelId] = result;
+
+          res.json(result);
+        }
+      } catch (fetchError: unknown) {
+        const responseTime = Date.now() - startTime;
+        const result = {
+          modelId: modelId,
+          status: 'error' as const,
+          responseTime,
+          error: fetchError instanceof Error ? fetchError.message : 'Connection failed',
+          testedAt: new Date().toISOString(),
+          model: model?.litellm_params?.model || 'unknown',
+        };
+
+        // Store the test result
+        testResults[modelId] = result;
+
+        res.json(result);
+      }
+    } catch (error) {
+      logger.error('Failed to test model', error as Error);
+      res.status(500).json({ error: 'Failed to test model' });
+    }
+  });
+
+  // Delete model
+  router.delete('/models/:id', (req: Request, res: Response) => {
+    try {
+      const modelId = req.params.id;
+      const modelIndex = parseInt(modelId);
+
+      if (isNaN(modelIndex) || modelIndex < 0) {
+        return res.status(400).json({ error: 'Invalid model ID' });
+      }
+
+      // Delete model from config file
+      configLoader.deleteModel(modelIndex);
+
+      res.json({
+        success: true,
+        message: `Model ${modelId} deleted successfully`,
+        deletedModelId: modelId,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      logger.error('Failed to delete model', error as Error);
+
+      if ((error as Error).message === 'Model not found') {
+        return res.status(404).json({ error: 'Model not found' });
+      }
+
+      res.status(500).json({ error: 'Failed to delete model' });
+    }
+  });
+
+  // Add a new model
+  router.post('/models', (req: Request, res: Response) => {
+    try {
+      const { name, baseUrl, model, apiKey, provider, enabled } = req.body;
+
+      // Validate required fields
+      if (!name || !model || !apiKey || !provider) {
+        return res.status(400).json({
+          error: 'Missing required fields: name, model, apiKey, provider',
+        });
+      }
+
+      // Add model to config file
+      configLoader.addModel({
+        name,
+        model,
+        apiKey,
+        provider,
+      });
+
+      // Get the updated config to return the new model
+      const config = configLoader.getConfig();
+      const modelList = config.modelConfig?.model_list || [];
+      const newModelIndex = modelList.length - 1;
+      const newModel = modelList[newModelIndex];
+
+      const responseModel = {
+        id: newModelIndex.toString(),
+        name: newModel.model_name || name,
+        baseUrl: baseUrl || 'https://openrouter.ai/api/v1',
+        model: newModel.litellm_params.model,
+        apiKey: '***', // Don't return the actual API key
+        provider,
+        enabled: enabled !== undefined ? enabled : true,
+        status: 'untested' as const,
+        lastTested: null,
+        responseTime: null,
+      };
+
+      res.status(201).json({
+        success: true,
+        model: responseModel,
+        message: 'Model added successfully',
+      });
+    } catch (error) {
+      logger.error('Failed to add model', error as Error);
+      res.status(500).json({ error: 'Failed to add model' });
+    }
+  });
+
+  // Update an existing model
+  router.put('/models/:id', (req: Request, res: Response) => {
+    try {
+      const modelId = req.params.id;
+      const modelIndex = parseInt(modelId);
+
+      if (isNaN(modelIndex) || modelIndex < 0) {
+        return res.status(400).json({ error: 'Invalid model ID' });
+      }
+
+      const { name, baseUrl, model, apiKey, provider, enabled } = req.body;
+
+      // Validate required fields
+      if (!name || !model || !apiKey || !provider) {
+        return res.status(400).json({
+          error: 'Missing required fields: name, model, apiKey, provider',
+        });
+      }
+
+      // Update model in config file
+      configLoader.updateModel(modelIndex, {
+        name,
+        model,
+        apiKey,
+        provider,
+      });
+
+      // Get the updated model
+      const config = configLoader.getConfig();
+      const modelList = config.modelConfig?.model_list || [];
+      const updatedModel = modelList[modelIndex];
+
+      const responseModel = {
+        id: modelIndex.toString(),
+        name: updatedModel.model_name || name,
+        baseUrl: baseUrl || 'https://openrouter.ai/api/v1',
+        model: updatedModel.litellm_params.model,
+        apiKey: '***', // Don't return the actual API key
+        provider,
+        enabled: enabled !== undefined ? enabled : true,
+        status: 'untested' as const,
+        lastTested: null,
+        responseTime: null,
+      };
+
+      res.json({
+        success: true,
+        model: responseModel,
+        message: 'Model updated successfully',
+      });
+    } catch (error) {
+      logger.error('Failed to update model', error as Error);
+
+      if ((error as Error).message === 'Model not found') {
+        return res.status(404).json({ error: 'Model not found' });
+      }
+
+      res.status(500).json({ error: 'Failed to update model' });
+    }
+  });
+
+  // Get OpenRouter model statistics
+  router.get('/openrouter-stats/:modelSlug', async (req: Request, res: Response) => {
+    try {
+      const { modelSlug } = req.params;
+
+      // Parse the model slug to extract author and model name
+      // Format: "openrouter/author/model-name" -> "author/model-name"
+      const cleanSlug = modelSlug.replace('openrouter/', '');
+
+      // Fetch model endpoints from OpenRouter API
+      const openRouterResponse = await fetch(
+        `https://openrouter.ai/api/v1/models/${cleanSlug}/endpoints`,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          signal: AbortSignal.timeout(10000),
+        }
+      );
+
+      if (!openRouterResponse.ok) {
+        return res.status(404).json({
+          error: 'Model not found in OpenRouter',
+          modelSlug: cleanSlug,
+        });
+      }
+
+      interface OpenRouterEndpoint {
+        name?: string;
+        provider?: string;
+        context_length?: number;
+        max_tokens?: number;
+        uptime_30m?: number;
+        pricing?: Record<string, string>;
+        moderated?: boolean;
+      }
+
+      interface OpenRouterResponse {
+        data?: {
+          endpoints?: OpenRouterEndpoint[];
+        };
+      }
+
+      const openRouterData = (await openRouterResponse.json()) as OpenRouterResponse;
+
+      // Extract endpoints from the nested data structure
+      const endpoints = openRouterData.data?.endpoints || [];
+
+      // Extract relevant statistics
+      const stats = {
+        modelSlug: cleanSlug,
+        endpoints: endpoints.map((endpoint: OpenRouterEndpoint) => ({
+          provider: endpoint.name || endpoint.provider,
+          contextLength: endpoint.context_length,
+          maxTokens: endpoint.max_tokens,
+          uptime: endpoint.uptime_30m || 0,
+          pricing: endpoint.pricing,
+          moderated: endpoint.moderated || false,
+        })),
+        averageUptime:
+          endpoints.length > 0
+            ? endpoints.reduce(
+                (sum: number, ep: OpenRouterEndpoint) => sum + (ep.uptime_30m || 0),
+                0
+              ) / endpoints.length
+            : 0,
+        providerCount: endpoints.length,
+      };
+
+      res.json(stats);
+    } catch (error) {
+      logger.error('Failed to fetch OpenRouter stats', error as Error);
+      res.status(500).json({ error: 'Failed to fetch model statistics' });
+    }
+  });
+
+  return router;
+}
+
+// Helper function
+function formatUptime(uptimeSeconds: number): string {
+  const days = Math.floor(uptimeSeconds / 86400);
+  const hours = Math.floor((uptimeSeconds % 86400) / 3600);
+  const minutes = Math.floor((uptimeSeconds % 3600) / 60);
+  const seconds = Math.floor(uptimeSeconds % 60);
+
+  return `${days}d ${hours}h ${minutes}m ${seconds}s`;
+}

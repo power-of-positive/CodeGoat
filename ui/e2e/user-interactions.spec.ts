@@ -81,7 +81,7 @@ test.describe('User Interactions Tests', () => {
   test('CRUD operations work end-to-end', async ({ page }) => {
     // Test model listing - should show 7 models from config
     const modelCards = page.locator('.bg-white.shadow.rounded-lg.overflow-hidden .divide-y > div');
-    await expect(modelCards).toHaveCount(7);
+    await expect(modelCards).toHaveCount(8);
     
     // Test model testing with real API calls
     const testResponsePromise = page.waitForResponse(

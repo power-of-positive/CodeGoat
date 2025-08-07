@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { UIModelConfig, ServerStatus, CreateModelRequest, ModelsResponse, ModelTestResult } from '../types/api';
+import type { UIModelConfig, ServerStatus, CreateModelRequest, ModelsResponse, ModelTestResult, OpenRouterStats } from '../types/api';
 
 const apiClient = axios.create({
   baseURL: '/api',
@@ -39,5 +39,11 @@ export const api = {
 
   reloadConfig: async (): Promise<void> => {
     await apiClient.post('/management/reload');
+  },
+
+  // OpenRouter statistics
+  getOpenRouterStats: async (modelSlug: string): Promise<OpenRouterStats> => {
+    const response = await apiClient.get(`/management/openrouter-stats/${encodeURIComponent(modelSlug)}`);
+    return response.data;
   },
 };

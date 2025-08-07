@@ -1,16 +1,18 @@
 import { useQuery } from '@tanstack/react-query';
-import { Trash2, Edit, TestTube, ExternalLink } from 'lucide-react';
+import { Trash2, Edit, TestTube, ExternalLink, Loader2 } from 'lucide-react';
 import { api } from '../services/api';
 import { Button } from './ui/Button';
 import type { UIModelConfig } from '../types/api';
+import { OpenRouterStats } from './OpenRouterStats';
 
 interface ModelListProps {
   onEdit?: (model: UIModelConfig) => void;
   onDelete?: (modelId: string) => void;
   onTest?: (modelId: string) => void;
+  testingModelIds?: string[];
 }
 
-export function ModelList({ onEdit, onDelete, onTest }: ModelListProps) {
+export function ModelList({ onEdit, onDelete, onTest, testingModelIds = [] }: ModelListProps) {
   const { data, isLoading, error } = useQuery({
     queryKey: ['models'],
     queryFn: () => api.getModels(),
@@ -109,9 +111,19 @@ export function ModelList({ onEdit, onDelete, onTest }: ModelListProps) {
                     <div className="flex items-center gap-2">
                       <span className="font-medium">Last tested:</span>
                       <span>{new Date(model.lastTested).toLocaleString()}</span>
+                      {model.responseTime && (
+                        <span className="text-xs text-slate-400">
+                          ({model.responseTime}ms)
+                        </span>
+                      )}
                     </div>
                   )}
                 </div>
+                
+                {/* OpenRouter Statistics - only show for OpenRouter models */}
+                {model.provider === 'openrouter' && (
+                  <OpenRouterStats modelSlug={model.model} />
+                )}
               </div>
               
               <div className="flex items-center gap-2 ml-4">
@@ -119,10 +131,19 @@ export function ModelList({ onEdit, onDelete, onTest }: ModelListProps) {
                   variant="outline"
                   size="sm"
                   onClick={() => onTest?.(model.id)}
-                  disabled={!model.enabled}
+                  disabled={!model.enabled || testingModelIds.includes(model.id)}
                 >
-                  <TestTube className="h-4 w-4" />
-                  Test
+                  {testingModelIds.includes(model.id) ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Testing...
+                    </>
+                  ) : (
+                    <>
+                      <TestTube className="h-4 w-4" />
+                      Test
+                    </>
+                  )}
                 </Button>
                 <Button
                   variant="outline"
