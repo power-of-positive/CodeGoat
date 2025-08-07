@@ -137,15 +137,15 @@ export function AddModelDialog({ open, onClose, onAdd, editingModel }: AddModelD
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div className="grid gap-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Name</Label>
-              <Input id="name" placeholder="e.g., GPT-4 Turbo" {...register('name')} />
+              <Label>Name</Label>
+              <Input data-testid="model-name-input" placeholder="e.g., GPT-4 Turbo" {...register('name')} />
               {errors.name && <p className="text-sm text-red-600">{errors.name.message}</p>}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="provider">Provider</Label>
+              <Label>Provider</Label>
               <Select value={provider} onValueChange={handleProviderChange}>
-                <SelectTrigger id="provider">
+                <SelectTrigger data-testid="model-provider-select">
                   <SelectValue placeholder="Select a provider" />
                 </SelectTrigger>
                 <SelectContent>
@@ -160,9 +160,9 @@ export function AddModelDialog({ open, onClose, onAdd, editingModel }: AddModelD
 
             {provider === 'other' && (
               <div className="space-y-2">
-                <Label htmlFor="baseUrl">Base URL</Label>
+                <Label>Base URL</Label>
                 <Input
-                  id="baseUrl"
+                  data-testid="model-baseurl-input"
                   placeholder="https://api.example.com/v1"
                   {...register('baseUrl')}
                 />
@@ -171,21 +171,22 @@ export function AddModelDialog({ open, onClose, onAdd, editingModel }: AddModelD
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="model">Model</Label>
-              <Input id="model" placeholder="e.g., gpt-4-turbo" {...register('model')} />
+              <Label>Model</Label>
+              <Input data-testid="model-model-input" placeholder="e.g., gpt-4-turbo" {...register('model')} />
               {errors.model && <p className="text-sm text-red-600">{errors.model.message}</p>}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="apiKey">API Key</Label>
+              <Label>API Key</Label>
               <div className="relative">
                 <Input
-                  id="apiKey"
+                  data-testid="model-apikey-input"
                   type={showApiKey ? 'text' : 'password'}
                   placeholder="sk-..."
                   {...register('apiKey')}
                 />
                 <Button
+                  data-testid="toggle-apikey-visibility"
                   type="button"
                   variant="ghost"
                   size="sm"
@@ -200,10 +201,10 @@ export function AddModelDialog({ open, onClose, onAdd, editingModel }: AddModelD
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={handleClose}>
+            <Button data-testid="cancel-model-dialog" type="button" variant="outline" onClick={handleClose}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button data-testid="submit-model-dialog" type="submit" disabled={isSubmitting}>
               {isSubmitting
                 ? editingModel
                   ? 'Updating...'

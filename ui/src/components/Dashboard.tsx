@@ -78,6 +78,7 @@ export function Dashboard() {
           </h2>
           <div className="flex items-center gap-2">
             <Button 
+              data-testid="refresh-models-button"
               variant="outline" 
               onClick={handleRefresh}
               size="sm"
@@ -85,7 +86,7 @@ export function Dashboard() {
               <RefreshCw className="w-4 h-4" />
               Refresh
             </Button>
-            <Button onClick={() => setShowAddModel(true)}>
+            <Button data-testid="add-model-button" onClick={() => setShowAddModel(true)}>
               <Plus className="w-4 h-4" />
               Add Model
             </Button>

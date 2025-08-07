@@ -34,20 +34,20 @@ test.describe('UI Functionality Tests', () => {
     await expect(page.getByRole('dialog')).toBeVisible();
     await expect(page.getByText('Add New Model')).toBeVisible();
     
-    // Check form fields
-    await expect(page.getByLabel('Name')).toBeVisible();
-    await expect(page.getByRole('textbox', { name: 'Model' })).toBeVisible();
-    await expect(page.getByLabel('API Key')).toBeVisible();
+    // Check form fields using data-testid selectors
+    await expect(page.getByTestId('model-name-input')).toBeVisible();
+    await expect(page.getByTestId('model-model-input')).toBeVisible();
+    await expect(page.getByTestId('model-apikey-input')).toBeVisible();
     
     // Base URL should only be visible when 'other' provider is selected
-    await expect(page.getByLabel('Base URL')).not.toBeVisible();
+    await expect(page.getByTestId('model-baseurl-input')).not.toBeVisible();
     
     // Select 'other' provider to see Base URL field
     // Click the select trigger to open the dropdown
-    await page.getByLabel('Provider').click();
+    await page.getByTestId('model-provider-select').click();
     // Click the 'Other' option
     await page.getByRole('option', { name: 'Other' }).click();
-    await expect(page.getByLabel('Base URL')).toBeVisible();
+    await expect(page.getByTestId('model-baseurl-input')).toBeVisible();
   });
 
   test('should refresh model list', async ({ page }) => {

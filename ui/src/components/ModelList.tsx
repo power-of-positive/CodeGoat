@@ -64,10 +64,10 @@ export function ModelList({ onEdit, onDelete, onTest, testingModelIds = [] }: Mo
   };
 
   return (
-    <div className="bg-white shadow rounded-lg overflow-hidden">
+    <div data-testid="model-list-container" className="bg-white shadow rounded-lg overflow-hidden">
       <div className="divide-y divide-slate-200">
         {models.map((model) => (
-          <div key={model.id} className="p-6 hover:bg-slate-50 transition-colors">
+          <div key={model.id} data-testid={`model-card-${model.id}`} className="p-6 hover:bg-slate-50 transition-colors">
             <div className="flex items-center justify-between">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-3 mb-2">
@@ -128,6 +128,7 @@ export function ModelList({ onEdit, onDelete, onTest, testingModelIds = [] }: Mo
               
               <div className="flex items-center gap-2 ml-4">
                 <Button
+                  data-testid={`test-model-${model.id}`}
                   variant="outline"
                   size="sm"
                   onClick={() => onTest?.(model.id)}
@@ -146,6 +147,7 @@ export function ModelList({ onEdit, onDelete, onTest, testingModelIds = [] }: Mo
                   )}
                 </Button>
                 <Button
+                  data-testid={`edit-model-${model.id}`}
                   variant="outline"
                   size="sm"
                   onClick={() => onEdit?.(model)}
@@ -154,6 +156,7 @@ export function ModelList({ onEdit, onDelete, onTest, testingModelIds = [] }: Mo
                   Edit
                 </Button>
                 <Button
+                  data-testid={`delete-model-${model.id}`}
                   variant="outline"
                   size="sm"
                   onClick={() => onDelete?.(model.id)}

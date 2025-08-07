@@ -1,15 +1,12 @@
+    ☐ Replace id attributes with data-testid for
+      testing - don't use id unless absolutely
+      necessary
     ☐ Convert the app to dark mode
-    ☐ Commit all changes and fix any issue in
-      pre-commit properly, without cheating or
-      skipping checks
     ☐ Change config YAML format back to object
       format (litellm-style) instead of indented
       format
     ☐ Add code duplication check to pre-commit
       hook that blocks on duplicates
-    ☐ Replace id attributes with data-testid for
-      testing - don't use id unless absolutely
-      necessary
     ☐ Integrate OpenAI-based LLM code reviewer for
       pre-commit that returns JSON comments and
       blocks commit on high severity issues
