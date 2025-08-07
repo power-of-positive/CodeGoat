@@ -8,27 +8,31 @@ const mockFs = fs as jest.Mocked<typeof fs>;
 describe('ConfigLoader', () => {
   let configLoader: ConfigLoader;
   const mockDefaultConfigContent = `
-model_list:
-  - model_name: default-model
-    litellm_params:
-      model: openrouter/default/model
-      api_key: default-key
+models:
+  default-model:
+    name: "default-model"
+    model: "openrouter/default/model"
+    provider: "openrouter"
+    baseUrl: "https://openrouter.ai/api/v1"
+    apiKey: "default-key"
+    enabled: true
 
-router_settings:
-  enable_pre_call_checks: true
-
-litellm_settings:
-  cooldown_time: 30
-  num_retries: 2
-  allowed_fails: 3
+settings:
+  enablePreCallChecks: true
+  cooldownTime: 30
+  retries: 2
+  allowedFails: 3
 `;
 
   const mockUserConfigContent = `
-model_list:
-  - model_name: user-model
-    litellm_params:
-      model: openrouter/user/model
-      api_key: user-key
+models:
+  user-model:
+    name: "user-model"
+    model: "openrouter/user/model"
+    provider: "openrouter"
+    baseUrl: "https://openrouter.ai/api/v1"
+    apiKey: "user-key"
+    enabled: true
 `;
 
   beforeEach(() => {
@@ -62,7 +66,7 @@ model_list:
       expect(config.routes.length).toBeGreaterThan(0);
       expect(config.modelConfig).toBeDefined();
       // Should have 2 models: 1 default + 1 user
-      expect(config.modelConfig?.model_list).toHaveLength(2);
+      expect(Object.keys(config.modelConfig?.models || {})).toHaveLength(2);
     });
 
     it('should throw error for invalid file path', () => {
@@ -73,7 +77,7 @@ model_list:
       expect(() => configLoader.load()).not.toThrow();
 
       const config = configLoader.load();
-      expect(config.modelConfig?.model_list).toHaveLength(0);
+      expect(Object.keys(config.modelConfig?.models || {})).toHaveLength(0);
     });
 
     it('should create proper route configuration', () => {
@@ -83,7 +87,7 @@ model_list:
         if (pathStr.includes('config.default.yaml')) {
           return mockDefaultConfigContent;
         }
-        return 'model_list: []';
+        return 'models: {}';
       });
 
       const config = configLoader.load();
@@ -121,13 +125,13 @@ model_list:
         if (pathStr.includes('config.default.yaml')) {
           return mockDefaultConfigContent;
         }
-        return 'model_list: []';
+        return 'models: {}';
       });
       configLoader.load();
 
       const config = configLoader.getConfig();
       expect(config).toBeDefined();
-      expect(config.modelConfig?.model_list).toHaveLength(1);
+      expect(Object.keys(config.modelConfig?.models || {})).toHaveLength(1);
     });
 
     it('should throw error if configuration not loaded', () => {
@@ -143,27 +147,30 @@ model_list:
         if (pathStr.includes('config.default.yaml')) {
           return mockDefaultConfigContent;
         }
-        return 'model_list: []';
+        return 'models: {}';
       });
       configLoader.load();
 
       const updatedDefaultConfig = `
-model_list:
-  - model_name: updated-model
-    litellm_params:
-      model: openrouter/updated/model
-      api_key: updated-key
+models:
+  updated-model:
+    name: "updated-model"
+    model: "openrouter/updated/model"
+    provider: "openrouter"
+    baseUrl: "https://openrouter.ai/api/v1"
+    apiKey: "updated-key"
+    enabled: true
 `;
       mockFs.readFileSync.mockImplementation((path: fs.PathOrFileDescriptor) => {
         const pathStr = path.toString();
         if (pathStr.includes('config.default.yaml')) {
           return updatedDefaultConfig;
         }
-        return 'model_list: []';
+        return 'models: {}';
       });
 
       const reloadedConfig = configLoader.reload();
-      expect(reloadedConfig.modelConfig?.model_list[0].model_name).toBe('updated-model');
+      expect(reloadedConfig.modelConfig?.models['updated-model']?.name).toBe('updated-model');
     });
   });
 });

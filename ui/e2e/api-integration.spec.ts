@@ -26,15 +26,17 @@ test.describe('API Integration Tests', () => {
   });
 
   test('test endpoint returns consistent response structure', async ({ request }) => {
-    // Test first 3 models to validate consistent response structure
-    for (let i = 0; i < 3; i++) {
-      const response = await request.post(`http://localhost:3000/api/management/test/${i}`);
+    // Test first 3 models using their actual IDs from config
+    const modelIds = ['kimi-k2-free', 'glm-45-air-free', 'deepseek-r1t2-chimera-free'];
+    
+    for (const modelId of modelIds) {
+      const response = await request.post(`http://localhost:3000/api/management/test/${modelId}`);
       expect(response.status()).toBe(200);
       
       const responseData = await response.json();
       
       // Validate required fields
-      expect(responseData).toHaveProperty('modelId', i.toString());
+      expect(responseData).toHaveProperty('modelId', modelId);
       expect(responseData).toHaveProperty('status');
       expect(responseData).toHaveProperty('responseTime');
       expect(responseData).toHaveProperty('testedAt');
@@ -64,14 +66,14 @@ test.describe('API Integration Tests', () => {
     });
     expect(addResponse.ok()).toBeTruthy();
     const addData = await addResponse.json();
-    expect(addData.success).toBe(true);
+    expect(addData.message).toBe('Model added successfully');
     const newModelId = addData.model.id;
     
     // Test delete model with the user-added model
     const deleteResponse = await request.delete(`http://localhost:3000/api/management/models/${newModelId}`);
     expect(deleteResponse.ok()).toBeTruthy();
     const deleteData = await deleteResponse.json();
-    expect(deleteData.success).toBe(true);
+    expect(deleteData.message).toBe('Model deleted successfully');
   });
 
   test('models endpoint returns real model data from config', async ({ request }) => {

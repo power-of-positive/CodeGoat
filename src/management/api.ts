@@ -32,19 +32,18 @@ export function initializeManagementAPI(
 router.get('/models', (_req: Request, res: Response) => {
   console.log('Management API /models endpoint called');
   try {
-    const config = configLoader.load();
-    const modelList = config.modelConfig?.model_list || [];
-    console.log('Found models:', modelList.length);
+    const allModels = configLoader.getAllModels();
+    console.log('Found models:', allModels.length);
 
     // Convert models to UI format with status information
-    const modelsWithStatus = modelList.map((model: Record<string, unknown>, index: number) => ({
-      id: index.toString(),
-      name: model.model_name || `Model ${index + 1}`,
-      baseUrl: 'https://openrouter.ai/api/v1', // Default for now
-      model: (model.litellm_params as { model: string; api_key?: string }).model,
-      apiKey: (model.litellm_params as { model: string; api_key?: string }).api_key ? '***' : '', // Mask API key in response
-      provider: 'openrouter', // Default for now
-      enabled: true, // Default for now
+    const modelsWithStatus = allModels.map(model => ({
+      id: model.id,
+      name: model.name,
+      baseUrl: model.baseUrl,
+      model: model.model,
+      apiKey: model.apiKey ? '***' : '', // Mask API key in response
+      provider: model.provider,
+      enabled: model.enabled,
       status: 'untested' as const,
       lastTested: null,
     }));
@@ -62,13 +61,20 @@ router.post('/models', async (req: Request, res: Response) => {
   try {
     const validatedData = modelConfigSchema.parse(req.body);
 
-    logger?.info('New model would be added: ' + validatedData.name);
+    logger?.info('Adding new model: ' + validatedData.name);
 
-    // TODO: Implement actual model saving
+    // Add model using ConfigLoader
+    configLoader.addModel({
+      name: validatedData.name,
+      model: validatedData.model,
+      apiKey: validatedData.apiKey,
+      provider: validatedData.provider,
+    });
+
     res.status(201).json({
-      message: 'Model added successfully (demo)',
+      message: 'Model added successfully',
       model: {
-        id: Date.now().toString(),
+        id: validatedData.name.replace(/[^a-zA-Z0-9-_]/g, '-').toLowerCase(),
         ...validatedData,
         apiKey: '***', // Mask in response
         status: 'untested',
@@ -97,11 +103,18 @@ router.put('/models/:id', async (req: Request, res: Response) => {
     const modelId = req.params.id;
     const validatedData = updateModelConfigSchema.parse(req.body);
 
-    logger?.info('Model would be updated: ' + modelId);
+    logger?.info('Updating model: ' + modelId);
 
-    // TODO: Implement actual model updating
+    // Update model using ConfigLoader
+    configLoader.updateModel(modelId, {
+      name: validatedData.name || '',
+      model: validatedData.model || '',
+      apiKey: validatedData.apiKey || '',
+      provider: validatedData.provider || 'openrouter',
+    });
+
     res.json({
-      message: 'Model updated successfully (demo)',
+      message: 'Model updated successfully',
       model: {
         id: modelId,
         ...validatedData,
@@ -131,10 +144,12 @@ router.delete('/models/:id', (req: Request, res: Response) => {
   try {
     const modelId = req.params.id;
 
-    logger?.info('Model would be deleted: ' + modelId);
+    logger?.info('Deleting model: ' + modelId);
 
-    // TODO: Implement actual model deletion
-    res.json({ message: 'Model deleted successfully (demo)' });
+    // Delete model using ConfigLoader
+    configLoader.deleteModel(modelId);
+
+    res.json({ message: 'Model deleted successfully' });
   } catch (error) {
     logger?.error('Failed to delete model', error as Error);
     res.status(500).json({ error: 'Failed to delete model' });
@@ -166,15 +181,17 @@ router.post('/test/:id', async (req: Request, res: Response) => {
 // GET /api/management/status - Server status
 router.get('/status', (_req: Request, res: Response) => {
   try {
-    const config = configLoader.load();
     const uptime = process.uptime();
+
+    const allModels = configLoader.getAllModels();
+    const activeModelsCount = allModels.filter(model => model.enabled).length;
 
     res.json({
       status: 'healthy',
       uptime,
       uptimeFormatted: formatUptime(uptime),
-      modelsCount: config.modelConfig?.model_list?.length || 0,
-      activeModelsCount: config.modelConfig?.model_list?.length || 0,
+      modelsCount: allModels.length,
+      activeModelsCount,
       memoryUsage: process.memoryUsage(),
       nodeVersion: process.version,
       timestamp: new Date().toISOString(),

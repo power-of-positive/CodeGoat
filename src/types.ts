@@ -21,29 +21,24 @@ export interface ProxyConfig {
   modelConfig?: ModelConfig;
 }
 
+export interface ModelConfigItem {
+  name: string;
+  model: string;
+  provider: string;
+  baseUrl: string;
+  apiKey: string;
+  enabled: boolean;
+}
+
 export interface ModelConfig {
-  model_list: Array<{
-    model_name: string;
-    litellm_params: {
-      model: string;
-      api_key: string;
-    };
-  }>;
-  router_settings?: {
-    enable_pre_call_checks?: boolean;
+  models: Record<string, ModelConfigItem>;
+  settings?: {
+    enablePreCallChecks?: boolean;
+    cooldownTime?: number;
+    retries?: number;
+    allowedFails?: number;
   };
-  litellm_settings?: {
-    cooldown_time?: number;
-    num_retries?: number;
-    allowed_fails?: number;
-    fallbacks?: any[];
-  };
-  general_settings?: {
-    master_key?: string;
-    database_url?: string;
-    store_model_in_db?: boolean;
-    store_prompts_in_spend_logs?: boolean;
-  };
+  fallbacks?: Record<string, string[]>;
 }
 
 export interface Route {
@@ -68,6 +63,6 @@ export interface ProxyRequest {
   path: string;
   method: string;
   headers: Record<string, string | string[]>;
-  body?: any;
+  body?: unknown;
   query?: Record<string, string>;
 }

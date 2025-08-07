@@ -12,7 +12,7 @@ test.describe('UI Functionality Tests', () => {
     
     // Check that we have models displayed
     const modelCards = page.locator('.bg-white.shadow.rounded-lg.overflow-hidden .divide-y > div');
-    await expect(modelCards).toHaveCount(8); // We have 8 models in config.yaml
+    await expect(modelCards).toHaveCount(8); // We have 8 models in config.default.yaml
 
     // Check first model details - be more specific to avoid duplicates
     await expect(page.getByRole('heading', { name: 'kimi-k2:free' })).toBeVisible();

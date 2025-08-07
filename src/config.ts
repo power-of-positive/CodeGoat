@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as yaml from 'yaml';
 import * as path from 'path';
-import { ProxyConfig, ModelConfig } from './types';
+import { ProxyConfig, ModelConfig, ModelConfigItem } from './types';
 
 export class ConfigLoader {
   private config: ProxyConfig | null = null;
@@ -25,19 +25,21 @@ export class ConfigLoader {
 
   load(): ProxyConfig {
     try {
-      let defaultConfig: ModelConfig = { model_list: [] };
-      let userConfig: ModelConfig = { model_list: [] };
+      let defaultConfig: ModelConfig = { models: {} };
+      let userConfig: ModelConfig = { models: {} };
 
       // Load default config if it exists
       if (fs.existsSync(this.defaultConfigPath)) {
         const defaultContent = fs.readFileSync(this.defaultConfigPath, 'utf8');
-        defaultConfig = yaml.parse(defaultContent) as ModelConfig;
+        const parsedDefault = yaml.parse(defaultContent);
+        defaultConfig = this.normalizeConfig(parsedDefault);
       }
 
       // Load user config if it exists
       if (fs.existsSync(this.userConfigPath)) {
         const userContent = fs.readFileSync(this.userConfigPath, 'utf8');
-        userConfig = yaml.parse(userContent) as ModelConfig;
+        const parsedUser = yaml.parse(userContent);
+        userConfig = this.normalizeConfig(parsedUser);
       }
 
       // Merge configs: user config overrides default config
@@ -53,24 +55,93 @@ export class ConfigLoader {
     }
   }
 
+  private normalizeConfig(config: Record<string, unknown>): ModelConfig {
+    // Handle legacy format (model_list) and convert to new format
+    if ('model_list' in config && Array.isArray(config.model_list)) {
+      const models: Record<string, ModelConfigItem> = {};
+      (config.model_list as Record<string, unknown>[]).forEach(
+        (model: Record<string, unknown>, index: number) => {
+          const modelName = model.model_name as string | undefined;
+          const modelKey = modelName?.replace(/[^a-zA-Z0-9-_]/g, '-') || `model-${index}`;
+          const litellmParams =
+            (model.litellm_params as { model?: string; api_key?: string }) || {};
+          models[modelKey] = {
+            name: (model.model_name as string) || `Model ${index + 1}`,
+            model: litellmParams.model || '',
+            provider: this.extractProvider(litellmParams.model || '') || 'openrouter',
+            baseUrl: this.getProviderBaseUrl(
+              this.extractProvider(litellmParams.model || '') || 'openrouter'
+            ),
+            apiKey: litellmParams.api_key || '',
+            enabled: true,
+          };
+        }
+      );
+
+      return {
+        models,
+        settings: {
+          enablePreCallChecks: (config.router_settings as { enable_pre_call_checks?: boolean })
+            ?.enable_pre_call_checks,
+          cooldownTime: (config.litellm_settings as { cooldown_time?: number })?.cooldown_time,
+          retries: (config.litellm_settings as { num_retries?: number })?.num_retries,
+          allowedFails: (config.litellm_settings as { allowed_fails?: number })?.allowed_fails,
+        },
+        fallbacks: this.normalizeFallbacks(
+          (config.litellm_settings as { fallbacks?: unknown[] })?.fallbacks || []
+        ),
+      };
+    }
+
+    // Already in new format
+    return config as unknown as ModelConfig;
+  }
+
+  private extractProvider(model: string): string {
+    if (!model) return 'openrouter';
+    if (model.startsWith('openrouter/')) return 'openrouter';
+    if (model.startsWith('openai/')) return 'openai';
+    if (model.startsWith('anthropic/')) return 'anthropic';
+    return 'other';
+  }
+
+  private getProviderBaseUrl(provider: string): string {
+    const providerMap = {
+      openrouter: 'https://openrouter.ai/api/v1',
+      openai: 'https://api.openai.com/v1',
+      anthropic: 'https://api.anthropic.com/v1',
+    };
+    return providerMap[provider as keyof typeof providerMap] || '';
+  }
+
+  private normalizeFallbacks(fallbacks: unknown): Record<string, string[]> {
+    if (!fallbacks || !Array.isArray(fallbacks)) return {};
+
+    const normalized: Record<string, string[]> = {};
+    (fallbacks as Record<string, string[]>[]).forEach((fallbackGroup: Record<string, string[]>) => {
+      Object.keys(fallbackGroup).forEach((primaryModel: string) => {
+        const modelKey = primaryModel.replace(/[^a-zA-Z0-9-_]/g, '-');
+        normalized[modelKey] = fallbackGroup[primaryModel].map((model: string) =>
+          model.replace(/[^a-zA-Z0-9-_]/g, '-')
+        );
+      });
+    });
+
+    return normalized;
+  }
+
   private mergeConfigs(defaultConfig: ModelConfig, userConfig: ModelConfig): ModelConfig {
     // Deep merge logic: user config overrides default config
     const merged: ModelConfig = {
-      model_list: [...(defaultConfig.model_list || []), ...(userConfig.model_list || [])],
-      router_settings: {
-        ...defaultConfig.router_settings,
-        ...userConfig.router_settings,
+      models: {
+        ...defaultConfig.models,
+        ...userConfig.models,
       },
-      litellm_settings: {
-        ...defaultConfig.litellm_settings,
-        ...userConfig.litellm_settings,
-        fallbacks:
-          userConfig.litellm_settings?.fallbacks || defaultConfig.litellm_settings?.fallbacks,
+      settings: {
+        ...defaultConfig.settings,
+        ...userConfig.settings,
       },
-      general_settings: {
-        ...defaultConfig.general_settings,
-        ...userConfig.general_settings,
-      },
+      fallbacks: userConfig.fallbacks || defaultConfig.fallbacks || {},
     };
 
     return merged;
@@ -188,32 +259,34 @@ export class ConfigLoader {
   // Methods for modifying the config file
   addModel(modelData: { name: string; model: string; apiKey: string; provider: string }): void {
     try {
-      let userConfig: ModelConfig = { model_list: [] };
+      let userConfig: ModelConfig = { models: {} };
 
       // Load existing user config if it exists
       if (fs.existsSync(this.userConfigPath)) {
         const userContent = fs.readFileSync(this.userConfigPath, 'utf8');
-        userConfig = (yaml.parse(userContent) as ModelConfig) || { model_list: [] };
+        const parsedConfig = yaml.parse(userContent);
+        userConfig = this.normalizeConfig(parsedConfig);
       }
 
-      // Ensure model_list exists
-      if (!userConfig.model_list) {
-        userConfig.model_list = [];
+      // Ensure models object exists
+      if (!userConfig.models) {
+        userConfig.models = {};
       }
+
+      // Generate unique key for the model
+      const modelKey = modelData.name.replace(/[^a-zA-Z0-9-_]/g, '-').toLowerCase();
 
       // Create new model entry
-      const newModel = {
-        model_name: modelData.name,
-        litellm_params: {
-          model: modelData.model,
-          api_key: modelData.apiKey.startsWith('os.environ/')
-            ? modelData.apiKey
-            : `os.environ/${modelData.apiKey.toUpperCase().replace(/[^A-Z0-9_]/g, '_')}_API_KEY`,
-        },
+      userConfig.models[modelKey] = {
+        name: modelData.name,
+        model: modelData.model,
+        provider: modelData.provider,
+        baseUrl: this.getProviderBaseUrl(modelData.provider),
+        apiKey: modelData.apiKey.startsWith('os.environ/')
+          ? modelData.apiKey
+          : `os.environ/${modelData.apiKey.toUpperCase().replace(/[^A-Z0-9_]/g, '_')}_API_KEY`,
+        enabled: true,
       };
-
-      // Add to model list
-      userConfig.model_list.push(newModel);
 
       // Write back to user config file
       const yamlString = yaml.stringify(userConfig, {
@@ -232,7 +305,7 @@ export class ConfigLoader {
   }
 
   updateModel(
-    modelIndex: number,
+    modelId: string,
     modelData: {
       name: string;
       model: string;
@@ -241,34 +314,29 @@ export class ConfigLoader {
     }
   ): void {
     try {
-      // Check if this is a default model or user model
-      const { userModelIndex } = this.getModelLocation(modelIndex);
-
-      if (userModelIndex === -1) {
-        throw new Error('Cannot update default models. Please create a new model instead.');
-      }
-
-      let userConfig: ModelConfig = { model_list: [] };
+      let userConfig: ModelConfig = { models: {} };
 
       // Load existing user config
       if (fs.existsSync(this.userConfigPath)) {
         const userContent = fs.readFileSync(this.userConfigPath, 'utf8');
-        userConfig = (yaml.parse(userContent) as ModelConfig) || { model_list: [] };
+        const parsedConfig = yaml.parse(userContent);
+        userConfig = this.normalizeConfig(parsedConfig);
       }
 
-      if (!userConfig.model_list || !userConfig.model_list[userModelIndex]) {
+      if (!userConfig.models || !userConfig.models[modelId]) {
         throw new Error('Model not found in user configuration');
       }
 
       // Update model entry
-      userConfig.model_list[userModelIndex] = {
-        model_name: modelData.name,
-        litellm_params: {
-          model: modelData.model,
-          api_key: modelData.apiKey.startsWith('os.environ/')
-            ? modelData.apiKey
-            : `os.environ/${modelData.apiKey.toUpperCase().replace(/[^A-Z0-9_]/g, '_')}_API_KEY`,
-        },
+      userConfig.models[modelId] = {
+        name: modelData.name,
+        model: modelData.model,
+        provider: modelData.provider,
+        baseUrl: this.getProviderBaseUrl(modelData.provider),
+        apiKey: modelData.apiKey.startsWith('os.environ/')
+          ? modelData.apiKey
+          : `os.environ/${modelData.apiKey.toUpperCase().replace(/[^A-Z0-9_]/g, '_')}_API_KEY`,
+        enabled: true,
       };
 
       // Write back to user config file
@@ -287,29 +355,23 @@ export class ConfigLoader {
     }
   }
 
-  deleteModel(modelIndex: number): void {
+  deleteModel(modelId: string): void {
     try {
-      // Check if this is a default model or user model
-      const { userModelIndex } = this.getModelLocation(modelIndex);
-
-      if (userModelIndex === -1) {
-        throw new Error('Cannot delete default models');
-      }
-
-      let userConfig: ModelConfig = { model_list: [] };
+      let userConfig: ModelConfig = { models: {} };
 
       // Load existing user config
       if (fs.existsSync(this.userConfigPath)) {
         const userContent = fs.readFileSync(this.userConfigPath, 'utf8');
-        userConfig = (yaml.parse(userContent) as ModelConfig) || { model_list: [] };
+        const parsedConfig = yaml.parse(userContent);
+        userConfig = this.normalizeConfig(parsedConfig);
       }
 
-      if (!userConfig.model_list || !userConfig.model_list[userModelIndex]) {
+      if (!userConfig.models || !userConfig.models[modelId]) {
         throw new Error('Model not found in user configuration');
       }
 
       // Remove model from user config
-      userConfig.model_list.splice(userModelIndex, 1);
+      delete userConfig.models[modelId];
 
       // Write back to user config file
       const yamlString = yaml.stringify(userConfig, {
@@ -327,25 +389,37 @@ export class ConfigLoader {
     }
   }
 
-  private getModelLocation(globalIndex: number): {
-    defaultModelsCount: number;
-    userModelIndex: number;
-  } {
-    let defaultModelsCount = 0;
+  getAllModels(): Array<{
+    id: string;
+    name: string;
+    model: string;
+    provider: string;
+    baseUrl: string;
+    apiKey: string;
+    enabled: boolean;
+    isDefault: boolean;
+  }> {
+    const config = this.getConfig();
+    if (!config.modelConfig?.models) return [];
 
-    // Count default models
-    if (fs.existsSync(this.defaultConfigPath)) {
-      const defaultContent = fs.readFileSync(this.defaultConfigPath, 'utf8');
-      const defaultConfig = yaml.parse(defaultContent) as ModelConfig;
-      defaultModelsCount = defaultConfig.model_list?.length || 0;
-    }
+    return Object.entries(config.modelConfig.models).map(([id, model]) => ({
+      id,
+      name: model.name,
+      model: model.model,
+      provider: model.provider,
+      baseUrl: model.baseUrl,
+      apiKey: model.apiKey,
+      enabled: model.enabled,
+      isDefault: this.isDefaultModel(id),
+    }));
+  }
 
-    // Calculate user model index
-    const userModelIndex = globalIndex - defaultModelsCount;
+  private isDefaultModel(modelId: string): boolean {
+    if (!fs.existsSync(this.defaultConfigPath)) return false;
 
-    return {
-      defaultModelsCount,
-      userModelIndex: userModelIndex >= 0 ? userModelIndex : -1,
-    };
+    const defaultContent = fs.readFileSync(this.defaultConfigPath, 'utf8');
+    const defaultConfig = this.normalizeConfig(yaml.parse(defaultContent));
+
+    return Object.keys(defaultConfig.models || {}).includes(modelId);
   }
 }

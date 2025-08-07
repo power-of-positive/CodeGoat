@@ -21,15 +21,16 @@ describe('Management Routes', () => {
       retries: { attempts: 3, backoff: 'exponential' },
     },
     modelConfig: {
-      model_list: [
-        {
-          model_name: 'test-model',
-          litellm_params: {
-            model: 'gpt-3.5-turbo',
-            api_key: 'test-key',
-          },
+      models: {
+        'test-model': {
+          name: 'test-model',
+          model: 'gpt-3.5-turbo',
+          provider: 'openai',
+          baseUrl: 'https://api.openai.com/v1',
+          apiKey: 'test-key',
+          enabled: true,
         },
-      ],
+      },
     },
   };
 
@@ -45,6 +46,18 @@ describe('Management Routes', () => {
       addModel: jest.fn().mockImplementation(() => {}),
       updateModel: jest.fn().mockImplementation(() => {}),
       deleteModel: jest.fn().mockImplementation(() => {}),
+      getAllModels: jest.fn().mockReturnValue([
+        {
+          id: 'test-model',
+          name: 'test-model',
+          model: 'gpt-3.5-turbo',
+          provider: 'openai',
+          baseUrl: 'https://api.openai.com/v1',
+          apiKey: 'test-key',
+          enabled: true,
+          isDefault: false,
+        },
+      ]),
     } as unknown as jest.Mocked<ConfigLoader>;
 
     mockLogger = {
@@ -69,10 +82,10 @@ describe('Management Routes', () => {
       expect(response.body).toHaveProperty('models');
       expect(response.body.models).toHaveLength(1);
       expect(response.body.models[0]).toMatchObject({
-        id: '0',
+        id: 'test-model',
         name: 'test-model',
         model: 'gpt-3.5-turbo',
-        provider: 'openrouter',
+        provider: 'openai',
         enabled: true,
         status: 'untested',
       });
@@ -80,7 +93,7 @@ describe('Management Routes', () => {
 
     it('should handle config loading errors', async () => {
       // Override the mock to throw an error for this test
-      mockConfigLoader.load.mockImplementationOnce(() => {
+      mockConfigLoader.getAllModels.mockImplementationOnce(() => {
         throw new Error('Config error');
       });
 
@@ -107,24 +120,7 @@ describe('Management Routes', () => {
 
   describe('POST /api/management/models', () => {
     it('should create a new model', async () => {
-      // Mock the config to return an updated model list after adding
-      const configWithNewModel = {
-        ...mockConfig,
-        modelConfig: {
-          model_list: [
-            ...mockConfig.modelConfig.model_list,
-            {
-              model_name: 'new-model',
-              litellm_params: {
-                model: 'gpt-4',
-                api_key: 'new-key',
-              },
-            },
-          ],
-        },
-      };
-
-      mockConfigLoader.getConfig.mockReturnValueOnce(configWithNewModel);
+      // No need to mock config changes as addModel handles it internally
 
       const modelData = {
         name: 'new-model',
@@ -141,13 +137,13 @@ describe('Management Routes', () => {
         .expect(201);
 
       expect(response.body).toMatchObject({
-        success: true,
         message: 'Model added successfully',
       });
       expect(response.body.model).toMatchObject({
         name: 'new-model',
         model: 'gpt-4',
         provider: 'openai',
+        status: 'untested',
       });
       expect(mockConfigLoader.addModel).toHaveBeenCalledWith({
         name: 'new-model',
@@ -163,40 +159,42 @@ describe('Management Routes', () => {
         .send({ name: 'test' })
         .expect(400);
 
-      expect(response.body).toHaveProperty('error');
-      expect(response.body.error).toContain('Missing required fields');
+      expect(response.body).toHaveProperty('error', 'Validation failed');
+      expect(response.body).toHaveProperty('details');
     });
   });
 
   describe('DELETE /api/management/models/:id', () => {
     it('should delete a model', async () => {
-      const response = await request(app).delete('/api/management/models/0').expect(200);
+      const response = await request(app).delete('/api/management/models/test-model').expect(200);
 
       expect(response.body).toMatchObject({
-        success: true,
-        message: 'Model 0 deleted successfully',
-        deletedModelId: '0',
+        message: 'Model deleted successfully',
       });
-      expect(mockConfigLoader.deleteModel).toHaveBeenCalledWith(0);
+      expect(mockConfigLoader.deleteModel).toHaveBeenCalledWith('test-model');
     });
 
-    it('should handle invalid model ID', async () => {
-      const response = await request(app).delete('/api/management/models/invalid').expect(400);
-
-      expect(response.body).toHaveProperty('error');
-      expect(response.body.error).toBe('Invalid model ID');
-    });
-
-    it('should handle model not found', async () => {
+    it('should handle model not found during deletion', async () => {
       // Override the mock to throw error for this test
       mockConfigLoader.deleteModel.mockImplementationOnce(() => {
-        throw new Error('Model not found');
+        throw new Error('Model not found in user configuration');
       });
 
-      const response = await request(app).delete('/api/management/models/0').expect(404);
+      const response = await request(app).delete('/api/management/models/nonexistent').expect(500);
 
-      expect(response.body).toHaveProperty('error');
-      expect(response.body.error).toBe('Model not found');
+      expect(response.body).toHaveProperty('error', 'Failed to delete model');
+    });
+  });
+
+  describe('POST /api/management/reload', () => {
+    it('should reload configuration', async () => {
+      const response = await request(app).post('/api/management/reload').expect(200);
+
+      expect(response.body).toMatchObject({
+        message: 'Configuration reloaded successfully',
+      });
+      expect(response.body).toHaveProperty('timestamp');
+      expect(mockConfigLoader.reload).toHaveBeenCalled();
     });
   });
 });

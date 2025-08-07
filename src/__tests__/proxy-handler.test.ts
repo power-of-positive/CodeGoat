@@ -15,15 +15,16 @@ describe('ConfigurableProxyHandler', () => {
 
   beforeEach(() => {
     mockConfig = {
-      model_list: [
-        {
-          model_name: 'test-model',
-          litellm_params: {
-            model: 'openrouter/test/model',
-            api_key: 'test-key',
-          },
+      models: {
+        'test-model': {
+          name: 'test-model',
+          model: 'openrouter/test/model',
+          provider: 'openrouter',
+          baseUrl: 'https://openrouter.ai/api/v1',
+          apiKey: 'test-key',
+          enabled: true,
         },
-      ],
+      },
     };
 
     handler = new ConfigurableProxyHandler(mockConfig);

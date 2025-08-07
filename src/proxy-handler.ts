@@ -8,21 +8,26 @@ export class ConfigurableProxyHandler extends ProxyHandler {
     super();
   }
 
-  async handleRequest(req: Request, res: Response, route: Route, rewrittenPath: string): Promise<void> {
+  async handleRequest(
+    req: Request,
+    res: Response,
+    route: Route,
+    rewrittenPath: string
+  ): Promise<void> {
     if (route.target.url.startsWith('internal://')) {
       return this.handleInternalRoute(req, res, route);
     }
-    
+
     if (route.target.url.startsWith('proxy://')) {
       return this.handleProxyRoute(req, res, route, rewrittenPath);
     }
-    
+
     return super.handleRequest(req, res, route, rewrittenPath);
   }
 
   private async handleInternalRoute(req: Request, res: Response, route: Route): Promise<void> {
     const endpoint = route.target.url.replace('internal://', '');
-    
+
     switch (endpoint) {
       case 'health':
         this.handleHealthCheck(req, res);
@@ -36,32 +41,39 @@ export class ConfigurableProxyHandler extends ProxyHandler {
   }
 
   private handleHealthCheck(req: Request, res: Response): void {
-    res.json({ 
-      status: 'healthy', 
+    res.json({
+      status: 'healthy',
       uptime: process.uptime(),
-      models: this.config.model_list?.length || 0
+      models: Object.keys(this.config.models || {}).length,
     });
   }
 
   private handleModelsList(req: Request, res: Response): void {
-    if (!this.config.model_list) {
+    if (!this.config.models) {
       res.json({ object: 'list', data: [] });
       return;
     }
 
-    const models = this.config.model_list.map(model => ({
-      id: model.model_name,
-      object: 'model',
-      created: Date.now(),
-      owned_by: 'proxy-server'
-    }));
+    const models = Object.entries(this.config.models)
+      .filter(([_, model]) => model.enabled)
+      .map(([_id, model]) => ({
+        id: model.name,
+        object: 'model',
+        created: Date.now(),
+        owned_by: 'proxy-server',
+      }));
 
     res.json({ object: 'list', data: models });
   }
 
-  private async handleProxyRoute(req: Request, res: Response, route: Route, rewrittenPath: string): Promise<void> {
+  private async handleProxyRoute(
+    req: Request,
+    res: Response,
+    route: Route,
+    _rewrittenPath: string
+  ): Promise<void> {
     const endpoint = route.target.url.replace('proxy://', '');
-    
+
     switch (endpoint) {
       case 'chat/completions':
         await this.handleChatCompletions(req, res);
@@ -74,28 +86,33 @@ export class ConfigurableProxyHandler extends ProxyHandler {
   private async handleChatCompletions(req: Request, res: Response): Promise<void> {
     try {
       const { model: requestedModel, ...requestData } = req.body;
-      
+
       if (!requestedModel) {
-        res.status(400).json({ 
-          error: { message: 'Model parameter is required', type: 'invalid_request_error' }
-        });
-        return;
-      }
-
-      const modelConfig = this.config.model_list?.find(m => m.model_name === requestedModel);
-      if (!modelConfig) {
         res.status(400).json({
-          error: { message: `Model ${requestedModel} not found`, type: 'invalid_request_error' }
+          error: { message: 'Model parameter is required', type: 'invalid_request_error' },
         });
         return;
       }
 
-      const targetModel = modelConfig.litellm_params.model;
-      const apiKey = this.getApiKey(modelConfig.litellm_params.api_key);
+      // Find model by name in the models object
+      const modelEntry = Object.entries(this.config.models || {}).find(
+        ([_, model]) => model.name === requestedModel
+      );
+
+      if (!modelEntry) {
+        res.status(400).json({
+          error: { message: `Model ${requestedModel} not found`, type: 'invalid_request_error' },
+        });
+        return;
+      }
+
+      const [, modelConfig] = modelEntry;
+      const targetModel = modelConfig.model;
+      const apiKey = this.getApiKey(modelConfig.apiKey);
 
       if (!apiKey) {
         res.status(500).json({
-          error: { message: 'API key not configured', type: 'internal_error' }
+          error: { message: 'API key not configured', type: 'internal_error' },
         });
         return;
       }
@@ -105,7 +122,7 @@ export class ConfigurableProxyHandler extends ProxyHandler {
 
       const requestBody = {
         ...requestData,
-        model: this.extractModelName(targetModel)
+        model: this.extractModelName(targetModel),
       };
 
       const config: AxiosRequestConfig = {
@@ -114,7 +131,7 @@ export class ConfigurableProxyHandler extends ProxyHandler {
         headers,
         data: requestBody,
         validateStatus: () => true,
-        timeout: 30000
+        timeout: 30000,
       };
 
       if (req.body.stream) {
@@ -122,7 +139,7 @@ export class ConfigurableProxyHandler extends ProxyHandler {
       }
 
       const response = await axios(config);
-      
+
       res.status(response.status);
       Object.entries(response.headers).forEach(([key, value]) => {
         if (value && !['content-encoding', 'transfer-encoding'].includes(key.toLowerCase())) {
@@ -135,11 +152,13 @@ export class ConfigurableProxyHandler extends ProxyHandler {
       } else {
         res.send(response.data);
       }
-      
-    } catch (error: any) {
-      console.error('Proxy error:', error.message);
+    } catch (error: unknown) {
+      console.error('Proxy error:', error);
       res.status(500).json({
-        error: { message: `Provider returned error: ${error.message}`, type: 'internal_error' }
+        error: {
+          message: `Provider returned error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          type: 'internal_error',
+        },
       });
     }
   }
@@ -165,10 +184,14 @@ export class ConfigurableProxyHandler extends ProxyHandler {
     return 'https://api.openai.com/v1/chat/completions';
   }
 
-  private buildProxyHeaders(model: string, apiKey: string, reqHeaders: any): Record<string, string> {
+  private buildProxyHeaders(
+    model: string,
+    apiKey: string,
+    _reqHeaders: unknown
+  ): Record<string, string> {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      'User-Agent': 'proxy-server'
+      'User-Agent': 'proxy-server',
     };
 
     if (model.startsWith('openrouter/')) {

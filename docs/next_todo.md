@@ -1,12 +1,9 @@
-    ☐ Replace id attributes with data-testid for
-      testing - don't use id unless absolutely
-      necessary
+    ☐ Fix remaining E2E test issues after config
+      refactor
     ☐ Convert the app to dark mode
-    ☐ Change config YAML format back to object
-      format (litellm-style) instead of indented
-      format
-    ☐ Add code duplication check to pre-commit
-      hook that blocks on duplicates
+    ☐ Fix E2E test failures after config format
+      change - update model counts and API
+      endpoints
     ☐ Integrate OpenAI-based LLM code reviewer for
       pre-commit that returns JSON comments and
       blocks commit on high severity issues

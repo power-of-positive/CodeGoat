@@ -16,34 +16,24 @@ interface TestResult {
 
 const testResults: Record<string, TestResult> = {};
 
-interface ModelConfig {
-  model_name?: string;
-  litellm_params: {
-    model: string;
-    api_key?: string;
-  };
-}
-
 export function createManagementRoutes(configLoader: ConfigLoader, logger: Logger): Router {
   // Get all models
   router.get('/models', (req: Request, res: Response) => {
     try {
-      const config = configLoader.load();
-      const modelList = config.modelConfig?.model_list || [];
+      const allModels = configLoader.getAllModels();
 
       // Convert models to UI format with status information
-      const modelsWithStatus = modelList.map((model: ModelConfig, index: number) => {
-        const modelId = index.toString();
-        const testResult = testResults[modelId];
+      const modelsWithStatus = allModels.map(model => {
+        const testResult = testResults[model.id];
 
         return {
-          id: modelId,
-          name: model.model_name || `Model ${index + 1}`,
-          baseUrl: 'https://openrouter.ai/api/v1',
-          model: model.litellm_params.model,
-          apiKey: model.litellm_params.api_key ? '***' : '',
-          provider: 'openrouter',
-          enabled: true,
+          id: model.id,
+          name: model.name,
+          baseUrl: model.baseUrl,
+          model: model.model,
+          apiKey: model.apiKey ? '***' : '',
+          provider: model.provider,
+          enabled: model.enabled,
           status: (testResult?.status || 'untested') as 'healthy' | 'error' | 'untested',
           lastTested: testResult?.testedAt || null,
           responseTime: testResult?.responseTime || null,
@@ -60,15 +50,16 @@ export function createManagementRoutes(configLoader: ConfigLoader, logger: Logge
   // Get server status
   router.get('/status', (req: Request, res: Response) => {
     try {
-      const config = configLoader.load();
+      const allModels = configLoader.getAllModels();
       const uptime = process.uptime();
+      const activeModelsCount = allModels.filter(model => model.enabled).length;
 
       res.json({
         status: 'healthy',
         uptime,
         uptimeFormatted: formatUptime(uptime),
-        modelsCount: config.modelConfig?.model_list?.length || 0,
-        activeModelsCount: config.modelConfig?.model_list?.length || 0,
+        modelsCount: allModels.length,
+        activeModelsCount,
         memoryUsage: process.memoryUsage(),
         nodeVersion: process.version,
         timestamp: new Date().toISOString(),
@@ -86,9 +77,8 @@ export function createManagementRoutes(configLoader: ConfigLoader, logger: Logge
       const startTime = Date.now();
 
       // Get the model configuration
-      const config = configLoader.load();
-      const modelList = config.modelConfig?.model_list || [];
-      const model = modelList[parseInt(modelId)];
+      const allModels = configLoader.getAllModels();
+      const model = allModels.find(m => m.id === modelId);
 
       if (!model) {
         return res.status(404).json({ error: 'Model not found' });
@@ -97,7 +87,7 @@ export function createManagementRoutes(configLoader: ConfigLoader, logger: Logge
       try {
         // Make a test API call to the model
         const testPayload = {
-          model: model.litellm_params.model,
+          model: model.name,
           messages: [{ role: 'user', content: 'Hello' }],
           max_tokens: 1,
           temperature: 0.1,
@@ -108,7 +98,7 @@ export function createManagementRoutes(configLoader: ConfigLoader, logger: Logge
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${model.litellm_params.api_key || 'test-key'}`,
+            Authorization: `Bearer ${model.apiKey || 'test-key'}`,
           },
           body: JSON.stringify(testPayload),
           signal: AbortSignal.timeout(10000), // 10 second timeout
@@ -123,7 +113,7 @@ export function createManagementRoutes(configLoader: ConfigLoader, logger: Logge
             responseTime,
             error: null,
             testedAt: new Date().toISOString(),
-            model: model.litellm_params.model,
+            model: model.model,
           };
 
           // Store the test result
@@ -138,7 +128,7 @@ export function createManagementRoutes(configLoader: ConfigLoader, logger: Logge
             responseTime,
             error: `HTTP ${testResponse.status}: ${errorText}`,
             testedAt: new Date().toISOString(),
-            model: model.litellm_params.model,
+            model: model.model,
           };
 
           // Store the test result
@@ -154,7 +144,7 @@ export function createManagementRoutes(configLoader: ConfigLoader, logger: Logge
           responseTime,
           error: fetchError instanceof Error ? fetchError.message : 'Connection failed',
           testedAt: new Date().toISOString(),
-          model: model?.litellm_params?.model || 'unknown',
+          model: model?.model || 'unknown',
         };
 
         // Store the test result
@@ -172,20 +162,12 @@ export function createManagementRoutes(configLoader: ConfigLoader, logger: Logge
   router.delete('/models/:id', (req: Request, res: Response) => {
     try {
       const modelId = req.params.id;
-      const modelIndex = parseInt(modelId);
-
-      if (isNaN(modelIndex) || modelIndex < 0) {
-        return res.status(400).json({ error: 'Invalid model ID' });
-      }
 
       // Delete model from config file
-      configLoader.deleteModel(modelIndex);
+      configLoader.deleteModel(modelId);
 
       res.json({
-        success: true,
-        message: `Model ${modelId} deleted successfully`,
-        deletedModelId: modelId,
-        timestamp: new Date().toISOString(),
+        message: 'Model deleted successfully',
       });
     } catch (error) {
       logger.error('Failed to delete model', error as Error);
@@ -206,7 +188,13 @@ export function createManagementRoutes(configLoader: ConfigLoader, logger: Logge
       // Validate required fields
       if (!name || !model || !apiKey || !provider) {
         return res.status(400).json({
-          error: 'Missing required fields: name, model, apiKey, provider',
+          error: 'Validation failed',
+          details: [
+            { field: 'name', message: 'Name is required' },
+            { field: 'model', message: 'Model is required' },
+            { field: 'apiKey', message: 'API key is required' },
+            { field: 'provider', message: 'Provider is required' },
+          ].filter(detail => !req.body[detail.field]),
         });
       }
 
@@ -218,17 +206,12 @@ export function createManagementRoutes(configLoader: ConfigLoader, logger: Logge
         provider,
       });
 
-      // Get the updated config to return the new model
-      const config = configLoader.getConfig();
-      const modelList = config.modelConfig?.model_list || [];
-      const newModelIndex = modelList.length - 1;
-      const newModel = modelList[newModelIndex];
-
+      const modelKey = name.replace(/[^a-zA-Z0-9-_]/g, '-').toLowerCase();
       const responseModel = {
-        id: newModelIndex.toString(),
-        name: newModel.model_name || name,
+        id: modelKey,
+        name,
         baseUrl: baseUrl || 'https://openrouter.ai/api/v1',
-        model: newModel.litellm_params.model,
+        model,
         apiKey: '***', // Don't return the actual API key
         provider,
         enabled: enabled !== undefined ? enabled : true,
@@ -238,9 +221,8 @@ export function createManagementRoutes(configLoader: ConfigLoader, logger: Logge
       };
 
       res.status(201).json({
-        success: true,
-        model: responseModel,
         message: 'Model added successfully',
+        model: responseModel,
       });
     } catch (error) {
       logger.error('Failed to add model', error as Error);
@@ -252,39 +234,21 @@ export function createManagementRoutes(configLoader: ConfigLoader, logger: Logge
   router.put('/models/:id', (req: Request, res: Response) => {
     try {
       const modelId = req.params.id;
-      const modelIndex = parseInt(modelId);
-
-      if (isNaN(modelIndex) || modelIndex < 0) {
-        return res.status(400).json({ error: 'Invalid model ID' });
-      }
-
       const { name, baseUrl, model, apiKey, provider, enabled } = req.body;
 
-      // Validate required fields
-      if (!name || !model || !apiKey || !provider) {
-        return res.status(400).json({
-          error: 'Missing required fields: name, model, apiKey, provider',
-        });
-      }
-
       // Update model in config file
-      configLoader.updateModel(modelIndex, {
+      configLoader.updateModel(modelId, {
         name,
         model,
         apiKey,
         provider,
       });
 
-      // Get the updated model
-      const config = configLoader.getConfig();
-      const modelList = config.modelConfig?.model_list || [];
-      const updatedModel = modelList[modelIndex];
-
       const responseModel = {
-        id: modelIndex.toString(),
-        name: updatedModel.model_name || name,
+        id: modelId,
+        name,
         baseUrl: baseUrl || 'https://openrouter.ai/api/v1',
-        model: updatedModel.litellm_params.model,
+        model,
         apiKey: '***', // Don't return the actual API key
         provider,
         enabled: enabled !== undefined ? enabled : true,
@@ -294,9 +258,8 @@ export function createManagementRoutes(configLoader: ConfigLoader, logger: Logge
       };
 
       res.json({
-        success: true,
-        model: responseModel,
         message: 'Model updated successfully',
+        model: responseModel,
       });
     } catch (error) {
       logger.error('Failed to update model', error as Error);
@@ -306,6 +269,22 @@ export function createManagementRoutes(configLoader: ConfigLoader, logger: Logge
       }
 
       res.status(500).json({ error: 'Failed to update model' });
+    }
+  });
+
+  // Reload configuration
+  router.post('/reload', (req: Request, res: Response) => {
+    try {
+      configLoader.reload();
+      logger.info('Configuration reloaded via API');
+
+      res.json({
+        message: 'Configuration reloaded successfully',
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      logger.error('Failed to reload configuration via API', error as Error);
+      res.status(500).json({ error: 'Failed to reload configuration' });
     }
   });
 
