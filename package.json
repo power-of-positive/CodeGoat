@@ -4,25 +4,42 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon --watch src --ext ts --exec ts-node src/index.ts",
-    "dev:models": "nodemon --watch src --ext ts --exec ts-node src/model-index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "start:models": "node dist/model-index.js",
     "start:prod": "NODE_ENV=production node dist/index.js",
     "test": "jest",
-    "test:e2e": "jest tests/e2e.test.ts"
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:e2e": "jest tests/e2e.test.ts",
+    "lint": "eslint src/**/*.ts",
+    "lint:fix": "eslint src/**/*.ts --fix",
+    "format": "prettier --write src/**/*.ts",
+    "format:check": "prettier --check src/**/*.ts",
+    "type-check": "tsc --noEmit",
+    "quality": "npm run lint && npm run format:check && npm run type-check && npm run test",
+    "prepare": "husky"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "description": "",
   "devDependencies": {
+    "@types/dotenv": "^6.1.1",
     "@types/express": "^5.0.3",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.2.0",
     "@types/supertest": "^6.0.3",
+    "@typescript-eslint/eslint-plugin": "^8.39.0",
+    "@typescript-eslint/parser": "^8.39.0",
+    "dotenv": "^17.2.1",
+    "eslint": "^9.32.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
+    "husky": "^9.1.7",
     "jest": "^30.0.5",
+    "lint-staged": "^16.1.4",
     "nodemon": "^3.1.10",
+    "prettier": "^3.6.2",
     "supertest": "^7.1.4",
     "ts-jest": "^29.4.1",
     "ts-node": "^10.9.2",
@@ -32,5 +49,17 @@
     "axios": "^1.11.0",
     "express": "^5.1.0",
     "yaml": "^2.8.1"
+  },
+  "lint-staged": {
+    "src/**/*.ts": [
+      "eslint --fix",
+      "prettier --write",
+      "git add"
+    ],
+    "tests/**/*.ts": [
+      "eslint --fix",
+      "prettier --write",
+      "git add"
+    ]
   }
 }
