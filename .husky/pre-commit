@@ -1,5 +1,5 @@
-# Skip linting temporarily to allow commit - fix later
-# npx lint-staged
+# Run lint-staged for code formatting and linting
+npx lint-staged
 
 # Run type checking
 npm run type-check
@@ -7,5 +7,5 @@ npm run type-check
 # Run unit tests only (skip e2e tests that depend on external APIs)
 npm run test -- --testPathIgnorePatterns=tests/e2e.test.ts --passWithNoTests
 
-# Skip E2E tests for now until UI is stabilized
-# cd ui && npm run test:e2e && cd ..
+# Run E2E tests to ensure UI functionality is working
+cd ui && npm run test:e2e && cd ..

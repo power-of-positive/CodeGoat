@@ -31,8 +31,8 @@ export default [
     rules: {
       ...tseslint.configs.recommended.rules,
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
-      '@typescript-eslint/no-explicit-any': 'warn', // Allow any types with warning
-      '@typescript-eslint/explicit-function-return-type': 'warn', // Allow missing return types with warning
+      '@typescript-eslint/no-explicit-any': 'error', // Enforce no any types
+      '@typescript-eslint/explicit-function-return-type': 'error', // Enforce explicit return types
       '@typescript-eslint/explicit-module-boundary-types': 'off',
       '@typescript-eslint/no-inferrable-types': 'off',
       'no-console': ['warn', { allow: ['warn', 'error', 'log'] }], // Allow console.log

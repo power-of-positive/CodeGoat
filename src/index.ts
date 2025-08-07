@@ -8,6 +8,14 @@ import { Logger } from './logger';
 import { ProxyRequest } from './types';
 // import managementAPI, { initializeManagementAPI } from './management/api';
 
+interface ModelConfig {
+  model_name?: string;
+  litellm_params: {
+    model: string;
+    api_key?: string;
+  };
+}
+
 const app = express();
 const configLoader = new ConfigLoader();
 const routeMatcher = new RouteMatcher();
@@ -48,9 +56,9 @@ app.get('/api/management/models', (req: Request, res: Response) => {
   try {
     const config = configLoader.load();
     const modelList = config.modelConfig?.model_list || [];
-    
+
     // Convert models to UI format with status information
-    const modelsWithStatus = modelList.map((model: any, index: number) => ({
+    const modelsWithStatus = modelList.map((model: ModelConfig, index: number) => ({
       id: index.toString(),
       name: model.model_name || `Model ${index + 1}`,
       baseUrl: 'https://openrouter.ai/api/v1',
@@ -73,7 +81,7 @@ app.get('/api/management/status', (req: Request, res: Response) => {
   try {
     const config = configLoader.load();
     const uptime = process.uptime();
-    
+
     res.json({
       status: 'healthy',
       uptime,
@@ -94,38 +102,38 @@ app.post('/api/management/test/:id', async (req: Request, res: Response) => {
   try {
     const modelId = req.params.id;
     const startTime = Date.now();
-    
+
     // Get the model configuration
     const config = configLoader.load();
     const modelList = config.modelConfig?.model_list || [];
     const model = modelList[parseInt(modelId)];
-    
+
     if (!model) {
       return res.status(404).json({ error: 'Model not found' });
     }
-    
+
     try {
       // Make a test API call to the model
       const testPayload = {
         model: model.litellm_params.model,
         messages: [{ role: 'user', content: 'Hello' }],
         max_tokens: 1,
-        temperature: 0.1
+        temperature: 0.1,
       };
-      
+
       // Use the proxy handler to make the request through our configured routes
       const testResponse = await fetch('http://localhost:3000/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${model.litellm_params.api_key || 'test-key'}`
+          Authorization: `Bearer ${model.litellm_params.api_key || 'test-key'}`,
         },
         body: JSON.stringify(testPayload),
-        signal: AbortSignal.timeout(10000) // 10 second timeout
+        signal: AbortSignal.timeout(10000), // 10 second timeout
       });
-      
+
       const responseTime = Date.now() - startTime;
-      
+
       if (testResponse.ok) {
         res.json({
           modelId: modelId,
@@ -133,7 +141,7 @@ app.post('/api/management/test/:id', async (req: Request, res: Response) => {
           responseTime,
           error: null,
           testedAt: new Date().toISOString(),
-          model: model.litellm_params.model
+          model: model.litellm_params.model,
         });
       } else {
         const errorText = await testResponse.text();
@@ -143,18 +151,18 @@ app.post('/api/management/test/:id', async (req: Request, res: Response) => {
           responseTime,
           error: `HTTP ${testResponse.status}: ${errorText}`,
           testedAt: new Date().toISOString(),
-          model: model.litellm_params.model
+          model: model.litellm_params.model,
         });
       }
-    } catch (fetchError: any) {
+    } catch (fetchError: unknown) {
       const responseTime = Date.now() - startTime;
       res.json({
         modelId: modelId,
         status: 'error',
         responseTime,
-        error: fetchError.message || 'Connection failed',
+        error: fetchError instanceof Error ? fetchError.message : 'Connection failed',
         testedAt: new Date().toISOString(),
-        model: model?.litellm_params?.model || 'unknown'
+        model: model?.litellm_params?.model || 'unknown',
       });
     }
   } catch (error) {
@@ -166,7 +174,7 @@ app.post('/api/management/test/:id', async (req: Request, res: Response) => {
 app.delete('/api/management/models/:id', (req: Request, res: Response) => {
   try {
     const modelId = req.params.id;
-    
+
     // For now, just return success - in a real implementation you'd update the config
     res.json({
       success: true,
@@ -186,16 +194,21 @@ function formatUptime(uptimeSeconds: number): string {
   const hours = Math.floor((uptimeSeconds % 86400) / 3600);
   const minutes = Math.floor((uptimeSeconds % 3600) / 60);
   const seconds = Math.floor(uptimeSeconds % 60);
-  
+
   return `${days}d ${hours}h ${minutes}m ${seconds}s`;
 }
 
-// Proxy middleware - only for non-management routes  
+// Proxy middleware - only for non-management routes
 app.use(async (req: Request, res: Response, next: NextFunction) => {
   console.log('Proxy middleware called for:', req.method, req.path);
-  
+
   // Skip proxy routing for management API and internal routes
-  if (req.path.startsWith('/api/management') || req.path.startsWith('/internal/') || req.path.startsWith('/ui/') || req.path === '/test') {
+  if (
+    req.path.startsWith('/api/management') ||
+    req.path.startsWith('/internal/') ||
+    req.path.startsWith('/ui/') ||
+    req.path === '/test'
+  ) {
     console.log('Skipping proxy for:', req.path);
     return next();
   }
@@ -206,20 +219,21 @@ app.use(async (req: Request, res: Response, next: NextFunction) => {
       method: req.method,
       headers: req.headers as Record<string, string | string[]>,
       body: req.body,
-      query: req.query as Record<string, string>
+      query: req.query as Record<string, string>,
     };
 
     const matchedRoute = routeMatcher.matchRoute(config.routes, proxyRequest);
-    
+
     if (!matchedRoute) {
       return res.status(404).json({ error: 'No matching route found' });
     }
 
-    (req as any).routeName = matchedRoute.name;
-    
+    // Add route information for logging
+    (req as Request & { routeName?: string }).routeName = matchedRoute.name;
+
     const rewrittenPath = routeMatcher.rewritePath(matchedRoute, req.path);
-    (req as any).targetUrl = matchedRoute.target.url + rewrittenPath;
-    
+    (req as Request & { targetUrl?: string }).targetUrl = matchedRoute.target.url + rewrittenPath;
+
     await proxyHandler.handleRequest(req, res, matchedRoute, rewrittenPath);
   } catch (error) {
     logger.error('Request handling error', error as Error);

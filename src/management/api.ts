@@ -20,7 +20,10 @@ const updateModelConfigSchema = modelConfigSchema.partial();
 let configLoader: ConfigLoader;
 let logger: Logger;
 
-export function initializeManagementAPI(configLoaderInstance: ConfigLoader, loggerInstance: Logger) {
+export function initializeManagementAPI(
+  configLoaderInstance: ConfigLoader,
+  loggerInstance: Logger
+): void {
   configLoader = configLoaderInstance;
   logger = loggerInstance;
 }
@@ -32,14 +35,14 @@ router.get('/models', (_req: Request, res: Response) => {
     const config = configLoader.load();
     const modelList = config.modelConfig?.model_list || [];
     console.log('Found models:', modelList.length);
-    
+
     // Convert models to UI format with status information
-    const modelsWithStatus = modelList.map((model: any, index: number) => ({
+    const modelsWithStatus = modelList.map((model: Record<string, unknown>, index: number) => ({
       id: index.toString(),
       name: model.model_name || `Model ${index + 1}`,
       baseUrl: 'https://openrouter.ai/api/v1', // Default for now
-      model: model.litellm_params.model,
-      apiKey: model.litellm_params.api_key ? '***' : '', // Mask API key in response
+      model: (model.litellm_params as { model: string; api_key?: string }).model,
+      apiKey: (model.litellm_params as { model: string; api_key?: string }).api_key ? '***' : '', // Mask API key in response
       provider: 'openrouter', // Default for now
       enabled: true, // Default for now
       status: 'untested' as const,
@@ -58,11 +61,11 @@ router.get('/models', (_req: Request, res: Response) => {
 router.post('/models', async (req: Request, res: Response) => {
   try {
     const validatedData = modelConfigSchema.parse(req.body);
-    
+
     logger?.info('New model would be added: ' + validatedData.name);
-    
+
     // TODO: Implement actual model saving
-    res.status(201).json({ 
+    res.status(201).json({
       message: 'Model added successfully (demo)',
       model: {
         id: Date.now().toString(),
@@ -70,13 +73,16 @@ router.post('/models', async (req: Request, res: Response) => {
         apiKey: '***', // Mask in response
         status: 'untested',
         lastTested: null,
-      }
+      },
     });
   } catch (error: unknown) {
     if (error instanceof z.ZodError) {
-      res.status(400).json({ 
+      res.status(400).json({
         error: 'Validation failed',
-        details: error.issues.map((e: any) => ({ field: e.path.join('.'), message: e.message }))
+        details: error.issues.map((e: z.ZodIssue) => ({
+          field: e.path.join('.'),
+          message: e.message,
+        })),
       });
     } else {
       logger?.error('Failed to add model', error as Error);
@@ -90,11 +96,11 @@ router.put('/models/:id', async (req: Request, res: Response) => {
   try {
     const modelId = req.params.id;
     const validatedData = updateModelConfigSchema.parse(req.body);
-    
+
     logger?.info('Model would be updated: ' + modelId);
-    
+
     // TODO: Implement actual model updating
-    res.json({ 
+    res.json({
       message: 'Model updated successfully (demo)',
       model: {
         id: modelId,
@@ -102,13 +108,16 @@ router.put('/models/:id', async (req: Request, res: Response) => {
         apiKey: '***', // Mask in response
         status: 'untested',
         lastTested: null,
-      }
+      },
     });
   } catch (error: unknown) {
     if (error instanceof z.ZodError) {
-      res.status(400).json({ 
+      res.status(400).json({
         error: 'Validation failed',
-        details: error.issues.map((e: any) => ({ field: e.path.join('.'), message: e.message }))
+        details: error.issues.map((e: z.ZodIssue) => ({
+          field: e.path.join('.'),
+          message: e.message,
+        })),
       });
     } else {
       logger?.error('Failed to update model', error as Error);
@@ -121,9 +130,9 @@ router.put('/models/:id', async (req: Request, res: Response) => {
 router.delete('/models/:id', (req: Request, res: Response) => {
   try {
     const modelId = req.params.id;
-    
+
     logger?.info('Model would be deleted: ' + modelId);
-    
+
     // TODO: Implement actual model deletion
     res.json({ message: 'Model deleted successfully (demo)' });
   } catch (error) {
@@ -136,11 +145,11 @@ router.delete('/models/:id', (req: Request, res: Response) => {
 router.post('/test/:id', async (req: Request, res: Response) => {
   try {
     const modelId = req.params.id;
-    
+
     // TODO: Implement actual model testing logic
     // For now, just return a mock response
     const isHealthy = Math.random() > 0.3; // 70% chance of success
-    
+
     res.json({
       modelId: modelId,
       status: isHealthy ? 'healthy' : 'error',
@@ -159,7 +168,7 @@ router.get('/status', (_req: Request, res: Response) => {
   try {
     const config = configLoader.load();
     const uptime = process.uptime();
-    
+
     res.json({
       status: 'healthy',
       uptime,
@@ -181,8 +190,8 @@ router.post('/reload', (_req: Request, res: Response) => {
   try {
     configLoader.reload();
     logger?.info('Configuration reloaded via API');
-    
-    res.json({ 
+
+    res.json({
       message: 'Configuration reloaded successfully',
       timestamp: new Date().toISOString(),
     });
@@ -197,7 +206,7 @@ function formatUptime(uptimeSeconds: number): string {
   const hours = Math.floor((uptimeSeconds % 86400) / 3600);
   const minutes = Math.floor((uptimeSeconds % 3600) / 60);
   const seconds = Math.floor(uptimeSeconds % 60);
-  
+
   return `${days}d ${hours}h ${minutes}m ${seconds}s`;
 }
 
