@@ -12,34 +12,47 @@ describe('Management Routes', () => {
   let mockConfigLoader: jest.Mocked<ConfigLoader>;
   let mockLogger: jest.Mocked<Logger>;
 
+  const mockConfig = {
+    proxy: { port: 3000, host: '0.0.0.0' },
+    routes: [],
+    settings: {
+      logging: { level: 'info', format: 'json' },
+      timeout: { request: 30000, idle: 120000 },
+      retries: { attempts: 3, backoff: 'exponential' },
+    },
+    modelConfig: {
+      model_list: [
+        {
+          model_name: 'test-model',
+          litellm_params: {
+            model: 'gpt-3.5-turbo',
+            api_key: 'test-key',
+          },
+        },
+      ],
+    },
+  };
+
   beforeEach(() => {
     app = express();
     app.use(express.json());
 
-    mockConfigLoader = new ConfigLoader() as jest.Mocked<ConfigLoader>;
-    mockLogger = new Logger('info', 'json') as jest.Mocked<Logger>;
+    // Create proper mocks
+    mockConfigLoader = {
+      load: jest.fn().mockReturnValue(mockConfig),
+      getConfig: jest.fn().mockReturnValue(mockConfig),
+      reload: jest.fn().mockReturnValue(mockConfig),
+      addModel: jest.fn().mockImplementation(() => {}),
+      updateModel: jest.fn().mockImplementation(() => {}),
+      deleteModel: jest.fn().mockImplementation(() => {}),
+    } as unknown as jest.Mocked<ConfigLoader>;
 
-    // Mock the load method to return a valid config
-    mockConfigLoader.load.mockReturnValue({
-      proxy: { port: 3000, host: '0.0.0.0' },
-      routes: [],
-      settings: {
-        logging: { level: 'info', format: 'json' },
-        timeout: { request: 30000, idle: 120000 },
-        retries: { attempts: 3, backoff: 'exponential' },
-      },
-      modelConfig: {
-        model_list: [
-          {
-            model_name: 'test-model',
-            litellm_params: {
-              model: 'gpt-3.5-turbo',
-              api_key: 'test-key',
-            },
-          },
-        ],
-      },
-    });
+    mockLogger = {
+      info: jest.fn(),
+      error: jest.fn(),
+      warn: jest.fn(),
+      debug: jest.fn(),
+    } as unknown as jest.Mocked<Logger>;
 
     const managementRouter = createManagementRoutes(mockConfigLoader, mockLogger);
     app.use('/api/management', managementRouter);
@@ -66,21 +79,14 @@ describe('Management Routes', () => {
     });
 
     it('should handle config loading errors', async () => {
-      // Create a new app with a broken configLoader for this test
-      const brokenApp = express();
-      brokenApp.use(express.json());
-
-      const brokenConfigLoader = new ConfigLoader() as jest.Mocked<ConfigLoader>;
-      brokenConfigLoader.load.mockImplementation(() => {
+      // Override the mock to throw an error for this test
+      mockConfigLoader.load.mockImplementationOnce(() => {
         throw new Error('Config error');
       });
 
-      const managementRouter = createManagementRoutes(brokenConfigLoader, mockLogger);
-      brokenApp.use('/api/management', managementRouter);
+      const response = await request(app).get('/api/management/models').expect(500);
 
-      const response = await request(brokenApp).get('/api/management/models').expect(500);
-
-      expect(response.body).toHaveProperty('error');
+      expect(response.body).toHaveProperty('error', 'Failed to load models');
       expect(mockLogger.error).toHaveBeenCalledWith('Failed to load models', expect.any(Error));
     });
   });
@@ -101,29 +107,12 @@ describe('Management Routes', () => {
 
   describe('POST /api/management/models', () => {
     it('should create a new model', async () => {
-      // Create a new app instance for this test to avoid interference
-      const testApp = express();
-      testApp.use(express.json());
-
-      const testConfigLoader = new ConfigLoader() as jest.Mocked<ConfigLoader>;
-      testConfigLoader.addModel = jest.fn().mockImplementation(() => {});
-      testConfigLoader.getConfig = jest.fn().mockReturnValue({
-        proxy: { port: 3000, host: '0.0.0.0' },
-        routes: [],
-        settings: {
-          logging: { level: 'info', format: 'json' },
-          timeout: { request: 30000, idle: 120000 },
-          retries: { attempts: 3, backoff: 'exponential' },
-        },
+      // Mock the config to return an updated model list after adding
+      const configWithNewModel = {
+        ...mockConfig,
         modelConfig: {
           model_list: [
-            {
-              model_name: 'test-model',
-              litellm_params: {
-                model: 'gpt-3.5-turbo',
-                api_key: 'test-key',
-              },
-            },
+            ...mockConfig.modelConfig.model_list,
             {
               model_name: 'new-model',
               litellm_params: {
@@ -133,10 +122,9 @@ describe('Management Routes', () => {
             },
           ],
         },
-      });
+      };
 
-      const testManagementRouter = createManagementRoutes(testConfigLoader, mockLogger);
-      testApp.use('/api/management', testManagementRouter);
+      mockConfigLoader.getConfig.mockReturnValueOnce(configWithNewModel);
 
       const modelData = {
         name: 'new-model',
@@ -147,7 +135,7 @@ describe('Management Routes', () => {
         enabled: true,
       };
 
-      const response = await request(testApp)
+      const response = await request(app)
         .post('/api/management/models')
         .send(modelData)
         .expect(201);
@@ -161,7 +149,7 @@ describe('Management Routes', () => {
         model: 'gpt-4',
         provider: 'openai',
       });
-      expect(testConfigLoader.addModel).toHaveBeenCalledWith({
+      expect(mockConfigLoader.addModel).toHaveBeenCalledWith({
         name: 'new-model',
         model: 'gpt-4',
         apiKey: 'new-key',
@@ -182,24 +170,14 @@ describe('Management Routes', () => {
 
   describe('DELETE /api/management/models/:id', () => {
     it('should delete a model', async () => {
-      // Create a new app instance for this test
-      const testApp = express();
-      testApp.use(express.json());
-
-      const testConfigLoader = new ConfigLoader() as jest.Mocked<ConfigLoader>;
-      testConfigLoader.deleteModel = jest.fn().mockImplementation(() => {});
-
-      const testManagementRouter = createManagementRoutes(testConfigLoader, mockLogger);
-      testApp.use('/api/management', testManagementRouter);
-
-      const response = await request(testApp).delete('/api/management/models/0').expect(200);
+      const response = await request(app).delete('/api/management/models/0').expect(200);
 
       expect(response.body).toMatchObject({
         success: true,
         message: 'Model 0 deleted successfully',
         deletedModelId: '0',
       });
-      expect(testConfigLoader.deleteModel).toHaveBeenCalledWith(0);
+      expect(mockConfigLoader.deleteModel).toHaveBeenCalledWith(0);
     });
 
     it('should handle invalid model ID', async () => {
@@ -210,19 +188,12 @@ describe('Management Routes', () => {
     });
 
     it('should handle model not found', async () => {
-      // Create a new app instance for this test
-      const testApp = express();
-      testApp.use(express.json());
-
-      const testConfigLoader = new ConfigLoader() as jest.Mocked<ConfigLoader>;
-      testConfigLoader.deleteModel = jest.fn().mockImplementation(() => {
+      // Override the mock to throw error for this test
+      mockConfigLoader.deleteModel.mockImplementationOnce(() => {
         throw new Error('Model not found');
       });
 
-      const testManagementRouter = createManagementRoutes(testConfigLoader, mockLogger);
-      testApp.use('/api/management', testManagementRouter);
-
-      const response = await request(testApp).delete('/api/management/models/0').expect(404);
+      const response = await request(app).delete('/api/management/models/0').expect(404);
 
       expect(response.body).toHaveProperty('error');
       expect(response.body.error).toBe('Model not found');

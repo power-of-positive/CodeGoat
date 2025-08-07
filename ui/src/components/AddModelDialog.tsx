@@ -13,31 +13,27 @@ import {
 import { Button } from './ui/Button';
 import { Input } from './ui/Input';
 import { Label } from './ui/Label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from './ui/Select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/Select';
 
-const modelSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  baseUrl: z.string(),
-  model: z.string().min(1, 'Model is required'),
-  apiKey: z.string().min(1, 'API Key is required'),
-  provider: z.enum(['openrouter', 'openai', 'anthropic', 'other']),
-  enabled: z.boolean(),
-}).superRefine((data, ctx) => {
-  // Only require base URL when provider is "other"
-  if (data.provider === 'other' && !data.baseUrl) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: 'Base URL is required for other providers',
-      path: ['baseUrl'],
-    });
-  }
-});
+const modelSchema = z
+  .object({
+    name: z.string().min(1, 'Name is required'),
+    baseUrl: z.string(),
+    model: z.string().min(1, 'Model is required'),
+    apiKey: z.string().min(1, 'API Key is required'),
+    provider: z.enum(['openrouter', 'openai', 'anthropic', 'other']),
+    enabled: z.boolean(),
+  })
+  .superRefine((data, ctx) => {
+    // Only require base URL when provider is "other"
+    if (data.provider === 'other' && !data.baseUrl) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Base URL is required for other providers',
+        path: ['baseUrl'],
+      });
+    }
+  });
 
 type ModelFormData = z.infer<typeof modelSchema>;
 
@@ -67,21 +63,23 @@ export function AddModelDialog({ open, onClose, onAdd, editingModel }: AddModelD
     formState: { errors, isSubmitting },
   } = useForm<ModelFormData>({
     resolver: zodResolver(modelSchema),
-    defaultValues: editingModel ? {
-      name: editingModel.name,
-      baseUrl: editingModel.baseUrl,
-      model: editingModel.model,
-      apiKey: '', // Don't pre-populate API key for security
-      provider: editingModel.provider as ModelFormData['provider'],
-      enabled: editingModel.enabled,
-    } : {
-      name: '',
-      baseUrl: '',
-      model: '',
-      apiKey: '',
-      provider: 'openrouter',
-      enabled: true,
-    },
+    defaultValues: editingModel
+      ? {
+          name: editingModel.name,
+          baseUrl: editingModel.baseUrl,
+          model: editingModel.model,
+          apiKey: '', // Don't pre-populate API key for security
+          provider: editingModel.provider as ModelFormData['provider'],
+          enabled: editingModel.enabled,
+        }
+      : {
+          name: '',
+          baseUrl: '',
+          model: '',
+          apiKey: '',
+          provider: 'openrouter',
+          enabled: true,
+        },
   });
 
   const provider = watch('provider');
@@ -130,92 +128,75 @@ export function AddModelDialog({ open, onClose, onAdd, editingModel }: AddModelD
         <DialogHeader>
           <DialogTitle>{editingModel ? 'Edit Model' : 'Add New Model'}</DialogTitle>
           <DialogDescription>
-            {editingModel 
+            {editingModel
               ? 'Update the model configuration.'
-              : 'Configure a new AI model for use in the proxy server.'
-            }
+              : 'Configure a new AI model for use in the proxy server.'}
           </DialogDescription>
         </DialogHeader>
-        
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">Name</Label>
-            <Input
-              id="name"
-              placeholder="e.g., GPT-4 Turbo"
-              {...register('name')}
-            />
-            {errors.name && (
-              <p className="text-sm text-red-600">{errors.name.message}</p>
-            )}
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="provider">Provider</Label>
-            <Select value={provider} onValueChange={handleProviderChange}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select a provider" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="openrouter">OpenRouter</SelectItem>
-                <SelectItem value="openai">OpenAI</SelectItem>
-                <SelectItem value="anthropic">Anthropic</SelectItem>
-                <SelectItem value="other">Other</SelectItem>
-              </SelectContent>
-            </Select>
-            {errors.provider && (
-              <p className="text-sm text-red-600">{errors.provider.message}</p>
-            )}
-          </div>
-
-          {provider === 'other' && (
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <div className="grid gap-4">
             <div className="space-y-2">
-              <Label htmlFor="baseUrl">Base URL</Label>
-              <Input
-                id="baseUrl"
-                placeholder="https://api.example.com/v1"
-                {...register('baseUrl')}
-              />
-              {errors.baseUrl && (
-                <p className="text-sm text-red-600">{errors.baseUrl.message}</p>
-              )}
+              <Label htmlFor="name">Name</Label>
+              <Input id="name" placeholder="e.g., GPT-4 Turbo" {...register('name')} />
+              {errors.name && <p className="text-sm text-red-600">{errors.name.message}</p>}
             </div>
-          )}
 
-          <div className="space-y-2">
-            <Label htmlFor="model">Model</Label>
-            <Input
-              id="model"
-              placeholder="e.g., gpt-4-turbo"
-              {...register('model')}
-            />
-            {errors.model && (
-              <p className="text-sm text-red-600">{errors.model.message}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="apiKey">API Key</Label>
-            <div className="relative">
-              <Input
-                id="apiKey"
-                type={showApiKey ? 'text' : 'password'}
-                placeholder="sk-..."
-                {...register('apiKey')}
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                onClick={() => setShowApiKey(!showApiKey)}
-              >
-                {showApiKey ? 'Hide' : 'Show'}
-              </Button>
+            <div className="space-y-2">
+              <Label htmlFor="provider">Provider</Label>
+              <Select value={provider} onValueChange={handleProviderChange}>
+                <SelectTrigger id="provider">
+                  <SelectValue placeholder="Select a provider" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="openrouter">OpenRouter</SelectItem>
+                  <SelectItem value="openai">OpenAI</SelectItem>
+                  <SelectItem value="anthropic">Anthropic</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+              {errors.provider && <p className="text-sm text-red-600">{errors.provider.message}</p>}
             </div>
-            {errors.apiKey && (
-              <p className="text-sm text-red-600">{errors.apiKey.message}</p>
+
+            {provider === 'other' && (
+              <div className="space-y-2">
+                <Label htmlFor="baseUrl">Base URL</Label>
+                <Input
+                  id="baseUrl"
+                  placeholder="https://api.example.com/v1"
+                  {...register('baseUrl')}
+                />
+                {errors.baseUrl && <p className="text-sm text-red-600">{errors.baseUrl.message}</p>}
+              </div>
             )}
+
+            <div className="space-y-2">
+              <Label htmlFor="model">Model</Label>
+              <Input id="model" placeholder="e.g., gpt-4-turbo" {...register('model')} />
+              {errors.model && <p className="text-sm text-red-600">{errors.model.message}</p>}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="apiKey">API Key</Label>
+              <div className="relative">
+                <Input
+                  id="apiKey"
+                  type={showApiKey ? 'text' : 'password'}
+                  placeholder="sk-..."
+                  {...register('apiKey')}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-1 top-1 h-7 px-2 text-xs hover:bg-slate-100"
+                  onClick={() => setShowApiKey(!showApiKey)}
+                >
+                  {showApiKey ? 'Hide' : 'Show'}
+                </Button>
+              </div>
+              {errors.apiKey && <p className="text-sm text-red-600">{errors.apiKey.message}</p>}
+            </div>
           </div>
 
           <DialogFooter>
@@ -223,10 +204,13 @@ export function AddModelDialog({ open, onClose, onAdd, editingModel }: AddModelD
               Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting 
-                ? (editingModel ? 'Updating...' : 'Adding...') 
-                : (editingModel ? 'Update Model' : 'Add Model')
-              }
+              {isSubmitting
+                ? editingModel
+                  ? 'Updating...'
+                  : 'Adding...'
+                : editingModel
+                  ? 'Update Model'
+                  : 'Add Model'}
             </Button>
           </DialogFooter>
         </form>

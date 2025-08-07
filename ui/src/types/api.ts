@@ -59,12 +59,13 @@ export interface ModelsResponse {
 
 export interface OpenRouterEndpoint {
   provider: string;
-  contextLength: number;
-  maxTokens: number;
-  uptime: number;
-  pricing: {
-    prompt: string;
-    completion: string;
+  contextLength?: number;
+  maxTokens?: number;
+  uptime: number | null;
+  pricing?: {
+    prompt?: string;
+    completion?: string;
+    [key: string]: string | undefined;
   };
   moderated: boolean;
 }
@@ -72,6 +73,7 @@ export interface OpenRouterEndpoint {
 export interface OpenRouterStats {
   modelSlug: string;
   endpoints: OpenRouterEndpoint[];
-  averageUptime: number;
+  averageUptime: number | null;
   providerCount: number;
+  hasUptimeData?: boolean;
 }

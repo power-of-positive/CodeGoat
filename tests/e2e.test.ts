@@ -1,46 +1,55 @@
 import 'dotenv/config';
 import axios from 'axios';
-
-const baseUrl = 'http://localhost:3000';
+import {
+  TEST_CONFIG,
+  TEST_MODELS,
+  COMMON_MESSAGES,
+  CONVERSATION_EXAMPLES,
+  COMMON_PARAMETERS,
+  createChatPayload,
+  createStreamingPayload,
+  EXPECTED_RESPONSE_STRUCTURE,
+  AXIOS_CONFIG,
+  isExpectedUpstreamError,
+} from './fixtures/e2e-fixtures';
 
 describe('Proxy E2E Tests', () => {
-  const timeout = 30000;
-
   beforeAll(() => {
     // Ensure API key is loaded
     expect(process.env.OPENROUTER_API_KEY).toBeDefined();
   });
 
   test('health check returns server status', async () => {
-    const response = await axios.get(`${baseUrl}/health`);
+    const response = await axios.get(`${TEST_CONFIG.baseUrl}/health`);
     expect(response.status).toBe(200);
     expect(response.data).toHaveProperty('status', 'healthy');
     expect(response.data).toHaveProperty('models');
   });
 
   test('models endpoint returns all configured models', async () => {
-    const response = await axios.get(`${baseUrl}/v1/models`);
+    const response = await axios.get(`${TEST_CONFIG.baseUrl}/v1/models`);
     expect(response.status).toBe(200);
     expect(response.data).toHaveProperty('object', 'list');
     expect(response.data.data).toBeInstanceOf(Array);
 
     const modelIds = response.data.data.map((m: any) => m.id);
-    expect(modelIds).toContain('kimi-k2:free');
-    expect(modelIds).toContain('deepseek-chat-v3-0324:free');
+    expect(modelIds).toContain(TEST_MODELS.kimi);
+    expect(modelIds).toContain(TEST_MODELS.deepseek);
   });
 
   test(
     'chat completions with kimi-k2:free model',
     async () => {
+      const payload = createChatPayload(
+        TEST_MODELS.kimi,
+        [COMMON_MESSAGES.greeting],
+        COMMON_PARAMETERS.minimal
+      );
+
       const response = await axios.post(
-        `${baseUrl}/v1/chat/completions`,
-        {
-          model: 'kimi-k2:free',
-          messages: [{ role: 'user', content: 'Say "Hello!" and nothing else.' }],
-          temperature: 0.1,
-          max_tokens: 10,
-        },
-        { timeout }
+        `${TEST_CONFIG.baseUrl}/v1/chat/completions`,
+        payload,
+        AXIOS_CONFIG.default
       );
 
       expect(response.status).toBe(200);
@@ -48,33 +57,28 @@ describe('Proxy E2E Tests', () => {
       expect(response.data.choices[0]).toHaveProperty('message');
       expect(response.data.choices[0].message).toHaveProperty('content');
     },
-    timeout
+    TEST_CONFIG.timeout
   );
 
   test('chat completions with deepseek model', async () => {
     try {
+      const payload = createChatPayload(
+        TEST_MODELS.deepseek,
+        [COMMON_MESSAGES.math],
+        COMMON_PARAMETERS.small
+      );
+
       const response = await axios.post(
-        `${baseUrl}/v1/chat/completions`,
-        {
-          model: 'deepseek-chat-v3-0324:free',
-          messages: [{ role: 'user', content: 'What is 2+2? Answer with just the number.' }],
-          max_tokens: 5,
-        },
-        { timeout: 15000 }
+        `${TEST_CONFIG.baseUrl}/v1/chat/completions`,
+        payload,
+        AXIOS_CONFIG.short
       );
 
       expect(response.status).toBe(200);
       expect(response.data).toHaveProperty('choices');
       expect(response.data.choices[0].message.content.trim()).toMatch(/4/);
     } catch (error: any) {
-      // Handle various failure modes for free tier models
-      const isExpectedError =
-        error.response?.status === 500 ||
-        error.response?.status === 429 ||
-        error.code === 'ECONNABORTED' ||
-        error.message?.includes('timeout');
-
-      if (isExpectedError) {
+      if (isExpectedUpstreamError(error)) {
         console.log(
           'DeepSeek model issue (expected for free tier):',
           error.response?.data?.error?.message || error.message
@@ -87,11 +91,10 @@ describe('Proxy E2E Tests', () => {
   }, 20000);
 
   test('invalid model returns 400 error', async () => {
+    const payload = createChatPayload(TEST_MODELS.invalid, [{ role: 'user', content: 'Test' }]);
+
     await expect(
-      axios.post(`${baseUrl}/v1/chat/completions`, {
-        model: 'invalid-model-name',
-        messages: [{ role: 'user', content: 'Test' }],
-      })
+      axios.post(`${TEST_CONFIG.baseUrl}/v1/chat/completions`, payload)
     ).rejects.toMatchObject({
       response: {
         status: 400,
@@ -107,18 +110,16 @@ describe('Proxy E2E Tests', () => {
   test(
     'streaming chat completions',
     async () => {
+      const payload = createStreamingPayload(
+        TEST_MODELS.kimi,
+        [COMMON_MESSAGES.count],
+        COMMON_PARAMETERS.larger
+      );
+
       const response = await axios.post(
-        `${baseUrl}/v1/chat/completions`,
-        {
-          model: 'kimi-k2:free',
-          messages: [{ role: 'user', content: 'Count from 1 to 3' }],
-          stream: true,
-          max_tokens: 20,
-        },
-        {
-          responseType: 'stream',
-          timeout,
-        }
+        `${TEST_CONFIG.baseUrl}/v1/chat/completions`,
+        payload,
+        AXIOS_CONFIG.streaming
       );
 
       expect(response.status).toBe(200);
@@ -132,9 +133,241 @@ describe('Proxy E2E Tests', () => {
         dataReceived = true;
       });
 
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise(resolve => setTimeout(resolve, TEST_CONFIG.streamTimeout));
       expect(dataReceived).toBe(true);
     },
-    timeout
+    TEST_CONFIG.timeout
   );
+
+  describe('Chat Completion Parameter Handling', () => {
+    test(
+      'should use default parameters when not specified',
+      async () => {
+        const payload = createChatPayload(
+          TEST_MODELS.kimi,
+          [COMMON_MESSAGES.simple]
+          // No temperature, max_tokens, etc. specified - should use defaults
+        );
+
+        const response = await axios.post(
+          `${TEST_CONFIG.baseUrl}/v1/chat/completions`,
+          payload,
+          AXIOS_CONFIG.default
+        );
+
+        expect(response.status).toBe(200);
+        expect(response.data).toHaveProperty('choices');
+        expect(response.data.choices[0]).toHaveProperty('message');
+        expect(response.data.choices[0].message).toHaveProperty('content');
+        expect(typeof response.data.choices[0].message.content).toBe('string');
+      },
+      TEST_CONFIG.timeout
+    );
+
+    test(
+      'should override defaults with user-specified parameters',
+      async () => {
+        const payload = createChatPayload(
+          TEST_MODELS.kimi,
+          [COMMON_MESSAGES.testOnly],
+          COMMON_PARAMETERS.restrictive
+        );
+
+        const response = await axios.post(
+          `${TEST_CONFIG.baseUrl}/v1/chat/completions`,
+          payload,
+          AXIOS_CONFIG.default
+        );
+
+        expect(response.status).toBe(200);
+        expect(response.data).toHaveProperty('choices');
+        expect(response.data.choices[0].message.content.trim().length).toBeLessThanOrEqual(10);
+      },
+      TEST_CONFIG.timeout
+    );
+
+    test(
+      'should handle system message in conversation',
+      async () => {
+        const payload = createChatPayload(
+          TEST_MODELS.kimi,
+          CONVERSATION_EXAMPLES.systemConversation,
+          COMMON_PARAMETERS.medium
+        );
+
+        const response = await axios.post(
+          `${TEST_CONFIG.baseUrl}/v1/chat/completions`,
+          payload,
+          AXIOS_CONFIG.default
+        );
+
+        expect(response.status).toBe(200);
+        expect(response.data).toHaveProperty('choices');
+        expect(response.data.choices[0]).toHaveProperty('message');
+      },
+      TEST_CONFIG.timeout
+    );
+
+    test(
+      'should handle multi-turn conversation',
+      async () => {
+        const payload = createChatPayload(
+          TEST_MODELS.kimi,
+          CONVERSATION_EXAMPLES.mathConversation,
+          COMMON_PARAMETERS.small
+        );
+
+        const response = await axios.post(
+          `${TEST_CONFIG.baseUrl}/v1/chat/completions`,
+          payload,
+          AXIOS_CONFIG.default
+        );
+
+        expect(response.status).toBe(200);
+        expect(response.data).toHaveProperty('choices');
+        expect(response.data.choices[0]).toHaveProperty('message');
+      },
+      TEST_CONFIG.timeout
+    );
+  });
+
+  describe('Model Fallback and Error Handling', () => {
+    test(
+      'should handle model-specific API key correctly',
+      async () => {
+        const payload = createChatPayload(
+          TEST_MODELS.kimi,
+          [COMMON_MESSAGES.apiKeyTest],
+          COMMON_PARAMETERS.small
+        );
+
+        const response = await axios.post(
+          `${TEST_CONFIG.baseUrl}/v1/chat/completions`,
+          payload,
+          AXIOS_CONFIG.default
+        );
+
+        expect(response.status).toBe(200);
+        expect(response.data).toHaveProperty('choices');
+      },
+      TEST_CONFIG.timeout
+    );
+
+    test('should return proper error format for rate limits or provider errors', async () => {
+      try {
+        // Make multiple rapid requests to potentially trigger rate limiting
+        const requests = Array(3)
+          .fill(null)
+          .map(() => {
+            const payload = createChatPayload(
+              TEST_MODELS.deepseek,
+              [COMMON_MESSAGES.quickTest],
+              COMMON_PARAMETERS.tiny
+            );
+            return axios.post(`${TEST_CONFIG.baseUrl}/v1/chat/completions`, payload, {
+              timeout: 5000,
+            });
+          });
+
+        const responses = await Promise.allSettled(requests);
+
+        // At least one should succeed, but if any fail, they should fail gracefully
+        const failed = responses.filter(r => r.status === 'rejected');
+        const succeeded = responses.filter(r => r.status === 'fulfilled');
+
+        expect(succeeded.length).toBeGreaterThan(0); // At least one should work
+
+        // If any failed, they should be due to expected errors (rate limits, etc.)
+        if (failed.length > 0) {
+          console.log('Some requests failed as expected (rate limits/provider issues)');
+        }
+      } catch (error: any) {
+        // Should still return proper error format
+        if (error.response) {
+          expect(error.response.data).toHaveProperty('error');
+          expect(typeof error.response.data.error.message).toBe('string');
+        }
+      }
+    });
+
+    test(
+      'should handle different response formats consistently',
+      async () => {
+        const payload = createChatPayload(
+          TEST_MODELS.kimi,
+          [COMMON_MESSAGES.formatTest],
+          COMMON_PARAMETERS.medium
+        );
+
+        const response = await axios.post(
+          `${TEST_CONFIG.baseUrl}/v1/chat/completions`,
+          payload,
+          AXIOS_CONFIG.default
+        );
+
+        expect(response.status).toBe(200);
+
+        // Validate OpenAI-compatible response format
+        expect(response.data).toMatchObject(EXPECTED_RESPONSE_STRUCTURE.chatCompletion);
+
+        // Validate choice structure
+        const choice = response.data.choices[0];
+        expect(choice).toMatchObject(EXPECTED_RESPONSE_STRUCTURE.choice);
+      },
+      TEST_CONFIG.timeout
+    );
+  });
+
+  describe('Config-Driven Behavior', () => {
+    test(
+      'should respect model configuration from config file',
+      async () => {
+        // Test that we can access models defined in the config
+        const modelsResponse = await axios.get(`${TEST_CONFIG.baseUrl}/v1/models`);
+        const models = modelsResponse.data.data.map((m: any) => m.id);
+
+        // Test one of the configured models
+        expect(models).toContain(TEST_MODELS.kimi);
+
+        const payload = createChatPayload(
+          TEST_MODELS.kimi,
+          [COMMON_MESSAGES.configTest],
+          COMMON_PARAMETERS.small
+        );
+
+        const chatResponse = await axios.post(
+          `${TEST_CONFIG.baseUrl}/v1/chat/completions`,
+          payload,
+          AXIOS_CONFIG.default
+        );
+
+        expect(chatResponse.status).toBe(200);
+        expect(chatResponse.data.model).toContain('kimi-k2'); // Should reflect the actual model used
+      },
+      TEST_CONFIG.timeout
+    );
+
+    test(
+      'should handle proxy settings correctly',
+      async () => {
+        const payload = createChatPayload(
+          TEST_MODELS.kimi,
+          [COMMON_MESSAGES.proxyTest],
+          COMMON_PARAMETERS.small
+        );
+
+        const response = await axios.post(
+          `${TEST_CONFIG.baseUrl}/v1/chat/completions`,
+          payload,
+          AXIOS_CONFIG.withUserAgent('E2E-Test-Client')
+        );
+
+        expect(response.status).toBe(200);
+
+        // Verify the response came through our proxy
+        expect(response.data).toHaveProperty('choices');
+      },
+      TEST_CONFIG.timeout
+    );
+  });
 });

@@ -358,24 +358,32 @@ export function createManagementRoutes(configLoader: ConfigLoader, logger: Logge
       const endpoints = openRouterData.data?.endpoints || [];
 
       // Extract relevant statistics
+      // Note: OpenRouter API no longer provides uptime_30m data, so we handle it gracefully
+      const hasUptimeData = endpoints.some(
+        (ep: OpenRouterEndpoint) => ep.uptime_30m !== null && ep.uptime_30m !== undefined
+      );
+
       const stats = {
         modelSlug: cleanSlug,
         endpoints: endpoints.map((endpoint: OpenRouterEndpoint) => ({
           provider: endpoint.name || endpoint.provider,
           contextLength: endpoint.context_length,
           maxTokens: endpoint.max_tokens,
-          uptime: endpoint.uptime_30m || 0,
+          uptime:
+            endpoint.uptime_30m !== null && endpoint.uptime_30m !== undefined
+              ? endpoint.uptime_30m
+              : null,
           pricing: endpoint.pricing,
           moderated: endpoint.moderated || false,
         })),
-        averageUptime:
-          endpoints.length > 0
-            ? endpoints.reduce(
-                (sum: number, ep: OpenRouterEndpoint) => sum + (ep.uptime_30m || 0),
-                0
-              ) / endpoints.length
-            : 0,
+        averageUptime: hasUptimeData
+          ? endpoints.reduce(
+              (sum: number, ep: OpenRouterEndpoint) => sum + (ep.uptime_30m || 0),
+              0
+            ) / endpoints.length
+          : null,
         providerCount: endpoints.length,
+        hasUptimeData,
       };
 
       res.json(stats);
