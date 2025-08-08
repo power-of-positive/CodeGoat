@@ -1,22 +1,25 @@
-    ☐ Make server frontend run in nodemon with
-      visible logs and easy kill capability
-    ☐ Convert the app to dark mode
-    ☐ Improve UI dev server management - make it
-      easier to see running processes and kill them
-       (add nodemon with visible logs and easy kill
-       capability)
-    ☐ Integrate OpenAI-based LLM code reviewer for
-      pre-commit that returns JSON comments and
-      blocks commit on high severity issues
-    ☐ Auto clean server logs and store all logs in
-      a logs folder
-    ☐ Replace custom logger with winston logger
-      library
-    ☐ Split management routes granularly: models,
-      openrouter-stats, status into separate files
-    ☐ Split AddModelDialog into smaller components
-    ☐ Review hookform usage and necessity
-    ☐ Add max-lines 200 ESLint rule per TS file
-      (excluding test files)
-    ☐ Add max 40 lines per function ESLint rule
-      (excluding TSX files)
+    ☐ Fix ESLint errors blocking commit - remove
+      unused handleConfigError import and fix any
+      types in security.ts
+    ☐ Update LLM reviewer to block on medium
+      priority comments
+    ☐ Record pre-commit failure stages and metrics
+      - track lint fail, test fail, LLM reviewer
+      fail as % of commit attempts, number of files
+       in attempt, and other dev flow metrics
+    ☐ Remove legacy config functionality and
+      related tests - clean up legacy model_list
+      format support and associated test code
+    ☐ Add a page to visualise pre-commit failures
+      - create UI to display failure analytics,
+      success rates, and trends for development
+      workflow insights
+    ☐ Decouple pre-commit checks into validation
+      script - extract validation logic (lint,
+      test, LLM reviewer) into separate script
+      that pre-commit calls, with tracking and
+      measuring built into validators
+    ☐ Design extensible validation framework -
+      enable users to insert custom validation
+      scripts that execute sequentially, with
+      failure tracking and analysis for each stage

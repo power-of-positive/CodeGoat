@@ -12,6 +12,17 @@ interface ModelListProps {
   testingModelIds?: string[];
 }
 
+function getModelUrl(model: UIModelConfig): string {
+  // For OpenRouter models, link to the actual model page
+  if (model.provider === 'openrouter' && model.model.startsWith('openrouter/')) {
+    const modelPath = model.model.replace('openrouter/', '');
+    return `https://openrouter.ai/models/${modelPath}`;
+  }
+  
+  // For other providers, fallback to the base URL
+  return model.baseUrl;
+}
+
 export function ModelList({ onEdit, onDelete, onTest, testingModelIds = [] }: ModelListProps) {
   const { data, isLoading, error } = useQuery({
     queryKey: ['models'],
@@ -98,12 +109,12 @@ export function ModelList({ onEdit, onDelete, onTest, testingModelIds = [] }: Mo
                   <div className="flex items-center gap-2">
                     <span className="font-medium">URL:</span>
                     <a 
-                      href={model.baseUrl} 
+                      href={getModelUrl(model)} 
                       target="_blank" 
                       rel="noopener noreferrer"
                       className="text-blue-400 hover:text-blue-300 flex items-center gap-1"
                     >
-                      {model.baseUrl}
+                      {getModelUrl(model)}
                       <ExternalLink className="h-3 w-3" />
                     </a>
                   </div>

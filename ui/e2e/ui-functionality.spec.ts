@@ -8,10 +8,10 @@ test.describe('UI Functionality Tests', () => {
 
   test('should display models from config file', async ({ page }) => {
     // Wait for the model list container to be visible
-    await expect(page.locator('.bg-white.shadow.rounded-lg.overflow-hidden')).toBeVisible();
+    await expect(page.locator('[data-testid="model-list-container"]')).toBeVisible();
     
     // Check that we have models displayed
-    const modelCards = page.locator('.bg-white.shadow.rounded-lg.overflow-hidden .divide-y > div');
+    const modelCards = page.locator('[data-testid^="model-card-"]');
     await expect(modelCards).toHaveCount(8); // We have 8 models in config.default.yaml
 
     // Check first model details - be more specific to avoid duplicates
@@ -53,7 +53,7 @@ test.describe('UI Functionality Tests', () => {
   test('should refresh model list', async ({ page }) => {
     // Set up response listener before clicking
     const responsePromise = page.waitForResponse(response => 
-      response.url().includes('/api/management/models') && response.status() === 200
+      response.url().includes('/api/models') && response.status() === 200
     );
     
     // Click refresh button
@@ -65,10 +65,10 @@ test.describe('UI Functionality Tests', () => {
 
   test('should maintain UI state after refresh', async ({ page }) => {
     // Wait for initial load
-    await page.waitForSelector('.bg-white.shadow.rounded-lg.overflow-hidden');
+    await page.waitForSelector('[data-testid="model-list-container"]');
     
     // Count initial models (may be more than 8 if previous tests added user models)
-    const initialCount = await page.locator('.bg-white.shadow.rounded-lg.overflow-hidden .divide-y > div').count();
+    const initialCount = await page.locator('[data-testid^="model-card-"]').count();
     expect(initialCount).toBeGreaterThanOrEqual(8); // At least 8 default models
     
     // Refresh the page
@@ -76,7 +76,7 @@ test.describe('UI Functionality Tests', () => {
     await page.waitForLoadState('networkidle');
     
     // Count should be the same after refresh
-    const afterRefreshCount = await page.locator('.bg-white.shadow.rounded-lg.overflow-hidden .divide-y > div').count();
+    const afterRefreshCount = await page.locator('[data-testid^="model-card-"]').count();
     expect(afterRefreshCount).toBe(initialCount);
   });
 });

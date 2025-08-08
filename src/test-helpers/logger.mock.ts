@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import type { ILogger } from '../../logger-interface';
+import type { ILogger } from '../logger-interface';
 
 export const createMockLogger = (): jest.Mocked<ILogger> => ({
   info: jest.fn(),

@@ -5,7 +5,7 @@ This directory contains common mock utilities that can be reused across test fil
 ## Usage
 
 ```typescript
-import { createMockLogger, createMockConfigLoader } from './test-utils';
+import { createMockLogger, createMockConfigLoader } from '../__mocks__';
 
 describe('My Test', () => {
   const mockLogger = createMockLogger();

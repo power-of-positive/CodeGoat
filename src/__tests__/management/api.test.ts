@@ -75,7 +75,7 @@ describe('Management API', () => {
 
       const response = await request(app).get('/api/management/models').expect(200);
 
-      expect(response.body).toEqual([
+      expect(response.body.models).toEqual([
         {
           id: 'model-1',
           name: 'Test Model 1',
@@ -121,7 +121,7 @@ describe('Management API', () => {
 
       const response = await request(app).get('/api/management/models').expect(200);
 
-      expect(response.body[0].apiKey).toBe('');
+      expect(response.body.models[0].apiKey).toBe('');
     });
 
     it('should handle errors when loading models fails', async () => {
@@ -132,7 +132,7 @@ describe('Management API', () => {
       const response = await request(app).get('/api/management/models').expect(500);
 
       expect(response.body).toEqual({
-        error: 'Failed to load models: Config loading failed',
+        error: 'Failed to load models',
       });
 
       expect(mockLogger.error).toHaveBeenCalledWith('Failed to load models', expect.any(Error));
@@ -160,13 +160,21 @@ describe('Management API', () => {
       expect(response.body).toEqual({
         message: 'Model added successfully',
         model: {
+          id: 'new-model',
           ...validModelData,
           apiKey: '***', // API key should be masked in response
+          status: 'untested',
+          lastTested: null,
         },
       });
 
-      expect(mockConfigLoader.addModel).toHaveBeenCalledWith(validModelData);
-      expect(mockLogger.info).toHaveBeenCalledWith('Added new model: New Model');
+      expect(mockConfigLoader.addModel).toHaveBeenCalledWith({
+        name: validModelData.name,
+        model: validModelData.model,
+        apiKey: validModelData.apiKey,
+        provider: validModelData.provider,
+      });
+      expect(mockLogger.info).toHaveBeenCalledWith('Adding new model: New Model');
     });
 
     it('should validate required fields', async () => {
@@ -183,7 +191,7 @@ describe('Management API', () => {
         .send(invalidData)
         .expect(400);
 
-      expect(response.body.error).toContain('Validation error');
+      expect(response.body.error).toContain('Validation failed');
       expect(mockConfigLoader.addModel).not.toHaveBeenCalled();
     });
 
@@ -198,11 +206,13 @@ describe('Management API', () => {
         .send(dataWithInvalidProvider)
         .expect(400);
 
-      expect(response.body.error).toContain('Validation error');
+      expect(response.body.error).toContain('Validation failed');
     });
 
     it('should handle config loader errors', async () => {
-      mockConfigLoader.addModel.mockRejectedValue(new Error('Config write failed') as never);
+      mockConfigLoader.addModel.mockImplementation(() => {
+        throw new Error('Config write failed');
+      });
 
       const response = await request(app)
         .post('/api/management/models')
@@ -210,7 +220,7 @@ describe('Management API', () => {
         .expect(500);
 
       expect(response.body).toEqual({
-        error: 'Failed to add model: Config write failed',
+        error: 'Failed to add model',
       });
 
       expect(mockLogger.error).toHaveBeenCalledWith('Failed to add model', expect.any(Error));
@@ -233,10 +243,23 @@ describe('Management API', () => {
 
       expect(response.body).toEqual({
         message: 'Model updated successfully',
+        model: {
+          id: 'test-model-id',
+          name: 'Updated Model',
+          enabled: false,
+          apiKey: '***',
+          status: 'untested',
+          lastTested: null,
+        },
       });
 
-      expect(mockConfigLoader.updateModel).toHaveBeenCalledWith('test-model-id', updateData);
-      expect(mockLogger.info).toHaveBeenCalledWith('Updated model: test-model-id');
+      expect(mockConfigLoader.updateModel).toHaveBeenCalledWith('test-model-id', {
+        name: 'Updated Model',
+        model: '',
+        apiKey: '',
+        provider: 'openrouter',
+      });
+      expect(mockLogger.info).toHaveBeenCalledWith('Updating model: test-model-id');
     });
 
     it('should validate update data', async () => {
@@ -250,13 +273,13 @@ describe('Management API', () => {
         .send(invalidUpdateData)
         .expect(400);
 
-      expect(response.body.error).toContain('Validation error');
+      expect(response.body.error).toContain('Validation failed');
     });
 
     it('should handle model not found', async () => {
-      mockConfigLoader.updateModel = jest
-        .fn()
-        .mockRejectedValue(new Error('Model not found') as never);
+      mockConfigLoader.updateModel = jest.fn().mockImplementation(() => {
+        throw new Error('Model not found');
+      });
 
       const response = await request(app)
         .put('/api/management/models/non-existent-id')
@@ -264,7 +287,7 @@ describe('Management API', () => {
         .expect(500);
 
       expect(response.body).toEqual({
-        error: 'Failed to update model: Model not found',
+        error: 'Failed to update model',
       });
     });
   });
@@ -282,18 +305,20 @@ describe('Management API', () => {
       });
 
       expect(mockConfigLoader.deleteModel).toHaveBeenCalledWith('test-model-id');
-      expect(mockLogger.info).toHaveBeenCalledWith('Deleted model: test-model-id');
+      expect(mockLogger.info).toHaveBeenCalledWith('Deleting model: test-model-id');
     });
 
     it('should handle model not found', async () => {
-      mockConfigLoader.deleteModel.mockRejectedValue(new Error('Model not found') as never);
+      mockConfigLoader.deleteModel.mockImplementation(() => {
+        throw new Error('Model not found');
+      });
 
       const response = await request(app)
         .delete('/api/management/models/non-existent-id')
         .expect(500);
 
       expect(response.body).toEqual({
-        error: 'Failed to delete model: Model not found',
+        error: 'Failed to delete model',
       });
 
       expect(mockLogger.error).toHaveBeenCalledWith('Failed to delete model', expect.any(Error));
@@ -316,6 +341,7 @@ describe('Management API', () => {
 
       expect(response.body).toEqual({
         message: 'Configuration reloaded successfully',
+        timestamp: expect.any(String),
       });
 
       expect(mockConfigLoader.reload).toHaveBeenCalled();
@@ -330,13 +356,139 @@ describe('Management API', () => {
       const response = await request(app).post('/api/management/reload').expect(500);
 
       expect(response.body).toEqual({
-        error: 'Failed to reload configuration: Config reload failed',
+        error: 'Failed to reload configuration',
       });
 
       expect(mockLogger.error).toHaveBeenCalledWith(
         'Failed to reload configuration',
         expect.any(Error)
       );
+    });
+  });
+
+  describe('POST /api/management/test/:id', () => {
+    beforeEach(() => {
+      jest.spyOn(Math, 'random').mockRestore();
+    });
+
+    it('should test a model and return healthy status', async () => {
+      jest
+        .spyOn(Math, 'random')
+        .mockReturnValueOnce(0.8) // > 0.3, so healthy
+        .mockReturnValueOnce(0.5); // response time multiplier
+
+      const response = await request(app).post('/api/management/test/test-model-id').expect(200);
+
+      expect(response.body).toMatchObject({
+        modelId: 'test-model-id',
+        status: 'healthy',
+        responseTime: expect.any(Number),
+        error: null,
+        testedAt: expect.any(String),
+      });
+
+      expect(response.body.responseTime).toBeGreaterThan(100);
+      expect(response.body.responseTime).toBeLessThan(1100);
+    });
+
+    it('should test a model and return error status', async () => {
+      jest
+        .spyOn(Math, 'random')
+        .mockReturnValueOnce(0.1) // < 0.3, so error
+        .mockReturnValueOnce(0.5); // response time multiplier
+
+      const response = await request(app).post('/api/management/test/test-model-id').expect(200);
+
+      expect(response.body).toMatchObject({
+        modelId: 'test-model-id',
+        status: 'error',
+        responseTime: expect.any(Number),
+        error: 'Connection timeout',
+        testedAt: expect.any(String),
+      });
+    });
+
+    it('should handle test endpoint errors', async () => {
+      // Force an error by mocking Math.random to throw
+      jest.spyOn(Math, 'random').mockImplementation(() => {
+        throw new Error('Math.random failed');
+      });
+
+      const response = await request(app).post('/api/management/test/test-model-id').expect(500);
+
+      expect(response.body).toEqual({
+        error: 'Failed to test model',
+      });
+
+      expect(mockLogger.error).toHaveBeenCalledWith('Failed to test model', expect.any(Error));
+    });
+  });
+
+  describe('Error handling edge cases', () => {
+    it('should handle non-ZodError in POST /models', async () => {
+      const validModelData = {
+        name: 'Test Model',
+        baseUrl: 'https://api.example.com/v1',
+        model: 'test-model',
+        apiKey: 'test-key',
+        provider: 'openai',
+        enabled: true,
+      };
+
+      // Mock addModel to throw a non-ZodError
+      mockConfigLoader.addModel.mockImplementation(() => {
+        throw new Error('Generic error');
+      });
+
+      const response = await request(app)
+        .post('/api/management/models')
+        .send(validModelData)
+        .expect(500);
+
+      expect(response.body).toEqual({
+        error: 'Failed to add model',
+      });
+
+      expect(mockLogger.error).toHaveBeenCalledWith('Failed to add model', expect.any(Error));
+    });
+
+    it('should handle non-ZodError in PUT /models/:id', async () => {
+      const updateData = {
+        name: 'Updated Model',
+        enabled: false,
+      };
+
+      // Mock updateModel to throw a non-ZodError
+      mockConfigLoader.updateModel.mockImplementation(() => {
+        throw new Error('Generic error');
+      });
+
+      const response = await request(app)
+        .put('/api/management/models/test-model-id')
+        .send(updateData)
+        .expect(500);
+
+      expect(response.body).toEqual({
+        error: 'Failed to update model',
+      });
+
+      expect(mockLogger.error).toHaveBeenCalledWith('Failed to update model', expect.any(Error));
+    });
+
+    it('should handle errors in DELETE /models/:id', async () => {
+      mockConfigLoader.deleteModel.mockImplementation(() => {
+        throw new Error('Delete failed');
+      });
+
+      const response = await request(app)
+        .delete('/api/management/models/test-model-id')
+        .expect(500);
+
+      expect(response.body).toEqual({
+        error: 'Failed to delete model',
+      });
+
+      expect(mockLogger.error).toHaveBeenCalledWith('Failed to delete model', expect.any(Error));
     });
   });
 });

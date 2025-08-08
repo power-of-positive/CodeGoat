@@ -9,11 +9,11 @@ test.describe('User Interactions Tests', () => {
   test('test button makes API calls and handles responses', async ({ page }) => {
     // Set up response listener for our management API
     const responsePromise = page.waitForResponse(
-      response => response.url().includes('/api/management/test/') && response.status() === 200
+      response => response.url().includes('/api/models/test/') && response.status() === 200
     );
     
     // Click the first test button
-    const firstTestButton = page.locator('.bg-white.shadow.rounded-lg.overflow-hidden .divide-y > div').first()
+    const firstTestButton = page.locator('[data-testid^="model-card-"]').first()
       .getByRole('button', { name: /test/i });
     
     await firstTestButton.click();
@@ -46,7 +46,7 @@ test.describe('User Interactions Tests', () => {
     });
     
     // Click the first delete button
-    const firstDeleteButton = page.locator('.bg-white.shadow.rounded-lg.overflow-hidden .divide-y > div').first()
+    const firstDeleteButton = page.locator('[data-testid^="model-card-"]').first()
       .getByRole('button', { name: /delete/i });
     
     await firstDeleteButton.click();
@@ -57,7 +57,7 @@ test.describe('User Interactions Tests', () => {
 
   test('should handle API errors gracefully', async ({ page, context }) => {
     // Intercept API calls and return error
-    await context.route('**/api/management/models', route => {
+    await context.route('**/api/models', route => {
       route.fulfill({
         status: 500,
         contentType: 'application/json',

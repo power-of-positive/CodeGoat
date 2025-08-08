@@ -2,6 +2,8 @@ import { Router, Request, Response } from 'express';
 import { ConfigLoader } from '../config';
 import { ILogger } from '../logger-interface';
 import { z } from 'zod';
+import { handleApiError } from '../utils/error-handler';
+import { maskApiKey } from '../utils/security';
 
 const router = Router();
 
@@ -41,7 +43,7 @@ router.get('/models', (_req: Request, res: Response) => {
       name: model.name,
       baseUrl: model.baseUrl,
       model: model.model,
-      apiKey: model.apiKey ? '***' : '', // Mask API key in response
+      apiKey: maskApiKey(model.apiKey),
       provider: model.provider,
       enabled: model.enabled,
       status: 'untested' as const,
@@ -51,8 +53,7 @@ router.get('/models', (_req: Request, res: Response) => {
     res.json({ models: modelsWithStatus });
   } catch (error) {
     console.error('Management API error:', error);
-    logger?.error('Failed to load models', error as Error);
-    res.status(500).json({ error: 'Failed to load models' });
+    handleApiError(res, logger, 'load models', error);
   }
 });
 
@@ -76,7 +77,7 @@ router.post('/models', async (req: Request, res: Response) => {
       model: {
         id: validatedData.name.replace(/[^a-zA-Z0-9-_]/g, '-').toLowerCase(),
         ...validatedData,
-        apiKey: '***', // Mask in response
+        apiKey: '***',
         status: 'untested',
         lastTested: null,
       },
@@ -91,8 +92,7 @@ router.post('/models', async (req: Request, res: Response) => {
         })),
       });
     } else {
-      logger?.error('Failed to add model', error as Error);
-      res.status(500).json({ error: 'Failed to add model' });
+      handleApiError(res, logger, 'add model', error);
     }
   }
 });
@@ -118,7 +118,7 @@ router.put('/models/:id', async (req: Request, res: Response) => {
       model: {
         id: modelId,
         ...validatedData,
-        apiKey: '***', // Mask in response
+        apiKey: '***',
         status: 'untested',
         lastTested: null,
       },
@@ -133,8 +133,7 @@ router.put('/models/:id', async (req: Request, res: Response) => {
         })),
       });
     } else {
-      logger?.error('Failed to update model', error as Error);
-      res.status(500).json({ error: 'Failed to update model' });
+      handleApiError(res, logger, 'update model', error);
     }
   }
 });
@@ -151,8 +150,7 @@ router.delete('/models/:id', (req: Request, res: Response) => {
 
     res.json({ message: 'Model deleted successfully' });
   } catch (error) {
-    logger?.error('Failed to delete model', error as Error);
-    res.status(500).json({ error: 'Failed to delete model' });
+    handleApiError(res, logger, 'delete model', error);
   }
 });
 
@@ -173,8 +171,7 @@ router.post('/test/:id', async (req: Request, res: Response) => {
       testedAt: new Date().toISOString(),
     });
   } catch (error) {
-    logger?.error('Failed to test model', error as Error);
-    res.status(500).json({ error: 'Failed to test model' });
+    handleApiError(res, logger, 'test model', error);
   }
 });
 
@@ -197,8 +194,7 @@ router.get('/status', (_req: Request, res: Response) => {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    logger?.error('Failed to get server status', error as Error);
-    res.status(500).json({ error: 'Failed to get server status' });
+    handleApiError(res, logger, 'get server status', error);
   }
 });
 
@@ -213,8 +209,7 @@ router.post('/reload', (_req: Request, res: Response) => {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    logger?.error('Failed to reload configuration via API', error as Error);
-    res.status(500).json({ error: 'Failed to reload configuration' });
+    handleApiError(res, logger, 'reload configuration', error);
   }
 });
 

@@ -3,12 +3,12 @@ import { test, expect } from '@playwright/test';
 test.describe('OpenRouter Statistics', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('http://localhost:5174');
-    await page.waitForSelector('.bg-white.shadow.rounded-lg.overflow-hidden');
+    await page.waitForSelector('[data-testid="model-list-container"]');
   });
 
   test('should display uptime information from OpenRouter API', async ({ page }) => {
     // Click on the first model's OpenRouter Statistics button
-    const firstModelCard = page.locator('.bg-white.shadow.rounded-lg.overflow-hidden .divide-y > div').first();
+    const firstModelCard = page.locator('[data-testid^="model-card-"]').first();
     const statsButton = firstModelCard.getByRole('button', { name: /OpenRouter Statistics/i });
     
     await statsButton.click();
@@ -38,7 +38,7 @@ test.describe('OpenRouter Statistics', () => {
 
   test('should handle missing uptime data gracefully', async ({ page }) => {
     // Intercept the OpenRouter stats API call
-    await page.route('**/api/management/openrouter-stats/**', async route => {
+    await page.route('**/api/openrouter-stats/**', async route => {
       const response = await route.fetch();
       const json = await response.json();
       
@@ -53,7 +53,7 @@ test.describe('OpenRouter Statistics', () => {
     });
     
     // Click on OpenRouter Statistics
-    const firstModelCard = page.locator('.bg-white.shadow.rounded-lg.overflow-hidden .divide-y > div').first();
+    const firstModelCard = page.locator('[data-testid^="model-card-"]').first();
     const statsButton = firstModelCard.getByRole('button', { name: /OpenRouter Statistics/i });
     
     await statsButton.click();

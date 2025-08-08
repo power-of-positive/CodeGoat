@@ -1,6 +1,7 @@
 import { Request, Response, Router } from 'express';
 import { ConfigLoader } from '../config';
 import { ILogger } from '../logger-interface';
+import { handleApiError } from '../utils/error-handler';
 
 const router = Router();
 
@@ -23,8 +24,7 @@ export function createStatusRoutes(configLoader: ConfigLoader, logger: ILogger):
         timestamp: new Date().toISOString(),
       });
     } catch (error) {
-      logger.error('Failed to get server status', error as Error);
-      res.status(500).json({ error: 'Failed to get server status' });
+      handleApiError(res, logger, 'get server status', error);
     }
   });
 
@@ -39,8 +39,7 @@ export function createStatusRoutes(configLoader: ConfigLoader, logger: ILogger):
         timestamp: new Date().toISOString(),
       });
     } catch (error) {
-      logger.error('Failed to reload configuration via API', error as Error);
-      res.status(500).json({ error: 'Failed to reload configuration' });
+      handleApiError(res, logger, 'reload configuration', error);
     }
   });
 

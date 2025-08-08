@@ -2,6 +2,7 @@ import { Request, Response, Router } from 'express';
 import { ConfigLoader } from '../config';
 import { ILogger } from '../logger-interface';
 import { ModelService } from '../services/model.service';
+import { handleApiError } from '../utils/error-handler';
 
 const router = Router();
 
@@ -11,8 +12,7 @@ function handleGetModels(configLoader: ConfigLoader, logger: ILogger) {
       const models = await ModelService.getAllModels(configLoader);
       res.json({ models });
     } catch (error) {
-      logger.error('Failed to load models', error as Error);
-      res.status(500).json({ error: 'Failed to load models' });
+      handleApiError(res, logger, 'load models', error);
     }
   };
 }
