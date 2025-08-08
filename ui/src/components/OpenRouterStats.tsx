@@ -63,7 +63,7 @@ export function OpenRouterStats({ modelSlug }: OpenRouterStatsProps) {
                     <Clock className="h-3 w-3 text-slate-400" />
                     <span className="text-slate-600">Avg Uptime:</span>
                     <span
-                      className={`font-medium ${stats.averageUptime > 95 ? 'text-green-600' : stats.averageUptime > 85 ? 'text-yellow-600' : 'text-red-600'}`}
+                      className={`font-medium ${stats.averageUptime > 95 ? 'text-green-400' : stats.averageUptime > 85 ? 'text-yellow-400' : 'text-red-400'}`}
                     >
                       {stats.averageUptime.toFixed(1)}%
                     </span>
@@ -94,10 +94,10 @@ export function OpenRouterStats({ modelSlug }: OpenRouterStatsProps) {
                             <span
                               className={
                                 endpoint.uptime > 95
-                                  ? 'text-green-600'
+                                  ? 'text-green-400'
                                   : endpoint.uptime > 85
-                                    ? 'text-yellow-600'
-                                    : 'text-red-600'
+                                    ? 'text-yellow-400'
+                                    : 'text-red-400'
                               }
                             >
                               {endpoint.uptime}%

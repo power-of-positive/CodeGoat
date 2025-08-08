@@ -1,6 +1,8 @@
 node_modules/
 dist/
 *.log
+logs/
+ai-review-results.json
 .env
 .env.test
 .env.local

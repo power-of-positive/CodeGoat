@@ -1,7 +1,3 @@
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import {
   Dialog,
   DialogContent,
@@ -11,31 +7,8 @@ import {
   DialogTitle,
 } from './ui/Dialog';
 import { Button } from './ui/Button';
-import { Input } from './ui/Input';
-import { Label } from './ui/Label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/Select';
-
-const modelSchema = z
-  .object({
-    name: z.string().min(1, 'Name is required'),
-    baseUrl: z.string(),
-    model: z.string().min(1, 'Model is required'),
-    apiKey: z.string().min(1, 'API Key is required'),
-    provider: z.enum(['openrouter', 'openai', 'anthropic', 'other']),
-    enabled: z.boolean(),
-  })
-  .superRefine((data, ctx) => {
-    // Only require base URL when provider is "other"
-    if (data.provider === 'other' && !data.baseUrl) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'Base URL is required for other providers',
-        path: ['baseUrl'],
-      });
-    }
-  });
-
-type ModelFormData = z.infer<typeof modelSchema>;
+import { ModelForm } from './forms/ModelForm';
+import type { ModelFormData } from './forms/modelFormSchema';
 
 interface AddModelDialogProps {
   open: boolean;
@@ -52,74 +25,13 @@ interface AddModelDialogProps {
 }
 
 export function AddModelDialog({ open, onClose, onAdd, editingModel }: AddModelDialogProps) {
-  const [showApiKey, setShowApiKey] = useState(false);
-
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    watch,
-    reset,
-    formState: { errors, isSubmitting },
-  } = useForm<ModelFormData>({
-    resolver: zodResolver(modelSchema),
-    defaultValues: editingModel
-      ? {
-          name: editingModel.name,
-          baseUrl: editingModel.baseUrl,
-          model: editingModel.model,
-          apiKey: '', // Don't pre-populate API key for security
-          provider: editingModel.provider as ModelFormData['provider'],
-          enabled: editingModel.enabled,
-        }
-      : {
-          name: '',
-          baseUrl: '',
-          model: '',
-          apiKey: '',
-          provider: 'openrouter',
-          enabled: true,
-        },
-  });
-
-  const provider = watch('provider');
-
-  const onSubmit = async (data: ModelFormData) => {
-    try {
-      // Ensure base URL is set for non-"other" providers
-      if (data.provider !== 'other' && !data.baseUrl) {
-        data.baseUrl = getDefaultBaseUrl(data.provider);
-      }
-      onAdd?.(data);
-      reset();
-      onClose();
-    } catch (error) {
-      console.error('Failed to add model:', error);
-    }
-  };
-
-  const handleClose = () => {
-    reset();
+  const handleFormSubmit = (data: ModelFormData) => {
+    onAdd?.(data);
     onClose();
   };
 
-  const getDefaultBaseUrl = (provider: string) => {
-    switch (provider) {
-      case 'openrouter':
-        return 'https://openrouter.ai/api/v1';
-      case 'openai':
-        return 'https://api.openai.com/v1';
-      case 'anthropic':
-        return 'https://api.anthropic.com/v1';
-      default:
-        return '';
-    }
-  };
-
-  const handleProviderChange = (value: string) => {
-    setValue('provider', value as ModelFormData['provider']);
-    const defaultBaseUrl = getDefaultBaseUrl(value);
-    setValue('baseUrl', defaultBaseUrl);
+  const handleClose = () => {
+    onClose();
   };
 
   return (
@@ -134,87 +46,37 @@ export function AddModelDialog({ open, onClose, onAdd, editingModel }: AddModelD
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          <div className="grid gap-4">
-            <div className="space-y-2">
-              <Label>Name</Label>
-              <Input data-testid="model-name-input" placeholder="e.g., GPT-4 Turbo" {...register('name')} />
-              {errors.name && <p className="text-sm text-red-600">{errors.name.message}</p>}
-            </div>
-
-            <div className="space-y-2">
-              <Label>Provider</Label>
-              <Select value={provider} onValueChange={handleProviderChange}>
-                <SelectTrigger data-testid="model-provider-select">
-                  <SelectValue placeholder="Select a provider" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="openrouter">OpenRouter</SelectItem>
-                  <SelectItem value="openai">OpenAI</SelectItem>
-                  <SelectItem value="anthropic">Anthropic</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-              {errors.provider && <p className="text-sm text-red-600">{errors.provider.message}</p>}
-            </div>
-
-            {provider === 'other' && (
-              <div className="space-y-2">
-                <Label>Base URL</Label>
-                <Input
-                  data-testid="model-baseurl-input"
-                  placeholder="https://api.example.com/v1"
-                  {...register('baseUrl')}
-                />
-                {errors.baseUrl && <p className="text-sm text-red-600">{errors.baseUrl.message}</p>}
-              </div>
-            )}
-
-            <div className="space-y-2">
-              <Label>Model</Label>
-              <Input data-testid="model-model-input" placeholder="e.g., gpt-4-turbo" {...register('model')} />
-              {errors.model && <p className="text-sm text-red-600">{errors.model.message}</p>}
-            </div>
-
-            <div className="space-y-2">
-              <Label>API Key</Label>
-              <div className="relative">
-                <Input
-                  data-testid="model-apikey-input"
-                  type={showApiKey ? 'text' : 'password'}
-                  placeholder="sk-..."
-                  {...register('apiKey')}
-                />
-                <Button
-                  data-testid="toggle-apikey-visibility"
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-1 top-1 h-7 px-2 text-xs hover:bg-slate-100"
-                  onClick={() => setShowApiKey(!showApiKey)}
-                >
-                  {showApiKey ? 'Hide' : 'Show'}
-                </Button>
-              </div>
-              {errors.apiKey && <p className="text-sm text-red-600">{errors.apiKey.message}</p>}
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button data-testid="cancel-model-dialog" type="button" variant="outline" onClick={handleClose}>
-              Cancel
-            </Button>
-            <Button data-testid="submit-model-dialog" type="submit" disabled={isSubmitting}>
-              {isSubmitting
-                ? editingModel
-                  ? 'Updating...'
-                  : 'Adding...'
-                : editingModel
-                  ? 'Update Model'
-                  : 'Add Model'}
-            </Button>
-          </DialogFooter>
-        </form>
+        <ModelForm onSubmit={handleFormSubmit} editingModel={editingModel}>
+          {({ handleSubmit, isSubmitting, reset }) => (
+            <DialogFooter>
+              <Button 
+                data-testid="cancel-model-dialog" 
+                type="button" 
+                variant="outline" 
+                onClick={() => {
+                  reset();
+                  handleClose();
+                }}
+              >
+                Cancel
+              </Button>
+              <Button 
+                data-testid="submit-model-dialog" 
+                type="submit" 
+                disabled={isSubmitting}
+                onClick={handleSubmit}
+              >
+                {isSubmitting
+                  ? editingModel
+                    ? 'Updating...'
+                    : 'Adding...'
+                  : editingModel
+                    ? 'Update Model'
+                    : 'Add Model'}
+              </Button>
+            </DialogFooter>
+          )}
+        </ModelForm>
       </DialogContent>
     </Dialog>
   );

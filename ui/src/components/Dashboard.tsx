@@ -73,7 +73,7 @@ export function Dashboard() {
       {/* Models Section */}
       <div>
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-slate-900">
+          <h2 className="text-xl font-semibold text-slate-100">
             Model Configurations
           </h2>
           <div className="flex items-center gap-2">

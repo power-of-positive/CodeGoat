@@ -20,8 +20,8 @@ export function ModelList({ onEdit, onDelete, onTest, testingModelIds = [] }: Mo
 
   if (isLoading) {
     return (
-      <div className="bg-white shadow rounded-lg p-6">
-        <div className="text-center text-slate-500">
+      <div className="bg-gray-800 shadow rounded-lg p-6">
+        <div className="text-center text-slate-400">
           <p>Loading models...</p>
         </div>
       </div>
@@ -30,8 +30,8 @@ export function ModelList({ onEdit, onDelete, onTest, testingModelIds = [] }: Mo
 
   if (error) {
     return (
-      <div className="bg-white shadow rounded-lg p-6">
-        <div className="text-center text-red-500">
+      <div className="bg-gray-800 shadow rounded-lg p-6">
+        <div className="text-center text-red-400">
           <p>Failed to load models</p>
           <p className="text-sm mt-1">{error instanceof Error ? error.message : 'Unknown error'}</p>
         </div>
@@ -43,8 +43,8 @@ export function ModelList({ onEdit, onDelete, onTest, testingModelIds = [] }: Mo
 
   if (models.length === 0) {
     return (
-      <div className="bg-white shadow rounded-lg p-6">
-        <div className="text-center text-slate-500">
+      <div className="bg-gray-800 shadow rounded-lg p-6">
+        <div className="text-center text-slate-400">
           <p>No models configured yet.</p>
           <p className="text-sm mt-1">Click "Add Model" to get started.</p>
         </div>
@@ -55,23 +55,23 @@ export function ModelList({ onEdit, onDelete, onTest, testingModelIds = [] }: Mo
   const getStatusColor = (status: UIModelConfig['status']) => {
     switch (status) {
       case 'healthy':
-        return 'text-green-600 bg-green-100';
+        return 'text-green-400 bg-green-900';
       case 'error':
-        return 'text-red-600 bg-red-100';
+        return 'text-red-400 bg-red-900';
       default:
-        return 'text-slate-600 bg-slate-100';
+        return 'text-slate-400 bg-slate-700';
     }
   };
 
   return (
-    <div data-testid="model-list-container" className="bg-white shadow rounded-lg overflow-hidden">
-      <div className="divide-y divide-slate-200">
+    <div data-testid="model-list-container" className="bg-gray-800 shadow rounded-lg overflow-hidden">
+      <div className="divide-y divide-slate-700">
         {models.map((model) => (
-          <div key={model.id} data-testid={`model-card-${model.id}`} className="p-6 hover:bg-slate-50 transition-colors">
+          <div key={model.id} data-testid={`model-card-${model.id}`} className="p-6 hover:bg-gray-700 transition-colors">
             <div className="flex items-center justify-between">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-3 mb-2">
-                  <h3 className="text-lg font-medium text-slate-900 truncate">
+                  <h3 className="text-lg font-medium text-slate-100 truncate">
                     {model.name}
                   </h3>
                   <span
@@ -80,13 +80,13 @@ export function ModelList({ onEdit, onDelete, onTest, testingModelIds = [] }: Mo
                     {model.status || 'untested'}
                   </span>
                   {!model.enabled && (
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-slate-500 bg-slate-100">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-slate-400 bg-slate-700">
                       disabled
                     </span>
                   )}
                 </div>
                 
-                <div className="space-y-1 text-sm text-slate-500">
+                <div className="space-y-1 text-sm text-slate-400">
                   <div className="flex items-center gap-2">
                     <span className="font-medium">Provider:</span>
                     <span className="capitalize">{model.provider}</span>
@@ -101,7 +101,7 @@ export function ModelList({ onEdit, onDelete, onTest, testingModelIds = [] }: Mo
                       href={model.baseUrl} 
                       target="_blank" 
                       rel="noopener noreferrer"
-                      className="text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                      className="text-blue-400 hover:text-blue-300 flex items-center gap-1"
                     >
                       {model.baseUrl}
                       <ExternalLink className="h-3 w-3" />
@@ -112,7 +112,7 @@ export function ModelList({ onEdit, onDelete, onTest, testingModelIds = [] }: Mo
                       <span className="font-medium">Last tested:</span>
                       <span>{new Date(model.lastTested).toLocaleString()}</span>
                       {model.responseTime && (
-                        <span className="text-xs text-slate-400">
+                        <span className="text-xs text-slate-500">
                           ({model.responseTime}ms)
                         </span>
                       )}

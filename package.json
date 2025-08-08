@@ -4,6 +4,9 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon --watch src --ext ts --exec ts-node src/index.ts",
+    "dev:all": "./scripts/dev.sh",
+    "dev:status": "./scripts/dev-status.sh",
+    "dev:kill": "./scripts/dev-status.sh kill",
     "build": "tsc",
     "start": "node dist/src/index.js",
     "start:prod": "NODE_ENV=production node dist/src/index.js",
@@ -17,6 +20,9 @@
     "format:check": "prettier --check src/**/*.ts",
     "type-check": "tsc --noEmit",
     "duplication-check": "npx jscpd src/ || echo \"Duplication found but within acceptable threshold\"",
+    "logs:clean": "node -e \"const { LogCleaner } = require('./dist/src/utils/log-cleaner'); const { WinstonLogger } = require('./dist/src/logger-winston'); const path = require('path'); const logger = new WinstonLogger({logsDir: path.join(__dirname, 'logs')}); const cleaner = new LogCleaner({logsDir: path.join(__dirname, 'logs'), maxLogFiles: 50, maxLogAge: 30, maxLogSize: 10485760}, logger); cleaner.cleanLogs().then(() => console.log('Logs cleaned successfully')).catch(console.error);\"",
+    "logs:migrate": "./scripts/migrate-logs.sh",
+    "ai-review": "ts-node src/tools/ai-code-reviewer.ts",
     "quality": "npm run lint && npm run format:check && npm run type-check && npm run test",
     "prepare": "husky"
   },
@@ -50,6 +56,7 @@
     "axios": "^1.11.0",
     "clsx": "^2.1.1",
     "express": "^5.1.0",
+    "winston": "^3.17.0",
     "yaml": "^2.8.1",
     "zod": "^4.0.15"
   },

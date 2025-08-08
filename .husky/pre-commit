@@ -15,3 +15,7 @@ npm run test || echo "Some test failures are acceptable (management route mockin
 
 # Run E2E tests  
 cd ui && npm run test:e2e && cd ..
+
+# Run AI code review (if enabled)
+echo "Running AI code review..."
+npm run ai-review || echo "AI code review completed with issues"

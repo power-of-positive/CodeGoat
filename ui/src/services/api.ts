@@ -8,42 +8,42 @@ const apiClient = axios.create({
 export const api = {
   // Server status
   getServerStatus: async (): Promise<ServerStatus> => {
-    const response = await apiClient.get('/management/status');
+    const response = await apiClient.get('/status');
     return response.data;
   },
 
   // Model management
   getModels: async (): Promise<ModelsResponse> => {
-    const response = await apiClient.get('/management/models');
+    const response = await apiClient.get('/models');
     return response.data;
   },
 
   addModel: async (model: CreateModelRequest): Promise<UIModelConfig> => {
-    const response = await apiClient.post('/management/models', model);
+    const response = await apiClient.post('/models', model);
     return response.data.model;
   },
 
   updateModel: async (id: string, model: Partial<CreateModelRequest>): Promise<UIModelConfig> => {
-    const response = await apiClient.put(`/management/models/${id}`, model);
+    const response = await apiClient.put(`/models/${id}`, model);
     return response.data.model;
   },
 
   deleteModel: async (id: string): Promise<void> => {
-    await apiClient.delete(`/management/models/${id}`);
+    await apiClient.delete(`/models/${id}`);
   },
 
   testModel: async (id: string): Promise<ModelTestResult> => {
-    const response = await apiClient.post(`/management/test/${id}`);
+    const response = await apiClient.post(`/models/test/${id}`);
     return response.data;
   },
 
   reloadConfig: async (): Promise<void> => {
-    await apiClient.post('/management/reload');
+    await apiClient.post('/status/reload');
   },
 
   // OpenRouter statistics
   getOpenRouterStats: async (modelSlug: string): Promise<OpenRouterStats> => {
-    const response = await apiClient.get(`/management/openrouter-stats/${encodeURIComponent(modelSlug)}`);
+    const response = await apiClient.get(`/openrouter-stats/${encodeURIComponent(modelSlug)}`);
     return response.data;
   },
 };

@@ -38,6 +38,16 @@ export default [
       'no-console': ['warn', { allow: ['warn', 'error', 'log'] }], // Allow console.log
       'prefer-const': 'error',
       'no-var': 'error',
+      'max-lines': ['error', {
+        max: 200,
+        skipBlankLines: true,
+        skipComments: true
+      }], // Limit files to 200 lines
+      'max-lines-per-function': ['error', {
+        max: 40,
+        skipBlankLines: true,
+        skipComments: true
+      }], // Limit functions to 40 lines
     },
   },
   {
@@ -62,6 +72,8 @@ export default [
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
       'no-console': 'off',
+      'max-lines': 'off', // Disable max-lines for test files
+      'max-lines-per-function': 'off', // Disable max-lines-per-function for test files
     },
   },
   {

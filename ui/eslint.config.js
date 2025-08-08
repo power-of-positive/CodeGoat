@@ -19,5 +19,18 @@ export default tseslint.config([
       ecmaVersion: 2020,
       globals: globals.browser,
     },
+    rules: {
+      'max-lines': ['error', {
+        max: 200,
+        skipBlankLines: true,
+        skipComments: true
+      }], // Limit files to 200 lines
+    },
+  },
+  {
+    files: ['**/*.{spec,test}.{ts,tsx}', '**/e2e/**/*.{ts,tsx}'],
+    rules: {
+      'max-lines': 'off', // Disable max-lines for test files
+    },
   },
 ])

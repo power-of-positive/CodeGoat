@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { ConfigLoader } from '../config';
-import { Logger } from '../logger';
+import { ILogger } from '../logger-interface';
 import { z } from 'zod';
 
 const router = Router();
@@ -18,11 +18,11 @@ const modelConfigSchema = z.object({
 const updateModelConfigSchema = modelConfigSchema.partial();
 
 let configLoader: ConfigLoader;
-let logger: Logger;
+let logger: ILogger;
 
 export function initializeManagementAPI(
   configLoaderInstance: ConfigLoader,
-  loggerInstance: Logger
+  loggerInstance: ILogger
 ): void {
   configLoader = configLoaderInstance;
   logger = loggerInstance;

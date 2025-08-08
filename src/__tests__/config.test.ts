@@ -173,4 +173,224 @@ models:
       expect(reloadedConfig.modelConfig?.models['updated-model']?.name).toBe('updated-model');
     });
   });
+
+  describe('addModel()', () => {
+    beforeEach(() => {
+      // Set up basic config
+      mockFs.existsSync.mockImplementation((path: fs.PathLike) => {
+        return path.toString().includes('config.default.yaml');
+      });
+
+      mockFs.readFileSync.mockReturnValue(mockDefaultConfigContent);
+      mockFs.writeFileSync.mockImplementation();
+
+      configLoader.load();
+    });
+
+    it('should add a new model to user config', () => {
+      const newModel = {
+        name: 'new-model',
+        model: 'openrouter/new/model',
+        apiKey: 'new-key',
+        provider: 'openrouter',
+      };
+
+      configLoader.addModel(newModel);
+
+      expect(mockFs.writeFileSync).toHaveBeenCalled();
+      const writtenContent = mockFs.writeFileSync.mock.calls[0][1] as string;
+      expect(writtenContent).toContain('new-model');
+      expect(writtenContent).toContain('openrouter/new/model');
+    });
+
+    it('should handle custom provider with base URL', () => {
+      const customModel = {
+        name: 'custom-model',
+        model: 'custom-model',
+        apiKey: 'custom-key',
+        provider: 'other',
+        baseUrl: 'https://custom.api.com',
+      };
+
+      configLoader.addModel(customModel as any);
+
+      expect(mockFs.writeFileSync).toHaveBeenCalled();
+      const writtenContent = mockFs.writeFileSync.mock.calls[0][1] as string;
+      expect(writtenContent).toContain('https://custom.api.com');
+    });
+
+    it('should validate required fields', () => {
+      const invalidModel = {
+        name: 'invalid-model',
+        // missing required fields
+      };
+
+      expect(() => {
+        configLoader.addModel(invalidModel as any);
+      }).toThrow();
+    });
+  });
+
+  describe('deleteModel()', () => {
+    beforeEach(() => {
+      mockFs.existsSync.mockImplementation((path: fs.PathLike) => {
+        return path.toString().includes('config.default.yaml');
+      });
+
+      mockFs.readFileSync.mockReturnValue(mockDefaultConfigContent);
+      mockFs.writeFileSync.mockImplementation();
+
+      configLoader.load();
+    });
+
+    it('should delete an existing model', () => {
+      configLoader.deleteModel('default-model');
+
+      expect(mockFs.writeFileSync).toHaveBeenCalled();
+      const writtenContent = mockFs.writeFileSync.mock.calls[0][1] as string;
+      expect(writtenContent).not.toContain('default-model');
+    });
+
+    it('should throw error when deleting non-existent model', () => {
+      expect(() => {
+        configLoader.deleteModel('non-existent-model');
+      }).toThrow('Model with ID "non-existent-model" not found');
+    });
+  });
+
+  describe('getAllModels()', () => {
+    beforeEach(() => {
+      mockFs.existsSync.mockImplementation((path: fs.PathLike) => {
+        return path.toString().includes('config.default.yaml');
+      });
+
+      mockFs.readFileSync.mockReturnValue(mockDefaultConfigContent);
+      configLoader.load();
+    });
+
+    it('should return all models with metadata', () => {
+      const models = configLoader.getAllModels();
+
+      expect(models).toHaveLength(1);
+      expect(models[0]).toHaveProperty('id', 'default-model');
+      expect(models[0]).toHaveProperty('name', 'default-model');
+      expect(models[0]).toHaveProperty('model', 'openrouter/default/model');
+      expect(models[0]).toHaveProperty('provider', 'openrouter');
+      expect(models[0]).toHaveProperty('isDefault', true);
+    });
+
+    it('should handle empty models configuration', () => {
+      const emptyConfig = 'models: {}';
+      mockFs.readFileSync.mockReturnValue(emptyConfig);
+
+      configLoader.reload();
+      const models = configLoader.getAllModels();
+
+      expect(models).toHaveLength(0);
+    });
+  });
+
+  describe('configuration normalization', () => {
+    it('should handle legacy configuration format', () => {
+      const legacyConfig = `
+models:
+  - name: "legacy-model"
+    model: "openrouter/legacy/model"
+    api_key: "legacy-key"
+`;
+
+      mockFs.existsSync.mockReturnValue(true);
+      mockFs.readFileSync.mockReturnValue(legacyConfig);
+
+      const config = configLoader.load();
+      expect(config.modelConfig?.models['legacy-model']).toBeDefined();
+      expect(config.modelConfig?.models['legacy-model'].apiKey).toBe('legacy-key');
+    });
+
+    it('should normalize provider-specific settings', () => {
+      const configWithProviders = `
+models:
+  openai-model:
+    name: "openai-model"
+    model: "gpt-3.5-turbo"
+    provider: "openai"
+    apiKey: "openai-key"
+    enabled: true
+  anthropic-model:
+    name: "anthropic-model" 
+    model: "claude-3"
+    provider: "anthropic"
+    apiKey: "anthropic-key"
+    enabled: true
+`;
+
+      mockFs.existsSync.mockReturnValue(true);
+      mockFs.readFileSync.mockReturnValue(configWithProviders);
+
+      const config = configLoader.load();
+
+      expect(config.modelConfig?.models['openai-model'].baseUrl).toBe('https://api.openai.com/v1');
+      expect(config.modelConfig?.models['anthropic-model'].baseUrl).toBe(
+        'https://api.anthropic.com/v1'
+      );
+    });
+
+    it('should handle fallbacks configuration', () => {
+      const configWithFallbacks = `
+models:
+  main-model:
+    name: "main-model"
+    model: "openrouter/main/model"
+    provider: "openrouter"
+    apiKey: "main-key"
+    enabled: true
+
+settings:
+  fallbacks:
+    main-model:
+      - "backup-model-1"
+      - "backup-model-2"
+`;
+
+      mockFs.existsSync.mockReturnValue(true);
+      mockFs.readFileSync.mockReturnValue(configWithFallbacks);
+
+      const config = configLoader.load();
+      expect(config.modelConfig?.fallbacks?.['main-model']).toEqual([
+        'backup-model-1',
+        'backup-model-2',
+      ]);
+    });
+  });
+
+  describe('error handling', () => {
+    it('should handle YAML parse errors', () => {
+      const invalidYaml = 'invalid: yaml: content: [unclosed bracket';
+
+      mockFs.existsSync.mockReturnValue(true);
+      mockFs.readFileSync.mockReturnValue(invalidYaml);
+
+      expect(() => {
+        configLoader.load();
+      }).toThrow();
+    });
+
+    it('should handle file read errors', () => {
+      mockFs.existsSync.mockReturnValue(true);
+      mockFs.readFileSync.mockImplementation(() => {
+        throw new Error('Permission denied');
+      });
+
+      expect(() => {
+        configLoader.load();
+      }).toThrow('Permission denied');
+    });
+
+    it('should handle missing config files gracefully', () => {
+      mockFs.existsSync.mockReturnValue(false);
+
+      const config = configLoader.load();
+      expect(config.modelConfig?.models).toEqual({});
+    });
+  });
 });

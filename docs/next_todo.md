@@ -1,9 +1,10 @@
-    ☐ Fix remaining E2E test issues after config
-      refactor
+    ☐ Make server frontend run in nodemon with
+      visible logs and easy kill capability
     ☐ Convert the app to dark mode
-    ☐ Fix E2E test failures after config format
-      change - update model counts and API
-      endpoints
+    ☐ Improve UI dev server management - make it
+      easier to see running processes and kill them
+       (add nodemon with visible logs and easy kill
+       capability)
     ☐ Integrate OpenAI-based LLM code reviewer for
       pre-commit that returns JSON comments and
       blocks commit on high severity issues
@@ -11,8 +12,6 @@
       a logs folder
     ☐ Replace custom logger with winston logger
       library
-    ☐ Make server frontend run in nodemon with
-      visible logs and easy kill capability
     ☐ Split management routes granularly: models,
       openrouter-stats, status into separate files
     ☐ Split AddModelDialog into smaller components

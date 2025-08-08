@@ -4,9 +4,12 @@ import path from 'path';
 import { ConfigLoader } from './config';
 import { RouteMatcher } from './matcher';
 import { ConfigurableProxyHandler } from './proxy-handler';
-import { Logger } from './logger';
+import { WinstonLogger } from './logger-winston';
+import { LogCleaner } from './utils/log-cleaner';
 import { ProxyRequest } from './types';
-import { createManagementRoutes } from './routes/management';
+import { createModelRoutes } from './routes/models';
+import { createStatusRoutes } from './routes/status';
+import { createOpenRouterStatsRoutes } from './routes/openrouter-stats';
 import { createInternalRoutes } from './routes/internal';
 
 const app = express();
@@ -15,7 +18,27 @@ const routeMatcher = new RouteMatcher();
 
 let config = configLoader.load();
 const proxyHandler = new ConfigurableProxyHandler(config.modelConfig!);
-const logger = new Logger(config.settings.logging.level, config.settings.logging.format);
+
+const logsDir = path.join(__dirname, '../logs');
+const logger = new WinstonLogger({
+  level: config.settings.logging.level,
+  logsDir,
+  enableConsole: true,
+  enableFile: true,
+  maxFiles: '10',
+  maxSize: '10485760', // 10MB
+});
+
+// Initialize log cleaner (logger already implements ILogger interface)
+const logCleaner = new LogCleaner(
+  {
+    logsDir,
+    maxLogFiles: 50,
+    maxLogAge: 30, // Keep logs for 30 days
+    maxLogSize: 10 * 1024 * 1024, // 10MB per log file
+  },
+  logger
+);
 
 // Initialize management API
 // initializeManagementAPI(configLoader, logger);
@@ -37,7 +60,9 @@ app.use('/ui', express.static(uiDistPath));
 
 // Mount route modules
 app.use('/internal', createInternalRoutes());
-app.use('/api/management', createManagementRoutes(configLoader, logger));
+app.use('/api/models', createModelRoutes(configLoader, logger));
+app.use('/api/status', createStatusRoutes(configLoader, logger));
+app.use('/api/openrouter-stats', createOpenRouterStatsRoutes(logger));
 
 // Keep test route for compatibility
 app.get('/test', (req: Request, res: Response) => {
@@ -48,9 +73,9 @@ app.get('/test', (req: Request, res: Response) => {
 app.use(async (req: Request, res: Response, next: NextFunction) => {
   console.log('Proxy middleware called for:', req.method, req.path);
 
-  // Skip proxy routing for management API and internal routes
+  // Skip proxy routing for API and internal routes
   if (
-    req.path.startsWith('/api/management') ||
+    req.path.startsWith('/api/') ||
     req.path.startsWith('/internal/') ||
     req.path.startsWith('/ui/') ||
     req.path === '/test'
@@ -104,6 +129,19 @@ process.on('SIGHUP', () => {
 
 const server = app.listen(config.proxy.port, config.proxy.host, () => {
   logger.info(`Proxy server running on ${config.proxy.host}:${config.proxy.port}`);
+
+  // Run initial log cleanup
+  void logCleaner.cleanLogs();
+
+  // Schedule log cleanup every 6 hours
+  /* eslint-disable no-undef */
+  setInterval(
+    () => {
+      void logCleaner.cleanLogs();
+    },
+    6 * 60 * 60 * 1000
+  );
+  /* eslint-enable no-undef */
 });
 
 process.on('SIGTERM', () => {
