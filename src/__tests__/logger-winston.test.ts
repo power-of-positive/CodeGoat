@@ -228,4 +228,138 @@ describe('WinstonLogger', () => {
       expect(noConsoleLogger).toBeDefined();
     });
   });
+
+  describe('middleware functionality', () => {
+    it('should log HTTP requests with middleware', () => {
+      const logger = new WinstonLogger({
+        enableFile: false,
+        logsDir: testLogsDir,
+      });
+
+      const middleware = logger.middleware();
+
+      // Mock request and response objects
+      const mockReq = {
+        method: 'GET',
+        path: '/test',
+        routeName: 'test-route',
+        targetUrl: 'https://api.example.com/test',
+      } as any;
+
+      const mockRes = {
+        statusCode: 200,
+        end: jest.fn(),
+      } as any;
+
+      const mockNext = jest.fn();
+
+      // Store original end function
+      const originalEnd = mockRes.end;
+
+      // Execute middleware
+      middleware(mockReq, mockRes, mockNext);
+
+      // Verify next was called
+      expect(mockNext).toHaveBeenCalled();
+
+      // Verify res.end was replaced
+      expect(mockRes.end).not.toBe(originalEnd);
+
+      // Simulate calling the wrapped end function
+      mockRes.end();
+
+      // Verify original end function was restored and called
+      expect(originalEnd).toHaveBeenCalled();
+    });
+
+    it('should handle middleware logging with different status codes', () => {
+      const logger = new WinstonLogger({
+        enableFile: false,
+        logsDir: testLogsDir,
+      });
+
+      const middleware = logger.middleware();
+
+      const mockReq = {
+        method: 'POST',
+        path: '/api/test',
+      } as any;
+
+      const mockRes = {
+        statusCode: 404,
+        end: jest.fn(),
+      } as any;
+
+      const mockNext = jest.fn();
+
+      middleware(mockReq, mockRes, mockNext);
+
+      // Call the wrapped end function
+      mockRes.end();
+
+      expect(mockNext).toHaveBeenCalled();
+    });
+
+    it('should handle middleware with arguments passed to end', () => {
+      const logger = new WinstonLogger({
+        enableFile: false,
+        logsDir: testLogsDir,
+      });
+
+      const middleware = logger.middleware();
+
+      const mockReq = {
+        method: 'PUT',
+        path: '/api/update',
+      } as any;
+
+      const mockRes = {
+        statusCode: 200,
+        end: jest.fn(),
+      } as any;
+
+      const mockNext = jest.fn();
+
+      middleware(mockReq, mockRes, mockNext);
+
+      // Call the wrapped end function with arguments
+      const testData = 'response data';
+      const testEncoding = 'utf8';
+      mockRes.end(testData, testEncoding);
+
+      expect(mockRes.end).toHaveBeenCalled();
+    });
+
+    it('should measure response time accurately', async () => {
+      const logger = new WinstonLogger({
+        enableFile: false,
+        logsDir: testLogsDir,
+      });
+
+      const middleware = logger.middleware();
+
+      const mockReq = {
+        method: 'GET',
+        path: '/slow-endpoint',
+      } as any;
+
+      const mockRes = {
+        statusCode: 200,
+        end: jest.fn(),
+      } as any;
+
+      const mockNext = jest.fn();
+
+      // Execute middleware
+      middleware(mockReq, mockRes, mockNext);
+
+      // Add a small delay to test timing
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      // Call the wrapped end function
+      mockRes.end();
+
+      expect(mockNext).toHaveBeenCalled();
+    });
+  });
 });

@@ -234,10 +234,27 @@ models:
   describe('deleteModel()', () => {
     beforeEach(() => {
       mockFs.existsSync.mockImplementation((path: fs.PathLike) => {
-        return path.toString().includes('config.default.yaml');
+        return (
+          path.toString().includes('config.default.yaml') ||
+          path.toString().includes('config.user.yaml')
+        );
       });
 
-      mockFs.readFileSync.mockReturnValue(mockDefaultConfigContent);
+      mockFs.readFileSync.mockImplementation((path: any) => {
+        if (path.toString().includes('config.default.yaml')) {
+          return mockDefaultConfigContent;
+        } else if (path.toString().includes('config.user.yaml')) {
+          return `models:
+  default-model:
+    name: Default Model
+    model: default/model
+    provider: openai
+    baseUrl: https://api.openai.com/v1
+    apiKey: os.environ/DEFAULT_API_KEY
+    enabled: true`;
+        }
+        return '';
+      });
       mockFs.writeFileSync.mockImplementation();
 
       configLoader.load();
@@ -254,7 +271,7 @@ models:
     it('should throw error when deleting non-existent model', () => {
       expect(() => {
         configLoader.deleteModel('non-existent-model');
-      }).toThrow('Model with ID "non-existent-model" not found');
+      }).toThrow('Failed to delete model: Model not found in user configuration');
     });
   });
 
@@ -293,10 +310,11 @@ models:
   describe('configuration normalization', () => {
     it('should handle legacy configuration format', () => {
       const legacyConfig = `
-models:
-  - name: "legacy-model"
-    model: "openrouter/legacy/model"
-    api_key: "legacy-key"
+model_list:
+  - model_name: "legacy-model"
+    litellm_params:
+      model: "openrouter/legacy/model"
+      api_key: "legacy-key"
 `;
 
       mockFs.existsSync.mockReturnValue(true);

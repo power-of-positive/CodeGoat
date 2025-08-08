@@ -1,55 +1,18 @@
 #!/usr/bin/env ts-node
 
-/* eslint-disable max-lines */
 import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
 
-// Types
-interface ReviewItem {
-  line: number | null;
-  severity: 'info' | 'low' | 'medium' | 'high' | 'critical';
-  category: 'security' | 'performance' | 'quality' | 'bug' | 'style' | 'best-practice' | 'system';
-  message: string;
-  suggestion?: string;
-}
-
-interface ReviewResult {
-  reviews: ReviewItem[];
-  summary: string;
-}
-
-interface FileReviewResult extends ReviewResult {
-  file: string;
-}
-
-interface FormattedResults {
-  summary: {
-    totalFiles: number;
-    totalIssues: number;
-    bySeverity: Record<string, number>;
-  };
-  files: FileReviewResult[];
-  allReviews: Array<ReviewItem & { file: string }>;
-  blocked: boolean;
-}
-
-interface Config {
-  openaiApiKey: string | undefined;
-  apiEndpoint: string;
-  model: string;
-  maxSeverityToBlock: string;
-  enabled: boolean;
-  outputFile: string;
-}
-
-interface APIResponse {
-  choices?: Array<{
-    message?: {
-      content?: string;
-    };
-  }>;
-}
+// Import types from separate file
+import type {
+  ReviewItem,
+  ReviewResult,
+  FileReviewResult,
+  FormattedResults,
+  Config,
+  APIResponse,
+} from './ai-code-reviewer.types';
 
 // Configuration factory function for testability
 export function getConfig(): Config {
@@ -253,7 +216,6 @@ export function formatResults(results: FileReviewResult[]): FormattedResults {
   };
 }
 
-/* eslint-disable max-lines-per-function */
 export function outputResults(results: FormattedResults): void {
   const config = getConfig();
 

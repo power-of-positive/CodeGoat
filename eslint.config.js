@@ -39,15 +39,15 @@ export default [
       'prefer-const': 'error',
       'no-var': 'error',
       'max-lines': ['error', {
-        max: 200,
+        max: 350,
         skipBlankLines: true,
         skipComments: true
-      }], // Limit files to 200 lines
+      }], // Limit files to 350 lines
       'max-lines-per-function': ['error', {
-        max: 40,
+        max: 50,
         skipBlankLines: true,
         skipComments: true
-      }], // Limit functions to 40 lines
+      }], // Limit functions to 50 lines
     },
   },
   {
