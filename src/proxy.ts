@@ -2,8 +2,14 @@ import axios, { AxiosRequestConfig } from 'axios';
 import { Request, Response } from 'express';
 import { Route } from './types';
 import { Readable } from 'stream';
+import { ILogger } from './logger-interface';
 
 export class ProxyHandler {
+  protected logger!: ILogger;
+
+  constructor(logger: ILogger) {
+    this.logger = logger;
+  }
   async handleRequest(
     req: Request,
     res: Response,
@@ -155,7 +161,7 @@ export class ProxyHandler {
       response.data.pipe(res);
 
       response.data.on('error', error => {
-        console.error('Stream error:', error);
+        this.logger.error('Stream error', error as Error);
         if (!res.headersSent) {
           res.status(500).send('Stream error');
         }
@@ -170,7 +176,7 @@ export class ProxyHandler {
   }
 
   private handleError(error: unknown, res: Response): void {
-    console.error('Proxy error:', error);
+    this.logger.error('Proxy error', error as Error);
 
     if (axios.isAxiosError(error)) {
       if (error.response) {

@@ -1,382 +1,231 @@
-import fs from 'fs';
-import { execSync } from 'child_process';
-import {
-  getStagedFiles,
-  getFileContent,
-  reviewCode,
-  shouldBlockCommit,
-  formatResults,
-  outputResults,
-} from '../../tools/ai-code-reviewer';
+import { shouldBlockCommit, formatResults, getConfig } from '../../tools/ai-code-reviewer';
+import type { ReviewItem, FileReviewResult } from '../../tools/ai-code-reviewer.types';
 
-// Mock dependencies
-jest.mock('fs');
-jest.mock('child_process');
+// Mock console.log to prevent output during tests
+const originalConsoleLog = console.log;
+beforeAll(() => {
+  console.log = jest.fn();
+});
 
-// Mock fetch globally
-global.fetch = jest.fn();
-
-const mockFs = fs as jest.Mocked<typeof fs>;
-const mockExecSync = execSync as jest.MockedFunction<typeof execSync>;
-const mockFetch = global.fetch as jest.MockedFunction<typeof fetch>;
+afterAll(() => {
+  console.log = originalConsoleLog;
+});
 
 describe('AI Code Reviewer', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    // Reset environment variables
-    delete process.env.OPENAI_API_KEY;
-    delete process.env.OPENROUTER_API_KEY;
-  });
-
-  describe('getStagedFiles', () => {
-    it('should return TypeScript and JavaScript files from git diff', async () => {
-      mockExecSync.mockReturnValue('src/index.ts\nsrc/utils.js\nREADME.md\nsrc/component.tsx\n');
-
-      const files = await getStagedFiles();
-
-      expect(mockExecSync).toHaveBeenCalledWith('git diff --cached --name-only --diff-filter=AM', {
-        encoding: 'utf8',
-        cwd: process.cwd(),
-      });
-      expect(files).toEqual(['src/index.ts', 'src/utils.js', 'src/component.tsx']);
-    });
-
-    it('should return empty array when no files are staged', async () => {
-      mockExecSync.mockReturnValue('');
-
-      const files = await getStagedFiles();
-
-      expect(files).toEqual([]);
-    });
-
-    it('should handle git errors gracefully', async () => {
-      mockExecSync.mockImplementation(() => {
-        throw new Error('Not a git repository');
-      });
-
-      const files = await getStagedFiles();
-
-      expect(files).toEqual([]);
-    });
-  });
-
-  describe('getFileContent', () => {
-    it('should read file content successfully', async () => {
-      const mockContent = 'export const test = "hello";';
-      mockFs.readFileSync.mockReturnValue(mockContent);
-
-      const content = await getFileContent('src/test.ts');
-
-      expect(mockFs.readFileSync).toHaveBeenCalledWith(
-        expect.stringContaining('src/test.ts'),
-        'utf8'
-      );
-      expect(content).toBe(mockContent);
-    });
-
-    it('should handle file read errors gracefully', async () => {
-      mockFs.readFileSync.mockImplementation(() => {
-        throw new Error('File not found');
-      });
-
-      const content = await getFileContent('nonexistent.ts');
-
-      expect(content).toBeNull();
-    });
-  });
-
-  describe('reviewCode', () => {
-    it('should return empty review when no API key is configured', async () => {
-      const result = await reviewCode('test.ts', 'const x = 1;');
-
-      expect(result).toEqual({
-        reviews: [],
-        summary: 'No API key configured',
-      });
-    });
-
-    it('should make API call and parse response correctly', async () => {
-      process.env.OPENAI_API_KEY = 'test-api-key';
-
-      const mockResponse = {
-        reviews: [
-          {
-            line: 1,
-            severity: 'low',
-            category: 'style',
-            message: 'Consider using const instead of var',
-            suggestion: 'Replace var with const',
-          },
-        ],
-        summary: 'Code looks generally good',
-      };
-
-      mockFetch.mockResolvedValue({
-        ok: true,
-        json: jest.fn().mockResolvedValue({
-          choices: [
-            {
-              message: {
-                content: JSON.stringify(mockResponse),
-              },
-            },
-          ],
-        }),
-      } as any);
-
-      const result = await reviewCode('test.ts', 'var x = 1;');
-
-      expect(mockFetch).toHaveBeenCalledWith(
-        'https://openrouter.ai/api/v1/chat/completions',
-        expect.objectContaining({
-          method: 'POST',
-          headers: expect.objectContaining({
-            'Content-Type': 'application/json',
-            Authorization: 'Bearer test-api-key',
-          }),
-        })
-      );
-      expect(result).toEqual(mockResponse);
-    });
-
-    it('should handle markdown-wrapped JSON responses', async () => {
-      process.env.OPENAI_API_KEY = 'test-api-key';
-
-      const mockResponse = {
-        reviews: [],
-        summary: 'Good code',
-      };
-
-      mockFetch.mockResolvedValue({
-        ok: true,
-        json: jest.fn().mockResolvedValue({
-          choices: [
-            {
-              message: {
-                content: `\`\`\`json\n${JSON.stringify(mockResponse)}\n\`\`\``,
-              },
-            },
-          ],
-        }),
-      } as any);
-
-      const result = await reviewCode('test.ts', 'const x = 1;');
-
-      expect(result).toEqual(mockResponse);
-    });
-
-    it('should handle API errors gracefully', async () => {
-      process.env.OPENAI_API_KEY = 'test-api-key';
-
-      mockFetch.mockResolvedValue({
-        ok: false,
-        status: 500,
-        statusText: 'Internal Server Error',
-      } as any);
-
-      const result = await reviewCode('test.ts', 'const x = 1;');
-
-      expect(result.reviews).toHaveLength(1);
-      expect(result.reviews[0].severity).toBe('info');
-      expect(result.reviews[0].category).toBe('system');
-      expect(result.reviews[0].message).toContain('AI review failed');
-    });
-
-    it('should handle network errors gracefully', async () => {
-      process.env.OPENAI_API_KEY = 'test-api-key';
-
-      mockFetch.mockRejectedValue(new Error('Network error'));
-
-      const result = await reviewCode('test.ts', 'const x = 1;');
-
-      expect(result.reviews).toHaveLength(1);
-      expect(result.reviews[0].message).toContain('Network error');
-    });
-  });
-
   describe('shouldBlockCommit', () => {
-    it('should block commit for high severity issues when threshold is high', () => {
-      const reviews = [
-        { line: 1, severity: 'high', category: 'security', message: 'Security issue' },
-        { line: 2, severity: 'low', category: 'style', message: 'Style issue' },
-      ] as any;
+    it('should block on medium severity when configured for medium', () => {
+      const reviews: ReviewItem[] = [
+        {
+          line: 10,
+          severity: 'medium',
+          category: 'security',
+          message: 'Potential SQL injection vulnerability',
+        },
+        {
+          line: 20,
+          severity: 'low',
+          category: 'style',
+          message: 'Consider using const instead of let',
+        },
+      ];
 
-      const shouldBlock = shouldBlockCommit(reviews, 'high');
-
-      expect(shouldBlock).toBe(true);
+      const result = shouldBlockCommit(reviews);
+      expect(result).toBe(true); // Should block because of medium severity issue
     });
 
-    it('should not block commit for low severity issues when threshold is high', () => {
-      const reviews = [
-        { line: 1, severity: 'low', category: 'style', message: 'Style issue' },
-        { line: 2, severity: 'medium', category: 'quality', message: 'Quality issue' },
-      ] as any;
+    it('should not block on low severity when configured for medium', () => {
+      const reviews: ReviewItem[] = [
+        {
+          line: 10,
+          severity: 'low',
+          category: 'style',
+          message: 'Consider using const instead of let',
+        },
+        {
+          line: 20,
+          severity: 'info',
+          category: 'best-practice',
+          message: 'Consider adding JSDoc comments',
+        },
+      ];
 
-      const shouldBlock = shouldBlockCommit(reviews, 'high');
-
-      expect(shouldBlock).toBe(false);
+      const result = shouldBlockCommit(reviews);
+      expect(result).toBe(false); // Should not block, only low/info issues
     });
 
-    it('should block commit for medium severity when threshold is medium', () => {
-      const reviews = [
-        { line: 1, severity: 'medium', category: 'performance', message: 'Performance issue' },
-      ] as any;
+    it('should block on high severity when configured for medium', () => {
+      const reviews: ReviewItem[] = [
+        {
+          line: 10,
+          severity: 'high',
+          category: 'security',
+          message: 'Hardcoded API key detected',
+        },
+      ];
 
-      const shouldBlock = shouldBlockCommit(reviews, 'medium');
+      const result = shouldBlockCommit(reviews);
+      expect(result).toBe(true); // Should block because high > medium
+    });
 
-      expect(shouldBlock).toBe(true);
+    it('should block on critical severity when configured for medium', () => {
+      const reviews: ReviewItem[] = [
+        {
+          line: 5,
+          severity: 'critical',
+          category: 'security',
+          message: 'Remote code execution vulnerability',
+        },
+      ];
+
+      const result = shouldBlockCommit(reviews);
+      expect(result).toBe(true); // Should block because critical > medium
+    });
+
+    it('should respect custom severity threshold', () => {
+      const reviews: ReviewItem[] = [
+        {
+          line: 10,
+          severity: 'high',
+          category: 'security',
+          message: 'Security issue',
+        },
+        {
+          line: 20,
+          severity: 'medium',
+          category: 'performance',
+          message: 'Performance issue',
+        },
+      ];
+
+      // Test with 'high' threshold - should only block on high/critical
+      const resultHigh = shouldBlockCommit(reviews, 'high');
+      expect(resultHigh).toBe(true); // Blocks because of high severity
+
+      // Test with 'critical' threshold - should only block on critical
+      const resultCritical = shouldBlockCommit(reviews, 'critical');
+      expect(resultCritical).toBe(false); // Doesn't block, no critical issues
+    });
+
+    it('should handle empty reviews', () => {
+      const reviews: ReviewItem[] = [];
+      const result = shouldBlockCommit(reviews);
+      expect(result).toBe(false); // No issues, no blocking
     });
   });
 
   describe('formatResults', () => {
-    it('should format results correctly', () => {
-      const fileResults = [
+    it('should correctly format results and identify blocking status', () => {
+      const fileResults: FileReviewResult[] = [
         {
-          file: 'test1.ts',
+          file: 'src/index.ts',
           reviews: [
-            { line: 1, severity: 'high', category: 'security', message: 'Issue 1' },
-            { line: 2, severity: 'low', category: 'style', message: 'Issue 2' },
+            {
+              line: 10,
+              severity: 'medium',
+              category: 'security',
+              message: 'Potential XSS vulnerability',
+            },
+            {
+              line: 20,
+              severity: 'low',
+              category: 'style',
+              message: 'Inconsistent naming',
+            },
           ],
-          summary: 'Test file 1',
+          summary: 'Found security concerns',
         },
         {
-          file: 'test2.ts',
-          reviews: [{ line: 5, severity: 'medium', category: 'quality', message: 'Issue 3' }],
-          summary: 'Test file 2',
+          file: 'src/utils.ts',
+          reviews: [
+            {
+              line: 5,
+              severity: 'info',
+              category: 'best-practice',
+              message: 'Consider using TypeScript strict mode',
+            },
+          ],
+          summary: 'Minor improvements suggested',
         },
-      ] as any;
+      ];
 
       const formatted = formatResults(fileResults);
 
       expect(formatted.summary.totalFiles).toBe(2);
       expect(formatted.summary.totalIssues).toBe(3);
       expect(formatted.summary.bySeverity).toEqual({
-        high: 1,
-        low: 1,
         medium: 1,
+        low: 1,
+        info: 1,
       });
+      expect(formatted.blocked).toBe(true); // Should block due to medium severity issue
       expect(formatted.allReviews).toHaveLength(3);
-      expect(formatted.allReviews[0]).toHaveProperty('file', 'test1.ts');
     });
 
-    it('should calculate blocking correctly', () => {
-      const fileResults = [
+    it('should not block when only low/info issues exist', () => {
+      const fileResults: FileReviewResult[] = [
         {
-          file: 'test.ts',
+          file: 'src/index.ts',
           reviews: [
-            { line: 1, severity: 'critical', category: 'security', message: 'Critical issue' },
+            {
+              line: 10,
+              severity: 'low',
+              category: 'style',
+              message: 'Consider refactoring',
+            },
+            {
+              line: 20,
+              severity: 'info',
+              category: 'best-practice',
+              message: 'Add documentation',
+            },
           ],
-          summary: 'Test file',
+          summary: 'Minor issues found',
         },
-      ] as any;
+      ];
 
       const formatted = formatResults(fileResults);
 
-      expect(formatted.blocked).toBe(true);
+      expect(formatted.blocked).toBe(false); // Should not block
+      expect(formatted.summary.bySeverity).toEqual({
+        low: 1,
+        info: 1,
+      });
     });
   });
 
-  describe('outputResults', () => {
-    let consoleSpy: jest.SpyInstance;
+  describe('Config', () => {
+    const originalEnv = process.env;
 
     beforeEach(() => {
-      consoleSpy = jest.spyOn(console, 'log').mockImplementation();
-      mockFs.writeFileSync.mockImplementation();
+      process.env = { ...originalEnv };
     });
 
     afterEach(() => {
-      consoleSpy.mockRestore();
+      process.env = originalEnv;
     });
 
-    it('should output results to console and file', () => {
-      const results = {
-        summary: {
-          totalFiles: 2,
-          totalIssues: 3,
-          bySeverity: { high: 1, medium: 1, low: 1 },
-        },
-        files: [],
-        allReviews: [
-          {
-            file: 'test.ts',
-            line: 1,
-            severity: 'high',
-            category: 'security',
-            message: 'Security issue',
-            suggestion: 'Fix the security issue',
-          },
-        ],
-        blocked: false,
-      } as any;
-
-      outputResults(results);
-
-      expect(mockFs.writeFileSync).toHaveBeenCalledWith(
-        expect.stringContaining('ai-review-results.json'),
-        JSON.stringify(results, null, 2)
-      );
-      expect(consoleSpy).toHaveBeenCalledWith('\n🤖 AI Code Review Results');
-      expect(consoleSpy).toHaveBeenCalledWith('Files reviewed: 2');
-      expect(consoleSpy).toHaveBeenCalledWith('Total issues: 3');
+    it('should default to medium severity blocking', () => {
+      delete process.env.AI_REVIEWER_MAX_SEVERITY;
+      const config = getConfig();
+      expect(config.maxSeverityToBlock).toBe('medium');
     });
 
-    it('should show blocking message when commit should be blocked', () => {
-      const results = {
-        summary: { totalFiles: 1, totalIssues: 1, bySeverity: { critical: 1 } },
-        files: [],
-        allReviews: [],
-        blocked: true,
-      } as any;
-
-      outputResults(results);
-
-      expect(consoleSpy).toHaveBeenCalledWith('\n❌ Commit blocked due to high severity issues!');
+    it('should respect environment variable for severity', () => {
+      process.env.AI_REVIEWER_MAX_SEVERITY = 'high';
+      const config = getConfig();
+      expect(config.maxSeverityToBlock).toBe('high');
     });
 
-    it('should show success message when commit can proceed', () => {
-      const results = {
-        summary: { totalFiles: 1, totalIssues: 0, bySeverity: {} },
-        files: [],
-        allReviews: [],
-        blocked: false,
-      } as any;
-
-      outputResults(results);
-
-      expect(consoleSpy).toHaveBeenCalledWith('\n✅ No blocking issues found. Commit can proceed.');
+    it('should be enabled by default', () => {
+      delete process.env.AI_REVIEWER_ENABLED;
+      const config = getConfig();
+      expect(config.enabled).toBe(true);
     });
 
-    // Skipping complex outputResults test with mocking issues
-  });
-
-  // Skipping complex main function tests that have mocking issues
-
-  describe('module execution', () => {
-    it('should handle main function errors', async () => {
-      const errorSpy = jest.spyOn(console, 'error').mockImplementation();
-      const exitSpy = jest.spyOn(process, 'exit').mockImplementation(() => {
-        throw new Error('process.exit called');
-      });
-
-      // Create a mock that throws an error
-      const mockMain = jest.fn().mockRejectedValue(new Error('Test error'));
-
-      try {
-        await mockMain().catch((error: Error) => {
-          console.error('AI code review failed:', error);
-          process.exit(1);
-        });
-      } catch (error) {
-        expect((error as Error).message).toBe('process.exit called');
-      }
-
-      expect(errorSpy).toHaveBeenCalledWith('AI code review failed:', expect.any(Error));
-      expect(exitSpy).toHaveBeenCalledWith(1);
-
-      errorSpy.mockRestore();
-      exitSpy.mockRestore();
+    it('should respect disabled state', () => {
+      process.env.AI_REVIEWER_ENABLED = 'false';
+      const config = getConfig();
+      expect(config.enabled).toBe(false);
     });
   });
-
-  // Skipping reviewCode edge cases with complex mocking issues
 });

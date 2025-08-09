@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { UIModelConfig, ServerStatus, CreateModelRequest, ModelsResponse, ModelTestResult, OpenRouterStats } from '../types/api';
+import type { UIModelConfig, ServerStatus, CreateModelRequest, ModelsResponse, ModelTestResult, OpenRouterStats, LogsResponse, LogEntry } from '../types/api';
 
 const apiClient = axios.create({
   baseURL: '/api',
@@ -44,6 +44,22 @@ export const api = {
   // OpenRouter statistics
   getOpenRouterStats: async (modelSlug: string): Promise<OpenRouterStats> => {
     const response = await apiClient.get(`/openrouter-stats/${encodeURIComponent(modelSlug)}`);
+    return response.data;
+  },
+
+  // Logs
+  getRequestLogs: async (limit = 100, offset = 0): Promise<LogsResponse> => {
+    const response = await apiClient.get(`/logs/requests?limit=${limit}&offset=${offset}`);
+    return response.data;
+  },
+
+  getLogEntry: async (timestamp: string): Promise<LogEntry> => {
+    const response = await apiClient.get(`/logs/requests/${encodeURIComponent(timestamp)}`);
+    return response.data;
+  },
+
+  getErrorLogs: async (limit = 100, offset = 0): Promise<LogsResponse> => {
+    const response = await apiClient.get(`/logs/errors?limit=${limit}&offset=${offset}`);
     return response.data;
   },
 };

@@ -1,0 +1,149 @@
+[
+  {
+    "timestamp": "2025-08-09T11:24:22.707Z",
+    "startTime": 1754738658857,
+    "totalTime": 3849,
+    "totalStages": 3,
+    "passed": 0,
+    "failed": 1,
+    "success": false,
+    "stages": [
+      {
+        "id": "lint",
+        "name": "Code Linting",
+        "success": false,
+        "duration": 3844
+      }
+    ]
+  },
+  {
+    "timestamp": "2025-08-09T11:27:37.640Z",
+    "startTime": 1754738815293,
+    "totalTime": 42343,
+    "totalStages": 3,
+    "passed": 2,
+    "failed": 1,
+    "success": false,
+    "stages": [
+      {
+        "id": "lint",
+        "name": "Code Linting",
+        "success": true,
+        "duration": 3111
+      },
+      {
+        "id": "typecheck",
+        "name": "Type Checking",
+        "success": true,
+        "duration": 3077
+      },
+      {
+        "id": "test",
+        "name": "Unit Tests",
+        "success": false,
+        "duration": 36146
+      }
+    ]
+  },
+  {
+    "timestamp": "2025-08-09T11:28:24.934Z",
+    "startTime": 1754738900882,
+    "totalTime": 4051,
+    "totalStages": 1,
+    "passed": 1,
+    "failed": 0,
+    "success": true,
+    "stages": [
+      {
+        "id": "lint",
+        "name": "Code Linting",
+        "success": true,
+        "duration": 4050
+      }
+    ]
+  },
+  {
+    "timestamp": "2025-08-09T15:59:26.094Z",
+    "startTime": 1754755161821,
+    "totalTime": 4271,
+    "totalStages": 3,
+    "passed": 0,
+    "failed": 1,
+    "success": false,
+    "sessionId": null,
+    "stages": [
+      {
+        "id": "lint",
+        "name": "Code Linting",
+        "success": false,
+        "duration": 4265
+      }
+    ]
+  },
+  {
+    "timestamp": "2025-08-09T16:00:26.947Z",
+    "startTime": 1754755182999,
+    "totalTime": 43946,
+    "totalStages": 3,
+    "passed": 2,
+    "failed": 1,
+    "success": false,
+    "sessionId": null,
+    "stages": [
+      {
+        "id": "lint",
+        "name": "Code Linting",
+        "success": true,
+        "duration": 3015
+      },
+      {
+        "id": "typecheck",
+        "name": "Type Checking",
+        "success": true,
+        "duration": 2934
+      },
+      {
+        "id": "test",
+        "name": "Unit Tests",
+        "success": false,
+        "duration": 37992
+      }
+    ]
+  },
+  {
+    "timestamp": "2025-08-09T16:01:27.589Z",
+    "startTime": 1754755247822,
+    "totalTime": 39766,
+    "totalStages": 4,
+    "passed": 2,
+    "failed": 2,
+    "success": false,
+    "sessionId": null,
+    "stages": [
+      {
+        "id": "lint",
+        "name": "Code Linting",
+        "success": true,
+        "duration": 3104
+      },
+      {
+        "id": "typecheck",
+        "name": "Type Checking",
+        "success": true,
+        "duration": 2964
+      },
+      {
+        "id": "test",
+        "name": "Unit Tests",
+        "success": false,
+        "duration": 33584
+      },
+      {
+        "id": "typescript-preference",
+        "name": "TypeScript Preference Check",
+        "success": false,
+        "duration": 107
+      }
+    ]
+  }
+]

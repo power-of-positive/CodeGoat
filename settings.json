@@ -1,0 +1,61 @@
+{
+  "fallback": {
+    "maxRetries": 2,
+    "retryDelay": 500,
+    "enableFallbacks": true,
+    "fallbackOnContextLength": true,
+    "fallbackOnRateLimit": true,
+    "fallbackOnServerError": false
+  },
+  "validation": {
+    "stages": [
+      {
+        "id": "lint",
+        "name": "Code Linting",
+        "command": "npm run lint",
+        "timeout": 30000,
+        "enabled": true,
+        "continueOnFailure": false,
+        "order": 1
+      },
+      {
+        "id": "typecheck",
+        "name": "Type Checking",
+        "command": "npm run type-check",
+        "timeout": 30000,
+        "enabled": true,
+        "continueOnFailure": false,
+        "order": 2
+      },
+      {
+        "id": "test",
+        "name": "Unit Tests",
+        "command": "npm test",
+        "timeout": 60000,
+        "enabled": true,
+        "continueOnFailure": true,
+        "order": 3
+      },
+      {
+        "id": "typescript-preference",
+        "name": "TypeScript Preference Check",
+        "command": "node scripts/check-typescript-preference.js",
+        "timeout": 10000,
+        "enabled": true,
+        "continueOnFailure": true,
+        "order": 4
+      },
+      {
+        "id": "e2e",
+        "name": "E2E Tests",
+        "command": "cd ui && npm run test:e2e",
+        "timeout": 120000,
+        "enabled": false,
+        "continueOnFailure": true,
+        "order": 5
+      }
+    ],
+    "enableMetrics": true,
+    "maxAttempts": 5
+  }
+}

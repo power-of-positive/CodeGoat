@@ -1,13 +1,6 @@
-export interface LogEntry {
-  timestamp: string;
-  method: string;
-  path: string;
-  statusCode?: number;
-  duration?: number;
-  error?: string;
-  routeName?: string;
-  targetUrl?: string;
-}
+// Import and re-export LogEntry from types to avoid duplication
+import type { LogEntry } from './types/logs.types';
+export type { LogEntry } from './types/logs.types';
 
 export interface ILogger {
   info(message: string, meta?: Record<string, unknown>): void;

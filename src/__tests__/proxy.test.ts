@@ -3,6 +3,7 @@ import { ProxyHandler } from '../proxy';
 import { Route } from '../types';
 import axios from 'axios';
 import { Readable } from 'stream';
+import { createMockLogger } from '../test-helpers/logger.mock';
 
 // Mock axios
 jest.mock('axios');
@@ -16,7 +17,8 @@ describe('ProxyHandler', () => {
   let mockRes: Partial<Response>;
 
   beforeEach(() => {
-    proxyHandler = new ProxyHandler();
+    const mockLogger = createMockLogger();
+    proxyHandler = new ProxyHandler(mockLogger);
     mockReq = {
       headers: {
         'content-type': 'application/json',

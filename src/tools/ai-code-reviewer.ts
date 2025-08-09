@@ -20,7 +20,7 @@ export function getConfig(): Config {
     openaiApiKey: process.env.OPENAI_API_KEY || process.env.OPENROUTER_API_KEY,
     apiEndpoint: process.env.AI_REVIEWER_ENDPOINT || 'https://openrouter.ai/api/v1',
     model: process.env.AI_REVIEWER_MODEL || 'openrouter/anthropic/claude-3.5-sonnet',
-    maxSeverityToBlock: process.env.AI_REVIEWER_MAX_SEVERITY || 'high', // high, medium, low
+    maxSeverityToBlock: process.env.AI_REVIEWER_MAX_SEVERITY || 'medium', // Options: critical, high, medium, low, info
     enabled: process.env.AI_REVIEWER_ENABLED !== 'false',
     outputFile: path.join(process.cwd(), 'ai-review-results.json'),
   };
@@ -177,7 +177,18 @@ export function shouldBlockCommit(allReviews: ReviewItem[], maxSeverity?: string
   const config = getConfig();
   const blockingSeverity = SEVERITY_LEVELS[maxSeverity || config.maxSeverityToBlock];
 
-  return allReviews.some(review => SEVERITY_LEVELS[review.severity] >= blockingSeverity);
+  // Check if any review meets or exceeds the blocking threshold
+  const blockingReviews = allReviews.filter(
+    review => SEVERITY_LEVELS[review.severity] >= blockingSeverity
+  );
+
+  if (blockingReviews.length > 0) {
+    console.log(
+      `\n🚫 Found ${blockingReviews.length} blocking issue(s) at ${config.maxSeverityToBlock} severity or higher`
+    );
+  }
+
+  return blockingReviews.length > 0;
 }
 
 export function formatResults(results: FileReviewResult[]): FormattedResults {
@@ -263,11 +274,45 @@ export function outputResults(results: FormattedResults): void {
   console.log(`\n📊 Detailed results saved to: ${config.outputFile}`);
 
   if (results.blocked) {
-    console.log('\n❌ Commit blocked due to high severity issues!');
-    console.log(`   Configure AI_REVIEWER_MAX_SEVERITY to change blocking threshold.`);
-    console.log(`   Current threshold: ${config.maxSeverityToBlock}`);
+    const blockingSeverity = SEVERITY_LEVELS[config.maxSeverityToBlock];
+    const blockingIssues = results.allReviews.filter(
+      review => SEVERITY_LEVELS[review.severity] >= blockingSeverity
+    );
+
+    console.log('\n❌ Commit blocked due to severity issues!');
+    console.log(
+      `   Found ${blockingIssues.length} issue(s) at ${config.maxSeverityToBlock} severity or higher`
+    );
+    console.log(
+      `   Blocking threshold: ${config.maxSeverityToBlock} (configure with AI_REVIEWER_MAX_SEVERITY)`
+    );
+
+    // Show blocking issues grouped by severity
+    const blockingBySeverity = blockingIssues.reduce(
+      (acc, issue) => {
+        if (!acc[issue.severity]) acc[issue.severity] = 0;
+        acc[issue.severity]++;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
+
+    console.log('\n   Blocking issues by severity:');
+    Object.entries(blockingBySeverity)
+      .sort((a, b) => SEVERITY_LEVELS[b[0]] - SEVERITY_LEVELS[a[0]])
+      .forEach(([severity, count]) => {
+        const emojiMap: Record<string, string> = {
+          critical: '🔴',
+          high: '🟠',
+          medium: '🟡',
+          low: '🔵',
+          info: '⚪',
+        };
+        console.log(`     ${emojiMap[severity]} ${severity}: ${count} issue(s)`);
+      });
   } else {
     console.log('\n✅ No blocking issues found. Commit can proceed.');
+    console.log(`   Current blocking threshold: ${config.maxSeverityToBlock}`);
   }
 }
 

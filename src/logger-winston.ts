@@ -2,6 +2,7 @@ import winston from 'winston';
 import path from 'path';
 import { Request, Response, NextFunction } from 'express';
 import { ILogger, LogEntry } from './logger-interface';
+import { safeStringify, getSafeSize } from './utils/json';
 
 export interface WinstonLoggerConfig {
   level: string;
@@ -30,7 +31,7 @@ export class WinstonLogger implements ILogger {
             winston.format.colorize(),
             winston.format.timestamp(),
             winston.format.printf(({ timestamp, level, message, ...meta }) => {
-              const metaStr = Object.keys(meta).length ? JSON.stringify(meta) : '';
+              const metaStr = Object.keys(meta).length ? safeStringify(meta) : '';
               return `${timestamp} [${level}]: ${message} ${metaStr}`;
             })
           ),
@@ -146,28 +147,73 @@ export class WinstonLogger implements ILogger {
       duration: entry.duration,
       routeName: entry.routeName,
       targetUrl: entry.targetUrl,
+      requestHeaders: entry.requestHeaders,
+      requestBody: entry.requestBody,
+      responseHeaders: entry.responseHeaders,
+      responseBody: entry.responseBody,
+      responseSize: entry.responseSize,
+      userAgent: entry.userAgent,
+      clientIp: entry.clientIp,
       timestamp: entry.timestamp,
     });
   }
 
   middleware(): (req: Request, res: Response, next: NextFunction) => void {
     const logAccess = this.logAccess.bind(this);
+    const sanitizeHeaders = this.sanitizeHeaders.bind(this);
+    const captureRequestBody = this.captureRequestBody.bind(this);
+
     return (req: Request, res: Response, next: NextFunction): void => {
       const startTime = Date.now();
       const originalEnd = res.end;
 
+      // Capture request data
+      const requestHeaders = sanitizeHeaders(req.headers);
+      const requestBody = captureRequestBody(req);
+      const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
+      const userAgent = req.get('user-agent') || 'unknown';
+
+      // Store original response data
+      let responseBody: unknown;
+      const chunks: Buffer[] = [];
+
       /* eslint-disable @typescript-eslint/no-explicit-any */
       res.end = function (this: Response, ...args: any[]) {
         res.end = originalEnd;
+
+        // Capture response body if args contain data
+        if (args.length > 0 && args[0]) {
+          chunks.push(Buffer.isBuffer(args[0]) ? args[0] : Buffer.from(args[0]));
+        }
+
         const result = originalEnd.apply(this, args as any);
 
         const duration = Date.now() - startTime;
+
+        // Parse response body safely
+        try {
+          if (chunks.length > 0) {
+            const fullResponse = Buffer.concat(chunks).toString();
+            responseBody = JSON.parse(fullResponse);
+          }
+        } catch {
+          // Keep raw response if JSON parsing fails
+          responseBody = chunks.length > 0 ? Buffer.concat(chunks).toString() : undefined;
+        }
+
         const entry: LogEntry = {
           timestamp: new Date().toISOString(),
           method: req.method,
           path: req.path,
           statusCode: res.statusCode,
           duration,
+          requestHeaders,
+          requestBody,
+          responseHeaders: sanitizeHeaders(res.getHeaders()),
+          responseBody,
+          responseSize: chunks.length > 0 ? Buffer.concat(chunks).length : 0,
+          userAgent,
+          clientIp,
           /* eslint-disable @typescript-eslint/no-explicit-any */
           routeName: (req as any).routeName,
           targetUrl: (req as any).targetUrl,
@@ -182,6 +228,50 @@ export class WinstonLogger implements ILogger {
 
       next();
     };
+  }
+
+  private sanitizeHeaders(
+    headers: Record<string, string | string[] | number | undefined> | unknown
+  ): Record<string, string> {
+    const sanitized: Record<string, string> = {};
+
+    if (!headers || typeof headers !== 'object') {
+      return sanitized;
+    }
+
+    const headersObj = headers as Record<string, unknown>;
+
+    for (const [key, value] of Object.entries(headersObj)) {
+      // Skip sensitive headers
+      if (
+        key.toLowerCase().includes('authorization') ||
+        key.toLowerCase().includes('cookie') ||
+        key.toLowerCase().includes('x-api-key')
+      ) {
+        sanitized[key] = '[REDACTED]';
+      } else if (Array.isArray(value)) {
+        sanitized[key] = value.join(', ');
+      } else if (value !== undefined && value !== null) {
+        sanitized[key] = String(value);
+      }
+    }
+
+    return sanitized;
+  }
+
+  private captureRequestBody(req: Request): unknown {
+    // Only capture body for non-GET requests and if body exists
+    if (req.method === 'GET' || !req.body) {
+      return undefined;
+    }
+
+    // Check if body is too large (> 1MB)
+    const bodyStr = safeStringify(req.body);
+    if (bodyStr.length > 1024 * 1024) {
+      return `[Body too large: ${getSafeSize(req.body)}]`;
+    }
+
+    return req.body;
   }
 
   // Compatibility methods for existing LogEntry interface

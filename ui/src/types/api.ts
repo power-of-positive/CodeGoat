@@ -77,3 +77,27 @@ export interface OpenRouterStats {
   providerCount: number;
   hasUptimeData?: boolean;
 }
+
+export interface LogEntry {
+  timestamp: string;
+  level: string;
+  message: string;
+  method?: string;
+  path?: string;
+  statusCode?: number;
+  duration?: number;
+  routeName?: string;
+  targetUrl?: string;
+  meta?: Record<string, unknown>;
+  error?: {
+    message: string;
+    stack?: string;
+  };
+}
+
+export interface LogsResponse {
+  logs: LogEntry[];
+  total: number;
+  offset: number;
+  limit: number;
+}

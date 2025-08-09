@@ -11,6 +11,9 @@ import { createModelRoutes } from './routes/models';
 import { createStatusRoutes } from './routes/status';
 import { createOpenRouterStatsRoutes } from './routes/openrouter-stats';
 import { createInternalRoutes } from './routes/internal';
+import { createLogsRoutes } from './routes/logs';
+import { createSettingsRoutes } from './routes/settings';
+import { createAnalyticsRoutes } from './routes/analytics';
 
 const app = express();
 const configLoader = new ConfigLoader();
@@ -43,12 +46,57 @@ const logCleaner = new LogCleaner(
 // Initialize management API
 // initializeManagementAPI(configLoader, logger);
 
-app.use(express.json());
-app.use(express.raw({ type: '*/*', limit: '10mb' }));
+// Configure body parser with large limits and error handling
+app.use(
+  express.json({
+    limit: '100mb',
+  })
+);
+app.use(
+  express.raw({
+    type: '*/*',
+    limit: '100mb',
+  })
+);
+app.use(
+  express.urlencoded({
+    limit: '100mb',
+    extended: true,
+  })
+);
+
+// Handle body parser errors (including payload too large)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+app.use((error: any, req: Request, res: Response, next: NextFunction) => {
+  if (error instanceof SyntaxError && 'body' in error) {
+    logger.error('Body parser syntax error', error);
+    return res.status(400).json({
+      error: 'Invalid JSON in request body',
+    });
+  }
+
+  if (error.type === 'entity.too.large') {
+    logger.error('Request entity too large', error);
+    return res.status(413).json({
+      error: {
+        message: 'Request payload too large',
+        type: 'payload_too_large_error',
+        limit: '100MB',
+      },
+    });
+  }
+
+  next(error);
+});
 
 // Debug middleware
-app.use((req, res, next) => {
-  console.log(`[DEBUG] Request: ${req.method} ${req.path}`);
+app.use((req, _res, next) => {
+  logger.debug('Request received', {
+    method: req.method,
+    path: req.path,
+    contentType: req.headers['content-type'],
+    contentLength: req.headers['content-length'],
+  });
   next();
 });
 
@@ -63,15 +111,18 @@ app.use('/internal', createInternalRoutes());
 app.use('/api/models', createModelRoutes(configLoader, logger));
 app.use('/api/status', createStatusRoutes(configLoader, logger));
 app.use('/api/openrouter-stats', createOpenRouterStatsRoutes(logger));
+app.use('/api/logs', createLogsRoutes(logger));
+app.use('/api/settings', createSettingsRoutes(configLoader, logger));
+app.use('/api/analytics', createAnalyticsRoutes(logger));
 
 // Keep test route for compatibility
-app.get('/test', (req: Request, res: Response) => {
+app.get('/test', (_req: Request, res: Response) => {
   res.json({ message: 'Test route works!' });
 });
 
 // Proxy middleware - only for non-management routes
 app.use(async (req: Request, res: Response, next: NextFunction) => {
-  console.log('Proxy middleware called for:', req.method, req.path);
+  logger.debug('Proxy middleware called', { method: req.method, path: req.path });
 
   // Skip proxy routing for API and internal routes
   if (
@@ -80,7 +131,7 @@ app.use(async (req: Request, res: Response, next: NextFunction) => {
     req.path.startsWith('/ui/') ||
     req.path === '/test'
   ) {
-    console.log('Skipping proxy for:', req.path);
+    logger.debug('Skipping proxy', { path: req.path });
     return next();
   }
 
@@ -143,6 +194,9 @@ const server = app.listen(config.proxy.port, config.proxy.host, () => {
   );
   /* eslint-enable no-undef */
 });
+
+// Set server timeout to handle large payloads
+server.timeout = 300000; // 5 minutes
 
 process.on('SIGTERM', () => {
   logger.info('SIGTERM signal received: closing HTTP server');

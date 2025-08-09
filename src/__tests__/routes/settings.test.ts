@@ -1,0 +1,288 @@
+import request from 'supertest';
+import express from 'express';
+import { createSettingsRoutes } from '../../routes/settings';
+import { createMockLogger } from '../../test-helpers/logger.mock';
+import fs from 'fs/promises';
+
+jest.mock('fs/promises');
+
+describe('Settings Routes', () => {
+  let app: express.Application;
+  let mockLogger: ReturnType<typeof createMockLogger>;
+
+  beforeEach(() => {
+    mockLogger = createMockLogger();
+    app = express();
+    app.use(express.json());
+    // Pass null for configLoader since settings routes don't actually use it
+    app.use('/settings', createSettingsRoutes(null as any, mockLogger));
+    jest.clearAllMocks();
+  });
+
+  describe('GET /settings', () => {
+    it('should return default settings when no settings file exists', async () => {
+      (fs.readFile as jest.Mock).mockRejectedValue({ code: 'ENOENT' });
+
+      const response = await request(app).get('/settings').expect(200);
+
+      expect(response.body).toEqual({
+        fallback: expect.objectContaining({
+          maxRetries: 3,
+          retryDelay: 1000,
+          enableFallbacks: true,
+          fallbackOnContextLength: true,
+          fallbackOnRateLimit: true,
+          fallbackOnServerError: false,
+        }),
+        validation: expect.objectContaining({
+          stages: expect.arrayContaining([
+            expect.objectContaining({ id: 'lint' }),
+            expect.objectContaining({ id: 'typecheck' }),
+            expect.objectContaining({ id: 'test' }),
+          ]),
+          enableMetrics: true,
+          maxAttempts: 5,
+        }),
+      });
+    });
+
+    it('should return existing settings from file', async () => {
+      const mockSettings = {
+        fallback: { maxRetries: 5, retryDelay: 2000, enableFallbacks: true },
+        validation: { stages: [], enableMetrics: false, maxAttempts: 3 },
+      };
+
+      (fs.readFile as jest.Mock).mockResolvedValue(JSON.stringify(mockSettings));
+
+      const response = await request(app).get('/settings').expect(200);
+
+      expect(response.body).toEqual(mockSettings);
+    });
+
+    it('should handle file read errors', async () => {
+      (fs.readFile as jest.Mock).mockRejectedValue(new Error('Permission denied'));
+
+      await request(app).get('/settings').expect(500).expect({
+        error: 'Failed to load settings',
+      });
+
+      expect(mockLogger.error).toHaveBeenCalled();
+    });
+  });
+
+  describe('PUT /settings', () => {
+    it('should update settings successfully', async () => {
+      const existingSettings = { fallback: { maxRetries: 3 } };
+      const newSettings = { fallback: { maxRetries: 5, enableFallbacks: false } };
+
+      (fs.readFile as jest.Mock).mockResolvedValue(JSON.stringify(existingSettings));
+      (fs.writeFile as jest.Mock).mockResolvedValue(undefined);
+
+      const response = await request(app).put('/settings').send(newSettings).expect(200);
+
+      expect(fs.writeFile).toHaveBeenCalled();
+      expect(response.body).toEqual({
+        message: 'Settings updated successfully',
+        settings: expect.objectContaining(newSettings),
+      });
+      expect(mockLogger.info).toHaveBeenCalledWith('Settings updated successfully');
+    });
+
+    it('should handle invalid settings format', async () => {
+      const invalidSettings = { fallback: { maxRetries: 'invalid' } }; // Invalid type
+
+      await request(app)
+        .put('/settings')
+        .send(invalidSettings)
+        .expect(400)
+        .expect(res => {
+          expect(res.body).toEqual({
+            error: 'Invalid settings format',
+            details: expect.any(Array),
+          });
+        });
+    });
+  });
+
+  describe('GET /settings/fallback', () => {
+    it('should return fallback settings', async () => {
+      const mockSettings = {
+        fallback: {
+          maxRetries: 5,
+          retryDelay: 2000,
+          enableFallbacks: true,
+          fallbackOnContextLength: true,
+          fallbackOnRateLimit: false,
+          fallbackOnServerError: false,
+        },
+      };
+
+      (fs.readFile as jest.Mock).mockResolvedValue(JSON.stringify(mockSettings));
+
+      const response = await request(app).get('/settings/fallback').expect(200);
+
+      expect(response.body).toEqual(mockSettings.fallback);
+    });
+
+    it('should return empty object when no fallback settings exist', async () => {
+      (fs.readFile as jest.Mock).mockResolvedValue(JSON.stringify({}));
+
+      const response = await request(app).get('/settings/fallback').expect(200);
+
+      expect(response.body).toEqual({});
+    });
+  });
+
+  describe('PUT /settings/fallback', () => {
+    it('should update fallback settings', async () => {
+      const existingSettings = { validation: { stages: [] } };
+      const newFallbackSettings = {
+        maxRetries: 3,
+        retryDelay: 1500,
+        enableFallbacks: true,
+        fallbackOnContextLength: false,
+        fallbackOnRateLimit: true,
+        fallbackOnServerError: false,
+      };
+
+      (fs.readFile as jest.Mock).mockResolvedValue(JSON.stringify(existingSettings));
+      (fs.writeFile as jest.Mock).mockResolvedValue(undefined);
+
+      const response = await request(app)
+        .put('/settings/fallback')
+        .send(newFallbackSettings)
+        .expect(200);
+
+      expect(response.body).toEqual({
+        message: 'Fallback settings updated successfully',
+        fallback: newFallbackSettings,
+      });
+      expect(mockLogger.info).toHaveBeenCalledWith('Fallback settings updated', {
+        settings: newFallbackSettings,
+      });
+    });
+
+    it('should validate fallback settings', async () => {
+      const invalidSettings = {
+        maxRetries: 15, // Invalid - exceeds max of 10
+        retryDelay: 50, // Invalid - below min of 100
+      };
+
+      await request(app)
+        .put('/settings/fallback')
+        .send(invalidSettings)
+        .expect(400)
+        .expect(res => {
+          expect(res.body).toEqual({
+            error: 'Invalid fallback settings',
+            details: expect.any(Array),
+          });
+        });
+    });
+  });
+
+  describe('POST /settings/validation/stages', () => {
+    it('should add new validation stage', async () => {
+      const existingSettings = {
+        validation: { stages: [], enableMetrics: true, maxAttempts: 5 },
+      };
+      const newStage = {
+        id: 'custom-lint',
+        name: 'Custom Linting',
+        command: 'custom-linter',
+        timeout: 30000,
+        enabled: true,
+        continueOnFailure: false,
+        order: 1,
+      };
+
+      (fs.readFile as jest.Mock).mockResolvedValue(JSON.stringify(existingSettings));
+      (fs.writeFile as jest.Mock).mockResolvedValue(undefined);
+
+      const response = await request(app)
+        .post('/settings/validation/stages')
+        .send(newStage)
+        .expect(201);
+
+      expect(response.body).toEqual({
+        message: 'Validation stage added successfully',
+        stage: newStage,
+      });
+      expect(mockLogger.info).toHaveBeenCalledWith('Validation stage added', {
+        stageId: newStage.id,
+      });
+    });
+
+    it('should reject duplicate stage IDs', async () => {
+      const existingSettings = {
+        validation: {
+          stages: [{ id: 'lint', name: 'Existing Lint', command: 'lint' }],
+          enableMetrics: true,
+          maxAttempts: 5,
+        },
+      };
+      const duplicateStage = {
+        id: 'lint', // Duplicate ID
+        name: 'New Lint',
+        command: 'new-lint',
+        timeout: 30000,
+        enabled: true,
+        continueOnFailure: false,
+        order: 1,
+      };
+
+      (fs.readFile as jest.Mock).mockResolvedValue(JSON.stringify(existingSettings));
+
+      await request(app)
+        .post('/settings/validation/stages')
+        .send(duplicateStage)
+        .expect(409)
+        .expect({
+          error: 'Stage with this ID already exists',
+        });
+    });
+  });
+
+  describe('DELETE /settings/validation/stages/:id', () => {
+    it('should remove validation stage', async () => {
+      const existingSettings = {
+        validation: {
+          stages: [
+            { id: 'lint', name: 'Lint' },
+            { id: 'test', name: 'Test' },
+          ],
+          enableMetrics: true,
+          maxAttempts: 5,
+        },
+      };
+
+      (fs.readFile as jest.Mock).mockResolvedValue(JSON.stringify(existingSettings));
+      (fs.writeFile as jest.Mock).mockResolvedValue(undefined);
+
+      const response = await request(app).delete('/settings/validation/stages/lint').expect(200);
+
+      expect(response.body).toEqual({
+        message: 'Validation stage removed successfully',
+      });
+      expect(mockLogger.info).toHaveBeenCalledWith('Validation stage removed', {
+        stageId: 'lint',
+      });
+    });
+
+    it('should handle removing non-existent stage', async () => {
+      const existingSettings = {
+        validation: {
+          stages: [{ id: 'lint', name: 'Lint' }],
+          enableMetrics: true,
+          maxAttempts: 5,
+        },
+      };
+
+      (fs.readFile as jest.Mock).mockResolvedValue(JSON.stringify(existingSettings));
+
+      await request(app).delete('/settings/validation/stages/nonexistent').expect(404).expect({
+        error: 'Validation stage not found',
+      });
+    });
+  });
+});

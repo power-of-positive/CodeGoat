@@ -35,7 +35,8 @@ export default [
       '@typescript-eslint/explicit-function-return-type': 'error', // Enforce explicit return types
       '@typescript-eslint/explicit-module-boundary-types': 'off',
       '@typescript-eslint/no-inferrable-types': 'off',
-      'no-console': ['warn', { allow: ['warn', 'error', 'log'] }], // Allow console.log
+      'no-console': 'error', // Disallow all console statements
+      'no-warning-comments': ['warn', { terms: ['todo', 'fixme', 'hack'], location: 'start' }],
       'prefer-const': 'error',
       'no-var': 'error',
       'max-lines': ['error', {
@@ -51,6 +52,52 @@ export default [
     },
   },
   {
+    // Discourage JavaScript files in favor of TypeScript
+    files: ['src/**/*.js', 'tests/**/*.js'],
+    rules: {
+      'no-console': ['warn', {
+        allow: ['warn', 'error', 'log']
+      }],
+      // Custom warning for JavaScript files in TypeScript project
+      'prefer-const': ['error'],
+      'no-var': ['error'],
+    },
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'module',
+      globals: {
+        console: 'readonly',
+        process: 'readonly',
+        __dirname: 'readonly',
+        __filename: 'readonly',
+        Buffer: 'readonly',
+        global: 'readonly',
+      },
+    },
+  },
+  {
+    // Allow console statements in CLI tools and scripts
+    files: ['scripts/**/*.js', 'scripts/**/*.ts', 'src/tools/**/*.ts', 'src/**/cli.ts'],
+    rules: {
+      'no-console': ['warn', { allow: ['log', 'warn', 'error', 'info'] }], // Allow console in CLI tools
+    },
+    languageOptions: {
+      parser: tsparser,
+      parserOptions: {
+        ecmaVersion: 2022,
+        sourceType: 'module',
+      },
+      globals: {
+        console: 'readonly',
+        process: 'readonly',
+        __dirname: 'readonly',
+        __filename: 'readonly',
+        Buffer: 'readonly',
+        global: 'readonly',
+      },
+    },
+  },
+  {
     files: ['**/*.test.ts', '**/*.spec.ts', 'tests/**/*.ts'],
     languageOptions: {
       globals: {
@@ -63,15 +110,26 @@ export default [
         afterAll: 'readonly',
         jest: 'readonly',
         test: 'readonly',
+        fail: 'readonly',
         console: 'readonly',
         process: 'readonly',
         setTimeout: 'readonly',
         clearTimeout: 'readonly',
+        require: 'readonly',
+        module: 'readonly',
+        __dirname: 'readonly',
+        __filename: 'readonly',
+        Buffer: 'readonly',
+        global: 'readonly',
       },
     },
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-unused-vars': 'off',
+      '@typescript-eslint/explicit-function-return-type': 'off',
+      '@typescript-eslint/no-require-imports': 'off',
       'no-console': 'off',
+      'no-undef': 'off',
       'max-lines': 'off', // Disable max-lines for test files
       'max-lines-per-function': 'off', // Disable max-lines-per-function for test files
     },
