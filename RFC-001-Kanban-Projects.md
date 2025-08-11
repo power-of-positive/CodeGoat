@@ -1,211 +1,295 @@
-# RFC 001: TypeScript Kanban Board with AI Agent Integration
+# RFC 001: Local-First TypeScript Kanban Board with AI Agent Integration
 
 ## Summary
-Implement a comprehensive project management system with Kanban boards in TypeScript, inspired by vibe-kanban but fully integrated with CodeGoat's proxy infrastructure. This will provide visual task management, automated task execution with configurable AI agents, GitHub worktree integration, and comprehensive validation analytics.
+Implement a local-first project management system with Kanban boards in TypeScript, closely following vibe-kanban's architecture but with enhanced functionality. The application runs entirely locally, allowing users to configure their own AI model endpoints while providing visual task management, automated task execution with configurable validation pipelines, and comprehensive analytics.
 
 ## Motivation
-- Leverage CodeGoat's existing proxy server with model fallback capabilities
-- Provide visual task management for development projects with AI agent orchestration
-- Enable automated task execution with configurable validation scripts
-- Track comprehensive metrics across projects, agents, and LLM models
-- Integrate GitHub workflows with isolated development environments
-- Build upon proven patterns from vibe-kanban while maintaining TypeScript consistency
+- **Local-First Architecture**: Inspired by vibe-kanban's local execution model
+- **Data Privacy**: All data remains on user's machine, no cloud dependencies
+- **AI Flexibility**: Users configure their own AI model endpoints (OpenAI, Anthropic, local models, etc.)
+- **Simple Authentication**: Basic local application access, no external auth required
+- **GitHub Integration**: Local Git operations with optional remote push/PR creation
+- **Proven Patterns**: Build upon vibe-kanban's successful task execution model
 
 ## Detailed Design
 
-### 1. Data Models (TypeScript/SQLite)
+### 1. Local-First Architecture
 
-#### Project Entity
+#### 1.1 Core Principles
+- **No Cloud Dependencies**: Application runs entirely on user's machine
+- **Local Data Storage**: SQLite database stored locally
+- **User-Configured Endpoints**: AI models configured by user (not managed centrally)
+- **Optional Network**: Only for AI API calls and optional GitHub integration
+- **Simple Setup**: Single npm command installation like vibe-kanban
+
+#### 1.2 Comparison with vibe-kanban
+```
+vibe-kanban              →  Our Implementation
+├── Rust backend         →  Node.js/TypeScript backend
+├── Local SQLite         →  Local SQLite (same)
+├── Local execution      →  Local execution (same)
+├── GitHub integration   →  Enhanced GitHub integration
+└── Basic UI             →  Enhanced React UI with analytics
+```
+
+### 2. Data Models (Based on vibe-kanban Schema)
+
+#### 2.1 Core Entities (Mirroring vibe-kanban)
+```sql
+-- Projects table (enhanced from vibe-kanban)
+CREATE TABLE projects (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT,
+    git_repo_path TEXT NOT NULL UNIQUE DEFAULT '',
+    setup_script TEXT DEFAULT '',
+    dev_server_script TEXT DEFAULT '',
+    validation_script TEXT DEFAULT '',
+    cleanup_script TEXT DEFAULT '',
+    status TEXT DEFAULT 'active' CHECK (status IN ('active', 'archived')),
+    settings TEXT, -- JSON: ProjectSettings
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tasks table (from vibe-kanban)
+CREATE TABLE tasks (
+    id TEXT PRIMARY KEY,
+    project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    parent_task_id TEXT REFERENCES tasks(id) ON DELETE SET NULL,
+    template_id TEXT REFERENCES task_templates(id) ON DELETE SET NULL,
+    title TEXT NOT NULL,
+    description TEXT,
+    status TEXT NOT NULL CHECK (status IN ('todo', 'inprogress', 'inreview', 'done', 'cancelled')),
+    priority TEXT DEFAULT 'medium' CHECK (priority IN ('low', 'medium', 'high', 'urgent')),
+    tags TEXT, -- JSON array
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Task templates (from vibe-kanban)
+CREATE TABLE task_templates (
+    id TEXT PRIMARY KEY,
+    project_id TEXT REFERENCES projects(id) ON DELETE CASCADE, -- NULL for global templates
+    template_name TEXT NOT NULL,
+    title TEXT NOT NULL,
+    description TEXT,
+    default_prompt TEXT NOT NULL,
+    tags TEXT, -- JSON array
+    estimated_hours INTEGER,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(project_id, template_name)
+);
+
+-- Task attempts (from vibe-kanban)
+CREATE TABLE task_attempts (
+    id TEXT PRIMARY KEY,
+    task_id TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+    worktree_path TEXT NOT NULL,
+    branch_name TEXT NOT NULL,
+    merge_commit TEXT,
+    executor TEXT NOT NULL, -- AI model used
+    status TEXT NOT NULL CHECK (status IN ('created', 'running', 'completed', 'failed', 'cancelled')),
+    stdout TEXT,
+    stderr TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    completed_at TEXT
+);
+
+-- Execution processes (from vibe-kanban)
+CREATE TABLE execution_processes (
+    id TEXT PRIMARY KEY,
+    task_attempt_id TEXT NOT NULL REFERENCES task_attempts(id) ON DELETE CASCADE,
+    process_type TEXT NOT NULL CHECK (process_type IN ('setupscript', 'codingagent', 'devserver', 'validation', 'cleanup')),
+    status TEXT NOT NULL CHECK (status IN ('running', 'completed', 'failed', 'killed')),
+    command TEXT NOT NULL,
+    args TEXT, -- JSON array
+    working_directory TEXT NOT NULL,
+    stdout TEXT,
+    stderr TEXT,
+    exit_code INTEGER,
+    started_at TEXT,
+    completed_at TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Process activity log (from vibe-kanban)
+CREATE TABLE task_attempt_activities (
+    id TEXT PRIMARY KEY,
+    task_attempt_id TEXT NOT NULL REFERENCES task_attempts(id) ON DELETE CASCADE,
+    status TEXT NOT NULL CHECK (status IN (
+        'worktree_created', 'setup_started', 'setup_completed', 'setup_failed',
+        'agent_started', 'agent_completed', 'agent_failed',
+        'validation_started', 'validation_passed', 'validation_failed',
+        'pr_created', 'cleanup_completed'
+    )),
+    note TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+#### 2.2 AI Model Configuration (Local Endpoints)
+```sql
+-- AI model configurations (user-configured endpoints)
+CREATE TABLE ai_models (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE,
+    description TEXT,
+    endpoint_url TEXT NOT NULL,
+    api_key TEXT NOT NULL, -- Encrypted local storage
+    provider TEXT NOT NULL, -- 'openai', 'anthropic', 'local', 'custom'
+    model_id TEXT NOT NULL, -- e.g., 'gpt-4', 'claude-3-sonnet'
+    parameters TEXT, -- JSON: temperature, max_tokens, etc.
+    enabled BOOLEAN DEFAULT TRUE,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Execution metrics for analytics
+CREATE TABLE execution_metrics (
+    id TEXT PRIMARY KEY,
+    attempt_id TEXT NOT NULL REFERENCES task_attempts(id) ON DELETE CASCADE,
+    model_used TEXT NOT NULL,
+    prompt_tokens INTEGER,
+    completion_tokens INTEGER,
+    duration_ms INTEGER,
+    success BOOLEAN NOT NULL,
+    validation_passed BOOLEAN,
+    cost_estimate REAL, -- Estimated cost in USD
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+#### 2.3 TypeScript Interfaces
 ```typescript
+// Project types (enhanced from vibe-kanban)
 interface Project {
-  id: string;
-  name: string;
-  description?: string;
-  gitRepoPath: string; // Local git repository path
-  setupScript: string; // Project initialization script
-  devServerScript: string; // Development server command
-  validationScript: string; // Custom validation pipeline
-  cleanupScript?: string; // Optional cleanup after task completion
-  status: 'active' | 'archived';
-  settings: ProjectSettings;
-  createdAt: Date;
-  updatedAt: Date;
+    id: string;
+    name: string;
+    description?: string;
+    gitRepoPath: string;
+    setupScript: string;
+    devServerScript: string;
+    validationScript: string;
+    cleanupScript?: string;
+    status: 'active' | 'archived';
+    settings: ProjectSettings;
+    createdAt: string;
+    updatedAt: string;
 }
 
 interface ProjectSettings {
-  defaultBranch: string;
-  workTreePrefix: string;
-  defaultAgentModel: string; // Default from CodeGoat proxy models
-  fallbackModels: string[]; // Fallback chain from proxy config
-  validationTimeout: number;
-  autoCleanupWorkTrees: boolean;
-  enableMetrics: boolean;
-  githubIntegration: GitHubSettings;
+    defaultBranch: string;
+    workTreePrefix: string;
+    defaultAgentModel: string; // Reference to ai_models.name
+    fallbackModels: string[]; // Array of model names
+    validationTimeout: number;
+    autoCleanupWorkTrees: boolean;
+    maxRetryAttempts: number; // Validation loop retry count
+    enableMetrics: boolean;
+    githubIntegration: {
+        enabled: boolean;
+        autoCreatePR: boolean;
+        prTemplate?: string;
+    };
 }
 
-interface GitHubSettings {
-  enabled: boolean;
-  autoCreatePR: boolean;
-  prTemplate?: string;
-  reviewers?: string[];
-}
-```
-
-#### Task Entity (Based on vibe-kanban schema)
-```typescript
+// Task types (exactly from vibe-kanban)
 interface Task {
-  id: string;
-  projectId: string;
-  parentTaskId?: string; // For hierarchical tasks
-  title: string;
-  description?: string;
-  status: TaskStatus;
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  tags: string[];
-  templateId?: string; // Reference to task template
-  createdAt: Date;
-  updatedAt: Date;
+    id: string;
+    projectId: string;
+    parentTaskId?: string;
+    templateId?: string;
+    title: string;
+    description?: string;
+    status: TaskStatus;
+    priority: Priority;
+    tags: string[];
+    createdAt: string;
+    updatedAt: string;
 }
 
 type TaskStatus = 'todo' | 'inprogress' | 'inreview' | 'done' | 'cancelled';
+type Priority = 'low' | 'medium' | 'high' | 'urgent';
 
-interface TaskTemplate {
-  id: string;
-  projectId?: string; // null for global templates
-  templateName: string;
-  title: string;
-  description?: string;
-  defaultPrompt: string;
-  tags: string[];
-  estimatedHours?: number;
-  createdAt: Date;
-  updatedAt: Date;
+// AI Model configuration
+interface AIModel {
+    id: string;
+    name: string;
+    description?: string;
+    endpointUrl: string;
+    provider: 'openai' | 'anthropic' | 'local' | 'custom';
+    modelId: string;
+    parameters: {
+        temperature?: number;
+        maxTokens?: number;
+        topP?: number;
+        [key: string]: any;
+    };
+    enabled: boolean;
+    createdAt: string;
+    updatedAt: string;
 }
 ```
 
-#### Task Execution Tracking
+### 3. Local API Endpoints (Express.js/TypeScript)
+
+#### 3.1 AI Model Configuration API
 ```typescript
-interface TaskAttempt {
-  id: string;
-  taskId: string;
-  worktreePath: string;
-  branchName: string;
-  mergeCommit?: string;
-  executor: string; // Agent model used
-  status: AttemptStatus;
-  stdout?: string;
-  stderr?: string;
-  createdAt: Date;
-  updatedAt: Date;
-  completedAt?: Date;
-}
+// Local AI model management
+GET    /api/ai-models                    - List configured AI models
+POST   /api/ai-models                    - Add new AI model endpoint  
+GET    /api/ai-models/:id                - Get model details
+PUT    /api/ai-models/:id                - Update model configuration
+DELETE /api/ai-models/:id                - Delete model configuration
+POST   /api/ai-models/:id/test           - Test model connection
 
-type AttemptStatus = 'created' | 'running' | 'completed' | 'failed' | 'cancelled';
-
-interface ExecutionProcess {
-  id: string;
-  taskAttemptId: string;
-  processType: ProcessType;
-  status: ProcessStatus;
-  command: string;
-  args: string[];
-  workingDirectory: string;
-  stdout?: string;
-  stderr?: string;
-  exitCode?: number;
-  startedAt?: Date;
-  completedAt?: Date;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-type ProcessType = 'setupscript' | 'codingagent' | 'devserver' | 'validation' | 'cleanup';
-type ProcessStatus = 'running' | 'completed' | 'failed' | 'killed';
-
-interface TaskAttemptActivity {
-  id: string;
-  taskAttemptId: string;
-  status: ActivityStatus;
-  note?: string;
-  createdAt: Date;
-}
-
-type ActivityStatus = 'worktree_created' | 'setup_started' | 'setup_completed' | 'setup_failed' | 
-                     'agent_started' | 'agent_completed' | 'agent_failed' | 
-                     'validation_started' | 'validation_passed' | 'validation_failed' |
-                     'pr_created' | 'cleanup_completed';
+// Authentication (local only)
+POST   /api/auth/login                   - Basic local login
+POST   /api/auth/logout                  - Logout session
+GET    /api/auth/status                  - Check auth status
 ```
 
-### 2. API Endpoints (Express.js/TypeScript)
-
-#### Projects API
+#### 3.2 Core APIs (Following vibe-kanban patterns)
 ```typescript
-// Project management
-POST   /api/kanban/projects              - Create project
-GET    /api/kanban/projects              - List all projects
-GET    /api/kanban/projects/:id          - Get project details  
-PUT    /api/kanban/projects/:id          - Update project
-DELETE /api/kanban/projects/:id          - Archive project
-POST   /api/kanban/projects/:id/validate - Run project validation
+// Projects API (enhanced from vibe-kanban)
+GET    /api/projects                     - List all projects
+POST   /api/projects                     - Create project
+GET    /api/projects/:id                 - Get project details  
+PUT    /api/projects/:id                 - Update project
+DELETE /api/projects/:id                 - Archive project
 
-// Project configuration
-GET    /api/kanban/projects/:id/settings - Get project settings
-PUT    /api/kanban/projects/:id/settings - Update project settings
-GET    /api/kanban/projects/:id/worktrees - List active worktrees
-DELETE /api/kanban/projects/:id/worktrees/:branch - Cleanup worktree
-```
+// Tasks API (from vibe-kanban)
+GET    /api/projects/:projectId/tasks    - List project tasks
+POST   /api/projects/:projectId/tasks    - Create task
+GET    /api/tasks/:id                    - Get task details
+PUT    /api/tasks/:id                    - Update task
+DELETE /api/tasks/:id                    - Delete task
 
-#### Tasks API
-```typescript
-// Task CRUD
-POST   /api/kanban/projects/:projectId/tasks - Create task
-GET    /api/kanban/projects/:projectId/tasks - List project tasks
-GET    /api/kanban/tasks/:id                 - Get task details
-PUT    /api/kanban/tasks/:id                 - Update task (including status changes)
-DELETE /api/kanban/tasks/:id                 - Delete task
+// Task execution (like vibe-kanban but enhanced)
+POST   /api/tasks/:id/execute            - Execute task with local agent
+GET    /api/tasks/:id/attempts           - Get execution attempts
+GET    /api/attempts/:id                 - Get attempt details with processes
+POST   /api/attempts/:id/cancel          - Cancel running attempt
 
-// Task execution
-POST   /api/kanban/tasks/:id/execute         - Execute task with agent
-GET    /api/kanban/tasks/:id/attempts        - Get execution attempts
-GET    /api/kanban/attempts/:id              - Get attempt details
-POST   /api/kanban/attempts/:id/cancel       - Cancel running attempt
-```
+// Templates (from vibe-kanban)
+GET    /api/templates                    - List all templates
+POST   /api/templates                    - Create global template
+GET    /api/projects/:id/templates       - List project templates
+POST   /api/projects/:id/templates       - Create project template
 
-#### Task Templates API
-```typescript
-GET    /api/kanban/templates                        - List all templates (global + project)
-POST   /api/kanban/templates                        - Create global template
-GET    /api/kanban/templates/:id                    - Get template details
-PUT    /api/kanban/templates/:id                    - Update template
-DELETE /api/kanban/templates/:id                    - Delete template
-POST   /api/kanban/projects/:projectId/templates    - Create project template
-GET    /api/kanban/projects/:projectId/templates    - List project templates
-```
+// Real-time execution monitoring
+GET    /api/attempts/:id/processes       - List processes for attempt  
+GET    /api/processes/:id/logs           - Stream process logs (SSE)
+POST   /api/processes/:id/kill           - Kill running process
 
-#### Execution & Process APIs
-```typescript
-// Real-time execution tracking
-GET    /api/kanban/attempts/:id/processes          - List processes for attempt
-GET    /api/kanban/processes/:id                   - Get process details
-GET    /api/kanban/processes/:id/logs              - Stream process logs (SSE)
-POST   /api/kanban/processes/:id/kill              - Kill running process
-
-// Activity tracking
-GET    /api/kanban/attempts/:id/activities         - Get attempt activity log
-POST   /api/kanban/attempts/:id/activities         - Add activity entry
-```
-
-#### Analytics & Metrics API
-```typescript
-// Validation statistics
-GET    /api/kanban/analytics/validation-stats      - Overall validation metrics
-GET    /api/kanban/projects/:id/analytics          - Project-specific metrics
-GET    /api/kanban/analytics/models                - Metrics by AI model
-GET    /api/kanban/analytics/agents                - Metrics by agent type
-GET    /api/kanban/analytics/trends                - Time-series validation trends
-
-// Export capabilities
-GET    /api/kanban/analytics/export                - Export metrics as CSV/JSON
+// Local analytics
+GET    /api/analytics/validation-stats   - Local validation metrics
+GET    /api/analytics/models             - Model performance metrics
+GET    /api/analytics/export             - Export metrics (local file)
 ```
 
 ### 3. UI Components (React/TypeScript)

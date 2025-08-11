@@ -413,10 +413,315 @@ Create a local-first development workflow platform that combines visual task man
 - **Task Queue**: Bull.js for background jobs
 - **Validation**: Zod for request validation
 
-### 6.3 Infrastructure
+### 6.3 Infrastructure (Local-First)
 
-- **Development**: Local SQLite database
-- **File Storage**: Local filesystem
+- **Database**: SQLite with local file storage
+- **File Storage**: Local filesystem only
+- **Configuration**: Local config files
+- **Logs**: Local log files with rotation
+- **Backups**: Optional local backup functionality
+
+### 6.4 Database Schema (Based on vibe-kanban)
+
+#### 6.4.1 Core Tables
+```sql
+-- Projects table (enhanced from vibe-kanban)
+CREATE TABLE projects (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT,
+    git_repo_path TEXT NOT NULL UNIQUE DEFAULT '',
+    setup_script TEXT DEFAULT '',
+    dev_server_script TEXT DEFAULT '',
+    validation_script TEXT DEFAULT '',
+    cleanup_script TEXT DEFAULT '',
+    status TEXT DEFAULT 'active' CHECK (status IN ('active', 'archived')),
+    settings TEXT, -- JSON: ProjectSettings
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tasks table (from vibe-kanban)
+CREATE TABLE tasks (
+    id TEXT PRIMARY KEY,
+    project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+    parent_task_id TEXT REFERENCES tasks(id) ON DELETE SET NULL,
+    template_id TEXT REFERENCES task_templates(id) ON DELETE SET NULL,
+    title TEXT NOT NULL,
+    description TEXT,
+    status TEXT NOT NULL CHECK (status IN ('todo', 'inprogress', 'inreview', 'done', 'cancelled')),
+    priority TEXT DEFAULT 'medium' CHECK (priority IN ('low', 'medium', 'high', 'urgent')),
+    tags TEXT, -- JSON array
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Task templates (from vibe-kanban)
+CREATE TABLE task_templates (
+    id TEXT PRIMARY KEY,
+    project_id TEXT REFERENCES projects(id) ON DELETE CASCADE, -- NULL for global templates
+    template_name TEXT NOT NULL,
+    title TEXT NOT NULL,
+    description TEXT,
+    default_prompt TEXT NOT NULL,
+    tags TEXT, -- JSON array
+    estimated_hours INTEGER,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(project_id, template_name)
+);
+
+-- Task attempts (from vibe-kanban)
+CREATE TABLE task_attempts (
+    id TEXT PRIMARY KEY,
+    task_id TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+    worktree_path TEXT NOT NULL,
+    branch_name TEXT NOT NULL,
+    merge_commit TEXT,
+    executor TEXT NOT NULL, -- AI model used
+    status TEXT NOT NULL CHECK (status IN ('created', 'running', 'completed', 'failed', 'cancelled')),
+    stdout TEXT,
+    stderr TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    completed_at TEXT
+);
+
+-- Execution processes (from vibe-kanban)
+CREATE TABLE execution_processes (
+    id TEXT PRIMARY KEY,
+    task_attempt_id TEXT NOT NULL REFERENCES task_attempts(id) ON DELETE CASCADE,
+    process_type TEXT NOT NULL CHECK (process_type IN ('setupscript', 'codingagent', 'devserver', 'validation', 'cleanup')),
+    status TEXT NOT NULL CHECK (status IN ('running', 'completed', 'failed', 'killed')),
+    command TEXT NOT NULL,
+    args TEXT, -- JSON array
+    working_directory TEXT NOT NULL,
+    stdout TEXT,
+    stderr TEXT,
+    exit_code INTEGER,
+    started_at TEXT,
+    completed_at TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Process activity log (from vibe-kanban)
+CREATE TABLE task_attempt_activities (
+    id TEXT PRIMARY KEY,
+    task_attempt_id TEXT NOT NULL REFERENCES task_attempts(id) ON DELETE CASCADE,
+    status TEXT NOT NULL CHECK (status IN (
+        'worktree_created', 'setup_started', 'setup_completed', 'setup_failed',
+        'agent_started', 'agent_completed', 'agent_failed',
+        'validation_started', 'validation_passed', 'validation_failed',
+        'pr_created', 'cleanup_completed'
+    )),
+    note TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+-- AI model configurations (local endpoints)
+CREATE TABLE ai_models (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL UNIQUE,
+    description TEXT,
+    endpoint_url TEXT NOT NULL,
+    api_key TEXT NOT NULL, -- Encrypted storage
+    provider TEXT NOT NULL, -- 'openai', 'anthropic', 'local', 'custom'
+    model_id TEXT NOT NULL, -- e.g., 'gpt-4', 'claude-3-sonnet'
+    parameters TEXT, -- JSON: temperature, max_tokens, etc.
+    enabled BOOLEAN DEFAULT TRUE,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Execution metrics for analytics
+CREATE TABLE execution_metrics (
+    id TEXT PRIMARY KEY,
+    attempt_id TEXT NOT NULL REFERENCES task_attempts(id) ON DELETE CASCADE,
+    model_used TEXT NOT NULL,
+    prompt_tokens INTEGER,
+    completion_tokens INTEGER,
+    duration_ms INTEGER,
+    success BOOLEAN NOT NULL,
+    validation_passed BOOLEAN,
+    cost_estimate REAL, -- Estimated cost in USD
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+#### 6.4.2 Indexes for Performance
+```sql
+-- Task queries
+CREATE INDEX idx_tasks_project_id ON tasks(project_id);
+CREATE INDEX idx_tasks_status ON tasks(status);
+CREATE INDEX idx_tasks_created_at ON tasks(created_at);
+
+-- Attempt queries
+CREATE INDEX idx_task_attempts_task_id ON task_attempts(task_id);
+CREATE INDEX idx_task_attempts_status ON task_attempts(status);
+CREATE INDEX idx_execution_processes_attempt_id ON execution_processes(task_attempt_id);
+
+-- Metrics queries
+CREATE INDEX idx_execution_metrics_model ON execution_metrics(model_used);
+CREATE INDEX idx_execution_metrics_created_at ON execution_metrics(created_at);
+```
+
+### 6.5 API Schema (TypeScript)
+
+#### 6.5.1 Core Data Types
+```typescript
+// Project types
+interface Project {
+    id: string;
+    name: string;
+    description?: string;
+    gitRepoPath: string;
+    setupScript: string;
+    devServerScript: string;
+    validationScript: string;
+    cleanupScript?: string;
+    status: 'active' | 'archived';
+    settings: ProjectSettings;
+    createdAt: string;
+    updatedAt: string;
+}
+
+interface ProjectSettings {
+    defaultBranch: string;
+    workTreePrefix: string;
+    defaultAgentModel: string;
+    fallbackModels: string[];
+    validationTimeout: number;
+    autoCleanupWorkTrees: boolean;
+    maxRetryAttempts: number;
+    enableMetrics: boolean;
+    githubIntegration: {
+        enabled: boolean;
+        autoCreatePR: boolean;
+        prTemplate?: string;
+    };
+}
+
+// Task types (from vibe-kanban)
+interface Task {
+    id: string;
+    projectId: string;
+    parentTaskId?: string;
+    templateId?: string;
+    title: string;
+    description?: string;
+    status: TaskStatus;
+    priority: Priority;
+    tags: string[];
+    createdAt: string;
+    updatedAt: string;
+}
+
+type TaskStatus = 'todo' | 'inprogress' | 'inreview' | 'done' | 'cancelled';
+type Priority = 'low' | 'medium' | 'high' | 'urgent';
+
+// Execution types
+interface TaskAttempt {
+    id: string;
+    taskId: string;
+    worktreePath: string;
+    branchName: string;
+    mergeCommit?: string;
+    executor: string;
+    status: AttemptStatus;
+    stdout?: string;
+    stderr?: string;
+    createdAt: string;
+    updatedAt: string;
+    completedAt?: string;
+}
+
+type AttemptStatus = 'created' | 'running' | 'completed' | 'failed' | 'cancelled';
+
+interface ExecutionProcess {
+    id: string;
+    taskAttemptId: string;
+    processType: ProcessType;
+    status: ProcessStatus;
+    command: string;
+    args: string[];
+    workingDirectory: string;
+    stdout?: string;
+    stderr?: string;
+    exitCode?: number;
+    startedAt?: string;
+    completedAt?: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
+type ProcessType = 'setupscript' | 'codingagent' | 'devserver' | 'validation' | 'cleanup';
+type ProcessStatus = 'running' | 'completed' | 'failed' | 'killed';
+
+// AI Model configuration
+interface AIModel {
+    id: string;
+    name: string;
+    description?: string;
+    endpointUrl: string;
+    provider: 'openai' | 'anthropic' | 'local' | 'custom';
+    modelId: string;
+    parameters: {
+        temperature?: number;
+        maxTokens?: number;
+        topP?: number;
+        [key: string]: any;
+    };
+    enabled: boolean;
+    createdAt: string;
+    updatedAt: string;
+}
+```
+
+#### 6.5.2 API Endpoints Schema
+```typescript
+// Projects API
+interface CreateProjectRequest {
+    name: string;
+    description?: string;
+    gitRepoPath: string;
+    setupScript?: string;
+    devServerScript?: string;
+    validationScript?: string;
+    settings?: Partial<ProjectSettings>;
+}
+
+interface UpdateProjectRequest extends Partial<CreateProjectRequest> {}
+
+// Tasks API
+interface CreateTaskRequest {
+    title: string;
+    description?: string;
+    priority?: Priority;
+    tags?: string[];
+    parentTaskId?: string;
+    templateId?: string;
+}
+
+interface ExecuteTaskRequest {
+    modelOverride?: string;
+    promptOverride?: string;
+    validationOnly?: boolean;
+    skipSetup?: boolean;
+    customTimeout?: number;
+}
+
+// AI Models API
+interface CreateAIModelRequest {
+    name: string;
+    description?: string;
+    endpointUrl: string;
+    apiKey: string;
+    provider: string;
+    modelId: string;
+    parameters?: Record<string, any>;
+}
+```
 
 ## 7. Implementation Phases
 
