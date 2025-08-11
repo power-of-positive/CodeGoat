@@ -7,12 +7,15 @@
  * It executes user-configured validation stages sequentially and tracks timing and success metrics.
  */
 
+// Load environment variables
+import dotenv from 'dotenv';
+dotenv.config();
+
 import fs from 'fs/promises';
 import path from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { Settings, ValidationStage } from '../src/types/settings.types';
-import { DEFAULT_SETTINGS } from '../src/constants/settings.constants';
 
 const execAsync = promisify(exec);
 
@@ -90,8 +93,34 @@ class ValidationRunner {
       return JSON.parse(content);
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-        // Return default settings if file doesn't exist
-        return DEFAULT_SETTINGS;
+        // Return empty settings object if file doesn't exist
+        return {
+          fallback: {
+            maxRetries: 3,
+            retryDelay: 1000,
+            enableFallbacks: true,
+            fallbackOnContextLength: true,
+            fallbackOnRateLimit: true,
+            fallbackOnServerError: false,
+          },
+          validation: {
+            stages: [],
+            enableMetrics: true,
+            maxAttempts: 5,
+          },
+          logging: {
+            level: 'info',
+            enableConsole: true,
+            enableFile: true,
+            logsDir: './logs',
+            accessLogFile: 'access.log',
+            appLogFile: 'app.log',
+            errorLogFile: 'error.log',
+            maxFileSize: '10485760',
+            maxFiles: '10',
+            datePattern: 'YYYY-MM-DD',
+          },
+        };
       }
       throw error;
     }
@@ -109,7 +138,8 @@ class ValidationRunner {
 
     try {
       const settings = await this.loadSettings();
-      const stages = settings.validation?.stages || DEFAULT_SETTINGS.validation!.stages;
+      const validationSettings = settings.validation;
+      const stages = validationSettings?.stages || [];
       
       // Filter and sort enabled stages
       const enabledStages = stages
@@ -179,10 +209,10 @@ class ValidationRunner {
     const startTime = Date.now();
     
     try {
-      const options: any = {
+      const options = {
         timeout: stage.timeout || 30000,
         cwd: stage.workingDir || process.cwd(),
-        encoding: 'utf8' as BufferEncoding
+        encoding: 'utf8' as const
       };
 
       const { stdout, stderr } = await execAsync(stage.command, options);

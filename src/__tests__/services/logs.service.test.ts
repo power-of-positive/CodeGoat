@@ -237,7 +237,7 @@ describe('LogsService', () => {
       expect(result.total).toBe(1);
     });
 
-    it('should read from both access.log and app.log files', async () => {
+    it('should prioritize app.log over access.log files', async () => {
       const accessLogContent = JSON.stringify({
         timestamp: '2023-01-01T10:00:00.000Z',
         message: 'HTTP Request',
@@ -255,6 +255,9 @@ describe('LogsService', () => {
         duration: 150,
       });
 
+      // Mock readdir to return both files
+      mockFs.readdir = jest.fn().mockResolvedValue(['app.log', 'access.log']);
+
       mockFs.readFile.mockImplementation(filePath => {
         if (filePath.toString().includes('access.log')) {
           return Promise.resolve(accessLogContent);
@@ -266,11 +269,10 @@ describe('LogsService', () => {
 
       const result = await logsService.getRequestLogs({ limit: 50, offset: 0 });
 
-      // Should read from both files and combine results
-      expect(mockFs.readFile).toHaveBeenCalledTimes(2);
-      expect(result.logs).toHaveLength(2);
-      expect(result.logs[0].path).toBe('/api/app-test'); // Most recent first
-      expect(result.logs[1].path).toBe('/api/access-test');
+      // Should prioritize app logs when available, only read from app.log (not access.log)
+      expect(result.logs).toHaveLength(1);
+      expect(result.logs[0].path).toBe('/api/app-test');
+      expect(result.logs[0].method).toBe('POST');
     });
 
     it('should handle malformed JSON entries gracefully', async () => {

@@ -34,11 +34,13 @@ export class LogsService {
     try {
       const logs: LogEntry[] = [];
 
-      // Read access logs (HTTP requests)
-      await this.readAccessLogs(logs);
-
-      // Read app logs for additional request details
+      // Read app logs for detailed request information (primary source)
       await this.readAppLogs(logs, true); // Filter for requests only
+
+      // Only read access logs if app logs don't exist or are empty
+      if (logs.length === 0) {
+        await this.readAccessLogs(logs);
+      }
 
       // Sort by timestamp (most recent first) and apply pagination
       logs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
@@ -55,6 +57,55 @@ export class LogsService {
       this.logger.error('Failed to read request logs', error as Error);
       throw new Error('Failed to read request logs');
     }
+  }
+
+  /**
+   * Get chat completion logs only (for UI display)
+   */
+  async getChatCompletionLogs(query: LogsQuery = {}): Promise<LogsResponse> {
+    const limit = query.limit || 100;
+    const offset = query.offset || 0;
+
+    try {
+      const logs: LogEntry[] = [];
+
+      // Read app logs and filter for chat completion endpoints only
+      await this.readAppLogs(logs, false); // Read all logs first
+
+      // Filter for chat completion endpoints
+      const chatCompletionLogs = logs.filter(
+        log => log.path && this.isChatCompletionPath(log.path)
+      );
+
+      // Sort by timestamp (most recent first) and apply pagination
+      chatCompletionLogs.sort(
+        (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      );
+
+      const paginatedLogs = chatCompletionLogs.slice(offset, offset + limit);
+
+      return {
+        logs: paginatedLogs,
+        total: chatCompletionLogs.length,
+        offset,
+        limit,
+      };
+    } catch (error) {
+      this.logger.error('Failed to read chat completion logs', error as Error);
+      throw new Error('Failed to read chat completion logs');
+    }
+  }
+
+  /**
+   * Check if a path is a chat completion endpoint
+   */
+  private isChatCompletionPath(path: string): boolean {
+    return (
+      path.includes('/chat/completions') ||
+      path.includes('/v1/chat/completions') ||
+      path === '/api/proxy/chat/completions' ||
+      (path.startsWith('/proxy/') && path.includes('chat/completions'))
+    );
   }
 
   /**
@@ -289,40 +340,105 @@ export class LogsService {
    */
   private async readAppLogs(logs: LogEntry[], requestsOnly = false): Promise<void> {
     try {
-      const appLogPath = path.join(this.config.logsDir, this.config.appLogFile);
-      const appLogContent = await fs.readFile(appLogPath, 'utf-8');
-      const appLines = appLogContent
-        .trim()
-        .split('\n')
-        .filter(line => line);
+      // Read all app log files (including rotated ones)
+      const appLogFiles = await this.getAppLogFiles();
 
-      for (const line of appLines.slice(-this.config.maxEntriesPerFile)) {
+      for (const logFile of appLogFiles) {
         try {
-          const logEntry = JSON.parse(line) as LogEntry;
+          const appLogContent = await fs.readFile(logFile, 'utf-8');
+          const appLines = appLogContent
+            .trim()
+            .split('\n')
+            .filter(line => line);
 
-          // Filter for request-related logs if requested
-          if (requestsOnly && !(logEntry.method && logEntry.path)) {
-            continue;
+          for (const line of appLines) {
+            try {
+              const logEntry = JSON.parse(line) as LogEntry;
+
+              // Filter for request-related logs if requested
+              if (requestsOnly && !(logEntry.method && logEntry.path)) {
+                continue;
+              }
+
+              logs.push({
+                timestamp: logEntry.timestamp,
+                level: logEntry.level,
+                message: logEntry.message,
+                method: logEntry.method,
+                path: logEntry.path,
+                statusCode: logEntry.statusCode,
+                duration: logEntry.duration,
+                routeName: logEntry.routeName,
+                targetUrl: logEntry.targetUrl,
+                requestHeaders: logEntry.requestHeaders as Record<string, string>,
+                requestBody: logEntry.requestBody,
+                responseHeaders: logEntry.responseHeaders as Record<string, string>,
+                responseBody: logEntry.responseBody,
+                responseSize: logEntry.responseSize as number,
+                userAgent: logEntry.userAgent as string,
+                clientIp: logEntry.clientIp as string,
+                meta: logEntry.error ? { error: logEntry.error } : undefined,
+              });
+            } catch {
+              // Skip malformed JSON lines
+            }
           }
-
-          logs.push({
-            timestamp: logEntry.timestamp,
-            level: logEntry.level,
-            message: logEntry.message,
-            method: logEntry.method,
-            path: logEntry.path,
-            statusCode: logEntry.statusCode,
-            duration: logEntry.duration,
-            routeName: logEntry.routeName,
-            targetUrl: logEntry.targetUrl,
-            meta: logEntry.error ? { error: logEntry.error } : undefined,
-          });
         } catch {
-          // Skip malformed JSON lines
+          // Skip files that can't be read
         }
       }
     } catch {
-      // App log might not exist yet
+      // App logs directory might not exist yet
     }
+  }
+
+  /**
+   * Get all app log files (including rotated ones)
+   */
+  private async getAppLogFiles(): Promise<string[]> {
+    const logFiles: string[] = [];
+
+    try {
+      const files = await fs.readdir(this.config.logsDir);
+      const appLogPattern = this.config.appLogFile.replace('.log', '');
+
+      // Sort files by name to get them in the right order (app.log, app1.log, app2.log, etc.)
+      const sortedFiles = files
+        .filter(file => file.startsWith(appLogPattern) && file.endsWith('.log'))
+        .sort((a, b) => {
+          // Extract number from filename for proper sorting
+          const getNumber = (filename: string): number => {
+            const match = filename.match(/(\d+)\.log$/);
+            return match ? parseInt(match[1]) : 0;
+          };
+
+          const numA = getNumber(a);
+          const numB = getNumber(b);
+
+          // Base file (app.log) comes first, then numbered files in reverse order (newest first)
+          if (a === this.config.appLogFile) return -1;
+          if (b === this.config.appLogFile) return 1;
+          return numB - numA; // Reverse order for numbered files
+        });
+
+      for (const file of sortedFiles) {
+        logFiles.push(path.join(this.config.logsDir, file));
+      }
+
+      // If no app.log exists but we have numbered ones, still include them
+      if (!sortedFiles.includes(this.config.appLogFile)) {
+        const mainLogPath = path.join(this.config.logsDir, this.config.appLogFile);
+        try {
+          await fs.access(mainLogPath);
+          logFiles.unshift(mainLogPath); // Add at the beginning
+        } catch {
+          // Main log file doesn't exist, that's ok
+        }
+      }
+    } catch {
+      // Directory doesn't exist or can't be read
+    }
+
+    return logFiles;
   }
 }

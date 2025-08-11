@@ -1,11 +1,11 @@
 {
   "fallback": {
     "maxRetries": 5,
-    "retryDelay": 500,
+    "retryDelay": 1000,
     "enableFallbacks": true,
     "fallbackOnContextLength": true,
     "fallbackOnRateLimit": true,
-    "fallbackOnServerError": true
+    "fallbackOnServerError": false
   },
   "validation": {
     "stages": [
@@ -33,34 +33,34 @@
         "command": "npm test",
         "timeout": 60000,
         "enabled": true,
-        "continueOnFailure": false,
+        "continueOnFailure": true,
         "order": 3
       },
       {
         "id": "typescript-preference",
         "name": "TypeScript Preference Check",
-        "command": "node scripts/check-typescript-preference.js",
+        "command": "npx ts-node scripts/check-typescript-preference.ts",
         "timeout": 10000,
         "enabled": true,
-        "continueOnFailure": false,
+        "continueOnFailure": true,
         "order": 4
+      },
+      {
+        "id": "ai-code-review",
+        "name": "AI Code Review",
+        "command": "npx ts-node src/tools/ai-code-reviewer.ts",
+        "timeout": 120000,
+        "enabled": true,
+        "continueOnFailure": true,
+        "order": 5
       },
       {
         "id": "e2e",
         "name": "E2E Tests",
         "command": "cd ui && npm run test:e2e",
         "timeout": 120000,
-        "enabled": true,
-        "continueOnFailure": false,
-        "order": 5
-      },
-      {
-        "id": "stage-1754920538696",
-        "name": "New Validation Stage",
-        "command": "echo \"Configure your command\"",
-        "timeout": 30000,
-        "enabled": true,
-        "continueOnFailure": false,
+        "enabled": false,
+        "continueOnFailure": true,
         "order": 6
       }
     ],

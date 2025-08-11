@@ -145,5 +145,47 @@
         "duration": 107
       }
     ]
+  },
+  {
+    "timestamp": "2025-08-11T19:24:49.436Z",
+    "startTime": 1754940250507,
+    "totalTime": 38928,
+    "totalStages": 5,
+    "passed": 5,
+    "failed": 0,
+    "success": true,
+    "sessionId": null,
+    "stages": [
+      {
+        "id": "lint",
+        "name": "Code Linting",
+        "success": true,
+        "duration": 4338
+      },
+      {
+        "id": "typecheck",
+        "name": "Type Checking",
+        "success": true,
+        "duration": 3341
+      },
+      {
+        "id": "test",
+        "name": "Unit Tests",
+        "success": true,
+        "duration": 26892
+      },
+      {
+        "id": "typescript-preference",
+        "name": "TypeScript Preference Check",
+        "success": true,
+        "duration": 2467
+      },
+      {
+        "id": "ai-code-review",
+        "name": "AI Code Review",
+        "success": true,
+        "duration": 1880
+      }
+    ]
   }
 ]

@@ -22,6 +22,25 @@ async function handleGetRequestLogs(
   }
 }
 
+// Chat completion logs handlers (for UI display)
+async function handleGetChatCompletionLogs(
+  logsService: LogsService,
+  req: ExpressRequest,
+  res: ExpressResponse,
+  logger: ILogger
+): Promise<void> {
+  try {
+    const limit = parseInt(req.query.limit as string) || 50;
+    const offset = parseInt(req.query.offset as string) || 0;
+
+    const result = await logsService.getChatCompletionLogs({ limit, offset });
+    res.json(result);
+  } catch (error) {
+    logger.error('Failed to read chat completion logs', error as Error);
+    res.status(500).json({ error: 'Failed to load chat completion logs' });
+  }
+}
+
 // Detailed log entry handlers
 async function handleGetLogEntry(
   logsService: LogsService,
@@ -154,8 +173,13 @@ export function createLogsRoutes(logger: ILogger): Router {
   const settingsService = new SettingsService(logger);
   const logsService = new LogsService(logger, settingsService);
 
-  // Get recent request logs
+  // Get recent request logs (all requests - for debugging)
   router.get('/requests', (req, res) => handleGetRequestLogs(logsService, req, res, logger));
+
+  // Get chat completion logs only (for UI display)
+  router.get('/chat-completions', (req, res) =>
+    handleGetChatCompletionLogs(logsService, req, res, logger)
+  );
 
   // Get detailed log entry
   router.get('/requests/:timestamp', (req, res) =>
