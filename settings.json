@@ -143,6 +143,24 @@
         "enabled": true,
         "continueOnFailure": false,
         "order": 15
+      },
+      {
+        "id": "stage-1754902971279",
+        "name": "New Validation Stage",
+        "command": "echo \"Configure your command\"",
+        "timeout": 30000,
+        "enabled": true,
+        "continueOnFailure": false,
+        "order": 16
+      },
+      {
+        "id": "stage-1754911502052",
+        "name": "New Validation Stage",
+        "command": "echo \"Configure your command\"",
+        "timeout": 30000,
+        "enabled": true,
+        "continueOnFailure": false,
+        "order": 17
       }
     ],
     "enableMetrics": true,

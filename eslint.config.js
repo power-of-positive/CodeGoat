@@ -1,6 +1,7 @@
 import eslint from '@eslint/js';
 import tseslint from '@typescript-eslint/eslint-plugin';
 import tsparser from '@typescript-eslint/parser';
+import eslintComments from 'eslint-plugin-eslint-comments';
 import prettier from 'eslint-config-prettier';
 
 export default [
@@ -27,6 +28,7 @@ export default [
     },
     plugins: {
       '@typescript-eslint': tseslint,
+      'eslint-comments': eslintComments,
     },
     rules: {
       ...tseslint.configs.recommended.rules,
@@ -49,6 +51,10 @@ export default [
         skipBlankLines: true,
         skipComments: true
       }], // Limit functions to 50 lines
+      // Disallow eslint-disable comments to enforce consistent code quality
+      'eslint-comments/no-use': ['error', {
+        'allow': []
+      }]
     },
   },
   {

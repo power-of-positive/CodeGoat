@@ -1,36 +1,11 @@
 import fs from 'fs/promises';
 import path from 'path';
-
-interface FallbackSettings {
-  maxRetries: number;
-  retryDelay: number;
-  enableFallbacks: boolean;
-  fallbackOnContextLength: boolean;
-  fallbackOnRateLimit: boolean;
-  fallbackOnServerError: boolean;
-}
-
-interface ValidationStage {
-  id: string;
-  name: string;
-  command: string;
-  workingDir?: string;
-  timeout: number;
-  enabled: boolean;
-  continueOnFailure: boolean;
-  order: number;
-}
-
-interface ValidationSettings {
-  stages: ValidationStage[];
-  enableMetrics: boolean;
-  maxAttempts: number;
-}
-
-interface Settings {
-  fallback?: FallbackSettings;
-  validation?: ValidationSettings;
-}
+import {
+  Settings,
+  FallbackSettings,
+  ValidationSettings,
+  ValidationStage,
+} from '../types/settings.types';
 
 export class SettingsLoader {
   private settingsPath: string;
@@ -42,7 +17,6 @@ export class SettingsLoader {
     this.settingsPath = path.join(process.cwd(), 'settings.json');
   }
 
-  // eslint-disable-next-line max-lines-per-function
   async loadSettings(): Promise<Settings> {
     const now = Date.now();
 
@@ -57,80 +31,106 @@ export class SettingsLoader {
       this.lastLoadTime = now;
       return this.cachedSettings!;
     } catch {
-      // Return default settings if file doesn't exist or is invalid
-      const defaultSettings: Settings = {
-        fallback: {
-          maxRetries: 3,
-          retryDelay: 1000,
-          enableFallbacks: true,
-          fallbackOnContextLength: true,
-          fallbackOnRateLimit: true,
-          fallbackOnServerError: false,
-        },
-        validation: {
-          stages: [
-            {
-              id: 'lint',
-              name: 'Code Linting',
-              command: 'npm run lint',
-              timeout: 30000,
-              enabled: true,
-              continueOnFailure: false,
-              order: 1,
-            },
-            {
-              id: 'typecheck',
-              name: 'Type Checking',
-              command: 'npm run type-check',
-              timeout: 30000,
-              enabled: true,
-              continueOnFailure: false,
-              order: 2,
-            },
-            {
-              id: 'test',
-              name: 'Unit Tests',
-              command: 'npm test',
-              timeout: 60000,
-              enabled: true,
-              continueOnFailure: true,
-              order: 3,
-            },
-          ],
-          enableMetrics: true,
-          maxAttempts: 5,
-        },
-      };
-
+      const defaultSettings = await this.getDefaultSettings();
       this.cachedSettings = defaultSettings;
       this.lastLoadTime = now;
       return defaultSettings;
     }
   }
 
-  getFallbackSettings(): Promise<FallbackSettings> {
-    return this.loadSettings().then(
-      settings =>
-        settings.fallback || {
-          maxRetries: 3,
-          retryDelay: 1000,
-          enableFallbacks: true,
-          fallbackOnContextLength: true,
-          fallbackOnRateLimit: true,
-          fallbackOnServerError: false,
-        }
-    );
+  private async getDefaultSettings(): Promise<Settings> {
+    return {
+      fallback: await this.getDefaultFallbackSettings(),
+      validation: await this.getDefaultValidationSettings(),
+    };
   }
 
-  getValidationSettings(): Promise<ValidationSettings> {
-    return this.loadSettings().then(
-      settings =>
-        settings.validation || {
-          stages: [],
-          enableMetrics: true,
-          maxAttempts: 5,
-        }
-    );
+  private async getDefaultFallbackSettings(): Promise<FallbackSettings> {
+    try {
+      const configPath = path.join(__dirname, '../config/default-fallback.json');
+      const content = await fs.readFile(configPath, 'utf-8');
+      return JSON.parse(content);
+    } catch {
+      // Fallback to hardcoded defaults if JSON file is missing
+      return {
+        maxRetries: 3,
+        retryDelay: 1000,
+        enableFallbacks: true,
+        fallbackOnContextLength: true,
+        fallbackOnRateLimit: true,
+        fallbackOnServerError: false,
+      };
+    }
+  }
+
+  private async getDefaultValidationSettings(): Promise<ValidationSettings> {
+    try {
+      const configPath = path.join(__dirname, '../config/default-validation.json');
+      const content = await fs.readFile(configPath, 'utf-8');
+      const baseSettings = JSON.parse(content);
+      
+      const stages = await this.getDefaultValidationStages();
+      return {
+        ...baseSettings,
+        stages,
+      };
+    } catch {
+      // Fallback to hardcoded defaults if JSON file is missing
+      return {
+        stages: await this.getDefaultValidationStages(),
+        enableMetrics: true,
+        maxAttempts: 5,
+      };
+    }
+  }
+
+  private async getDefaultValidationStages(): Promise<ValidationStage[]> {
+    try {
+      const configPath = path.join(__dirname, '../config/default-validation-stages.json');
+      const content = await fs.readFile(configPath, 'utf-8');
+      return JSON.parse(content);
+    } catch {
+      // Fallback to hardcoded defaults if JSON file is missing
+      return [
+        {
+          id: 'lint',
+          name: 'Code Linting',
+          command: 'npm run lint',
+          timeout: 30000,
+          enabled: true,
+          continueOnFailure: false,
+          order: 1,
+        },
+        {
+          id: 'typecheck',
+          name: 'Type Checking',
+          command: 'npm run type-check',
+          timeout: 30000,
+          enabled: true,
+          continueOnFailure: false,
+          order: 2,
+        },
+        {
+          id: 'test',
+          name: 'Unit Tests',
+          command: 'npm test',
+          timeout: 60000,
+          enabled: true,
+          continueOnFailure: true,
+          order: 3,
+        },
+      ];
+    }
+  }
+
+  async getFallbackSettings(): Promise<FallbackSettings> {
+    const settings = await this.loadSettings();
+    return settings.fallback || await this.getDefaultFallbackSettings();
+  }
+
+  async getValidationSettings(): Promise<ValidationSettings> {
+    const settings = await this.loadSettings();
+    return settings.validation || await this.getDefaultValidationSettings();
   }
 
   invalidateCache(): void {

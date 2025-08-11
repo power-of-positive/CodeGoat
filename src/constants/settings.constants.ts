@@ -1,67 +1,10 @@
-import { Settings } from '../types/settings.types';
+import fs from 'fs/promises';
+import path from 'path';
+import { Settings, LoggingSettings, ValidationStage, FallbackSettings } from '../types/settings.types';
 
-// Default settings
-export const DEFAULT_SETTINGS: Settings = {
-  fallback: {
-    maxRetries: 3,
-    retryDelay: 1000,
-    enableFallbacks: true,
-    fallbackOnContextLength: true,
-    fallbackOnRateLimit: true,
-    fallbackOnServerError: false,
-  },
-  validation: {
-    stages: [
-      {
-        id: 'lint',
-        name: 'Code Linting',
-        command: 'npm run lint',
-        timeout: 30000,
-        enabled: true,
-        continueOnFailure: false,
-        order: 1,
-      },
-      {
-        id: 'typecheck',
-        name: 'Type Checking',
-        command: 'npm run type-check',
-        timeout: 30000,
-        enabled: true,
-        continueOnFailure: false,
-        order: 2,
-      },
-      {
-        id: 'test',
-        name: 'Unit Tests',
-        command: 'npm test',
-        timeout: 60000,
-        enabled: true,
-        continueOnFailure: true,
-        order: 3,
-      },
-      {
-        id: 'typescript-preference',
-        name: 'TypeScript Preference Check',
-        command: 'ts-node scripts/check-typescript-preference.ts',
-        timeout: 10000,
-        enabled: true,
-        continueOnFailure: true,
-        order: 4,
-      },
-      {
-        id: 'e2e',
-        name: 'E2E Tests',
-        command: 'cd ui && npm run test:e2e',
-        timeout: 120000,
-        enabled: false,
-        continueOnFailure: true,
-        order: 5,
-      },
-    ],
-    enableMetrics: true,
-    maxAttempts: 5,
-  },
-  logging: {
+// Default logging configuration
+function getDefaultLogging(): LoggingSettings {
+  return {
     level: 'info',
     enableConsole: true,
     enableFile: true,
@@ -72,5 +15,102 @@ export const DEFAULT_SETTINGS: Settings = {
     maxFileSize: '10485760',
     maxFiles: '10',
     datePattern: 'YYYY-MM-DD',
-  },
-};
+  };
+}
+
+// Default validation stages configuration
+function getDefaultValidationStages(): ValidationStage[] {
+  return [
+    {
+      id: 'lint',
+      name: 'Code Linting',
+      command: 'npm run lint',
+      timeout: 30000,
+      enabled: true,
+      continueOnFailure: false,
+      order: 1,
+    },
+    {
+      id: 'typecheck',
+      name: 'Type Checking',
+      command: 'npm run type-check',
+      timeout: 30000,
+      enabled: true,
+      continueOnFailure: false,
+      order: 2,
+    },
+    {
+      id: 'test',
+      name: 'Unit Tests',
+      command: 'npm test',
+      timeout: 60000,
+      enabled: true,
+      continueOnFailure: true,
+      order: 3,
+    },
+    {
+      id: 'typescript-preference',
+      name: 'TypeScript Preference Check',
+      command: 'ts-node scripts/check-typescript-preference.ts',
+      timeout: 10000,
+      enabled: true,
+      continueOnFailure: true,
+      order: 4,
+    },
+    {
+      id: 'e2e',
+      name: 'E2E Tests',
+      command: 'cd ui && npm run test:e2e',
+      timeout: 120000,
+      enabled: false,
+      continueOnFailure: true,
+      order: 5,
+    },
+  ];
+}
+
+// Default fallback configuration
+function getDefaultFallback(): FallbackSettings {
+  return {
+    maxRetries: 3,
+    retryDelay: 1000,
+    enableFallbacks: true,
+    fallbackOnContextLength: true,
+    fallbackOnRateLimit: true,
+    fallbackOnServerError: false,
+  };
+}
+
+// Hardcoded fallback settings when JSON files are not available
+function getHardcodedDefaults(): Settings {
+  return {
+    fallback: getDefaultFallback(),
+    validation: {
+      stages: getDefaultValidationStages(),
+      enableMetrics: true,
+      maxAttempts: 5,
+    },
+    logging: getDefaultLogging(),
+  };
+}
+
+// Load default settings from JSON configuration files
+async function loadDefaultSettings(): Promise<Settings> {
+  try {
+    const configPath = path.join(__dirname, '../config/default-settings.json');
+    const content = await fs.readFile(configPath, 'utf-8');
+    const jsonSettings = JSON.parse(content);
+    
+    // Add logging defaults and any missing properties
+    return {
+      ...jsonSettings,
+      logging: jsonSettings.logging || getDefaultLogging(),
+    };
+  } catch {
+    // Fallback to hardcoded defaults if JSON file is missing
+    return getHardcodedDefaults();
+  }
+}
+
+// Export a promise that resolves to the default settings
+export const DEFAULT_SETTINGS = loadDefaultSettings();

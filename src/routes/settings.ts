@@ -4,14 +4,9 @@ import { ILogger } from '../logger-interface';
 import { z } from 'zod';
 import { SettingsService } from '../services/settings.service';
 
-const router = Router();
-
-// eslint-disable-next-line max-lines-per-function
-export function createSettingsRoutes(configLoader: ConfigLoader, logger: ILogger): Router {
-  const settingsService = new SettingsService(logger);
-
-  // GET /api/settings - Get all settings
-  router.get('/', async (req: Request, res: Response) => {
+// Handler functions for settings routes
+function createSettingsHandler(settingsService: SettingsService, logger: ILogger) {
+  return async (req: Request, res: Response): Promise<void> => {
     try {
       const settings = await settingsService.getSettings();
       res.json(settings);
@@ -19,10 +14,11 @@ export function createSettingsRoutes(configLoader: ConfigLoader, logger: ILogger
       logger.error('Failed to load settings', error as Error);
       res.status(500).json({ error: 'Failed to load settings' });
     }
-  });
+  };
+}
 
-  // PUT /api/settings - Update settings
-  router.put('/', async (req: Request, res: Response) => {
+function updateSettingsHandler(settingsService: SettingsService, logger: ILogger) {
+  return async (req: Request, res: Response): Promise<void> => {
     try {
       const updatedSettings = await settingsService.updateSettings(req.body);
       res.json({
@@ -40,10 +36,14 @@ export function createSettingsRoutes(configLoader: ConfigLoader, logger: ILogger
         res.status(500).json({ error: 'Failed to update settings' });
       }
     }
-  });
+  };
+}
 
-  // GET /api/settings/fallback - Get fallback settings
-  router.get('/fallback', async (req: Request, res: Response) => {
+function createFallbackHandlers(settingsService: SettingsService, logger: ILogger): {
+  getFallback: (req: Request, res: Response) => Promise<void>;
+  updateFallback: (req: Request, res: Response) => Promise<void>;
+} {
+  const getFallback = async (req: Request, res: Response): Promise<void> => {
     try {
       const fallbackSettings = await settingsService.getFallbackSettings();
       res.json(fallbackSettings);
@@ -51,10 +51,9 @@ export function createSettingsRoutes(configLoader: ConfigLoader, logger: ILogger
       logger.error('Failed to load fallback settings', error as Error);
       res.status(500).json({ error: 'Failed to load fallback settings' });
     }
-  });
+  };
 
-  // PUT /api/settings/fallback - Update fallback settings
-  router.put('/fallback', async (req: Request, res: Response) => {
+  const updateFallback = async (req: Request, res: Response): Promise<void> => {
     try {
       const fallbackSettings = await settingsService.updateFallbackSettings(req.body);
       res.json({
@@ -72,10 +71,16 @@ export function createSettingsRoutes(configLoader: ConfigLoader, logger: ILogger
         res.status(500).json({ error: 'Failed to update fallback settings' });
       }
     }
-  });
+  };
 
-  // GET /api/settings/validation - Get validation settings
-  router.get('/validation', async (req: Request, res: Response) => {
+  return { getFallback, updateFallback };
+}
+
+function createValidationHandlers(settingsService: SettingsService, logger: ILogger): {
+  getValidation: (req: Request, res: Response) => Promise<void>;
+  updateValidation: (req: Request, res: Response) => Promise<void>;
+} {
+  const getValidation = async (req: Request, res: Response): Promise<void> => {
     try {
       const validationSettings = await settingsService.getValidationSettings();
       res.json(validationSettings);
@@ -83,10 +88,9 @@ export function createSettingsRoutes(configLoader: ConfigLoader, logger: ILogger
       logger.error('Failed to load validation settings', error as Error);
       res.status(500).json({ error: 'Failed to load validation settings' });
     }
-  });
+  };
 
-  // PUT /api/settings/validation - Update validation settings
-  router.put('/validation', async (req: Request, res: Response) => {
+  const updateValidation = async (req: Request, res: Response): Promise<void> => {
     try {
       const validationSettings = await settingsService.updateValidationSettings(req.body);
       res.json({
@@ -104,10 +108,29 @@ export function createSettingsRoutes(configLoader: ConfigLoader, logger: ILogger
         res.status(500).json({ error: 'Failed to update validation settings' });
       }
     }
-  });
+  };
 
-  // POST /api/settings/validation/stages - Add validation stage
-  router.post('/validation/stages', async (req: Request, res: Response) => {
+  return { getValidation, updateValidation };
+}
+
+function createStageHandlers(settingsService: SettingsService, logger: ILogger): {
+  addStage: (req: Request, res: Response) => Promise<void>;
+  updateStage: (req: Request, res: Response) => Promise<void>;
+  removeStage: (req: Request, res: Response) => Promise<void>;
+  getStage: (req: Request, res: Response) => Promise<void>;
+  getStages: (req: Request, res: Response) => Promise<void>;
+} {
+  return {
+    addStage: createAddStageHandler(settingsService, logger),
+    updateStage: createUpdateStageHandler(settingsService, logger),
+    removeStage: createRemoveStageHandler(settingsService, logger),
+    getStage: createGetStageHandler(settingsService, logger),
+    getStages: createGetStagesHandler(settingsService, logger),
+  };
+}
+
+function createAddStageHandler(settingsService: SettingsService, logger: ILogger) {
+  return async (req: Request, res: Response): Promise<void> => {
     try {
       const stage = await settingsService.addValidationStage(req.body);
       res.status(201).json({
@@ -127,10 +150,11 @@ export function createSettingsRoutes(configLoader: ConfigLoader, logger: ILogger
         res.status(500).json({ error: 'Failed to add validation stage' });
       }
     }
-  });
+  };
+}
 
-  // PUT /api/settings/validation/stages/:id - Update validation stage
-  router.put('/validation/stages/:id', async (req: Request, res: Response) => {
+function createUpdateStageHandler(settingsService: SettingsService, logger: ILogger) {
+  return async (req: Request, res: Response): Promise<void> => {
     try {
       const { id } = req.params;
       const stage = await settingsService.updateValidationStage(id, req.body);
@@ -151,10 +175,11 @@ export function createSettingsRoutes(configLoader: ConfigLoader, logger: ILogger
         res.status(500).json({ error: 'Failed to update validation stage' });
       }
     }
-  });
+  };
+}
 
-  // DELETE /api/settings/validation/stages/:id - Remove validation stage
-  router.delete('/validation/stages/:id', async (req: Request, res: Response) => {
+function createRemoveStageHandler(settingsService: SettingsService, logger: ILogger) {
+  return async (req: Request, res: Response): Promise<void> => {
     try {
       const { id } = req.params;
       await settingsService.removeValidationStage(id);
@@ -169,10 +194,11 @@ export function createSettingsRoutes(configLoader: ConfigLoader, logger: ILogger
         res.status(500).json({ error: 'Failed to remove validation stage' });
       }
     }
-  });
+  };
+}
 
-  // GET /api/settings/validation/stages/:id - Get specific validation stage
-  router.get('/validation/stages/:id', async (req: Request, res: Response) => {
+function createGetStageHandler(settingsService: SettingsService, logger: ILogger) {
+  return async (req: Request, res: Response): Promise<void> => {
     try {
       const { id } = req.params;
       const stage = await settingsService.getValidationStage(id);
@@ -187,10 +213,11 @@ export function createSettingsRoutes(configLoader: ConfigLoader, logger: ILogger
       logger.error('Failed to get validation stage', error as Error);
       res.status(500).json({ error: 'Failed to get validation stage' });
     }
-  });
+  };
+}
 
-  // GET /api/settings/validation/stages - Get all enabled validation stages
-  router.get('/validation/stages', async (req: Request, res: Response) => {
+function createGetStagesHandler(settingsService: SettingsService, logger: ILogger) {
+  return async (req: Request, res: Response): Promise<void> => {
     try {
       const stages = await settingsService.getEnabledValidationStages();
       res.json({ stages });
@@ -198,7 +225,35 @@ export function createSettingsRoutes(configLoader: ConfigLoader, logger: ILogger
       logger.error('Failed to get validation stages', error as Error);
       res.status(500).json({ error: 'Failed to get validation stages' });
     }
-  });
+  };
+}
+
+export function createSettingsRoutes(configLoader: ConfigLoader, logger: ILogger): Router {
+  const router = Router();
+  const settingsService = new SettingsService(logger);
+
+  const fallbackHandlers = createFallbackHandlers(settingsService, logger);
+  const validationHandlers = createValidationHandlers(settingsService, logger);
+  const stageHandlers = createStageHandlers(settingsService, logger);
+
+  // Main settings routes
+  router.get('/', createSettingsHandler(settingsService, logger));
+  router.put('/', updateSettingsHandler(settingsService, logger));
+
+  // Fallback settings routes
+  router.get('/fallback', fallbackHandlers.getFallback);
+  router.put('/fallback', fallbackHandlers.updateFallback);
+
+  // Validation settings routes
+  router.get('/validation', validationHandlers.getValidation);
+  router.put('/validation', validationHandlers.updateValidation);
+
+  // Validation stages routes
+  router.get('/validation/stages', stageHandlers.getStages);
+  router.post('/validation/stages', stageHandlers.addStage);
+  router.get('/validation/stages/:id', stageHandlers.getStage);
+  router.put('/validation/stages/:id', stageHandlers.updateStage);
+  router.delete('/validation/stages/:id', stageHandlers.removeStage);
 
   return router;
 }

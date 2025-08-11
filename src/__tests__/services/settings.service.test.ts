@@ -31,7 +31,13 @@ describe('SettingsService', () => {
     });
 
     it('should return default settings when file does not exist', async () => {
-      (fs.readFile as jest.Mock).mockRejectedValue({ code: 'ENOENT' });
+      (fs.readFile as jest.Mock).mockImplementation((path: string) => {
+        if (path.includes('settings.json')) {
+          return Promise.reject({ code: 'ENOENT' });
+        }
+        // Allow actual file reads for config JSON files
+        return jest.requireActual('fs/promises').readFile(path, 'utf-8');
+      });
 
       const settings = await settingsService.loadSettings();
 
@@ -47,7 +53,13 @@ describe('SettingsService', () => {
     });
 
     it('should return default settings on error', async () => {
-      (fs.readFile as jest.Mock).mockRejectedValue(new Error('Read error'));
+      (fs.readFile as jest.Mock).mockImplementation((path: string) => {
+        if (path.includes('settings.json')) {
+          return Promise.reject(new Error('Read error'));
+        }
+        // Allow actual file reads for config JSON files
+        return jest.requireActual('fs/promises').readFile(path, 'utf-8');
+      });
 
       const settings = await settingsService.loadSettings();
 
@@ -285,7 +297,13 @@ describe('SettingsService', () => {
     });
 
     it('should return default enabled stages when no settings exist', async () => {
-      (fs.readFile as jest.Mock).mockRejectedValue({ code: 'ENOENT' });
+      (fs.readFile as jest.Mock).mockImplementation((path: string) => {
+        if (path.includes('settings.json')) {
+          return Promise.reject({ code: 'ENOENT' });
+        }
+        // Allow actual file reads for config JSON files
+        return jest.requireActual('fs/promises').readFile(path, 'utf-8');
+      });
 
       const stages = await settingsService.getEnabledValidationStages();
 

@@ -11,7 +11,7 @@ echo "Checking for code duplication in frontend..."
 cd ui && npm run duplication-check && cd ..
 
 # Run unit tests (management route mocking tests may fail - that's acceptable)
-npm run test || echo "Some test failures are acceptable (management route mocking edge cases)"
+npm run test 
 
 # Run E2E tests - must pass to allow commit
 echo "Running E2E tests with robust server management..."

@@ -1,0 +1,8 @@
+{
+  "maxRetries": 3,
+  "retryDelay": 1000,
+  "enableFallbacks": true,
+  "fallbackOnContextLength": true,
+  "fallbackOnRateLimit": true,
+  "fallbackOnServerError": false
+}

@@ -110,41 +110,56 @@ export class AnalyticsService {
   /**
    * Get current development analytics
    */
-  // eslint-disable-next-line max-lines-per-function
   async getAnalytics(): Promise<DevelopmentAnalytics> {
     const sessions = await this.loadAllSessions();
 
     if (sessions.length === 0) {
-      return {
-        totalSessions: 0,
-        successRate: 0,
-        averageTimeToSuccess: 0,
-        averageAttemptsToSuccess: 0,
-        mostFailedStage: 'none',
-        stageSuccessRates: {},
-        dailyStats: {},
-      };
+      return this.getEmptyAnalytics();
     }
 
-    // Calculate overall success rate
     const successfulSessions = sessions.filter(s => s.finalSuccess);
     const successRate = (successfulSessions.length / sessions.length) * 100;
 
-    // Calculate average time to success
-    const averageTimeToSuccess =
-      successfulSessions.length > 0
-        ? successfulSessions.reduce((sum, s) => sum + (s.totalDuration || 0), 0) /
-          successfulSessions.length
-        : 0;
+    const averageTimeToSuccess = this.calculateAverageTimeToSuccess(successfulSessions);
+    const averageAttemptsToSuccess = this.calculateAverageAttemptsToSuccess(successfulSessions);
+    const stageSuccessRates = this.calculateStageSuccessRates(sessions);
+    const mostFailedStage = this.findMostFailedStage(stageSuccessRates);
+    const dailyStats = this.calculateDailyStats(sessions);
 
-    // Calculate average attempts to success
-    const averageAttemptsToSuccess =
-      successfulSessions.length > 0
-        ? successfulSessions.reduce((sum, s) => sum + s.attempts.length, 0) /
-          successfulSessions.length
-        : 0;
+    return {
+      totalSessions: sessions.length,
+      successRate,
+      averageTimeToSuccess,
+      averageAttemptsToSuccess,
+      mostFailedStage,
+      stageSuccessRates,
+      dailyStats,
+    };
+  }
 
-    // Calculate stage success rates
+  private getEmptyAnalytics(): DevelopmentAnalytics {
+    return {
+      totalSessions: 0,
+      successRate: 0,
+      averageTimeToSuccess: 0,
+      averageAttemptsToSuccess: 0,
+      mostFailedStage: 'none',
+      stageSuccessRates: {},
+      dailyStats: {},
+    };
+  }
+
+  private calculateAverageTimeToSuccess(successfulSessions: SessionMetrics[]): number {
+    if (successfulSessions.length === 0) return 0;
+    return successfulSessions.reduce((sum, s) => sum + (s.totalDuration || 0), 0) / successfulSessions.length;
+  }
+
+  private calculateAverageAttemptsToSuccess(successfulSessions: SessionMetrics[]): number {
+    if (successfulSessions.length === 0) return 0;
+    return successfulSessions.reduce((sum, s) => sum + s.attempts.length, 0) / successfulSessions.length;
+  }
+
+  private calculateStageSuccessRates(sessions: SessionMetrics[]): Record<string, { attempts: number; successes: number; rate: number }> {
     const stageStats: Record<string, { attempts: number; successes: number }> = {};
 
     sessions.forEach(session => {
@@ -161,8 +176,7 @@ export class AnalyticsService {
       });
     });
 
-    const stageSuccessRates: Record<string, { attempts: number; successes: number; rate: number }> =
-      {};
+    const stageSuccessRates: Record<string, { attempts: number; successes: number; rate: number }> = {};
     Object.entries(stageStats).forEach(([stageId, stats]) => {
       stageSuccessRates[stageId] = {
         ...stats,
@@ -170,13 +184,16 @@ export class AnalyticsService {
       };
     });
 
-    // Find most failed stage
-    const mostFailedStage =
-      Object.entries(stageSuccessRates).sort((a, b) => a[1].rate - b[1].rate)[0]?.[0] || 'none';
+    return stageSuccessRates;
+  }
 
-    // Calculate daily stats
-    const dailyStats: Record<string, { sessions: number; successes: number; totalTime: number }> =
-      {};
+  private findMostFailedStage(stageSuccessRates: Record<string, { rate: number }>): string {
+    return Object.entries(stageSuccessRates).sort((a, b) => a[1].rate - b[1].rate)[0]?.[0] || 'none';
+  }
+
+  private calculateDailyStats(sessions: SessionMetrics[]): Record<string, { sessions: number; successes: number; totalTime: number }> {
+    const dailyStats: Record<string, { sessions: number; successes: number; totalTime: number }> = {};
+    
     sessions.forEach(session => {
       const date = new Date(session.startTime).toISOString().split('T')[0];
       if (!dailyStats[date]) {
@@ -189,15 +206,7 @@ export class AnalyticsService {
       dailyStats[date].totalTime += session.totalDuration || 0;
     });
 
-    return {
-      totalSessions: sessions.length,
-      successRate,
-      averageTimeToSuccess,
-      averageAttemptsToSuccess,
-      mostFailedStage,
-      stageSuccessRates,
-      dailyStats,
-    };
+    return dailyStats;
   }
 
   /**

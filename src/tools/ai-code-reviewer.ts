@@ -66,16 +66,8 @@ export async function getFileContent(filePath: string): Promise<string | null> {
   }
 }
 
-/* eslint-disable max-lines-per-function */
-export async function reviewCode(filePath: string, content: string): Promise<ReviewResult> {
-  const config = getConfig();
-
-  if (!config.openaiApiKey) {
-    console.warn('No API key configured for AI code reviewer');
-    return { reviews: [], summary: 'No API key configured' };
-  }
-
-  const prompt = `You are an expert code reviewer. Review this ${path.extname(filePath)} file and provide feedback in JSON format.
+function buildReviewPrompt(filePath: string, content: string): string {
+  return `You are an expert code reviewer. Review this ${path.extname(filePath)} file and provide feedback in JSON format.
 
 File: ${filePath}
 Content:
@@ -106,49 +98,85 @@ Return a JSON object with this structure:
 }
 
 Focus on actionable feedback. Only flag real issues, not nitpicks.`;
+}
+
+function buildAPIRequest(prompt: string, config: Config): object {
+  return {
+    model: config.model,
+    messages: [
+      {
+        role: 'system',
+        content: 'You are an expert code reviewer. Always respond with valid JSON only.',
+      },
+      {
+        role: 'user',
+        content: prompt,
+      },
+    ],
+    temperature: 0.1,
+    max_tokens: 2000,
+  };
+}
+
+function extractJSONFromResponse(reviewText: string): string {
+  const jsonMatch =
+    reviewText.match(/```(?:json)?\s*(\{[\s\S]*\})\s*```/) || reviewText.match(/(\{[\s\S]*\})/);
+  return jsonMatch ? jsonMatch[1] : reviewText;
+}
+
+function createFailureResponse(filePath: string, error: Error): ReviewResult {
+  console.warn(`AI review failed for ${filePath}:`, error.message);
+  return {
+    reviews: [
+      {
+        line: null,
+        severity: 'info',
+        category: 'system',
+        message: `AI review failed: ${error.message}`,
+      },
+    ],
+    summary: 'Review failed due to technical issue',
+  };
+}
+
+async function callReviewAPI(config: Config, prompt: string): Promise<string> {
+  const response = await fetch(`${config.apiEndpoint}/chat/completions`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${config.openaiApiKey}`,
+      'HTTP-Referer': 'https://github.com/codegoat',
+      'X-Title': 'CodeGoat AI Code Reviewer',
+    },
+    body: JSON.stringify(buildAPIRequest(prompt, config)),
+  });
+
+  if (!response.ok) {
+    throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+  }
+
+  const data = (await response.json()) as APIResponse;
+  const reviewText = data.choices?.[0]?.message?.content;
+
+  if (!reviewText) {
+    throw new Error('No response from AI reviewer');
+  }
+
+  return reviewText;
+}
+
+export async function reviewCode(filePath: string, content: string): Promise<ReviewResult> {
+  const config = getConfig();
+
+  if (!config.openaiApiKey) {
+    console.warn('No API key configured for AI code reviewer');
+    return { reviews: [], summary: 'No API key configured' };
+  }
 
   try {
-    const response = await fetch(`${config.apiEndpoint}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${config.openaiApiKey}`,
-        'HTTP-Referer': 'https://github.com/codegoat',
-        'X-Title': 'CodeGoat AI Code Reviewer',
-      },
-      body: JSON.stringify({
-        model: config.model,
-        messages: [
-          {
-            role: 'system',
-            content: 'You are an expert code reviewer. Always respond with valid JSON only.',
-          },
-          {
-            role: 'user',
-            content: prompt,
-          },
-        ],
-        temperature: 0.1,
-        max_tokens: 2000,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`API request failed: ${response.status} ${response.statusText}`);
-    }
-
-    const data = (await response.json()) as APIResponse;
-    const reviewText = data.choices?.[0]?.message?.content;
-
-    if (!reviewText) {
-      throw new Error('No response from AI reviewer');
-    }
-
-    // Extract JSON from response (sometimes AI wraps it in markdown)
-    const jsonMatch =
-      reviewText.match(/```(?:json)?\s*(\{[\s\S]*\})\s*```/) || reviewText.match(/(\{[\s\S]*\})/);
-    const jsonStr = jsonMatch ? jsonMatch[1] : reviewText;
-
+    const prompt = buildReviewPrompt(filePath, content);
+    const reviewText = await callReviewAPI(config, prompt);
+    const jsonStr = extractJSONFromResponse(reviewText);
     const reviewData = JSON.parse(jsonStr) as ReviewResult;
 
     // Validate structure
@@ -158,18 +186,7 @@ Focus on actionable feedback. Only flag real issues, not nitpicks.`;
 
     return reviewData;
   } catch (error) {
-    console.warn(`AI review failed for ${filePath}:`, (error as Error).message);
-    return {
-      reviews: [
-        {
-          line: null,
-          severity: 'info',
-          category: 'system',
-          message: `AI review failed: ${(error as Error).message}`,
-        },
-      ],
-      summary: 'Review failed due to technical issue',
-    };
+    return createFailureResponse(filePath, error as Error);
   }
 }
 
@@ -227,93 +244,102 @@ export function formatResults(results: FileReviewResult[]): FormattedResults {
   };
 }
 
+function getSeverityEmoji(severity: string): string {
+  const emojiMap: Record<string, string> = {
+    critical: '🔴',
+    high: '🟠',
+    medium: '🟡',
+    low: '🔵',
+    info: '⚪',
+  };
+  return emojiMap[severity] || '⚪';
+}
+
+function outputBasicSummary(results: FormattedResults): void {
+  console.log('\n🤖 AI Code Review Results');
+  console.log('='.repeat(40));
+  console.log(`Files reviewed: ${results.summary.totalFiles}`);
+  console.log(`Total issues: ${results.summary.totalIssues}`);
+}
+
+function outputSeverityBreakdown(results: FormattedResults): void {
+  if (results.summary.totalIssues === 0) return;
+
+  console.log('\nIssues by severity:');
+  Object.entries(results.summary.bySeverity).forEach(([severity, count]) => {
+    const emoji = getSeverityEmoji(severity);
+    console.log(`  ${emoji} ${severity}: ${count}`);
+  });
+}
+
+function outputNotableIssues(results: FormattedResults): void {
+  const highSeverityIssues = results.allReviews.filter(
+    review => SEVERITY_LEVELS[review.severity] >= SEVERITY_LEVELS.medium
+  );
+
+  if (highSeverityIssues.length === 0) return;
+
+  console.log('\n📋 Notable Issues:');
+  highSeverityIssues.forEach(review => {
+    const location = review.line ? `:${review.line}` : '';
+    console.log(`\n  ${review.file}${location}`);
+    console.log(`  ${review.severity.toUpperCase()}: ${review.message}`);
+    if (review.suggestion) {
+      console.log(`  💡 ${review.suggestion}`);
+    }
+  });
+}
+
+function outputBlockingIssues(results: FormattedResults, config: Config): void {
+  if (!results.blocked) {
+    console.log('\n✅ No blocking issues found. Commit can proceed.');
+    console.log(`   Current blocking threshold: ${config.maxSeverityToBlock}`);
+    return;
+  }
+
+  const blockingSeverity = SEVERITY_LEVELS[config.maxSeverityToBlock];
+  const blockingIssues = results.allReviews.filter(
+    review => SEVERITY_LEVELS[review.severity] >= blockingSeverity
+  );
+
+  console.log('\n❌ Commit blocked due to severity issues!');
+  console.log(
+    `   Found ${blockingIssues.length} issue(s) at ${config.maxSeverityToBlock} severity or higher`
+  );
+  console.log(
+    `   Blocking threshold: ${config.maxSeverityToBlock} (configure with AI_REVIEWER_MAX_SEVERITY)`
+  );
+
+  const blockingBySeverity = blockingIssues.reduce(
+    (acc, issue) => {
+      if (!acc[issue.severity]) acc[issue.severity] = 0;
+      acc[issue.severity]++;
+      return acc;
+    },
+    {} as Record<string, number>
+  );
+
+  console.log('\n   Blocking issues by severity:');
+  Object.entries(blockingBySeverity)
+    .sort((a, b) => SEVERITY_LEVELS[b[0]] - SEVERITY_LEVELS[a[0]])
+    .forEach(([severity, count]) => {
+      console.log(`     ${getSeverityEmoji(severity)} ${severity}: ${count} issue(s)`);
+    });
+}
+
 export function outputResults(results: FormattedResults): void {
   const config = getConfig();
 
   // Write detailed results to file
   fs.writeFileSync(config.outputFile, JSON.stringify(results, null, 2));
 
-  // Console output
-  console.log('\n🤖 AI Code Review Results');
-  console.log('='.repeat(40));
-  console.log(`Files reviewed: ${results.summary.totalFiles}`);
-  console.log(`Total issues: ${results.summary.totalIssues}`);
-
-  if (results.summary.totalIssues > 0) {
-    console.log('\nIssues by severity:');
-    Object.entries(results.summary.bySeverity).forEach(([severity, count]) => {
-      const emojiMap: Record<string, string> = {
-        critical: '🔴',
-        high: '🟠',
-        medium: '🟡',
-        low: '🔵',
-        info: '⚪',
-      };
-      const emoji = emojiMap[severity] || '⚪';
-      console.log(`  ${emoji} ${severity}: ${count}`);
-    });
-
-    // Show high severity issues
-    const highSeverityIssues = results.allReviews.filter(
-      review => SEVERITY_LEVELS[review.severity] >= SEVERITY_LEVELS.medium
-    );
-
-    if (highSeverityIssues.length > 0) {
-      console.log('\n📋 Notable Issues:');
-      highSeverityIssues.forEach(review => {
-        const location = review.line ? `:${review.line}` : '';
-        console.log(`\n  ${review.file}${location}`);
-        console.log(`  ${review.severity.toUpperCase()}: ${review.message}`);
-        if (review.suggestion) {
-          console.log(`  💡 ${review.suggestion}`);
-        }
-      });
-    }
-  }
-
+  outputBasicSummary(results);
+  outputSeverityBreakdown(results);
+  outputNotableIssues(results);
+  
   console.log(`\n📊 Detailed results saved to: ${config.outputFile}`);
-
-  if (results.blocked) {
-    const blockingSeverity = SEVERITY_LEVELS[config.maxSeverityToBlock];
-    const blockingIssues = results.allReviews.filter(
-      review => SEVERITY_LEVELS[review.severity] >= blockingSeverity
-    );
-
-    console.log('\n❌ Commit blocked due to severity issues!');
-    console.log(
-      `   Found ${blockingIssues.length} issue(s) at ${config.maxSeverityToBlock} severity or higher`
-    );
-    console.log(
-      `   Blocking threshold: ${config.maxSeverityToBlock} (configure with AI_REVIEWER_MAX_SEVERITY)`
-    );
-
-    // Show blocking issues grouped by severity
-    const blockingBySeverity = blockingIssues.reduce(
-      (acc, issue) => {
-        if (!acc[issue.severity]) acc[issue.severity] = 0;
-        acc[issue.severity]++;
-        return acc;
-      },
-      {} as Record<string, number>
-    );
-
-    console.log('\n   Blocking issues by severity:');
-    Object.entries(blockingBySeverity)
-      .sort((a, b) => SEVERITY_LEVELS[b[0]] - SEVERITY_LEVELS[a[0]])
-      .forEach(([severity, count]) => {
-        const emojiMap: Record<string, string> = {
-          critical: '🔴',
-          high: '🟠',
-          medium: '🟡',
-          low: '🔵',
-          info: '⚪',
-        };
-        console.log(`     ${emojiMap[severity]} ${severity}: ${count} issue(s)`);
-      });
-  } else {
-    console.log('\n✅ No blocking issues found. Commit can proceed.');
-    console.log(`   Current blocking threshold: ${config.maxSeverityToBlock}`);
-  }
+  
+  outputBlockingIssues(results, config);
 }
 
 export async function main(): Promise<void> {
@@ -356,12 +382,11 @@ export async function main(): Promise<void> {
   process.exit(formattedResults.blocked ? 1 : 0);
 }
 
-// Only run main if this file is executed directly (not imported)
-/* eslint-disable no-undef */
-if (typeof require !== 'undefined' && require.main === module) {
+// Run main function when this file is executed directly (e.g., via ts-node)
+// Check if we're running in a standalone context by examining the environment
+if (process.argv.length > 1 && process.argv[1].includes('ai-code-reviewer')) {
   main().catch(error => {
     console.error('AI code review failed:', error);
     process.exit(1);
   });
 }
-/* eslint-enable no-undef */

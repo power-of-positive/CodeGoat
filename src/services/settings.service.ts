@@ -43,15 +43,16 @@ export class SettingsService {
       const content = await fs.readFile(this.settingsPath, 'utf-8');
       const parsed = JSON.parse(content);
       // Validate and merge with defaults
-      return { ...DEFAULT_SETTINGS, ...parsed };
+      const defaultSettings = await DEFAULT_SETTINGS;
+      return { ...defaultSettings, ...parsed };
     } catch (error) {
       if ((error as { code?: string }).code === 'ENOENT') {
         // File doesn't exist, return defaults
         this.logger.info('Settings file not found, using defaults');
-        return DEFAULT_SETTINGS;
+        return await DEFAULT_SETTINGS;
       }
       this.logger.error('Failed to load settings', error as Error);
-      return DEFAULT_SETTINGS;
+      return await DEFAULT_SETTINGS;
     }
   }
 
@@ -117,7 +118,8 @@ export class SettingsService {
    */
   async getFallbackSettings(): Promise<FallbackSettings> {
     const settings = await this.loadSettings();
-    return settings.fallback || DEFAULT_SETTINGS.fallback!;
+    const defaultSettings = await DEFAULT_SETTINGS;
+    return settings.fallback || defaultSettings.fallback!;
   }
 
   /**
@@ -139,7 +141,8 @@ export class SettingsService {
    */
   async getValidationSettings(): Promise<ValidationSettings> {
     const settings = await this.loadSettings();
-    return settings.validation || DEFAULT_SETTINGS.validation!;
+    const defaultSettings = await DEFAULT_SETTINGS;
+    return settings.validation || defaultSettings.validation!;
   }
 
   /**
@@ -168,7 +171,8 @@ export class SettingsService {
     const currentSettings = await this.loadSettings();
 
     if (!currentSettings.validation) {
-      currentSettings.validation = DEFAULT_SETTINGS.validation!;
+      const defaultSettings = await DEFAULT_SETTINGS;
+      currentSettings.validation = defaultSettings.validation!;
     }
 
     // Check for duplicate ID
@@ -292,6 +296,7 @@ export class SettingsService {
    */
   async getLoggingSettings(): Promise<LoggingSettings> {
     const settings = await this.loadSettings();
-    return settings.logging || DEFAULT_SETTINGS.logging!;
+    const defaultSettings = await DEFAULT_SETTINGS;
+    return settings.logging || defaultSettings.logging!;
   }
 }
