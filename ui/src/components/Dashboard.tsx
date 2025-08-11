@@ -5,12 +5,13 @@ import { ServerStatus } from './ServerStatus';
 import { RequestLogs } from './RequestLogs';
 import { AddModelDialog } from './AddModelDialog';
 import { Settings } from './Settings';
+import { Analytics } from './Analytics';
 import { Button } from './ui/Button';
-import { Plus, RefreshCw, Home, FileText, Settings as SettingsIcon } from 'lucide-react';
+import { Plus, RefreshCw, Home, FileText, Settings as SettingsIcon, BarChart3 } from 'lucide-react';
 import { api } from '../services/api';
 import type { UIModelConfig } from '../types/api';
 
-type ActiveTab = 'dashboard' | 'logs' | 'settings';
+type ActiveTab = 'dashboard' | 'logs' | 'settings' | 'analytics';
 
 export function Dashboard() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
@@ -73,6 +74,7 @@ export function Dashboard() {
   const tabs = [
     { id: 'dashboard' as const, name: 'Dashboard', icon: Home },
     { id: 'logs' as const, name: 'Request Logs', icon: FileText },
+    { id: 'analytics' as const, name: 'Analytics', icon: BarChart3 },
     { id: 'settings' as const, name: 'Settings', icon: SettingsIcon },
   ];
 
@@ -80,6 +82,8 @@ export function Dashboard() {
     switch (activeTab) {
       case 'logs':
         return <RequestLogs />;
+      case 'analytics':
+        return <Analytics />;
       case 'settings':
         return <Settings />;
       default:

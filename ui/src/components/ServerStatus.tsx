@@ -1,21 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
 import { Server, Activity, Database, Clock } from 'lucide-react';
-
-const API_BASE = 'http://localhost:3000/api';
-
-async function getServerStatus() {
-  const response = await fetch(`${API_BASE}/status`);
-  if (!response.ok) {
-    throw new Error('Failed to fetch server status');
-  }
-  return response.json();
-}
+import { api } from '../services/api';
+import { QUERY_CONFIG } from '../constants/api';
 
 export function ServerStatus() {
   const { data, isLoading, error } = useQuery({
     queryKey: ['status'],
-    queryFn: getServerStatus,
-    refetchInterval: 30000, // Refetch every 30 seconds
+    queryFn: api.getServerStatus,
+    refetchInterval: QUERY_CONFIG.defaultRefetchInterval,
   });
 
   if (isLoading) {

@@ -4,6 +4,7 @@ import { Button } from './ui/Button';
 import { LogDetailCollapsible } from './LogDetailCollapsible';
 import { RefreshCw, Clock, Globe, ChevronDown, ChevronRight, AlertCircle, CheckCircle } from 'lucide-react';
 import { api } from '../services/api';
+import { QUERY_CONFIG } from '../constants/api';
 
 export function RequestLogs() {
   const [expandedLogIndex, setExpandedLogIndex] = useState<number | null>(null);
@@ -13,7 +14,7 @@ export function RequestLogs() {
   const { data: logsData, isLoading, error, refetch } = useQuery({
     queryKey: ['request-logs', limit, offset],
     queryFn: () => api.getRequestLogs(limit, offset),
-    refetchInterval: 30000, // Refresh every 30 seconds
+    refetchInterval: QUERY_CONFIG.defaultRefetchInterval,
   });
 
   const getStatusIcon = (statusCode?: number) => {

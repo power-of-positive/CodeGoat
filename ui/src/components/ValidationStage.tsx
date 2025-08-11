@@ -12,6 +12,7 @@ import {
   Clock
 } from 'lucide-react';
 import type { ValidationStage as ValidationStageType } from '../types/api';
+import { FORM_LIMITS } from '../constants/api';
 
 interface ValidationStageProps {
   stage: ValidationStageType;
@@ -120,7 +121,7 @@ export function ValidationStage({
                 id={`timeout-${stage.id}`}
                 type="number"
                 min="1000"
-                max="300000"
+                max={FORM_LIMITS.maxTimeout.toString()}
                 value={stage.timeout}
                 onChange={(e) => handleUpdate({ timeout: parseInt(e.target.value) })}
               />

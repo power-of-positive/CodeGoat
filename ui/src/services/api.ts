@@ -1,8 +1,9 @@
 import axios from 'axios';
 import type { UIModelConfig, ServerStatus, CreateModelRequest, ModelsResponse, ModelTestResult, OpenRouterStats, LogsResponse, LogEntry, Settings } from '../types/api';
+import { API_BASE_URL } from '../constants/api';
 
 const apiClient = axios.create({
-  baseURL: '/api',
+  baseURL: API_BASE_URL,
 });
 
 export const api = {
@@ -71,6 +72,22 @@ export const api = {
 
   updateSettings: async (settings: Settings): Promise<Settings> => {
     const response = await apiClient.put('/settings', settings);
+    return response.data;
+  },
+
+  // Analytics
+  getAnalytics: async () => {
+    const response = await apiClient.get('/analytics');
+    return response.data;
+  },
+
+  getRecentSessions: async (limit = 10) => {
+    const response = await apiClient.get(`/analytics/sessions?limit=${limit}`);
+    return response.data;
+  },
+
+  getSession: async (sessionId: string) => {
+    const response = await apiClient.get(`/analytics/sessions/${sessionId}`);
     return response.data;
   },
 };

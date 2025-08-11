@@ -154,3 +154,55 @@ export interface Settings {
   validation?: ValidationSettings;
   logging?: LoggingSettings;
 }
+
+// Analytics types
+export interface ValidationStageMetrics {
+  id: string;
+  name: string;
+  success: boolean;
+  startTime: number;
+  endTime?: number;
+  duration?: number;
+  error?: string;
+}
+
+export interface ValidationAttemptMetrics {
+  attempt: number;
+  startTime: number;
+  endTime?: number;
+  totalTime: number;
+  totalStages: number;
+  success: boolean;
+  stages: ValidationStageMetrics[];
+}
+
+export interface SessionMetrics {
+  sessionId: string;
+  startTime: number;
+  endTime?: number;
+  totalDuration?: number;
+  userPrompt?: string;
+  taskDescription?: string;
+  attempts: ValidationAttemptMetrics[];
+  finalSuccess: boolean;
+  totalValidationTime: number;
+  averageStageTime: number;
+}
+
+export interface DevelopmentAnalytics {
+  totalSessions: number;
+  successRate: number;
+  averageTimeToSuccess: number;
+  averageAttemptsToSuccess: number;
+  mostFailedStage: string;
+  stageSuccessRates: Record<string, {
+    attempts: number;
+    successes: number;
+    rate: number;
+  }>;
+  dailyStats: Record<string, {
+    sessions: number;
+    successes: number;
+    totalTime: number;
+  }>;
+}

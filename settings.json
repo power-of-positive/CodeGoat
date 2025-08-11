@@ -125,6 +125,24 @@
         "enabled": true,
         "continueOnFailure": false,
         "order": 13
+      },
+      {
+        "id": "stage-1754901463091",
+        "name": "New Validation Stage",
+        "command": "echo \"Configure your command\"",
+        "timeout": 30000,
+        "enabled": true,
+        "continueOnFailure": false,
+        "order": 14
+      },
+      {
+        "id": "stage-1754902897916",
+        "name": "New Validation Stage",
+        "command": "echo \"Configure your command\"",
+        "timeout": 30000,
+        "enabled": true,
+        "continueOnFailure": false,
+        "order": 15
       }
     ],
     "enableMetrics": true,

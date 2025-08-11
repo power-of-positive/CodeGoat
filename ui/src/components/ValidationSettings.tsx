@@ -9,6 +9,7 @@ import {
   Target
 } from 'lucide-react';
 import { ValidationStage } from './ValidationStage';
+import { QUERY_CONFIG } from '../constants/api';
 import type { ValidationStage as ValidationStageType, Settings } from '../types/api';
 
 interface ValidationSettingsProps {
@@ -26,7 +27,7 @@ export function ValidationSettings({ settings, updateSettingsMutation }: Validat
       id: `stage-${Date.now()}`,
       name: 'New Validation Stage',
       command: 'echo "Configure your command"',
-      timeout: 30000,
+      timeout: QUERY_CONFIG.defaultStaleTime,
       enabled: true,
       continueOnFailure: false,
       order: validation.stages.length + 1,

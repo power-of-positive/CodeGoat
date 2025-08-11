@@ -4,6 +4,7 @@ import { api } from '../services/api';
 import { Button } from './ui/Button';
 import type { UIModelConfig } from '../types/api';
 import { OpenRouterStats } from './OpenRouterStats';
+import { PROVIDER_INFO_URLS } from '../constants/api';
 
 interface ModelListProps {
   onEdit?: (model: UIModelConfig) => void;
@@ -16,7 +17,7 @@ function getModelUrl(model: UIModelConfig): string {
   // For OpenRouter models, link to the actual model page
   if (model.provider === 'openrouter' && model.model.startsWith('openrouter/')) {
     const modelPath = model.model.replace('openrouter/', '');
-    return `https://openrouter.ai/models/${modelPath}`;
+    return `${PROVIDER_INFO_URLS.openrouter.models}/${modelPath}`;
   }
   
   // For other providers, fallback to the base URL
