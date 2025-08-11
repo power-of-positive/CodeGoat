@@ -162,7 +162,9 @@ describe('SettingsLoader', () => {
         validation: { stages: [], enableMetrics: true, maxAttempts: 5 },
       };
 
-      (fs.readFile as jest.Mock).mockResolvedValue(JSON.stringify(mockSettings));
+      (fs.readFile as jest.Mock)
+        .mockResolvedValueOnce(JSON.stringify(mockSettings)) // First call for settings.json
+        .mockRejectedValue({ code: 'ENOENT' }); // Subsequent calls for default config files
 
       const result = await settingsLoader.getFallbackSettings();
 
@@ -225,7 +227,9 @@ describe('SettingsLoader', () => {
         fallback: { maxRetries: 3, retryDelay: 1000, enableFallbacks: true },
       };
 
-      (fs.readFile as jest.Mock).mockResolvedValue(JSON.stringify(mockSettings));
+      (fs.readFile as jest.Mock)
+        .mockResolvedValueOnce(JSON.stringify(mockSettings)) // First call for settings.json
+        .mockRejectedValue({ code: 'ENOENT' }); // Subsequent calls for default config files
 
       const result = await settingsLoader.getValidationSettings();
 

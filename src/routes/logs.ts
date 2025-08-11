@@ -11,14 +11,14 @@ async function handleGetRequestLogs(
   logger: ILogger
 ): Promise<void> {
   try {
-    const limit = parseInt(req.query.limit as string) || 100;
+    const limit = parseInt(req.query.limit as string) || 50;
     const offset = parseInt(req.query.offset as string) || 0;
 
     const result = await logsService.getRequestLogs({ limit, offset });
     res.json(result);
   } catch (error) {
     logger.error('Failed to read logs', error as Error);
-    res.status(500).json({ error: 'Failed to read logs' });
+    res.status(500).json({ error: 'Failed to load request logs' });
   }
 }
 
@@ -52,7 +52,7 @@ async function handleGetErrorLogs(
   logger: ILogger
 ): Promise<void> {
   try {
-    const limit = parseInt(req.query.limit as string) || 100;
+    const limit = parseInt(req.query.limit as string) || 50;
     const offset = parseInt(req.query.offset as string) || 0;
 
     const result = await logsService.getErrorLogs({ limit, offset });
@@ -116,6 +116,39 @@ async function handleUpdateLoggingConfig(
   }
 }
 
+// Log file handlers
+async function handleGetLogFile(
+  logsService: LogsService,
+  req: ExpressRequest,
+  res: ExpressResponse,
+  logger: ILogger
+): Promise<void> {
+  try {
+    const { filename } = req.params;
+
+    // Validate filename to prevent path traversal
+    if (!filename || filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+      res.status(400).json({ error: 'Invalid filename' });
+      return;
+    }
+
+    const content = await logsService.getLogFileContent(filename);
+
+    res.json({
+      filename,
+      content,
+      size: content.length,
+    });
+  } catch (error) {
+    if (error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT') {
+      res.status(404).json({ error: 'Log file not found' });
+    } else {
+      logger.error('Failed to read log file', error as Error);
+      res.status(500).json({ error: 'Failed to read log file' });
+    }
+  }
+}
+
 export function createLogsRoutes(logger: ILogger): Router {
   const router = Router();
   const settingsService = new SettingsService(logger);
@@ -139,6 +172,9 @@ export function createLogsRoutes(logger: ILogger): Router {
   router.put('/config', (req, res) =>
     handleUpdateLoggingConfig(settingsService, logsService, req, res, logger)
   );
+
+  // Get specific log file
+  router.get('/:filename', (req, res) => handleGetLogFile(logsService, req, res, logger));
 
   return router;
 }

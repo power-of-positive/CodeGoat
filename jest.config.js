@@ -3,6 +3,12 @@ module.exports = {
   testEnvironment: 'node',
   roots: ['<rootDir>/src', '<rootDir>/tests'],
   testMatch: ['**/__tests__/**/*.ts', '**/?(*.)+(spec|test).ts'],
+  // Exclude E2E tests from default test run (they need a running server)
+  testPathIgnorePatterns: [
+    'node_modules',
+    'tests/.*\\.test\\.ts$',  // Exclude E2E tests in tests/ directory
+    'tests/routes/.*\\.e2e\\.test\\.ts$',  // Exclude E2E route tests
+  ],
   transform: {
     '^.+\\.ts$': 'ts-jest',
   },

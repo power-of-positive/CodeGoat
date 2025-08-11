@@ -21,6 +21,10 @@ export function safeStringify(obj: unknown, space?: number): string {
     return String(obj);
   }
 
+  if (typeof obj === 'function') {
+    return '[Function]';
+  }
+
   // For objects, use a safe stringify approach
   try {
     const replacer = createSafeReplacer();

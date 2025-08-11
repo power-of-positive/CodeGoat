@@ -6,6 +6,7 @@ import { WinstonLogger } from './logger-winston';
 import { ILogger } from './logger-interface';
 import { InternalRoutes } from './utils/internal-routes';
 import { ProxyRoutes } from './utils/proxy-routes';
+import { getApiKey as getApiKeyUtil } from './utils/model';
 
 export class ConfigurableProxyHandler extends ProxyHandler {
   private settingsService: SettingsService;
@@ -76,5 +77,14 @@ export class ConfigurableProxyHandler extends ProxyHandler {
       default:
         res.status(404).json({ error: 'Proxy endpoint not found' });
     }
+  }
+
+  /**
+   * Get API key from environment variable specification or return directly
+   * @param apiKeySpec The API key specification
+   * @returns API key or null if not found
+   */
+  private getApiKey(apiKeySpec: string): string | null {
+    return getApiKeyUtil(apiKeySpec);
   }
 }

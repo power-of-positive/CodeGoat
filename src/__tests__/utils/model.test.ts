@@ -11,7 +11,9 @@ describe('Model Utils', () => {
     it('should extract model name from provider/model format', () => {
       expect(extractModelName('openai/gpt-4')).toBe('gpt-4');
       expect(extractModelName('anthropic/claude-3-opus')).toBe('claude-3-opus');
-      expect(extractModelName('openrouter/anthropic/claude-3-sonnet')).toBe('claude-3-sonnet');
+      expect(extractModelName('openrouter/anthropic/claude-3-sonnet')).toBe(
+        'anthropic/claude-3-sonnet'
+      );
     });
 
     it('should return original name if no slash present', () => {
@@ -21,7 +23,9 @@ describe('Model Utils', () => {
     });
 
     it('should handle multiple slashes by taking the last segment', () => {
-      expect(extractModelName('openrouter/anthropic/claude-3-opus')).toBe('claude-3-opus');
+      expect(extractModelName('openrouter/anthropic/claude-3-opus')).toBe(
+        'anthropic/claude-3-opus'
+      );
       expect(extractModelName('provider/org/model-name')).toBe('model-name');
       expect(extractModelName('a/b/c/d/final-model')).toBe('final-model');
     });
@@ -391,7 +395,7 @@ describe('Model Utils', () => {
       const provider = getProviderFromModel(fullModel);
       const targetUrl = getTargetUrl(fullModel);
 
-      expect(modelName).toBe('claude-3-opus-20240229');
+      expect(modelName).toBe('anthropic/claude-3-opus-20240229');
       expect(provider).toBe('OpenRouter');
       expect(targetUrl).toBe('https://openrouter.ai/api/v1/chat/completions');
 

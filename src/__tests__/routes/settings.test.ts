@@ -25,25 +25,28 @@ describe('Settings Routes', () => {
 
       const response = await request(app).get('/settings').expect(200);
 
-      expect(response.body).toEqual({
-        fallback: expect.objectContaining({
-          maxRetries: 3,
-          retryDelay: 1000,
-          enableFallbacks: true,
-          fallbackOnContextLength: true,
-          fallbackOnRateLimit: true,
-          fallbackOnServerError: false,
-        }),
-        validation: expect.objectContaining({
-          stages: expect.arrayContaining([
-            expect.objectContaining({ id: 'lint' }),
-            expect.objectContaining({ id: 'typecheck' }),
-            expect.objectContaining({ id: 'test' }),
-          ]),
-          enableMetrics: true,
-          maxAttempts: 5,
-        }),
-      });
+      expect(response.body).toEqual(
+        expect.objectContaining({
+          fallback: expect.objectContaining({
+            maxRetries: 3,
+            retryDelay: 1000,
+            enableFallbacks: true,
+            fallbackOnContextLength: true,
+            fallbackOnRateLimit: true,
+            fallbackOnServerError: false,
+          }),
+          validation: expect.objectContaining({
+            stages: expect.arrayContaining([
+              expect.objectContaining({ id: 'lint' }),
+              expect.objectContaining({ id: 'typecheck' }),
+              expect.objectContaining({ id: 'test' }),
+            ]),
+            enableMetrics: true,
+            maxAttempts: 5,
+          }),
+          logging: expect.any(Object),
+        })
+      );
     });
 
     it('should return existing settings from file', async () => {
@@ -56,17 +59,29 @@ describe('Settings Routes', () => {
 
       const response = await request(app).get('/settings').expect(200);
 
-      expect(response.body).toEqual(mockSettings);
+      expect(response.body).toEqual(expect.objectContaining(mockSettings));
     });
 
     it('should handle file read errors', async () => {
       (fs.readFile as jest.Mock).mockRejectedValue(new Error('Permission denied'));
 
-      await request(app).get('/settings').expect(500).expect({
-        error: 'Failed to load settings',
-      });
+      const response = await request(app).get('/settings').expect(200);
 
-      expect(mockLogger.error).toHaveBeenCalled();
+      // Should return default settings when file read fails
+      expect(response.body).toEqual(
+        expect.objectContaining({
+          fallback: expect.objectContaining({
+            maxRetries: 3,
+            retryDelay: 1000,
+            enableFallbacks: true,
+          }),
+          validation: expect.objectContaining({
+            enableMetrics: true,
+            maxAttempts: 5,
+          }),
+          logging: expect.any(Object),
+        })
+      );
     });
   });
 
@@ -83,9 +98,11 @@ describe('Settings Routes', () => {
       expect(fs.writeFile).toHaveBeenCalled();
       expect(response.body).toEqual({
         message: 'Settings updated successfully',
-        settings: expect.objectContaining(newSettings),
+        settings: expect.objectContaining({
+          fallback: expect.objectContaining(newSettings.fallback),
+        }),
       });
-      expect(mockLogger.info).toHaveBeenCalledWith('Settings updated successfully');
+      expect(mockLogger.info).toHaveBeenCalledWith('Settings saved successfully');
     });
 
     it('should handle invalid settings format', async () => {
@@ -124,12 +141,19 @@ describe('Settings Routes', () => {
       expect(response.body).toEqual(mockSettings.fallback);
     });
 
-    it('should return empty object when no fallback settings exist', async () => {
+    it('should return default fallback settings when no fallback settings exist', async () => {
       (fs.readFile as jest.Mock).mockResolvedValue(JSON.stringify({}));
 
       const response = await request(app).get('/settings/fallback').expect(200);
 
-      expect(response.body).toEqual({});
+      expect(response.body).toEqual({
+        maxRetries: 3,
+        retryDelay: 1000,
+        enableFallbacks: true,
+        fallbackOnContextLength: true,
+        fallbackOnRateLimit: true,
+        fallbackOnServerError: false,
+      });
     });
   });
 

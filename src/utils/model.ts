@@ -8,9 +8,16 @@
  * @returns Clean model name
  */
 export function extractModelName(model: string): string {
+  // For OpenRouter models, remove the "openrouter/" prefix but keep the rest
+  if (model.startsWith('openrouter/')) {
+    return model.replace('openrouter/', '');
+  }
+
+  // For other models with provider prefixes, extract just the model name
   if (model.includes('/')) {
     return model.split('/').pop() || model;
   }
+
   return model;
 }
 

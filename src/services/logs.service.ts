@@ -179,6 +179,14 @@ export class LogsService {
   }
 
   /**
+   * Get raw content of a specific log file
+   */
+  async getLogFileContent(filename: string): Promise<string> {
+    const filePath = path.join(this.config.logsDir, filename);
+    return await fs.readFile(filePath, 'utf-8');
+  }
+
+  /**
    * Read access logs and add to logs array
    */
   private async readAccessLogs(logs: LogEntry[]): Promise<void> {

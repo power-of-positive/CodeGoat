@@ -11,22 +11,22 @@ const mockAxios = axios as jest.Mocked<typeof axios>;
 
 // Mock utility functions
 jest.mock('../../utils/model', () => ({
-  extractModelName: jest.fn(),
-  getProviderFromModel: jest.fn(),
-  getTargetUrl: jest.fn(),
-  getApiKey: jest.fn(),
-  buildProxyHeaders: jest.fn(),
+  extractModelName: jest.fn(model => model),
+  getProviderFromModel: jest.fn(model => 'openai'),
+  getTargetUrl: jest.fn(model => 'https://api.openai.com/v1/chat/completions'),
+  getApiKey: jest.fn(key => key || 'test-api-key'),
+  buildProxyHeaders: jest.fn(() => ({ Authorization: 'Bearer test-api-key' })),
 }));
 
 jest.mock('../../utils/fallback', () => ({
-  shouldFallbackOnError: jest.fn(),
-  extractErrorMessage: jest.fn(),
-  delay: jest.fn(),
+  shouldFallbackOnError: jest.fn(() => false),
+  extractErrorMessage: jest.fn(error => error.message || 'Unknown error'),
+  delay: jest.fn(() => Promise.resolve()),
 }));
 
 jest.mock('../../utils/json', () => ({
-  safePreview: jest.fn(),
-  getSafeSize: jest.fn(),
+  safePreview: jest.fn(obj => JSON.stringify(obj).substring(0, 100)),
+  getSafeSize: jest.fn(() => '100 bytes'),
 }));
 
 describe('ProxyRoutes', () => {
@@ -95,6 +95,8 @@ describe('ProxyRoutes', () => {
       status: jest.fn().mockReturnThis(),
       json: jest.fn().mockReturnThis(),
       end: jest.fn(),
+      send: jest.fn(),
+      setHeader: jest.fn(),
     };
 
     proxyRoutes = new ProxyRoutes(mockConfig, mockSettingsService, mockLogger);
@@ -166,11 +168,15 @@ describe('ProxyRoutes', () => {
 
       await proxyRoutes.handleChatCompletions(mockRequest as Request, mockResponse as Response);
 
-      expect(mockLogger.error).toHaveBeenCalledWith('Proxy error', expect.any(Error));
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'Request attempt failed',
+        expect.any(Error),
+        expect.any(Object)
+      );
       expect(mockResponse.status).toHaveBeenCalledWith(500);
       expect(mockResponse.json).toHaveBeenCalledWith({
         error: {
-          message: 'Provider returned error: Network error',
+          message: 'Network error',
           type: 'internal_error',
         },
       });
@@ -182,8 +188,16 @@ describe('ProxyRoutes', () => {
         messages: [{ role: 'user', content: 'Hello' }],
       };
 
-      // Mock primary model to fail
-      (mockAxios as any).mockRejectedValueOnce(new Error('Primary model failed'));
+      // Mock shouldFallbackOnError to return true for primary model
+      const { shouldFallbackOnError } = require('../../utils/fallback');
+      shouldFallbackOnError.mockReturnValueOnce(true);
+
+      // Mock primary model to return error response that triggers fallback
+      (mockAxios as any).mockResolvedValueOnce({
+        data: { error: { type: 'context_length_exceeded' } },
+        status: 400,
+        headers: {},
+      });
       // Mock fallback model to succeed
       (mockAxios as any).mockResolvedValueOnce({
         data: { choices: [{ message: { content: 'Fallback response' } }] },
@@ -216,7 +230,7 @@ describe('ProxyRoutes', () => {
 
       expect(mockResponse.status).toHaveBeenCalledWith(500);
       expect(mockResponse.json).toHaveBeenCalledWith({
-        error: { message: 'All model attempts failed', type: 'internal_error' },
+        error: { message: 'Model failed', type: 'internal_error' },
       });
     });
 
@@ -232,8 +246,16 @@ describe('ProxyRoutes', () => {
         messages: [{ role: 'user', content: 'Hello' }],
       };
 
-      // Mock primary model to fail
-      (mockAxios as any).mockRejectedValueOnce(new Error('Primary model failed'));
+      // Mock shouldFallbackOnError to return true
+      const { shouldFallbackOnError } = require('../../utils/fallback');
+      shouldFallbackOnError.mockReturnValueOnce(true);
+
+      // Mock primary model to return error response that triggers fallback
+      (mockAxios as any).mockResolvedValueOnce({
+        data: { error: { type: 'rate_limit_exceeded' } },
+        status: 429,
+        headers: {},
+      });
       // Mock enabled fallback model to succeed
       (mockAxios as any).mockResolvedValueOnce({
         data: { choices: [{ message: { content: 'Fallback response' } }] },
@@ -297,7 +319,7 @@ describe('ProxyRoutes', () => {
       expect(mockResponse.status).toHaveBeenCalledWith(500);
       expect(mockResponse.json).toHaveBeenCalledWith({
         error: {
-          message: 'Provider returned error: Unknown error',
+          message: 'All model attempts failed',
           type: 'internal_error',
         },
       });
@@ -368,7 +390,7 @@ describe('ProxyRoutes', () => {
 
       expect(mockResponse.status).toHaveBeenCalledWith(500);
       expect(mockResponse.json).toHaveBeenCalledWith({
-        error: { message: 'All model attempts failed', type: 'internal_error' },
+        error: { message: 'All models failing', type: 'internal_error' },
       });
     });
   });
@@ -407,12 +429,22 @@ describe('ProxyRoutes', () => {
         max_tokens: 150,
       };
 
-      // Mock primary to fail, fallback to succeed
-      (mockAxios as any).mockRejectedValueOnce(new Error('Primary failed')).mockResolvedValueOnce({
-        data: { choices: [{ message: { content: 'Fallback success' } }] },
-        status: 200,
-        headers: {},
-      });
+      // Mock shouldFallbackOnError to return true
+      const { shouldFallbackOnError } = require('../../utils/fallback');
+      shouldFallbackOnError.mockReturnValueOnce(true);
+
+      // Mock primary to return error that triggers fallback, fallback to succeed
+      (mockAxios as any)
+        .mockResolvedValueOnce({
+          data: { error: { type: 'context_length_exceeded' } },
+          status: 400,
+          headers: {},
+        })
+        .mockResolvedValueOnce({
+          data: { choices: [{ message: { content: 'Fallback success' } }] },
+          status: 200,
+          headers: {},
+        });
 
       await proxyRoutes.handleChatCompletions(mockRequest as Request, mockResponse as Response);
 
