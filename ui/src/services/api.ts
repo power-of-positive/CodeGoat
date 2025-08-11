@@ -54,6 +54,14 @@ export const api = {
     return response.data;
   },
 
+  // Chat completion logs (for UI display)
+  getChatCompletionLogs: async (limit = 100, offset = 0): Promise<LogsResponse> => {
+    console.log('Making API request to:', `/logs/chat-completions?limit=${limit}&offset=${offset}`);
+    const response = await apiClient.get(`/logs/chat-completions?limit=${limit}&offset=${offset}`);
+    console.log('API response:', response.data);
+    return response.data;
+  },
+
   getLogEntry: async (timestamp: string): Promise<LogEntry> => {
     const response = await apiClient.get(`/logs/requests/${encodeURIComponent(timestamp)}`);
     return response.data;

@@ -5,7 +5,7 @@
     "enableFallbacks": true,
     "fallbackOnContextLength": true,
     "fallbackOnRateLimit": true,
-    "fallbackOnServerError": false
+    "fallbackOnServerError": true
   },
   "validation": {
     "stages": [
@@ -33,7 +33,7 @@
         "command": "npm test",
         "timeout": 60000,
         "enabled": true,
-        "continueOnFailure": true,
+        "continueOnFailure": false,
         "order": 3
       },
       {
@@ -42,7 +42,7 @@
         "command": "node scripts/check-typescript-preference.js",
         "timeout": 10000,
         "enabled": true,
-        "continueOnFailure": true,
+        "continueOnFailure": false,
         "order": 4
       },
       {
@@ -50,9 +50,18 @@
         "name": "E2E Tests",
         "command": "cd ui && npm run test:e2e",
         "timeout": 120000,
-        "enabled": false,
-        "continueOnFailure": true,
+        "enabled": true,
+        "continueOnFailure": false,
         "order": 5
+      },
+      {
+        "id": "stage-1754920538696",
+        "name": "New Validation Stage",
+        "command": "echo \"Configure your command\"",
+        "timeout": 30000,
+        "enabled": true,
+        "continueOnFailure": false,
+        "order": 6
       }
     ],
     "enableMetrics": true,

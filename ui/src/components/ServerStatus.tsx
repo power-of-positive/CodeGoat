@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Server, Activity, Database, Clock } from 'lucide-react';
 import { api } from '../services/api';
 import { QUERY_CONFIG } from '../constants/api';
+import type { ServerStatus as ServerStatusType } from '../types/api';
 
 export function ServerStatus() {
   const { data, isLoading, error } = useQuery({
@@ -42,7 +43,7 @@ export function ServerStatus() {
     );
   }
 
-  const status = data || {};
+  const status = data as ServerStatusType;
   const isHealthy = status.status === 'healthy';
 
   return (
@@ -93,7 +94,7 @@ export function ServerStatus() {
           <div className="text-xs text-slate-400 space-x-4">
             <span>Memory: {Math.round(status.memoryUsage.heapUsed / 1024 / 1024)}MB</span>
             <span>Node: {status.nodeVersion}</span>
-            <span>Last update: {new Date(status.timestamp).toLocaleTimeString()}</span>
+            <span>Last update: {status.timestamp ? new Date(status.timestamp).toLocaleTimeString() : 'Unknown'}</span>
           </div>
         </div>
       )}

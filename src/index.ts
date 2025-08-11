@@ -22,7 +22,7 @@ const routeMatcher = new RouteMatcher();
 let config = configLoader.load();
 const proxyHandler = new ConfigurableProxyHandler(config.modelConfig!);
 
-const logsDir = path.join(__dirname, '../logs');
+const logsDir = path.join(process.cwd(), 'logs');
 const logger = new WinstonLogger({
   level: config.settings.logging.level,
   logsDir,
@@ -66,8 +66,7 @@ app.use(
 );
 
 // Handle body parser errors (including payload too large)
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-app.use((error: any, req: Request, res: Response, next: NextFunction) => {
+app.use((error: Error & { type?: string }, req: Request, res: Response, next: NextFunction) => {
   if (error instanceof SyntaxError && 'body' in error) {
     logger.error('Body parser syntax error', error);
     return res.status(400).json({
@@ -185,14 +184,10 @@ const server = app.listen(config.proxy.port, config.proxy.host, () => {
   void logCleaner.cleanLogs();
 
   // Schedule log cleanup every 6 hours
-  /* eslint-disable no-undef */
-  setInterval(
-    () => {
-      void logCleaner.cleanLogs();
-    },
-    6 * 60 * 60 * 1000
-  );
-  /* eslint-enable no-undef */
+  const SIX_HOURS = 6 * 60 * 60 * 1000;
+  setInterval(() => {
+    void logCleaner.cleanLogs();
+  }, SIX_HOURS);
 });
 
 // Set server timeout to handle large payloads

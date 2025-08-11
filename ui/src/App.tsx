@@ -1,6 +1,10 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BrowserRouter } from 'react-router-dom';
-import { Dashboard } from './components/Dashboard';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Layout } from './components/Layout';
+import { DashboardPage } from './pages/DashboardPage';
+import { RequestLogsPage } from './pages/RequestLogsPage';
+import { AnalyticsPage } from './pages/AnalyticsPage';
+import { SettingsPage } from './pages/SettingsPage';
 import { Toaster } from './components/ui/Toaster';
 
 const queryClient = new QueryClient({
@@ -16,21 +20,15 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <div className="min-h-screen bg-gray-900">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="py-8">
-              <div className="mb-8">
-                <h1 className="text-3xl font-bold text-gray-100">
-                  Proxy Management
-                </h1>
-                <p className="mt-2 text-sm text-gray-400">
-                  Manage your AI model configurations and API keys
-                </p>
-              </div>
-              <Dashboard />
-            </div>
-          </div>
-        </div>
+        <Layout>
+          <Routes>
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/logs" element={<RequestLogsPage />} />
+            <Route path="/analytics" element={<AnalyticsPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+          </Routes>
+        </Layout>
         <Toaster />
       </BrowserRouter>
     </QueryClientProvider>

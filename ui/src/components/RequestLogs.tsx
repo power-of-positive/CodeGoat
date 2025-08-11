@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from './ui/Button';
 import { LogDetailCollapsible } from './LogDetailCollapsible';
-import { RefreshCw, Clock, Globe, ChevronDown, ChevronRight, AlertCircle, CheckCircle } from 'lucide-react';
+import { RefreshCw, Globe, ChevronDown, ChevronRight, AlertCircle } from 'lucide-react';
 import { api } from '../services/api';
 import { QUERY_CONFIG } from '../constants/api';
+import { getStatusIcon, getStatusColor } from '../utils/logStatusUtils';
 
 export function RequestLogs() {
   const [expandedLogIndex, setExpandedLogIndex] = useState<number | null>(null);
@@ -12,24 +13,24 @@ export function RequestLogs() {
   const [offset, setOffset] = useState(0);
 
   const { data: logsData, isLoading, error, refetch } = useQuery({
-    queryKey: ['request-logs', limit, offset],
-    queryFn: () => api.getRequestLogs(limit, offset),
+    queryKey: ['chat-completion-logs', limit, offset],
+    queryFn: () => {
+      console.log('Fetching chat completion logs with:', { limit, offset });
+      return api.getChatCompletionLogs(limit, offset);
+    },
     refetchInterval: QUERY_CONFIG.defaultRefetchInterval,
   });
 
-  const getStatusIcon = (statusCode?: number) => {
-    if (!statusCode) return <Clock className="w-4 h-4 text-yellow-400" />;
-    if (statusCode >= 200 && statusCode < 300) return <CheckCircle className="w-4 h-4 text-green-400" />;
-    if (statusCode >= 400) return <AlertCircle className="w-4 h-4 text-red-400" />;
-    return <Clock className="w-4 h-4 text-yellow-400" />;
-  };
+  // Debug logging
+  React.useEffect(() => {
+    if (logsData) {
+      console.log('Successfully fetched chat completion logs:', logsData);
+    }
+    if (error) {
+      console.error('Failed to fetch chat completion logs:', error);
+    }
+  }, [logsData, error]);
 
-  const getStatusColor = (statusCode?: number) => {
-    if (!statusCode) return 'text-yellow-400';
-    if (statusCode >= 200 && statusCode < 300) return 'text-green-400';
-    if (statusCode >= 400) return 'text-red-400';
-    return 'text-yellow-400';
-  };
 
   const handlePrevious = () => {
     if (offset > 0) {
@@ -47,7 +48,7 @@ export function RequestLogs() {
     return (
       <div className="text-center py-8">
         <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-        <p className="text-red-400 mb-4">Failed to load request logs</p>
+        <p className="text-red-400 mb-4">Failed to load chat completion logs</p>
         <Button onClick={() => refetch()}>
           <RefreshCw className="w-4 h-4" />
           Retry
@@ -60,9 +61,9 @@ export function RequestLogs() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-gray-100">Request Logs</h2>
+          <h2 className="text-xl font-semibold text-gray-100">Chat Completion Logs</h2>
           <p className="text-sm text-gray-400">
-            View detailed request logs, responses, and metadata
+            View detailed chat completion requests, responses, and metadata
           </p>
         </div>
         <Button onClick={() => refetch()} variant="outline" size="sm">
@@ -79,7 +80,7 @@ export function RequestLogs() {
       ) : logsData?.logs.length === 0 ? (
         <div className="text-center py-8">
           <Globe className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-          <p className="text-gray-400">No request logs found</p>
+          <p className="text-gray-400">No chat completion logs found</p>
         </div>
       ) : (
         <>

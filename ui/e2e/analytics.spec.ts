@@ -6,10 +6,10 @@ test.describe('Analytics Page', () => {
     await page.goto('/');
     
     // Wait for the dashboard to fully load
-    await page.waitForSelector('button:has-text("Analytics")', { timeout: 10000 });
+    await page.waitForSelector('a:has-text("Analytics")', { timeout: 10000 });
     
     // Click on the Analytics tab
-    await page.click('button:has-text("Analytics")');
+    await page.click('a:has-text("Analytics")');
     
     // Wait for analytics content to load
     await page.waitForSelector('h2:has-text("Development Analytics")', { timeout: 10000 });
@@ -77,10 +77,10 @@ test.describe('Analytics Page', () => {
 
   test('should display analytics icon in tab', async ({ page }) => {
     // Navigate back to dashboard first
-    await page.click('button:has-text("Dashboard")');
+    await page.click('a:has-text("Dashboard")');
     
     // Check that analytics tab has the correct icon
-    const analyticsTab = page.locator('button:has-text("Analytics")');
+    const analyticsTab = page.locator('a:has-text("Analytics")');
     await expect(analyticsTab).toBeVisible();
     
     // Click analytics tab again
@@ -102,7 +102,7 @@ test.describe('Analytics Page', () => {
     
     // Navigate to analytics with errors
     await page.goto('/');
-    await page.click('button:has-text("Analytics")');
+    await page.click('a:has-text("Analytics")');
     
     // Wait for error message to appear
     await expect(page.locator('text=Failed to load analytics data')).toBeVisible({ timeout: 10000 });

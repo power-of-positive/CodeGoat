@@ -2,32 +2,29 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Request Logs Details', () => {
   test.beforeEach(async ({ page }) => {
-    // Navigate to the dashboard
-    await page.goto('/');
+    // Navigate directly to the logs page
+    await page.goto('/logs');
     
-    // Wait for the dashboard to fully load
-    await page.waitForSelector('button:has-text("Request Logs")', { timeout: 10000 });
+    // Wait for the logs page to load
+    await page.waitForSelector('h2:has-text("Chat Completion Logs")', { timeout: 10000 });
     
-    // Make a few API requests to generate logs
-    await page.request.get('/api/status');
-    await page.request.get('/api/models');
-    
-    // Click on the Request Logs tab
-    await page.click('button:has-text("Request Logs")');
-    
-    // Wait for the component to load - check for either table or "no logs" message
-    await page.waitForFunction(() => {
-      return document.querySelector('table') || 
-             document.querySelector('.text-gray-400') ||
-             document.body.textContent?.includes('No request logs found');
-    }, { timeout: 15000 });
+    // Wait for the component to finish loading - either we get logs table or no logs message
+    await expect(async () => {
+      const hasTable = await page.locator('table').isVisible();
+      const hasNoLogsMessage = await page.locator(':text("No chat completion logs found")').isVisible();
+      const isLoading = await page.locator(':text("Loading logs...")').isVisible();
+      
+      // We should have either table OR no logs message, and NOT be loading
+      expect(hasTable || hasNoLogsMessage).toBeTruthy();
+      expect(isLoading).toBeFalsy();
+    }).toPass({ timeout: 15000 });
   });
 
   test('should display request logs table or no logs message', async ({ page }) => {
     // Check if we have a table with logs OR a "no logs" message
     const hasTable = await page.locator('table').count() > 0;
     const hasNoLogsMessage = await page.locator('.text-gray-400').count() > 0 || 
-                            await page.locator(':text("No request logs found")').count() > 0;
+                            await page.locator(':text("No chat completion logs found")').count() > 0;
     
     expect(hasTable || hasNoLogsMessage).toBeTruthy();
     
@@ -43,44 +40,63 @@ test.describe('Request Logs Details', () => {
 
   test('should expand and collapse log details when clicking on a row', async ({ page }) => {
     // Check if we have any log rows
-    const rowCount = await page.locator('tbody tr').count();
+    const table = page.locator('table');
+    const noLogsMessage = page.locator(':text("No chat completion logs found")');
     
-    if (rowCount === 0) {
-      // If no logs, just verify the no-logs message
-      await expect(page.locator(':text("No request logs found")')).toBeVisible();
+    const hasTable = await table.isVisible();
+    const hasNoLogsMessage = await noLogsMessage.isVisible();
+    
+    if (hasNoLogsMessage) {
+      // If no logs, just verify the no-logs message is visible
+      await expect(noLogsMessage).toBeVisible();
+      console.log('No logs found - test completed successfully');
       return;
     }
     
-    // Wait for at least one log entry
-    const firstRow = page.locator('tbody tr').first();
-    await expect(firstRow).toBeVisible();
+    // We must have a table at this point (verified by beforeEach)
+    expect(hasTable).toBeTruthy();
+    
+    // We have a table, check for rows
+    const rows = page.locator('tbody tr');
+    await expect(rows.first()).toBeVisible();
+    
+    const rowCount = await rows.count();
+    console.log(`Found ${rowCount} log rows`);
     
     // Click on the first row to expand it
-    await firstRow.click();
+    await rows.first().click();
     
     // Check if the expanded detail view is visible
     await expect(page.locator('.bg-gray-800.rounded-lg.p-4')).toBeVisible();
     
     // Check if basic info is displayed
-    await expect(page.locator('text=Timestamp')).toBeVisible();
-    await expect(page.locator('text=Method')).toBeVisible();
-    await expect(page.locator('text=Status')).toBeVisible();
+    await expect(page.locator('label:has-text("Timestamp")')).toBeVisible();
+    await expect(page.locator('label:has-text("Method")')).toBeVisible();
+    await expect(page.locator('label:has-text("Status")')).toBeVisible();
     
     // Click again to collapse
-    await firstRow.click();
+    await rows.first().click();
     
     // Check if the detail view is no longer visible
     await expect(page.locator('.bg-gray-800.rounded-lg.p-4')).not.toBeVisible();
   });
 
   test('should display collapsible sections for headers and body', async ({ page }) => {
-    // Check if we have any log rows
-    const rowCount = await page.locator('tbody tr').count();
+    // Check if we have table or no logs message
+    const hasTable = await page.locator('table').isVisible();
+    const hasNoLogsMessage = await page.locator(':text("No chat completion logs found")').isVisible();
     
-    if (rowCount === 0) {
-      await expect(page.locator(':text("No request logs found")')).toBeVisible();
+    if (hasNoLogsMessage) {
+      await expect(page.locator(':text("No chat completion logs found")')).toBeVisible();
       return;
     }
+    
+    // We must have a table at this point (verified by beforeEach)
+    expect(hasTable).toBeTruthy();
+    
+    // We have a table
+    const rowCount = await page.locator('tbody tr').count();
+    console.log(`Found ${rowCount} log rows for headers test`);
     
     // Click on the first row to expand it
     const firstRow = page.locator('tbody tr').first();
@@ -115,13 +131,25 @@ test.describe('Request Logs Details', () => {
   });
 
   test('should show copy button for JSON data', async ({ page }) => {
-    // Check if we have any log rows
-    const rowCount = await page.locator('tbody tr').count();
+    // Wait for logs to load
+    await page.waitForTimeout(2000);
     
-    if (rowCount === 0) {
-      await expect(page.locator(':text("No request logs found")')).toBeVisible();
+    // Check if we have table or no logs message
+    const hasTable = await page.locator('table').isVisible();
+    const hasNoLogsMessage = await page.locator(':text("No chat completion logs found")').isVisible();
+    
+    if (!hasTable && !hasNoLogsMessage) {
+      throw new Error('Neither table nor no-logs message is visible');
+    }
+    
+    if (hasNoLogsMessage) {
+      await expect(page.locator(':text("No chat completion logs found")')).toBeVisible();
       return;
     }
+    
+    // We have a table
+    const rowCount = await page.locator('tbody tr').count();
+    console.log(`Found ${rowCount} log rows for copy button test`);
     
     // Click on the first row to expand it
     const firstRow = page.locator('tbody tr').first();
@@ -143,13 +171,25 @@ test.describe('Request Logs Details', () => {
   });
 
   test('should display client IP and user agent info', async ({ page }) => {
-    // Check if we have any log rows
-    const rowCount = await page.locator('tbody tr').count();
+    // Wait for logs to load
+    await page.waitForTimeout(2000);
     
-    if (rowCount === 0) {
-      await expect(page.locator(':text("No request logs found")')).toBeVisible();
+    // Check if we have table or no logs message
+    const hasTable = await page.locator('table').isVisible();
+    const hasNoLogsMessage = await page.locator(':text("No chat completion logs found")').isVisible();
+    
+    if (!hasTable && !hasNoLogsMessage) {
+      throw new Error('Neither table nor no-logs message is visible');
+    }
+    
+    if (hasNoLogsMessage) {
+      await expect(page.locator(':text("No chat completion logs found")')).toBeVisible();
       return;
     }
+    
+    // We have a table
+    const rowCount = await page.locator('tbody tr').count();
+    console.log(`Found ${rowCount} log rows for client info test`);
     
     // Click on the first row to expand it
     const firstRow = page.locator('tbody tr').first();
@@ -159,7 +199,7 @@ test.describe('Request Logs Details', () => {
     await page.waitForSelector('.bg-gray-800.rounded-lg.p-4');
     
     // Check for client IP and user agent labels
-    await expect(page.locator(':text("Client IP")')).toBeVisible();
-    await expect(page.locator(':text("User Agent")')).toBeVisible();
+    await expect(page.locator('label:has-text("Client IP")')).toBeVisible();
+    await expect(page.locator('label:has-text("User Agent")')).toBeVisible();
   });
 });

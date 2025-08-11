@@ -6,10 +6,10 @@ test.describe('Settings Functionality', () => {
     await page.goto('/');
     
     // Wait for the dashboard to load
-    await page.waitForSelector('button:has-text("Settings")', { timeout: 10000 });
+    await page.waitForSelector('a:has-text("Settings")', { timeout: 10000 });
     
     // Click on the Settings tab
-    await page.click('button:has-text("Settings")');
+    await page.click('a:has-text("Settings")');
     
     // Wait for settings content to load
     await page.waitForSelector('h2:has-text("Settings")', { timeout: 10000 });
@@ -52,17 +52,16 @@ test.describe('Settings Functionality', () => {
     // Count initial stages
     const initialStageCount = await page.locator('.bg-gray-700').count();
     
-    // Click add stage button
+    // Click add stage button (only once)
     await page.click('button:has-text("Add Stage")');
     
-    // Wait for the new stage to appear - look for the stage component
-    await page.waitForTimeout(500); // Small delay for state update
+    // Wait for the count to increase by using a function that waits for the condition
+    await expect(async () => {
+      const currentCount = await page.locator('.bg-gray-700').count();
+      expect(currentCount).toBe(initialStageCount + 1);
+    }).toPass({ timeout: 10000 });
     
-    // Check that a new stage component was added
-    const newStageCount = await page.locator('.bg-gray-700').count();
-    expect(newStageCount).toBe(initialStageCount + 1);
-    
-    // Check that the new stage has the expected default values
+    // Verify the newest stage has the expected default values
     const newStage = page.locator('.bg-gray-700').last();
     await expect(newStage).toContainText('New Validation Stage');
     await expect(newStage).toContainText('echo "Configure your command"');
