@@ -13,8 +13,15 @@ cd ui && npm run duplication-check && cd ..
 # Run unit tests (management route mocking tests may fail - that's acceptable)
 npm run test || echo "Some test failures are acceptable (management route mocking edge cases)"
 
-# Run E2E tests  
-cd ui && npm run test:e2e && cd ..
+# Run E2E tests - must pass to allow commit
+echo "Running E2E tests with robust server management..."
+cd ui
+if ! npm run test:e2e:robust; then
+  echo "❌ E2E tests failed - commit blocked"
+  cd ..
+  exit 1
+fi
+cd ..
 
 # Run AI code review (if enabled)
 echo "Running AI code review..."

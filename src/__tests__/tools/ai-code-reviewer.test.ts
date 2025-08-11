@@ -1,5 +1,29 @@
-import { shouldBlockCommit, formatResults, getConfig } from '../../tools/ai-code-reviewer';
+import {
+  shouldBlockCommit,
+  formatResults,
+  getConfig,
+  getStagedFiles,
+  getFileContent,
+  reviewCode,
+  outputResults,
+  main,
+} from '../../tools/ai-code-reviewer';
 import type { ReviewItem, FileReviewResult } from '../../tools/ai-code-reviewer.types';
+import { execSync } from 'child_process';
+import fs from 'fs';
+import path from 'path';
+
+// Mock dependencies
+jest.mock('child_process');
+jest.mock('fs');
+jest.mock('path', () => ({
+  ...jest.requireActual('path'),
+  join: jest.fn(),
+}));
+
+const mockExecSync = execSync as jest.MockedFunction<typeof execSync>;
+const mockFs = fs as jest.Mocked<typeof fs>;
+const mockPath = path as jest.Mocked<typeof path>;
 
 // Mock console.log to prevent output during tests
 const originalConsoleLog = console.log;
@@ -226,6 +250,391 @@ describe('AI Code Reviewer', () => {
       process.env.AI_REVIEWER_ENABLED = 'false';
       const config = getConfig();
       expect(config.enabled).toBe(false);
+    });
+  });
+
+  describe('getStagedFiles', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    it('should return TypeScript and JavaScript staged files', async () => {
+      mockExecSync.mockReturnValue(
+        'src/index.ts\nsrc/component.tsx\nsrc/utils.js\nsrc/app.jsx\nREADME.md\npackage.json\n'
+      );
+
+      const files = await getStagedFiles();
+
+      expect(files).toEqual(['src/index.ts', 'src/component.tsx', 'src/utils.js', 'src/app.jsx']);
+      expect(mockExecSync).toHaveBeenCalledWith('git diff --cached --name-only --diff-filter=AM', {
+        encoding: 'utf8',
+        cwd: process.cwd(),
+      });
+    });
+
+    it('should filter out non-JS/TS files', async () => {
+      mockExecSync.mockReturnValue('README.md\npackage.json\n.gitignore\nDockerfile\n');
+
+      const files = await getStagedFiles();
+
+      expect(files).toEqual([]);
+    });
+
+    it('should handle empty git output', async () => {
+      mockExecSync.mockReturnValue('');
+
+      const files = await getStagedFiles();
+
+      expect(files).toEqual([]);
+    });
+
+    it('should handle git errors gracefully', async () => {
+      mockExecSync.mockImplementation(() => {
+        throw new Error('fatal: not a git repository');
+      });
+
+      const files = await getStagedFiles();
+
+      expect(files).toEqual([]);
+    });
+  });
+
+  describe('getFileContent', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+      mockPath.join.mockImplementation((...args) => args.join('/'));
+    });
+
+    it('should read file content successfully', async () => {
+      const mockContent = 'const hello = "world";';
+      mockFs.readFileSync.mockReturnValue(mockContent);
+
+      const content = await getFileContent('src/test.ts');
+
+      expect(content).toBe(mockContent);
+      expect(mockFs.readFileSync).toHaveBeenCalledWith(
+        expect.stringContaining('src/test.ts'),
+        'utf8'
+      );
+    });
+
+    it('should handle file read errors', async () => {
+      mockFs.readFileSync.mockImplementation(() => {
+        throw new Error('ENOENT: no such file or directory');
+      });
+
+      const content = await getFileContent('nonexistent.ts');
+
+      expect(content).toBeNull();
+    });
+
+    it('should handle permission errors', async () => {
+      mockFs.readFileSync.mockImplementation(() => {
+        throw new Error('EACCES: permission denied');
+      });
+
+      const content = await getFileContent('protected.ts');
+
+      expect(content).toBeNull();
+    });
+  });
+
+  describe('reviewCode', () => {
+    const originalFetch = global.fetch;
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+      process.env.OPENAI_API_KEY = 'test-key';
+      process.env.AI_REVIEWER_ENDPOINT = 'https://api.openai.com/v1';
+    });
+
+    afterEach(() => {
+      global.fetch = originalFetch;
+    });
+
+    it('should return empty review when no API key is configured', async () => {
+      delete process.env.OPENAI_API_KEY;
+      delete process.env.OPENROUTER_API_KEY;
+
+      const result = await reviewCode('test.ts', 'const x = 1;');
+
+      expect(result).toEqual({
+        reviews: [],
+        summary: 'No API key configured',
+      });
+    });
+
+    it('should make API call and parse response', async () => {
+      const mockResponse = {
+        reviews: [
+          {
+            line: 1,
+            severity: 'low',
+            category: 'style',
+            message: 'Consider using const instead of var',
+          },
+        ],
+        summary: 'Minor style issues found',
+      };
+
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: jest.fn().mockResolvedValue({
+          choices: [
+            {
+              message: {
+                content: JSON.stringify(mockResponse),
+              },
+            },
+          ],
+        }),
+      });
+
+      const result = await reviewCode('test.ts', 'var x = 1;');
+
+      expect(result).toEqual(mockResponse);
+      expect(global.fetch).toHaveBeenCalledWith(
+        'https://api.openai.com/v1/chat/completions',
+        expect.objectContaining({
+          method: 'POST',
+          headers: expect.objectContaining({
+            Authorization: 'Bearer test-key',
+            'Content-Type': 'application/json',
+          }),
+        })
+      );
+    });
+
+    it('should handle API errors gracefully', async () => {
+      global.fetch = jest.fn().mockRejectedValue(new Error('Network error'));
+
+      const result = await reviewCode('test.ts', 'const x = 1;');
+
+      expect(result).toEqual({
+        reviews: [
+          {
+            line: null,
+            severity: 'info',
+            category: 'system',
+            message: 'AI review failed: Network error',
+          },
+        ],
+        summary: 'Review failed due to technical issue',
+      });
+    });
+
+    it('should handle invalid JSON response', async () => {
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: jest.fn().mockResolvedValue({
+          choices: [
+            {
+              message: {
+                content: 'invalid json content',
+              },
+            },
+          ],
+        }),
+      });
+
+      const result = await reviewCode('test.ts', 'const x = 1;');
+
+      expect(result).toEqual({
+        reviews: [
+          {
+            line: null,
+            severity: 'info',
+            category: 'system',
+            message: expect.stringContaining('AI review failed:'),
+          },
+        ],
+        summary: 'Review failed due to technical issue',
+      });
+    });
+  });
+
+  describe('outputResults', () => {
+    const originalConsoleLog = console.log;
+    let consoleOutput: string[] = [];
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+      consoleOutput = [];
+      console.log = jest.fn().mockImplementation(msg => consoleOutput.push(msg));
+      mockPath.join.mockImplementation((...args) => args.join('/'));
+      mockFs.writeFileSync.mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+      console.log = originalConsoleLog;
+    });
+
+    it('should output results with no issues', () => {
+      const results = {
+        summary: {
+          totalFiles: 2,
+          totalIssues: 0,
+          bySeverity: {},
+        },
+        files: [],
+        allReviews: [],
+        blocked: false,
+      };
+
+      outputResults(results);
+
+      expect(mockFs.writeFileSync).toHaveBeenCalledWith(
+        expect.any(String),
+        JSON.stringify(results, null, 2)
+      );
+      expect(consoleOutput).toContain('Files reviewed: 2');
+      expect(consoleOutput).toContain('Total issues: 0');
+      expect(consoleOutput.some(msg => msg.includes('No blocking issues found'))).toBe(true);
+    });
+
+    it('should output results with issues and blocking', () => {
+      const results = {
+        summary: {
+          totalFiles: 1,
+          totalIssues: 2,
+          bySeverity: {
+            high: 1,
+            low: 1,
+          },
+        },
+        files: [],
+        allReviews: [
+          {
+            file: 'test.ts',
+            line: 10,
+            severity: 'high' as const,
+            category: 'security' as const,
+            message: 'Security issue',
+          },
+          {
+            file: 'test.ts',
+            line: 20,
+            severity: 'low' as const,
+            category: 'style' as const,
+            message: 'Style issue',
+          },
+        ],
+        blocked: true,
+      };
+
+      outputResults(results);
+
+      expect(consoleOutput).toContain('Total issues: 2');
+      expect(consoleOutput.some(msg => msg.includes('high: 1'))).toBe(true);
+      expect(consoleOutput.some(msg => msg.includes('Commit blocked'))).toBe(true);
+    });
+  });
+
+  describe('main', () => {
+    const originalExit = process.exit;
+    let exitCode: number | undefined;
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+      exitCode = undefined;
+      process.exit = jest.fn().mockImplementation((code: number) => {
+        exitCode = code;
+      }) as never;
+      mockPath.join.mockImplementation((...args) => args.join('/'));
+      mockFs.writeFileSync.mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+      process.exit = originalExit;
+    });
+
+    it('should exit early when disabled', async () => {
+      process.env.AI_REVIEWER_ENABLED = 'false';
+
+      await main();
+
+      expect(exitCode).toBe(0);
+      // The main function might still call getStagedFiles before checking config
+      // so we don't assert that mockExecSync is never called
+    });
+
+    it('should exit early when no staged files', async () => {
+      process.env.AI_REVIEWER_ENABLED = 'true';
+      mockExecSync.mockReturnValue('');
+
+      await main();
+
+      expect(exitCode).toBe(0);
+    });
+
+    it('should process files and exit with error code when blocking', async () => {
+      process.env.AI_REVIEWER_ENABLED = 'true';
+      process.env.OPENAI_API_KEY = 'test-key';
+
+      mockExecSync.mockReturnValue('test.ts\n');
+      mockFs.readFileSync.mockReturnValue('const x = 1;');
+
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: jest.fn().mockResolvedValue({
+          choices: [
+            {
+              message: {
+                content: JSON.stringify({
+                  reviews: [
+                    {
+                      line: 1,
+                      severity: 'high',
+                      category: 'security',
+                      message: 'Security issue',
+                    },
+                  ],
+                  summary: 'High severity issue found',
+                }),
+              },
+            },
+          ],
+        }),
+      });
+
+      await main();
+
+      expect(exitCode).toBe(1);
+    });
+
+    it('should process files and exit successfully when no blocking issues', async () => {
+      process.env.AI_REVIEWER_ENABLED = 'true';
+      process.env.OPENAI_API_KEY = 'test-key';
+
+      mockExecSync.mockReturnValue('test.ts\n');
+      mockFs.readFileSync.mockReturnValue('const x = 1;');
+
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: jest.fn().mockResolvedValue({
+          choices: [
+            {
+              message: {
+                content: JSON.stringify({
+                  reviews: [
+                    {
+                      line: 1,
+                      severity: 'low',
+                      category: 'style',
+                      message: 'Minor style issue',
+                    },
+                  ],
+                  summary: 'Minor issues found',
+                }),
+              },
+            },
+          ],
+        }),
+      });
+
+      await main();
+
+      expect(exitCode).toBe(0);
     });
   });
 });

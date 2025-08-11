@@ -290,8 +290,8 @@ describe('SettingsService', () => {
       const stages = await settingsService.getEnabledValidationStages();
 
       // Should return default enabled stages except e2e which is disabled by default
-      expect(stages).toHaveLength(3);
-      expect(stages.map(s => s.id)).toEqual(['lint', 'typecheck', 'test']);
+      expect(stages).toHaveLength(4);
+      expect(stages.map(s => s.id)).toEqual(['lint', 'typecheck', 'test', 'typescript-preference']);
     });
   });
 

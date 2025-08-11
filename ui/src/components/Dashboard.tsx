@@ -4,8 +4,9 @@ import { ModelList } from './ModelList';
 import { ServerStatus } from './ServerStatus';
 import { RequestLogs } from './RequestLogs';
 import { AddModelDialog } from './AddModelDialog';
+import { Settings } from './Settings';
 import { Button } from './ui/Button';
-import { Plus, RefreshCw, Home, FileText, Settings } from 'lucide-react';
+import { Plus, RefreshCw, Home, FileText, Settings as SettingsIcon } from 'lucide-react';
 import { api } from '../services/api';
 import type { UIModelConfig } from '../types/api';
 
@@ -72,7 +73,7 @@ export function Dashboard() {
   const tabs = [
     { id: 'dashboard' as const, name: 'Dashboard', icon: Home },
     { id: 'logs' as const, name: 'Request Logs', icon: FileText },
-    { id: 'settings' as const, name: 'Settings', icon: Settings },
+    { id: 'settings' as const, name: 'Settings', icon: SettingsIcon },
   ];
 
   const renderContent = () => {
@@ -80,12 +81,7 @@ export function Dashboard() {
       case 'logs':
         return <RequestLogs />;
       case 'settings':
-        return (
-          <div className="text-center py-8">
-            <Settings className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-            <p className="text-gray-400">Settings page coming soon</p>
-          </div>
-        );
+        return <Settings />;
       default:
         return (
           <div className="space-y-8">

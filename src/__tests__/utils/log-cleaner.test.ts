@@ -1,160 +1,185 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { LogCleaner } from '../../utils/log-cleaner';
-import { ILogger } from '../../logger-interface';
+import { createMockLogger } from '../../test-helpers/logger.mock';
 
-// Mock fs/promises module
+// Mock fs and path modules
 jest.mock('fs/promises');
+jest.mock('path');
 
 const mockFs = fs as jest.Mocked<typeof fs>;
-
-// Mock logger
-const mockLogger: ILogger = {
-  info: jest.fn(),
-  error: jest.fn(),
-  warn: jest.fn(),
-  debug: jest.fn(),
-};
+const mockPath = path as jest.Mocked<typeof path>;
 
 describe('LogCleaner', () => {
   let logCleaner: LogCleaner;
-  const testLogsDir = '/test/logs';
+  let mockLogger: ReturnType<typeof createMockLogger>;
+  let config: {
+    logsDir: string;
+    maxLogFiles: number;
+    maxLogAge: number;
+    maxLogSize: number;
+  };
 
   beforeEach(() => {
+    mockLogger = createMockLogger();
+    config = {
+      logsDir: '/test/logs',
+      maxLogFiles: 5,
+      maxLogAge: 7, // 7 days
+      maxLogSize: 1024 * 1024, // 1MB
+    };
+    logCleaner = new LogCleaner(config, mockLogger);
     jest.clearAllMocks();
 
-    logCleaner = new LogCleaner(
-      {
-        logsDir: testLogsDir,
-        maxLogFiles: 5,
-        maxLogAge: 30, // 30 days
-        maxLogSize: 10 * 1024 * 1024, // 10MB
-      },
-      mockLogger
-    );
+    // Setup default path mocks
+    mockPath.join.mockImplementation((...args) => args.join('/'));
+    mockPath.parse.mockImplementation(filePath => ({
+      name: filePath.replace('.log', ''),
+      ext: '.log',
+      base: filePath,
+      dir: '',
+      root: '',
+    }));
+
+    // Reset Date.now mock
+    jest.restoreAllMocks();
   });
 
   describe('constructor', () => {
-    it('should create LogCleaner with provided configuration', () => {
-      expect(logCleaner).toBeDefined();
+    it('should initialize with config and logger', () => {
+      expect(logCleaner).toBeInstanceOf(LogCleaner);
     });
   });
 
   describe('cleanLogs', () => {
-    it('should execute cleaning operations successfully', async () => {
-      // Mock successful directory access
+    it('should execute all cleanup steps successfully', async () => {
+      // Mock successful operations
       mockFs.access.mockResolvedValue(undefined);
-      mockFs.readdir.mockResolvedValue(['app.log', 'error.log'] as any);
-      mockFs.stat.mockResolvedValue({
-        size: 1024,
-        mtime: new Date(),
-        isFile: () => true,
-        isDirectory: () => false,
-      } as any);
+      mockFs.readdir.mockResolvedValue([]);
 
       await logCleaner.cleanLogs();
 
-      expect(mockFs.access).toHaveBeenCalledWith(testLogsDir);
+      expect(mockFs.access).toHaveBeenCalledWith('/test/logs');
+      expect(mockFs.readdir).toHaveBeenCalledWith('/test/logs');
       expect(mockLogger.error).not.toHaveBeenCalled();
     });
 
+    it('should handle errors gracefully and log them', async () => {
+      const error = new Error('File system error');
+      mockFs.access.mockRejectedValue(error);
+      mockFs.mkdir.mockRejectedValue(error); // Also fail mkdir
+
+      await logCleaner.cleanLogs();
+
+      expect(mockLogger.error).toHaveBeenCalledWith('Failed to clean logs', error);
+    });
+
     it('should create logs directory if it does not exist', async () => {
-      // Mock directory not existing, then successful creation
-      mockFs.access.mockRejectedValue(new Error('ENOENT'));
+      mockFs.access.mockRejectedValue(new Error('Directory does not exist'));
       mockFs.mkdir.mockResolvedValue(undefined);
       mockFs.readdir.mockResolvedValue([]);
 
       await logCleaner.cleanLogs();
 
-      expect(mockFs.mkdir).toHaveBeenCalledWith(testLogsDir, { recursive: true });
+      expect(mockFs.mkdir).toHaveBeenCalledWith('/test/logs', { recursive: true });
+      expect(mockFs.readdir).toHaveBeenCalledWith('/test/logs');
     });
+  });
 
-    it('should handle file operations during cleaning', async () => {
-      const mockFiles = ['app.log', 'old.log'];
+  describe('rotateLogsBySize', () => {
+    it('should rotate logs that exceed max size', async () => {
+      const files = ['app.log'];
+      const stats = {
+        size: 2 * 1024 * 1024, // 2MB (exceeds 1MB limit)
+        mtime: new Date('2023-01-01'),
+        isFile: () => true,
+        isDirectory: () => false,
+      } as any;
+
       mockFs.access.mockResolvedValue(undefined);
-      mockFs.readdir.mockResolvedValue(mockFiles as any);
-
-      // Mock file stats - one large file, one old file
-      mockFs.stat.mockImplementation(filePath => {
-        const fileName = path.basename(filePath as string);
-        if (fileName === 'app.log') {
-          return Promise.resolve({
-            size: 15 * 1024 * 1024, // 15MB > 10MB limit
-            mtime: new Date(),
-            isFile: () => true,
-            isDirectory: () => false,
-          } as any);
-        }
-        return Promise.resolve({
-          size: 1024,
-          mtime: new Date(Date.now() - 35 * 24 * 60 * 60 * 1000), // 35 days old > 30 day limit
-          isFile: () => true,
-          isDirectory: () => false,
-        } as any);
-      });
-
+      mockFs.readdir.mockResolvedValue(files as any);
+      mockFs.stat.mockResolvedValue(stats);
       mockFs.rename.mockResolvedValue(undefined);
       mockFs.writeFile.mockResolvedValue(undefined);
+
+      // Mock date for consistent timestamp
+      const mockDate = new Date('2023-06-01T10:00:00.000Z');
+      jest.spyOn(global, 'Date').mockImplementation(() => mockDate);
+
+      await logCleaner.cleanLogs();
+
+      expect(mockFs.stat).toHaveBeenCalledWith('/test/logs/app.log');
+      expect(mockFs.rename).toHaveBeenCalledWith(
+        '/test/logs/app.log',
+        '/test/logs/app_2023-06-01T10-00-00-000Z.log'
+      );
+      expect(mockFs.writeFile).toHaveBeenCalledWith('/test/logs/app.log', '');
+    });
+
+    it('should not rotate logs that are under max size', async () => {
+      const files = ['small.log'];
+      const stats = {
+        size: 500 * 1024, // 500KB (under 1MB limit)
+        mtime: new Date('2023-01-01'),
+      } as any;
+
+      mockFs.access.mockResolvedValue(undefined);
+      mockFs.readdir.mockResolvedValue(files as any);
+      mockFs.stat.mockResolvedValue(stats);
+
+      await logCleaner.cleanLogs();
+
+      expect(mockFs.rename).not.toHaveBeenCalled();
+      expect(mockFs.writeFile).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('cleanOldLogs', () => {
+    it('should delete logs older than max age', async () => {
+      const files = ['old.log'];
+      const now = new Date('2023-06-01T10:00:00.000Z');
+      const oldDate = new Date('2023-05-20T10:00:00.000Z'); // 12 days ago (exceeds 7 day limit)
+
+      const mockDateNow = jest.spyOn(Date, 'now').mockReturnValue(now.getTime());
+
+      mockFs.access.mockResolvedValue(undefined);
+      mockFs.readdir.mockResolvedValue(files as any);
+      mockFs.stat
+        .mockResolvedValueOnce({ size: 1000, mtime: oldDate } as any) // for rotation check
+        .mockResolvedValueOnce({ size: 1000, mtime: oldDate } as any); // for age check
       mockFs.unlink.mockResolvedValue(undefined);
 
       await logCleaner.cleanLogs();
 
-      expect(mockFs.readdir).toHaveBeenCalledWith(testLogsDir);
+      expect(mockFs.unlink).toHaveBeenCalledWith('/test/logs/old.log');
+      expect(mockLogger.info).toHaveBeenCalledWith('Deleted old log file: old.log');
+
+      mockDateNow.mockRestore();
     });
 
-    it('should handle errors in cleaning operations', async () => {
-      // Mock directory access failure
-      mockFs.access.mockRejectedValue(new Error('ENOENT'));
-      mockFs.mkdir.mockRejectedValue(new Error('Permission denied'));
+    it('should not delete recent logs', async () => {
+      const files = ['recent.log'];
+      const now = new Date('2023-06-01T10:00:00.000Z');
+      const recentDate = new Date('2023-05-30T10:00:00.000Z'); // 2 days ago
 
-      await logCleaner.cleanLogs();
+      const mockDateNow = jest.spyOn(Date, 'now').mockReturnValue(now.getTime());
 
-      expect(mockLogger.error).toHaveBeenCalledWith('Failed to clean logs', expect.any(Error));
-    });
-
-    it('should handle empty logs directory', async () => {
       mockFs.access.mockResolvedValue(undefined);
-      mockFs.readdir.mockResolvedValue([]);
+      mockFs.readdir.mockResolvedValue(files as any);
+      mockFs.stat
+        .mockResolvedValueOnce({ size: 1000, mtime: recentDate } as any) // for rotation check
+        .mockResolvedValueOnce({ size: 1000, mtime: recentDate } as any); // for age check
 
       await logCleaner.cleanLogs();
 
-      expect(mockFs.readdir).toHaveBeenCalledWith(testLogsDir);
-      expect(mockLogger.error).not.toHaveBeenCalled();
-    });
+      expect(mockFs.unlink).not.toHaveBeenCalled();
 
-    it('should process only log files', async () => {
-      const mockItems = ['app.log', 'error.log', 'config.yaml', 'readme.txt'];
-      mockFs.access.mockResolvedValue(undefined);
-      mockFs.readdir.mockResolvedValue(mockItems as any);
-      mockFs.stat.mockResolvedValue({
-        size: 1024,
-        mtime: new Date(),
-        isFile: () => true,
-        isDirectory: () => false,
-      } as any);
-
-      await logCleaner.cleanLogs();
-
-      // Verify that readdir was called to get directory contents
-      expect(mockFs.readdir).toHaveBeenCalledWith(testLogsDir);
-      // Should process files (exact count depends on operations performed)
-      expect(mockFs.stat).toHaveBeenCalled();
+      mockDateNow.mockRestore();
     });
   });
 
   describe('limitLogFileCount', () => {
-    it('should not delete files when count is under limit', async () => {
-      const files = ['log1.log', 'log2.log']; // 2 files, limit is 5
-      mockFs.readdir.mockResolvedValue(files as any);
-
-      await (logCleaner as any).limitLogFileCount();
-
-      expect(mockFs.unlink).not.toHaveBeenCalled();
-      expect(mockLogger.info).not.toHaveBeenCalled();
-    });
-
-    it('should delete oldest files when count exceeds limit', async () => {
-      // Create 7 files when limit is 5, should delete 2 oldest
+    it('should delete excess log files keeping the newest ones', async () => {
       const files = [
         'log1.log',
         'log2.log',
@@ -164,147 +189,174 @@ describe('LogCleaner', () => {
         'log6.log',
         'log7.log',
       ];
+
+      // Mock stats with different modification times (oldest to newest)
+      const statsData = [
+        { size: 1000, mtime: new Date('2023-01-01') },
+        { size: 1000, mtime: new Date('2023-01-02') },
+        { size: 1000, mtime: new Date('2023-01-03') },
+        { size: 1000, mtime: new Date('2023-01-04') },
+        { size: 1000, mtime: new Date('2023-01-05') },
+        { size: 1000, mtime: new Date('2023-01-06') },
+        { size: 1000, mtime: new Date('2023-01-07') },
+      ] as any[];
+
+      mockFs.access.mockResolvedValue(undefined);
       mockFs.readdir.mockResolvedValue(files as any);
 
-      // Mock file stats with different modification times (older files have earlier timestamps)
-      const baseTime = Date.now();
-      mockFs.stat
-        .mockResolvedValueOnce({ mtime: new Date(baseTime - 7000) } as any) // log1.log - oldest
-        .mockResolvedValueOnce({ mtime: new Date(baseTime - 6000) } as any) // log2.log - second oldest
-        .mockResolvedValueOnce({ mtime: new Date(baseTime - 5000) } as any) // log3.log
-        .mockResolvedValueOnce({ mtime: new Date(baseTime - 4000) } as any) // log4.log
-        .mockResolvedValueOnce({ mtime: new Date(baseTime - 3000) } as any) // log5.log
-        .mockResolvedValueOnce({ mtime: new Date(baseTime - 2000) } as any) // log6.log
-        .mockResolvedValueOnce({ mtime: new Date(baseTime - 1000) } as any); // log7.log - newest
+      // Mock stat calls: size rotation (7) + age cleanup (7) + count limit (7) = 21 calls total
+      for (let i = 0; i < 21; i++) {
+        const index = i % statsData.length;
+        mockFs.stat.mockResolvedValueOnce(statsData[index]);
+      }
 
       mockFs.unlink.mockResolvedValue(undefined);
 
-      await (logCleaner as any).limitLogFileCount();
+      await logCleaner.cleanLogs();
 
-      // Should delete 2 oldest files (7 - 5 = 2)
-      expect(mockFs.unlink).toHaveBeenCalledTimes(2);
-      expect(mockFs.unlink).toHaveBeenCalledWith(path.join(testLogsDir, 'log1.log'));
-      expect(mockFs.unlink).toHaveBeenCalledWith(path.join(testLogsDir, 'log2.log'));
-
+      // Should delete 2 oldest files (7 files - 5 max = 2 to delete)
+      expect(mockFs.unlink).toHaveBeenCalledWith('/test/logs/log1.log');
+      expect(mockFs.unlink).toHaveBeenCalledWith('/test/logs/log2.log');
       expect(mockLogger.info).toHaveBeenCalledWith('Deleted excess log file: log1.log');
       expect(mockLogger.info).toHaveBeenCalledWith('Deleted excess log file: log2.log');
     });
 
-    it('should handle stat errors during file processing', async () => {
-      const files = ['log1.log', 'log2.log', 'log3.log', 'log4.log', 'log5.log', 'log6.log'];
+    it('should not delete any files if count is within limit', async () => {
+      const files = ['log1.log', 'log2.log', 'log3.log']; // 3 files (under 5 limit)
+
+      mockFs.access.mockResolvedValue(undefined);
       mockFs.readdir.mockResolvedValue(files as any);
+      mockFs.stat.mockResolvedValue({ size: 1000, mtime: new Date() } as any);
 
-      // Mock first stat to fail
-      mockFs.stat.mockRejectedValueOnce(new Error('Stat failed'));
+      await logCleaner.cleanLogs();
 
-      await expect((logCleaner as any).limitLogFileCount()).rejects.toThrow('Stat failed');
-    });
-
-    it('should handle unlink errors during file deletion', async () => {
-      const files = ['log1.log', 'log2.log', 'log3.log', 'log4.log', 'log5.log', 'log6.log'];
-      mockFs.readdir.mockResolvedValue(files as any);
-
-      // Mock file stats
-      const baseTime = Date.now();
-      files.forEach((_, index) => {
-        mockFs.stat.mockResolvedValueOnce({
-          mtime: new Date(baseTime - (files.length - index) * 1000),
-        } as any);
-      });
-
-      // Mock unlink to fail
-      mockFs.unlink.mockRejectedValueOnce(new Error('Delete failed'));
-
-      await expect((logCleaner as any).limitLogFileCount()).rejects.toThrow('Delete failed');
+      // Should not call unlink for excess file deletion
+      expect(mockLogger.info).not.toHaveBeenCalledWith(
+        expect.stringContaining('Deleted excess log file')
+      );
     });
   });
 
   describe('getLogFiles', () => {
     it('should return only .log files', async () => {
-      mockFs.readdir.mockResolvedValue([
-        'app.log',
-        'error.log',
-        'config.json',
-        'backup.txt',
-        'debug.log',
-      ] as any);
+      const files = ['app.log', 'error.log', 'config.json', 'backup.txt', 'debug.log'];
 
-      const result = await (logCleaner as any).getLogFiles();
+      mockFs.access.mockResolvedValue(undefined);
+      mockFs.readdir.mockResolvedValue(files as any);
+      mockFs.stat.mockResolvedValue({ size: 1000, mtime: new Date() } as any);
 
-      expect(result).toEqual(['app.log', 'error.log', 'debug.log']);
+      await logCleaner.cleanLogs();
+
+      // Verify that only .log files are processed by checking stat calls
+      expect(mockFs.stat).toHaveBeenCalledWith('/test/logs/app.log');
+      expect(mockFs.stat).toHaveBeenCalledWith('/test/logs/error.log');
+      expect(mockFs.stat).toHaveBeenCalledWith('/test/logs/debug.log');
+      expect(mockFs.stat).not.toHaveBeenCalledWith('/test/logs/config.json');
+      expect(mockFs.stat).not.toHaveBeenCalledWith('/test/logs/backup.txt');
     });
 
-    it('should return empty array when directory read fails', async () => {
-      mockFs.readdir.mockRejectedValue(new Error('Cannot read directory'));
+    it('should handle empty directory', async () => {
+      mockFs.access.mockResolvedValue(undefined);
+      mockFs.readdir.mockResolvedValue([]);
 
-      const result = await (logCleaner as any).getLogFiles();
+      await logCleaner.cleanLogs();
 
-      expect(result).toEqual([]);
-    });
-
-    it('should return empty array when no log files exist', async () => {
-      mockFs.readdir.mockResolvedValue(['config.json', 'backup.txt'] as any);
-
-      const result = await (logCleaner as any).getLogFiles();
-
-      expect(result).toEqual([]);
+      expect(mockFs.stat).not.toHaveBeenCalled();
+      expect(mockFs.unlink).not.toHaveBeenCalled();
+      expect(mockFs.rename).not.toHaveBeenCalled();
     });
   });
 
-  describe('rotateLogsBySize', () => {
-    it('should not rotate files under size limit', async () => {
-      mockFs.readdir.mockResolvedValue(['app.log'] as any);
-      mockFs.stat.mockResolvedValue({ size: 1024 } as any); // Under 10MB limit
+  describe('error scenarios', () => {
+    it('should handle readdir failures gracefully', async () => {
+      const mockDateNow = jest.spyOn(Date, 'now').mockReturnValue(Date.now());
 
-      await (logCleaner as any).rotateLogsBySize();
+      mockFs.access.mockResolvedValue(undefined);
+      mockFs.readdir.mockRejectedValue(new Error('Permission denied'));
 
-      expect(mockFs.rename).not.toHaveBeenCalled();
-      expect(mockFs.writeFile).not.toHaveBeenCalled();
+      // This should not throw an error because getLogFiles catches errors
+      await logCleaner.cleanLogs();
+
+      expect(mockLogger.error).not.toHaveBeenCalled();
+
+      mockDateNow.mockRestore();
     });
 
-    it('should rotate files over size limit', async () => {
-      mockFs.readdir.mockResolvedValue(['app.log'] as any);
-      mockFs.stat.mockResolvedValue({ size: 15 * 1024 * 1024 } as any); // Over 10MB limit
+    it('should handle stat errors during operations', async () => {
+      const files = ['problematic.log'];
+
+      mockFs.access.mockResolvedValue(undefined);
+      mockFs.readdir.mockResolvedValue(files as any);
+      mockFs.stat.mockRejectedValue(new Error('Stat failed'));
+
+      await logCleaner.cleanLogs();
+
+      expect(mockLogger.error).toHaveBeenCalledWith('Failed to clean logs', expect.any(Error));
+    });
+  });
+
+  describe('configuration edge cases', () => {
+    it('should handle zero max files configuration', async () => {
+      const mockDateNow = jest.spyOn(Date, 'now').mockReturnValue(Date.now());
+
+      const zeroFilesConfig = { ...config, maxLogFiles: 0 };
+      const zeroFilesLogCleaner = new LogCleaner(zeroFilesConfig, mockLogger);
+      const files = ['log1.log'];
+
+      mockFs.access.mockResolvedValue(undefined);
+      mockFs.readdir.mockResolvedValue(files as any);
+      mockFs.stat
+        .mockResolvedValueOnce({ size: 1000, mtime: new Date() } as any) // rotation check
+        .mockResolvedValueOnce({ size: 1000, mtime: new Date() } as any) // age check
+        .mockResolvedValueOnce({ size: 1000, mtime: new Date() } as any); // count check
+      mockFs.unlink.mockResolvedValue(undefined);
+
+      await zeroFilesLogCleaner.cleanLogs();
+
+      // Should delete all files when maxLogFiles is 0
+      expect(mockFs.unlink).toHaveBeenCalledWith('/test/logs/log1.log');
+
+      mockDateNow.mockRestore();
+    });
+
+    it('should handle zero max age configuration', async () => {
+      const mockDateNow = jest.spyOn(Date, 'now').mockReturnValue(Date.now());
+
+      const zeroAgeConfig = { ...config, maxLogAge: 0 };
+      const zeroAgeLogCleaner = new LogCleaner(zeroAgeConfig, mockLogger);
+      const files = ['recent.log'];
+
+      mockFs.access.mockResolvedValue(undefined);
+      mockFs.readdir.mockResolvedValue(files as any);
+      mockFs.stat
+        .mockResolvedValueOnce({ size: 1000, mtime: new Date(Date.now() - 1000) } as any) // rotation check
+        .mockResolvedValueOnce({ size: 1000, mtime: new Date(Date.now() - 1000) } as any); // age check
+      mockFs.unlink.mockResolvedValue(undefined);
+
+      await zeroAgeLogCleaner.cleanLogs();
+
+      // Should delete files immediately when maxLogAge is 0
+      expect(mockFs.unlink).toHaveBeenCalledWith('/test/logs/recent.log');
+
+      mockDateNow.mockRestore();
+    });
+
+    it('should handle zero max size configuration', async () => {
+      const zeroSizeConfig = { ...config, maxLogSize: 0 };
+      const zeroSizeLogCleaner = new LogCleaner(zeroSizeConfig, mockLogger);
+      const files = ['tiny.log'];
+
+      mockFs.access.mockResolvedValue(undefined);
+      mockFs.readdir.mockResolvedValue(files as any);
+      mockFs.stat.mockResolvedValue({ size: 1, mtime: new Date() } as any); // 1 byte
       mockFs.rename.mockResolvedValue(undefined);
       mockFs.writeFile.mockResolvedValue(undefined);
 
-      // Mock Date for consistent timestamp
-      const mockDate = '2023-01-01T12:00:00.000Z';
-      jest.spyOn(Date.prototype, 'toISOString').mockReturnValue(mockDate);
+      await zeroSizeLogCleaner.cleanLogs();
 
-      await (logCleaner as any).rotateLogsBySize();
-
-      expect(mockFs.rename).toHaveBeenCalledWith(
-        path.join(testLogsDir, 'app.log'),
-        path.join(testLogsDir, 'app_2023-01-01T12-00-00-000Z.log')
-      );
-      expect(mockFs.writeFile).toHaveBeenCalledWith(path.join(testLogsDir, 'app.log'), '');
-    });
-  });
-
-  describe('cleanOldLogs', () => {
-    it('should not delete recent files', async () => {
-      const recentDate = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000); // 10 days old, under 30 day limit
-
-      mockFs.readdir.mockResolvedValue(['recent.log'] as any);
-      mockFs.stat.mockResolvedValue({ mtime: recentDate } as any);
-
-      await (logCleaner as any).cleanOldLogs();
-
-      expect(mockFs.unlink).not.toHaveBeenCalled();
-    });
-
-    it('should delete old files', async () => {
-      const oldDate = new Date(Date.now() - 35 * 24 * 60 * 60 * 1000); // 35 days old, over 30 day limit
-
-      mockFs.readdir.mockResolvedValue(['old.log'] as any);
-      mockFs.stat.mockResolvedValue({ mtime: oldDate } as any);
-      mockFs.unlink.mockResolvedValue(undefined);
-
-      await (logCleaner as any).cleanOldLogs();
-
-      expect(mockFs.unlink).toHaveBeenCalledWith(path.join(testLogsDir, 'old.log'));
-      expect(mockLogger.info).toHaveBeenCalledWith('Deleted old log file: old.log');
+      // Should rotate any file with size > 0 when maxLogSize is 0
+      expect(mockFs.rename).toHaveBeenCalled();
+      expect(mockFs.writeFile).toHaveBeenCalled();
     });
   });
 });

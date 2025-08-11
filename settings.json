@@ -1,6 +1,6 @@
 {
   "fallback": {
-    "maxRetries": 2,
+    "maxRetries": 5,
     "retryDelay": 500,
     "enableFallbacks": true,
     "fallbackOnContextLength": true,
@@ -53,6 +53,78 @@
         "enabled": false,
         "continueOnFailure": true,
         "order": 5
+      },
+      {
+        "id": "stage-1754856594214",
+        "name": "New Validation Stage",
+        "command": "echo \"Configure your command\"",
+        "timeout": 30000,
+        "enabled": true,
+        "continueOnFailure": false,
+        "order": 6
+      },
+      {
+        "id": "stage-1754856853824",
+        "name": "New Validation Stage",
+        "command": "echo \"Configure your command\"",
+        "timeout": 30000,
+        "enabled": true,
+        "continueOnFailure": false,
+        "order": 7
+      },
+      {
+        "id": "stage-1754861596459",
+        "name": "New Validation Stage",
+        "command": "echo \"Configure your command\"",
+        "timeout": 30000,
+        "enabled": true,
+        "continueOnFailure": false,
+        "order": 8
+      },
+      {
+        "id": "stage-1754900359058",
+        "name": "New Validation Stage",
+        "command": "echo \"Configure your command\"",
+        "timeout": 30000,
+        "enabled": true,
+        "continueOnFailure": false,
+        "order": 9
+      },
+      {
+        "id": "stage-1754900492337",
+        "name": "New Validation Stage",
+        "command": "echo \"Configure your command\"",
+        "timeout": 30000,
+        "enabled": true,
+        "continueOnFailure": false,
+        "order": 10
+      },
+      {
+        "id": "stage-1754900885463",
+        "name": "New Validation Stage",
+        "command": "echo \"Configure your command\"",
+        "timeout": 30000,
+        "enabled": true,
+        "continueOnFailure": false,
+        "order": 11
+      },
+      {
+        "id": "stage-1754901168050",
+        "name": "New Validation Stage",
+        "command": "echo \"Configure your command\"",
+        "timeout": 30000,
+        "enabled": true,
+        "continueOnFailure": false,
+        "order": 12
+      },
+      {
+        "id": "stage-1754901285685",
+        "name": "New Validation Stage",
+        "command": "echo \"Configure your command\"",
+        "timeout": 30000,
+        "enabled": true,
+        "continueOnFailure": false,
+        "order": 13
       }
     ],
     "enableMetrics": true,

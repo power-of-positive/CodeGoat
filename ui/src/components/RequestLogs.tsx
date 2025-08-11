@@ -1,13 +1,12 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from './ui/Button';
-import { LogDetailModal } from './LogDetailModal';
-import { RefreshCw, Clock, Globe, User, AlertCircle, CheckCircle } from 'lucide-react';
+import { LogDetailCollapsible } from './LogDetailCollapsible';
+import { RefreshCw, Clock, Globe, ChevronDown, ChevronRight, AlertCircle, CheckCircle } from 'lucide-react';
 import { api } from '../services/api';
-import type { LogEntry } from '../types/api';
 
 export function RequestLogs() {
-  const [selectedLog, setSelectedLog] = useState<LogEntry | null>(null);
+  const [expandedLogIndex, setExpandedLogIndex] = useState<number | null>(null);
   const [limit] = useState(100);
   const [offset, setOffset] = useState(0);
 
@@ -109,48 +108,63 @@ export function RequestLogs() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-700">
-                  {logsData?.logs.map((log, index) => (
-                    <tr key={`${log.timestamp}-${index}`} className="hover:bg-gray-700">
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <div className="flex items-center gap-2">
-                          {getStatusIcon(log.statusCode)}
-                          <span className={`font-mono text-sm ${getStatusColor(log.statusCode)}`}>
-                            {log.statusCode || 'N/A'}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <span className="font-mono text-sm text-gray-300">
-                          {log.method}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className="font-mono text-sm text-gray-300 break-all">
-                          {log.path}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <span className="text-sm text-gray-300">
-                          {log.duration ? `${log.duration}ms` : 'N/A'}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <span className="text-sm text-gray-300">
-                          {new Date(log.timestamp).toLocaleString()}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setSelectedLog(log)}
+                  {logsData?.logs.map((log, index) => {
+                    const isExpanded = expandedLogIndex === index;
+                    return (
+                      <React.Fragment key={`${log.timestamp}-${index}`}>
+                        <tr 
+                          className="hover:bg-gray-700 cursor-pointer"
+                          onClick={() => setExpandedLogIndex(isExpanded ? null : index)}
                         >
-                          <User className="w-4 h-4" />
-                          Details
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <div className="flex items-center gap-2">
+                              {isExpanded ? (
+                                <ChevronDown className="w-4 h-4 text-gray-400" />
+                              ) : (
+                                <ChevronRight className="w-4 h-4 text-gray-400" />
+                              )}
+                              {getStatusIcon(log.statusCode)}
+                              <span className={`font-mono text-sm ${getStatusColor(log.statusCode)}`}>
+                                {log.statusCode || 'N/A'}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <span className="font-mono text-sm text-gray-300">
+                              {log.method}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className="font-mono text-sm text-gray-300 break-all">
+                              {log.path}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <span className="text-sm text-gray-300">
+                              {log.duration ? `${log.duration}ms` : 'N/A'}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <span className="text-sm text-gray-300">
+                              {new Date(log.timestamp).toLocaleString()}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <span className="text-xs text-gray-400">
+                              Click to {isExpanded ? 'collapse' : 'expand'}
+                            </span>
+                          </td>
+                        </tr>
+                        {isExpanded && (
+                          <tr key={`${log.timestamp}-${index}-details`}>
+                            <td colSpan={6} className="p-0">
+                              <LogDetailCollapsible log={log} />
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -184,11 +198,6 @@ export function RequestLogs() {
           )}
         </>
       )}
-
-      <LogDetailModal
-        log={selectedLog}
-        onClose={() => setSelectedLog(null)}
-      />
     </div>
   );
 }

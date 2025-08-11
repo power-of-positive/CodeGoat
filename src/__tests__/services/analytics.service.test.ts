@@ -1,0 +1,600 @@
+import fs from 'fs/promises';
+import path from 'path';
+import { AnalyticsService } from '../../services/analytics.service';
+import type {
+  SessionMetrics,
+  ValidationAttemptMetrics,
+  ValidationStageMetrics,
+} from '../../types/analytics.types';
+import { createMockLogger } from '../../test-helpers/logger.mock';
+
+// Mock fs module
+jest.mock('fs/promises');
+const mockedFs = fs as jest.Mocked<typeof fs>;
+
+describe('AnalyticsService', () => {
+  let analyticsService: AnalyticsService;
+  let mockLogger: any;
+  let sessionsPath: string;
+  let metricsPath: string;
+
+  beforeEach(() => {
+    mockLogger = createMockLogger();
+    analyticsService = new AnalyticsService(mockLogger);
+    sessionsPath = path.join(process.cwd(), 'validation-sessions.json');
+    metricsPath = path.join(process.cwd(), 'validation-metrics.json');
+
+    // Clear all mocks
+    jest.clearAllMocks();
+  });
+
+  describe('startSession', () => {
+    it('should create a new session with generated ID', async () => {
+      mockedFs.readFile.mockRejectedValue(new Error('File not found'));
+      mockedFs.writeFile.mockResolvedValue();
+
+      const sessionId = await analyticsService.startSession('Test prompt', 'Test task');
+
+      expect(sessionId).toMatch(/^session_\d+_[a-z0-9]{9}$/);
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'Development session started',
+        expect.objectContaining({
+          sessionId,
+          userPrompt: 'Test prompt',
+          taskDescription: 'Test task',
+        })
+      );
+      expect(mockedFs.writeFile).toHaveBeenCalledWith(
+        sessionsPath,
+        expect.stringContaining(sessionId),
+        'utf-8'
+      );
+    });
+
+    it('should create session without prompt or task description', async () => {
+      mockedFs.readFile.mockRejectedValue(new Error('File not found'));
+      mockedFs.writeFile.mockResolvedValue();
+
+      const sessionId = await analyticsService.startSession();
+
+      expect(sessionId).toMatch(/^session_\d+_[a-z0-9]{9}$/);
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'Development session started',
+        expect.objectContaining({
+          sessionId,
+          userPrompt: undefined,
+          taskDescription: undefined,
+        })
+      );
+    });
+
+    it('should save session to existing sessions file', async () => {
+      const existingSessions = [
+        {
+          sessionId: 'existing_session',
+          startTime: Date.now() - 1000,
+          attempts: [],
+          finalSuccess: false,
+          totalValidationTime: 0,
+          averageStageTime: 0,
+        },
+      ];
+
+      mockedFs.readFile.mockResolvedValue(JSON.stringify(existingSessions));
+      mockedFs.writeFile.mockResolvedValue();
+
+      const sessionId = await analyticsService.startSession();
+
+      const writeCall = mockedFs.writeFile.mock.calls[0];
+      const savedSessions = JSON.parse(writeCall[1] as string);
+      expect(savedSessions).toHaveLength(2);
+      expect(savedSessions[0].sessionId).toBe('existing_session');
+      expect(savedSessions[1].sessionId).toBe(sessionId);
+    });
+  });
+
+  describe('endSession', () => {
+    const mockSession: SessionMetrics = {
+      sessionId: 'test_session',
+      startTime: Date.now() - 5000,
+      attempts: [
+        {
+          attempt: 1,
+          timestamp: new Date().toISOString(),
+          startTime: Date.now() - 3000,
+          totalTime: 2000,
+          totalStages: 3,
+          passed: 2,
+          failed: 1,
+          success: false,
+          stages: [
+            { id: 'lint', name: 'Lint', success: true, duration: 500, attempt: 1 },
+            { id: 'test', name: 'Test', success: true, duration: 800, attempt: 1 },
+            { id: 'build', name: 'Build', success: false, duration: 700, attempt: 1 },
+          ],
+        },
+      ],
+      finalSuccess: false,
+      totalValidationTime: 0,
+      averageStageTime: 0,
+    };
+
+    it('should end session successfully and calculate metrics', async () => {
+      mockedFs.readFile.mockResolvedValue(JSON.stringify([mockSession]));
+      mockedFs.writeFile.mockResolvedValue();
+
+      await analyticsService.endSession('test_session', true);
+
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'Development session ended',
+        expect.objectContaining({
+          sessionId: 'test_session',
+          success: true,
+          totalDuration: expect.any(Number),
+          attempts: 1,
+          totalValidationTime: 2000,
+        })
+      );
+
+      const writeCall = mockedFs.writeFile.mock.calls[0];
+      const savedSessions = JSON.parse(writeCall[1] as string);
+      const updatedSession = savedSessions[0];
+
+      expect(updatedSession.finalSuccess).toBe(true);
+      expect(updatedSession.endTime).toBeDefined();
+      expect(updatedSession.totalDuration).toBeDefined();
+      expect(updatedSession.totalValidationTime).toBe(2000);
+      expect(updatedSession.averageStageTime).toBe(2000 / 3);
+    });
+
+    it('should throw error if session not found', async () => {
+      mockedFs.readFile.mockResolvedValue(JSON.stringify([]));
+
+      await expect(analyticsService.endSession('nonexistent_session', true)).rejects.toThrow(
+        'Session nonexistent_session not found'
+      );
+    });
+
+    it('should calculate metrics for session with multiple attempts', async () => {
+      const sessionWithMultipleAttempts = {
+        ...mockSession,
+        attempts: [
+          mockSession.attempts[0],
+          {
+            attempt: 2,
+            timestamp: new Date().toISOString(),
+            startTime: Date.now() - 1000,
+            totalTime: 1500,
+            totalStages: 3,
+            passed: 3,
+            failed: 0,
+            success: true,
+            stages: [
+              { id: 'lint', name: 'Lint', success: true, duration: 400, attempt: 2 },
+              { id: 'test', name: 'Test', success: true, duration: 600, attempt: 2 },
+              { id: 'build', name: 'Build', success: true, duration: 500, attempt: 2 },
+            ],
+          },
+        ],
+      };
+
+      mockedFs.readFile.mockResolvedValue(JSON.stringify([sessionWithMultipleAttempts]));
+      mockedFs.writeFile.mockResolvedValue();
+
+      await analyticsService.endSession('test_session', true);
+
+      const writeCall = mockedFs.writeFile.mock.calls[0];
+      const savedSessions = JSON.parse(writeCall[1] as string);
+      const updatedSession = savedSessions[0];
+
+      expect(updatedSession.totalValidationTime).toBe(3500); // 2000 + 1500
+      expect(updatedSession.averageStageTime).toBe(3500 / 6); // 6 total stages
+    });
+  });
+
+  describe('recordValidationAttempt', () => {
+    const mockSession: SessionMetrics = {
+      sessionId: 'test_session',
+      startTime: Date.now(),
+      attempts: [],
+      finalSuccess: false,
+      totalValidationTime: 0,
+      averageStageTime: 0,
+    };
+
+    const mockAttempt: ValidationAttemptMetrics = {
+      attempt: 0, // This will be set by the service
+      timestamp: new Date().toISOString(),
+      startTime: Date.now() - 2000,
+      totalTime: 2000,
+      totalStages: 2,
+      passed: 1,
+      failed: 1,
+      success: false,
+      stages: [
+        { id: 'lint', name: 'Lint', success: true, duration: 800, attempt: 1 },
+        { id: 'test', name: 'Test', success: false, duration: 1200, attempt: 1 },
+      ],
+    };
+
+    it('should record validation attempt with correct attempt number', async () => {
+      mockedFs.readFile.mockResolvedValue(JSON.stringify([mockSession]));
+      mockedFs.writeFile.mockResolvedValue();
+
+      await analyticsService.recordValidationAttempt('test_session', mockAttempt);
+
+      expect(mockLogger.info).toHaveBeenCalledWith('Validation attempt recorded', {
+        sessionId: 'test_session',
+        attempt: 1,
+        success: false,
+        totalTime: 2000,
+        stages: 2,
+      });
+
+      const writeCall = mockedFs.writeFile.mock.calls[0];
+      const savedSessions = JSON.parse(writeCall[1] as string);
+      const updatedSession = savedSessions[0];
+
+      expect(updatedSession.attempts).toHaveLength(1);
+      expect(updatedSession.attempts[0].attempt).toBe(1);
+    });
+
+    it('should throw error if session not found', async () => {
+      mockedFs.readFile.mockResolvedValue(JSON.stringify([]));
+
+      await expect(
+        analyticsService.recordValidationAttempt('nonexistent_session', mockAttempt)
+      ).rejects.toThrow('Session nonexistent_session not found');
+    });
+
+    it('should increment attempt number for subsequent attempts', async () => {
+      const sessionWithExistingAttempt = {
+        ...mockSession,
+        attempts: [mockAttempt],
+      };
+
+      mockedFs.readFile.mockResolvedValue(JSON.stringify([sessionWithExistingAttempt]));
+      mockedFs.writeFile.mockResolvedValue();
+
+      const secondAttempt = { ...mockAttempt, totalTime: 1500 };
+      await analyticsService.recordValidationAttempt('test_session', secondAttempt);
+
+      const writeCall = mockedFs.writeFile.mock.calls[0];
+      const savedSessions = JSON.parse(writeCall[1] as string);
+      const updatedSession = savedSessions[0];
+
+      expect(updatedSession.attempts).toHaveLength(2);
+      expect(updatedSession.attempts[1].attempt).toBe(2);
+    });
+  });
+
+  describe('getAnalytics', () => {
+    it('should return empty analytics when no sessions exist', async () => {
+      mockedFs.readFile.mockRejectedValue(new Error('File not found'));
+
+      const analytics = await analyticsService.getAnalytics();
+
+      expect(analytics).toEqual({
+        totalSessions: 0,
+        successRate: 0,
+        averageTimeToSuccess: 0,
+        averageAttemptsToSuccess: 0,
+        mostFailedStage: 'none',
+        stageSuccessRates: {},
+        dailyStats: {},
+      });
+    });
+
+    it('should calculate analytics for multiple sessions', async () => {
+      const sessions: SessionMetrics[] = [
+        {
+          sessionId: 'session_1',
+          startTime: new Date('2023-01-01').getTime(),
+          endTime: new Date('2023-01-01').getTime() + 5000,
+          totalDuration: 5000,
+          attempts: [
+            {
+              attempt: 1,
+              timestamp: new Date().toISOString(),
+              startTime: Date.now(),
+              totalTime: 2000,
+              totalStages: 2,
+              passed: 2,
+              failed: 0,
+              success: true,
+              stages: [
+                { id: 'lint', name: 'Lint', success: true, duration: 800, attempt: 1 },
+                { id: 'test', name: 'Test', success: true, duration: 1200, attempt: 1 },
+              ],
+            },
+          ],
+          finalSuccess: true,
+          totalValidationTime: 2000,
+          averageStageTime: 1000,
+        },
+        {
+          sessionId: 'session_2',
+          startTime: new Date('2023-01-01').getTime(),
+          endTime: new Date('2023-01-01').getTime() + 8000,
+          totalDuration: 8000,
+          attempts: [
+            {
+              attempt: 1,
+              timestamp: new Date().toISOString(),
+              startTime: Date.now(),
+              totalTime: 3000,
+              totalStages: 2,
+              passed: 1,
+              failed: 1,
+              success: false,
+              stages: [
+                { id: 'lint', name: 'Lint', success: true, duration: 1000, attempt: 1 },
+                { id: 'test', name: 'Test', success: false, duration: 2000, attempt: 1 },
+              ],
+            },
+          ],
+          finalSuccess: false,
+          totalValidationTime: 3000,
+          averageStageTime: 1500,
+        },
+        {
+          sessionId: 'session_3',
+          startTime: new Date('2023-01-02').getTime(),
+          endTime: new Date('2023-01-02').getTime() + 6000,
+          totalDuration: 6000,
+          attempts: [
+            {
+              attempt: 1,
+              timestamp: new Date().toISOString(),
+              startTime: Date.now(),
+              totalTime: 2500,
+              totalStages: 2,
+              passed: 2,
+              failed: 0,
+              success: true,
+              stages: [
+                { id: 'lint', name: 'Lint', success: true, duration: 900, attempt: 1 },
+                { id: 'test', name: 'Test', success: true, duration: 1600, attempt: 1 },
+              ],
+            },
+          ],
+          finalSuccess: true,
+          totalValidationTime: 2500,
+          averageStageTime: 1250,
+        },
+      ];
+
+      mockedFs.readFile.mockResolvedValue(JSON.stringify(sessions));
+
+      const analytics = await analyticsService.getAnalytics();
+
+      expect(analytics.totalSessions).toBe(3);
+      expect(analytics.successRate).toBe(66.66666666666666); // 2/3 * 100
+      expect(analytics.averageTimeToSuccess).toBe(5500); // (5000 + 6000) / 2
+      expect(analytics.averageAttemptsToSuccess).toBe(1); // Both successful sessions had 1 attempt
+      expect(analytics.mostFailedStage).toBe('test'); // test failed once, lint never failed
+
+      // Check stage success rates
+      expect(analytics.stageSuccessRates.lint).toEqual({
+        attempts: 3,
+        successes: 3,
+        rate: 100,
+      });
+      expect(analytics.stageSuccessRates.test).toEqual({
+        attempts: 3,
+        successes: 2,
+        rate: 66.66666666666666,
+      });
+
+      // Check daily stats
+      expect(analytics.dailyStats['2023-01-01']).toEqual({
+        sessions: 2,
+        successes: 1,
+        totalTime: 13000, // 5000 + 8000
+      });
+      expect(analytics.dailyStats['2023-01-02']).toEqual({
+        sessions: 1,
+        successes: 1,
+        totalTime: 6000,
+      });
+    });
+
+    it('should handle sessions with no successful stages', async () => {
+      const sessions: SessionMetrics[] = [
+        {
+          sessionId: 'session_1',
+          startTime: Date.now(),
+          attempts: [
+            {
+              attempt: 1,
+              timestamp: new Date().toISOString(),
+              startTime: Date.now(),
+              totalTime: 2000,
+              totalStages: 2,
+              passed: 0,
+              failed: 2,
+              success: false,
+              stages: [
+                { id: 'lint', name: 'Lint', success: false, duration: 800, attempt: 1 },
+                { id: 'test', name: 'Test', success: false, duration: 1200, attempt: 1 },
+              ],
+            },
+          ],
+          finalSuccess: false,
+          totalValidationTime: 2000,
+          averageStageTime: 1000,
+        },
+      ];
+
+      mockedFs.readFile.mockResolvedValue(JSON.stringify(sessions));
+
+      const analytics = await analyticsService.getAnalytics();
+
+      expect(analytics.stageSuccessRates.lint.rate).toBe(0);
+      expect(analytics.stageSuccessRates.test.rate).toBe(0);
+      expect(analytics.mostFailedStage).toBe('lint'); // Both have 0% rate, returns first alphabetically
+    });
+  });
+
+  describe('getSession', () => {
+    it('should return session by ID', async () => {
+      const mockSession: SessionMetrics = {
+        sessionId: 'test_session',
+        startTime: Date.now(),
+        attempts: [],
+        finalSuccess: false,
+        totalValidationTime: 0,
+        averageStageTime: 0,
+      };
+
+      mockedFs.readFile.mockResolvedValue(JSON.stringify([mockSession]));
+
+      const session = await analyticsService.getSession('test_session');
+
+      expect(session).toEqual(mockSession);
+    });
+
+    it('should return null if session not found', async () => {
+      mockedFs.readFile.mockResolvedValue(JSON.stringify([]));
+
+      const session = await analyticsService.getSession('nonexistent_session');
+
+      expect(session).toBeNull();
+    });
+
+    it('should return null if file read fails', async () => {
+      mockedFs.readFile.mockRejectedValue(new Error('File not found'));
+
+      const session = await analyticsService.getSession('test_session');
+
+      expect(session).toBeNull();
+    });
+  });
+
+  describe('getRecentSessions', () => {
+    it('should return recent sessions sorted by start time', async () => {
+      const sessions: SessionMetrics[] = [
+        {
+          sessionId: 'old_session',
+          startTime: Date.now() - 10000,
+          attempts: [],
+          finalSuccess: false,
+          totalValidationTime: 0,
+          averageStageTime: 0,
+        },
+        {
+          sessionId: 'recent_session',
+          startTime: Date.now() - 1000,
+          attempts: [],
+          finalSuccess: false,
+          totalValidationTime: 0,
+          averageStageTime: 0,
+        },
+        {
+          sessionId: 'newest_session',
+          startTime: Date.now(),
+          attempts: [],
+          finalSuccess: false,
+          totalValidationTime: 0,
+          averageStageTime: 0,
+        },
+      ];
+
+      mockedFs.readFile.mockResolvedValue(JSON.stringify(sessions));
+
+      const recentSessions = await analyticsService.getRecentSessions(2);
+
+      expect(recentSessions).toHaveLength(2);
+      expect(recentSessions[0].sessionId).toBe('newest_session');
+      expect(recentSessions[1].sessionId).toBe('recent_session');
+    });
+
+    it('should use default limit of 10', async () => {
+      const sessions: SessionMetrics[] = Array.from({ length: 15 }, (_, i) => ({
+        sessionId: `session_${i}`,
+        startTime: Date.now() - i * 1000,
+        attempts: [],
+        finalSuccess: false,
+        totalValidationTime: 0,
+        averageStageTime: 0,
+      }));
+
+      mockedFs.readFile.mockResolvedValue(JSON.stringify(sessions));
+
+      const recentSessions = await analyticsService.getRecentSessions();
+
+      expect(recentSessions).toHaveLength(10);
+    });
+  });
+
+  describe('cleanupSessions', () => {
+    it('should keep only the most recent sessions', async () => {
+      const sessions: SessionMetrics[] = Array.from({ length: 150 }, (_, i) => ({
+        sessionId: `session_${i}`,
+        startTime: Date.now() - i * 1000,
+        attempts: [],
+        finalSuccess: false,
+        totalValidationTime: 0,
+        averageStageTime: 0,
+      }));
+
+      mockedFs.readFile.mockResolvedValue(JSON.stringify(sessions));
+      mockedFs.writeFile.mockResolvedValue();
+
+      await analyticsService.cleanupSessions(100);
+
+      expect(mockLogger.info).toHaveBeenCalledWith('Sessions cleaned up', {
+        totalSessions: 150,
+        keptSessions: 100,
+        removedSessions: 50,
+      });
+
+      const writeCall = mockedFs.writeFile.mock.calls[0];
+      const savedSessions = JSON.parse(writeCall[1] as string);
+      expect(savedSessions).toHaveLength(100);
+
+      // Should keep the most recent sessions (lowest indices due to reverse chronological order)
+      expect(savedSessions[0].sessionId).toBe('session_0');
+      expect(savedSessions[99].sessionId).toBe('session_99');
+    });
+
+    it('should not cleanup if sessions count is within limit', async () => {
+      const sessions: SessionMetrics[] = Array.from({ length: 50 }, (_, i) => ({
+        sessionId: `session_${i}`,
+        startTime: Date.now() - i * 1000,
+        attempts: [],
+        finalSuccess: false,
+        totalValidationTime: 0,
+        averageStageTime: 0,
+      }));
+
+      mockedFs.readFile.mockResolvedValue(JSON.stringify(sessions));
+
+      await analyticsService.cleanupSessions(100);
+
+      expect(mockedFs.writeFile).not.toHaveBeenCalled();
+      expect(mockLogger.info).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('error handling', () => {
+    it('should handle file write errors when saving sessions', async () => {
+      mockedFs.readFile.mockResolvedValue(JSON.stringify([]));
+      mockedFs.writeFile.mockRejectedValue(new Error('Permission denied'));
+
+      await expect(analyticsService.startSession()).rejects.toThrow('Failed to save sessions');
+
+      expect(mockLogger.error).toHaveBeenCalledWith('Failed to save sessions', expect.any(Error));
+    });
+
+    it('should handle corrupted JSON files gracefully', async () => {
+      mockedFs.readFile.mockResolvedValue('invalid json');
+      mockedFs.writeFile.mockResolvedValue();
+
+      const sessionId = await analyticsService.startSession();
+
+      expect(sessionId).toMatch(/^session_\d+_[a-z0-9]{9}$/);
+      // Should start with empty sessions list when file is corrupted
+    });
+  });
+});

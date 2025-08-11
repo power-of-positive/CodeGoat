@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { UIModelConfig, ServerStatus, CreateModelRequest, ModelsResponse, ModelTestResult, OpenRouterStats, LogsResponse, LogEntry } from '../types/api';
+import type { UIModelConfig, ServerStatus, CreateModelRequest, ModelsResponse, ModelTestResult, OpenRouterStats, LogsResponse, LogEntry, Settings } from '../types/api';
 
 const apiClient = axios.create({
   baseURL: '/api',
@@ -60,6 +60,17 @@ export const api = {
 
   getErrorLogs: async (limit = 100, offset = 0): Promise<LogsResponse> => {
     const response = await apiClient.get(`/logs/errors?limit=${limit}&offset=${offset}`);
+    return response.data;
+  },
+
+  // Settings
+  getSettings: async (): Promise<Settings> => {
+    const response = await apiClient.get('/settings');
+    return response.data;
+  },
+
+  updateSettings: async (settings: Settings): Promise<Settings> => {
+    const response = await apiClient.put('/settings', settings);
     return response.data;
   },
 };

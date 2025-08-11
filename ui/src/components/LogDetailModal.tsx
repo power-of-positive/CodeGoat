@@ -66,8 +66,10 @@ export function LogDetailModal({ log, onClose }: LogDetailModalProps) {
             <div>
               <label className="block text-sm font-medium text-red-300 mb-1">Error</label>
               <div className="bg-red-900/20 border border-red-500/20 rounded p-3">
-                <p className="text-red-300 mb-2">{log.error.message}</p>
-                {log.error.stack && (
+                <p className="text-red-300 mb-2">
+                  {typeof log.error === 'string' ? log.error : log.error.message}
+                </p>
+                {typeof log.error !== 'string' && log.error.stack && (
                   <pre className="text-red-400 text-xs overflow-x-auto whitespace-pre-wrap">
                     {log.error.stack}
                   </pre>

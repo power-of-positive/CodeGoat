@@ -80,16 +80,23 @@ export interface OpenRouterStats {
 
 export interface LogEntry {
   timestamp: string;
-  level: string;
-  message: string;
-  method?: string;
-  path?: string;
+  level?: string;
+  message?: string;
+  method: string;
+  path: string;
   statusCode?: number;
   duration?: number;
   routeName?: string;
   targetUrl?: string;
+  requestHeaders?: Record<string, string>;
+  requestBody?: unknown;
+  responseHeaders?: Record<string, string>;
+  responseBody?: unknown;
+  responseSize?: number;
+  userAgent?: string;
+  clientIp?: string;
   meta?: Record<string, unknown>;
-  error?: {
+  error?: string | {
     message: string;
     stack?: string;
   };
@@ -100,4 +107,50 @@ export interface LogsResponse {
   total: number;
   offset: number;
   limit: number;
+}
+
+// Settings types
+export interface ValidationStage {
+  id: string;
+  name: string;
+  command: string;
+  workingDir?: string;
+  timeout: number;
+  enabled: boolean;
+  continueOnFailure: boolean;
+  order: number;
+}
+
+export interface ValidationSettings {
+  stages: ValidationStage[];
+  enableMetrics: boolean;
+  maxAttempts: number;
+}
+
+export interface FallbackSettings {
+  maxRetries: number;
+  retryDelay: number;
+  enableFallbacks: boolean;
+  fallbackOnContextLength: boolean;
+  fallbackOnRateLimit: boolean;
+  fallbackOnServerError: boolean;
+}
+
+export interface LoggingSettings {
+  level: 'error' | 'warn' | 'info' | 'debug';
+  enableConsole: boolean;
+  enableFile: boolean;
+  logsDir: string;
+  accessLogFile: string;
+  appLogFile: string;
+  errorLogFile: string;
+  maxFileSize: string;
+  maxFiles: string;
+  datePattern: string;
+}
+
+export interface Settings {
+  fallback?: FallbackSettings;
+  validation?: ValidationSettings;
+  logging?: LoggingSettings;
 }
