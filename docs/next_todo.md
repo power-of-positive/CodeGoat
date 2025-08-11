@@ -1,32 +1,32 @@
-    ☐ Add a page to visualise validation failures -
+[x] Add a page to visualise validation failures -
       create UI to display failure analytics, success
       rates, and trends for development workflow
       insights (configurable validation stages)
-    ☐ Disallow ESLint disabling throughout the
+    [x] Disallow ESLint disabling throughout the
       codebase - prevent use of eslint-disable
       comments to enforce consistent code quality
       standards
-    ☐ Move default settings from TypeScript constants
+    [x] Move default settings from TypeScript constants
       to dedicated JSON configuration files - extract
       default settings into JSON files for easier
       configuration management
-    ☐ Add validation metrics tab to display
+    [x] Add validation metrics tab to display
       development workflow analytics and stage
       success rates
-    ☐ Centralize base URLs and constants - remove
+    [x] Centralize base URLs and constants - remove
       duplication from component files like
       ModelList.tsx
     ☐ Implement type sharing between UI and backend
       via generated OpenAPI schema validation
-    ☐ Create analytics viewing page - display
+    [x] Create analytics viewing page - display
       development workflow metrics, validation
       success rates, and performance analytics
-    ☐ Split proxy-handler into smaller, more focused
+    [x] Split proxy-handler into smaller, more focused
       files for better maintainability
     ☐ Remove legacy config functionality and related
       tests - clean up legacy model_list format
       support and associated test code
-    ☐ Create agent runner that executes tasks with
+    [x] Create agent runner that executes tasks with
       validation loops - runs agent with task,
       validates with user script, feeds back failures
       until validation passes or max attempts reached
