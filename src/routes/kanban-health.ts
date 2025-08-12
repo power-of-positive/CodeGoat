@@ -1,5 +1,4 @@
 import { Router, Request, Response } from 'express';
-import { ApiResponse } from '../types/kanban.types';
 import { ILogger } from '../logger-interface';
 import { KanbanDatabaseService } from '../services/kanban-database.service';
 
@@ -19,7 +18,7 @@ export function createKanbanHealthRoutes(kanbanDb: KanbanDatabaseService, logger
       const isDbHealthy = await kanbanDb.healthCheck();
 
       if (!isDbHealthy) {
-        const response: ApiResponse<'OK'> = {
+        const response = {
           success: false,
           data: null,
           error_data: null,
@@ -30,8 +29,8 @@ export function createKanbanHealthRoutes(kanbanDb: KanbanDatabaseService, logger
         return res.status(200).json(response);
       }
 
-      // Return success response in ApiResponse format
-      const response: ApiResponse<'OK'> = {
+      // Return success response matching contract test expectations
+      const response = {
         success: true,
         data: 'OK',
         error_data: null,
@@ -42,7 +41,7 @@ export function createKanbanHealthRoutes(kanbanDb: KanbanDatabaseService, logger
     } catch (error) {
       logger.error('Health check error', error as Error);
 
-      const response: ApiResponse<'OK'> = {
+      const response = {
         success: false,
         data: null,
         error_data: null,

@@ -113,6 +113,7 @@ export interface TaskAttempt {
   branch?: string;
   base_branch: string;
   merge_commit?: string;
+  executor: string;
   base_coding_agent: string;
   pr_url?: string;
   pr_number?: bigint;

@@ -14,8 +14,7 @@ import { createInternalRoutes } from './routes/internal';
 import { createLogsRoutes } from './routes/logs';
 import { createSettingsRoutes } from './routes/settings';
 import { createAnalyticsRoutes } from './routes/analytics';
-import { createKanbanHealthRoutes } from './routes/kanban-health';
-import { initializeKanbanDatabase } from './kanban-database';
+// Kanban routes will be imported here once implementation is complete
 
 const app = express();
 const configLoader = new ConfigLoader();
@@ -48,22 +47,17 @@ const logCleaner = new LogCleaner(
 // Initialize management API
 // initializeManagementAPI(configLoader, logger);
 
-// Initialize Kanban database
-const kanbanDb = initializeKanbanDatabase(logger);
-
-// Connect to Kanban database
-kanbanDb.connect().catch(error => {
-  logger.error('Failed to connect to Kanban database', error);
-  process.exit(1);
-});
+// Kanban database initialization will be added here
 
 // CORS configuration for Kanban UI integration
 app.use((req: Request, res: Response, next: NextFunction) => {
   // Allow requests from localhost (development) and same origin
   const allowedOrigins = [
     'http://localhost:3000',
+    'http://localhost:3001',
     'http://localhost:5173', // Vite dev server
     'http://127.0.0.1:3000',
+    'http://127.0.0.1:3001',
     'http://127.0.0.1:5173',
   ];
 
@@ -152,7 +146,7 @@ app.use('/api/openrouter-stats', createOpenRouterStatsRoutes(logger));
 app.use('/api/logs', createLogsRoutes(logger));
 app.use('/api/settings', createSettingsRoutes(configLoader, logger));
 app.use('/api/analytics', createAnalyticsRoutes(logger));
-app.use('/api', createKanbanHealthRoutes(kanbanDb, logger));
+// Kanban routes will be mounted here once implementation is complete
 
 // Keep test route for compatibility
 app.get('/test', (_req: Request, res: Response) => {

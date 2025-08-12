@@ -27,6 +27,11 @@
     "logs:migrate": "./scripts/migrate-logs.sh",
     "ai-review": "ts-node src/tools/ai-code-reviewer.ts",
     "quality": "npm run lint && npm run format:check && npm run type-check && npm run typescript-check && npm run test",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:migrate:deploy": "prisma migrate deploy",
+    "db:push": "prisma db push",
+    "db:studio": "prisma studio",
     "prepare": "husky"
   },
   "keywords": [],
@@ -41,6 +46,7 @@
     "@types/supertest": "^6.0.3",
     "@typescript-eslint/eslint-plugin": "^8.39.0",
     "@typescript-eslint/parser": "^8.39.0",
+    "better-sqlite3": "^12.2.0",
     "dotenv": "^17.2.1",
     "eslint": "^9.32.0",
     "eslint-config-prettier": "^10.1.8",
@@ -50,19 +56,23 @@
     "jest": "^30.0.5",
     "lint-staged": "^16.1.4",
     "nodemon": "^3.1.10",
+    "pactum": "^3.8.0",
     "prettier": "^3.6.2",
     "supertest": "^7.1.4",
     "ts-jest": "^29.4.1",
     "ts-node": "^10.9.2",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
   },
   "dependencies": {
+    "@prisma/client": "^6.13.0",
     "axios": "^1.11.0",
     "clsx": "^2.1.1",
     "express": "^5.1.0",
+    "prisma": "^6.13.0",
     "winston": "^3.17.0",
     "yaml": "^2.8.1",
-    "zod": "^4.0.15"
+    "zod": "^4.0.17"
   },
   "lint-staged": {
     "src/**/*.ts": [

@@ -101,7 +101,8 @@ export function mapPrismaTaskAttemptToApi(prismaAttempt: PrismaTaskAttempt): Tas
     branch: prismaAttempt.branchName,
     base_branch: 'main', // Default, should be configurable
     merge_commit: prismaAttempt.mergeCommit || undefined,
-    base_coding_agent: prismaAttempt.executor,
+    executor: prismaAttempt.executor,
+    base_coding_agent: prismaAttempt.executor, // Keep for backward compatibility
     pr_url: undefined, // Not in our schema yet
     pr_number: undefined, // Not in our schema yet
     pr_status: undefined, // Not in our schema yet

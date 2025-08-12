@@ -164,7 +164,7 @@ export class ConfigLoader {
 
   private convertToProxyConfig(modelConfig: ModelConfig): ProxyConfig {
     return {
-      proxy: { port: 3000, host: '0.0.0.0' },
+      proxy: { port: 3001, host: '0.0.0.0' },
       routes: this.createDefaultRoutes(),
       settings: {
         logging: { level: 'info', format: 'json' },

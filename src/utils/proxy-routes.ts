@@ -295,10 +295,19 @@ export class ProxyRoutes {
 
     const fallbackConditions = await this.settingsService.getFallbackSettings();
     if (shouldFallbackOnError(response.status, response.data, fallbackConditions)) {
+      const error = extractErrorMessage(response.data);
+
+      // Log API errors that trigger fallback to ensure they're captured in logs
+      this.logger.error('API error triggering fallback', new Error(error), {
+        status: response.status,
+        errorData: response.data,
+        provider: 'unknown', // Could be enhanced with actual provider info
+      });
+
       this.logger.info('Model capability error detected, trying fallback', {
         status: response.status,
       });
-      const error = extractErrorMessage(response.data);
+
       return { success: false, error, shouldFallback: true };
     }
 
