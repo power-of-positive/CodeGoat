@@ -1,0 +1,37 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|MultiEdit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'file_path=$(echo \"$CLAUDE_TOOL_INPUT\" | jq -r \".file_path // empty\"); if [[ -n \"$file_path\" && \"$file_path\" =~ \\.(ts|tsx|js|jsx)$ ]]; then cd /workspace/frontend && echo \"🎨 Auto-formatting $file_path\" && npx prettier --write \"$file_path\" && echo \"🔧 Running ESLint fixes\" && npm run lint:fix -- \"$file_path\" --quiet && echo \"🔍 TypeScript type checking\" && npx tsc --noEmit --skipLibCheck && echo \"✅ All checks passed for $file_path\"; fi'"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd /Users/rustameynaliyev/Scientist/Research/personal_projects/vibe-kanban && npx tsx scripts/claude-stop-hook.ts"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo \"I ran\""
+          }
+        ]
+      }
+    ]
+  }
+}
