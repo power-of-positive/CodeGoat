@@ -1,8 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { 
-  TaskAttempt, 
-  BranchStatus
-} from '../types/kanban.types';
+import { TaskAttempt, BranchStatus, CreateTaskAttempt } from '../types/kanban.types';
 import { ILogger } from '../logger-interface';
 import { KanbanDatabaseService } from '../services/kanban-database.service';
 import { mapPrismaTaskAttemptToApi } from '../utils/kanban-mappers';
@@ -16,7 +13,7 @@ import {
   validateUUIDs,
   createWorktree,
   getBranchStatus,
-  getWorktreeDiff
+  getWorktreeDiff,
 } from './helpers/kanban-task-attempts.helpers';
 
 /**
@@ -30,12 +27,14 @@ export function createKanbanTaskAttemptsRoutes(
   const prisma = kanbanDb.getClient();
 
   // GET /projects/:project_id/tasks/:task_id/attempts - Get attempts for task
-  router.get('/projects/:project_id/tasks/:task_id/attempts', 
+  router.get(
+    '/projects/:project_id/tasks/:task_id/attempts',
     getTaskAttemptsHandler(prisma, logger)
   );
 
   // POST /projects/:project_id/tasks/:task_id/attempts - Create new attempt
-  router.post('/projects/:project_id/tasks/:task_id/attempts', 
+  router.post(
+    '/projects/:project_id/tasks/:task_id/attempts',
     createTaskAttemptHandler(prisma, logger)
   );
 
@@ -43,14 +42,10 @@ export function createKanbanTaskAttemptsRoutes(
   router.get('/task-attempts/:id', getSpecificAttemptHandler(prisma, logger));
 
   // POST /task-attempts/:id/follow-up - Create follow-up execution
-  router.post('/task-attempts/:id/follow-up', 
-    createFollowUpHandler(prisma, logger)
-  );
+  router.post('/task-attempts/:id/follow-up', createFollowUpHandler(prisma, logger));
 
   // GET /task-attempts/:id/branch-status - Get git branch status
-  router.get('/task-attempts/:id/branch-status', 
-    getBranchStatusHandler(prisma, logger)
-  );
+  router.get('/task-attempts/:id/branch-status', getBranchStatusHandler(prisma, logger));
 
   // GET /task-attempts/:id/diff - Stream diff changes (SSE)
   router.get('/task-attempts/:id/diff', getDiffStreamHandler(prisma, logger));
@@ -66,7 +61,7 @@ function getTaskAttemptsHandler(prisma: PrismaClient, logger: ILogger) {
   return async (req: Request, res: Response) => {
     try {
       const { project_id, task_id } = req.params;
-      
+
       const validation = validateUUIDs(project_id, task_id);
       if (!validation.valid) {
         return res.status(400).json(validation.response);
@@ -100,12 +95,12 @@ function createTaskAttemptHandler(prisma: PrismaClient, logger: ILogger) {
   return async (req: Request, res: Response) => {
     try {
       const { project_id, task_id } = req.params;
-      
+
       const validation = validateUUIDs(project_id, task_id);
       if (!validation.valid) {
         return res.status(400).json(validation.response);
       }
-      
+
       const bodyValidation = CreateTaskAttemptSchema.safeParse(req.body);
       if (!bodyValidation.success) {
         const message = `Validation error: ${bodyValidation.error.issues.map(e => e.message).join(', ')}`;
@@ -125,10 +120,10 @@ function createTaskAttemptHandler(prisma: PrismaClient, logger: ILogger) {
       }
 
       const { newAttempt } = await createTaskAttemptInDatabase(
-        prisma, 
-        task_id, 
-        task, 
-        attemptData, 
+        prisma,
+        task_id,
+        task,
+        attemptData,
         logger
       );
 
@@ -167,7 +162,7 @@ function createFollowUpHandler(prisma: PrismaClient, logger: ILogger) {
   return async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
-      
+
       const validation = CreateFollowUpAttemptSchema.safeParse(req.body);
       if (!validation.success) {
         const message = `Validation error: ${validation.error.issues.map(e => e.message).join(', ')}`;
@@ -190,7 +185,9 @@ function createFollowUpHandler(prisma: PrismaClient, logger: ILogger) {
       res.status(200).json(createSuccessResponse(apiAttempt, 'Follow-up execution started'));
     } catch (error) {
       logger.error('Failed to create follow-up execution', error as Error);
-      res.status(200).json(createErrorResponse<TaskAttempt>('Failed to create follow-up execution'));
+      res
+        .status(200)
+        .json(createErrorResponse<TaskAttempt>('Failed to create follow-up execution'));
     }
   };
 }
@@ -251,7 +248,7 @@ function getDiffStreamHandler(prisma: PrismaClient, logger: ILogger) {
       res.writeHead(200, {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
+        Connection: 'keep-alive',
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Headers': 'Cache-Control',
       });
@@ -294,7 +291,7 @@ async function createTaskAttemptInDatabase(
   prisma: PrismaClient,
   task_id: string,
   task: any,
-  attemptData: any,
+  attemptData: CreateTaskAttempt,
   logger: ILogger
 ): Promise<{ newAttempt: any }> {
   // Generate branch name and worktree path
@@ -304,9 +301,16 @@ async function createTaskAttemptInDatabase(
 
   // Create worktree (placeholder for now - actual git integration would be here)
   try {
-    await createWorktree(task.project.gitRepoPath, branchName, worktreePath, attemptData.base_branch);
+    await createWorktree(
+      task.project.gitRepoPath,
+      branchName,
+      worktreePath,
+      attemptData.base_branch
+    );
   } catch (error) {
-    logger?.warn?.('Failed to create git worktree, proceeding without it', { error: error as Error });
+    logger?.warn?.('Failed to create git worktree, proceeding without it', {
+      error: error as Error,
+    });
   }
 
   // Create task attempt in database
@@ -323,7 +327,12 @@ async function createTaskAttemptInDatabase(
   return { newAttempt };
 }
 
-async function createFollowUpExecution(prisma: PrismaClient, id: string, prompt: string, attempt: any): Promise<any> {
+async function createFollowUpExecution(
+  prisma: PrismaClient,
+  id: string,
+  prompt: string,
+  attempt: any
+): Promise<any> {
   // Create execution process for follow-up
   await prisma.executionProcess.create({
     data: {

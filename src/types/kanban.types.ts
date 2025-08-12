@@ -126,9 +126,8 @@ export interface TaskAttempt {
 }
 
 export interface CreateTaskAttempt {
-  task_id: string;
-  profile?: string;
-  base_branch: string;
+  executor: string;
+  base_branch?: string;
 }
 
 export interface CreateFollowUpAttempt {
