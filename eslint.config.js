@@ -159,7 +159,7 @@ export default [
     },
   },
   {
-    ignores: ['dist/', 'node_modules/', 'coverage/', '*.js'],
+    ignores: ['dist/', 'node_modules/', 'coverage/', '*.js', 'tests/api-e2e/**/*.ts'],
   },
   prettier,
 ];

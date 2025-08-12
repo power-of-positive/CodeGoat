@@ -22,38 +22,38 @@ describe('Template Batch Operations', () => {
     const project = await apiClient.projects.create({
       name: `Batch Operations Test Project ${Date.now()}`,
       git_repo_path: `/tmp/batch-operations-test-${Date.now()}`,
-      use_existing_repo: false
+      use_existing_repo: false,
     });
-    
+
     createdProjectIds.push(project.id);
-    
+
     // Create a template using API
     const timestamp = Date.now();
     const template = await apiClient.templates.create({
       template_name: `API Endpoint Template ${timestamp}`,
       title: 'API: {{endpoint_name}}',
       description: 'Implement {{method}} {{endpoint_path}}',
-      is_global: true
+      is_global: true,
     });
 
     expect(template.template_name).toBe(`API Endpoint Template ${timestamp}`);
-    
+
     // Since createFromTemplate may not be implemented, create tasks manually
     const endpoints = [
       { endpoint_name: 'Get Users', method: 'GET', endpoint_path: '/api/users' },
       { endpoint_name: 'Create User', method: 'POST', endpoint_path: '/api/users' },
       { endpoint_name: 'Update User', method: 'PUT', endpoint_path: '/api/users/:id' },
-      { endpoint_name: 'Delete User', method: 'DELETE', endpoint_path: '/api/users/:id' }
+      { endpoint_name: 'Delete User', method: 'DELETE', endpoint_path: '/api/users/:id' },
     ];
 
     // Create tasks manually (simulating batch template operations)
     const tasks = await Promise.all(
-      endpoints.map(vars => 
+      endpoints.map(vars =>
         apiClient.tasks.create(project.id, {
           project_id: project.id,
           title: `API: ${vars.endpoint_name}`, // Manual variable substitution
           description: `Implement ${vars.method} ${vars.endpoint_path}`,
-          parent_task_attempt: null
+          parent_task_attempt: null,
         })
       )
     );
@@ -64,10 +64,10 @@ describe('Template Batch Operations', () => {
     expect(tasks[2].title).toBe('API: Update User');
     expect(tasks[3].title).toBe('API: Delete User');
 
-    tasks.forEach(task => {
+    tasks.forEach((task: any) => {
       expect(task.project_id).toBe(project.id);
     });
-    
+
     // Verify all tasks were created in the project
     const allTasks = await apiClient.tasks.getAll(project.id);
     expect(allTasks).toHaveLength(4);
@@ -78,11 +78,11 @@ describe('Template Batch Operations', () => {
     const project = await apiClient.projects.create({
       name: `Template Listing Test Project ${Date.now()}`,
       git_repo_path: `/tmp/template-listing-test-${Date.now()}`,
-      use_existing_repo: false
+      use_existing_repo: false,
     });
-    
+
     createdProjectIds.push(project.id);
-    
+
     // Create project-specific template using API
     const timestamp = Date.now();
     const projectTemplate = await apiClient.templates.create({
@@ -90,7 +90,7 @@ describe('Template Batch Operations', () => {
       title: 'Project Task',
       description: 'Project-specific task',
       is_global: false,
-      project_id: project.id
+      project_id: project.id,
     });
 
     // Create global template using API
@@ -98,32 +98,42 @@ describe('Template Batch Operations', () => {
       template_name: `Another Global ${timestamp}`,
       title: 'Global Task',
       description: 'Another global task',
-      is_global: true
+      is_global: true,
     });
 
     // List all templates and filter
     const allTemplates = await apiClient.templates.getAll();
-    
+
     // Find our templates
-    const ourProjectTemplate = allTemplates.find(t => t.template_name === `Project Specific ${timestamp}`);
-    const ourGlobalTemplate = allTemplates.find(t => t.template_name === `Another Global ${timestamp}`);
-    
+    const ourProjectTemplate = allTemplates.find(
+      t => t.template_name === `Project Specific ${timestamp}`
+    );
+    const ourGlobalTemplate = allTemplates.find(
+      t => t.template_name === `Another Global ${timestamp}`
+    );
+
     expect(ourProjectTemplate).toBeDefined();
     // Note: is_global field may be undefined in API response when false
-    expect(ourProjectTemplate!.is_global === false || ourProjectTemplate!.is_global === undefined).toBe(true);
+    expect(
+      ourProjectTemplate!.is_global === false || ourProjectTemplate!.is_global === undefined
+    ).toBe(true);
     expect(ourProjectTemplate!.project_id).toBe(project.id);
-    
+
     expect(ourGlobalTemplate).toBeDefined();
     // Note: is_global field may be undefined in API response when true
-    expect(ourGlobalTemplate!.is_global === true || ourGlobalTemplate!.is_global === undefined).toBe(true);
-    
+    expect(
+      ourGlobalTemplate!.is_global === true || ourGlobalTemplate!.is_global === undefined
+    ).toBe(true);
+
     // Note: listForProject may not be implemented, but we can test getAll filtering
     // Handle undefined is_global values properly
-    const projectSpecificTemplates = allTemplates.filter(t => 
-      (t.is_global === false || t.is_global === undefined) && t.project_id === project.id
+    const projectSpecificTemplates = allTemplates.filter(
+      t => (t.is_global === false || t.is_global === undefined) && t.project_id === project.id
     );
-    const globalTemplates = allTemplates.filter(t => t.is_global === true || (t.is_global === undefined && !t.project_id));
-    
+    const globalTemplates = allTemplates.filter(
+      t => t.is_global === true || (t.is_global === undefined && !t.project_id)
+    );
+
     expect(projectSpecificTemplates.length).toBeGreaterThanOrEqual(1);
     expect(globalTemplates.length).toBeGreaterThanOrEqual(1);
   });
