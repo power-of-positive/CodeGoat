@@ -1,13 +1,8 @@
-import { Request, Response } from 'express';
 import { 
   ApiResponse, 
-  TaskAttempt, 
   BranchStatus,
   WorktreeDiff
 } from '../../types/kanban.types';
-import { ILogger } from '../../logger-interface';
-import { KanbanDatabaseService } from '../../services/kanban-database.service';
-import { mapPrismaTaskAttemptToApi } from '../../utils/kanban-mappers';
 import { z } from 'zod';
 import { spawn } from 'child_process';
 import * as fs from 'fs';
@@ -42,7 +37,7 @@ export function createSuccessResponse<T>(data: T, message: string | null = null)
   };
 }
 
-export function validateUUIDs(project_id: string, task_id: string): { valid: boolean; response?: ApiResponse<any> } {
+export function validateUUIDs(project_id: string, task_id: string): { valid: boolean; response?: ApiResponse<unknown> } {
   const projectIdValidation = z.string().uuid().safeParse(project_id);
   const taskIdValidation = z.string().uuid().safeParse(task_id);
   

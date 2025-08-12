@@ -6,6 +6,7 @@ import {
 import { ILogger } from '../logger-interface';
 import { KanbanDatabaseService } from '../services/kanban-database.service';
 import { mapPrismaTaskToApiWithStatus, mapPrismaTaskToApi } from '../utils/kanban-mappers';
+import { PrismaClient, TaskStatus as PrismaTaskStatus } from '@prisma/client';
 import { z } from 'zod';
 
 const CreateAndStartTaskSchema = z.object({
@@ -25,14 +26,14 @@ const UpdateTaskSchema = z.object({
 });
 
 // Helper functions
-async function getTaskById(prisma: KanbanDatabaseService['client'], taskId: string): Promise<any> {
+async function getTaskById(prisma: PrismaClient, taskId: string): Promise<any> {
   return await prisma.task.findUnique({
     where: { id: taskId },
     include: { attempts: true },
   });
 }
 
-async function deleteTaskById(prisma: KanbanDatabaseService['client'], taskId: string): Promise<void> {
+async function deleteTaskById(prisma: PrismaClient, taskId: string): Promise<void> {
   await prisma.task.delete({ where: { id: taskId } });
 }
 
@@ -52,6 +53,18 @@ function createSuccessResponse<T>(data: T, message: string | null = null): ApiRe
     error_data: null,
     message,
   };
+}
+
+// Map API TaskStatus to Prisma TaskStatus
+function mapApiStatusToPrisma(status: TaskStatus): PrismaTaskStatus {
+  switch (status) {
+    case 'todo': return PrismaTaskStatus.TODO;
+    case 'inprogress': return PrismaTaskStatus.INPROGRESS;
+    case 'inreview': return PrismaTaskStatus.INREVIEW;
+    case 'done': return PrismaTaskStatus.DONE;
+    case 'cancelled': return PrismaTaskStatus.CANCELLED;
+    default: return PrismaTaskStatus.TODO;
+  }
 }
 
 /**
@@ -137,7 +150,7 @@ export function createKanbanTasksRoutes(
           title: taskData.title,
           description: taskData.description,
           parentTaskAttempt: taskData.parent_task_attempt,
-          ...(taskData.status && { status: taskData.status.toLowerCase() as TaskStatus }),
+          ...(taskData.status && { status: mapApiStatusToPrisma(taskData.status) }),
         },
       });
 

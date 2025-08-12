@@ -6,6 +6,7 @@ import {
 import { ILogger } from '../logger-interface';
 import { KanbanDatabaseService } from '../services/kanban-database.service';
 import { mapPrismaTaskAttemptToApi } from '../utils/kanban-mappers';
+import { PrismaClient } from '@prisma/client';
 import * as path from 'path';
 import {
   CreateTaskAttemptSchema,
@@ -61,8 +62,8 @@ export function createKanbanTaskAttemptsRoutes(
 }
 
 // Handler functions broken into smaller pieces
-function getTaskAttemptsHandler(prisma: KanbanDatabaseService['client'], logger: ILogger): (req: Request, res: Response) => Promise<void> {
-  return async (req: Request, res: Response): Promise<void> => {
+function getTaskAttemptsHandler(prisma: PrismaClient, logger: ILogger) {
+  return async (req: Request, res: Response) => {
     try {
       const { project_id, task_id } = req.params;
       
@@ -95,8 +96,8 @@ function getTaskAttemptsHandler(prisma: KanbanDatabaseService['client'], logger:
   };
 }
 
-function createTaskAttemptHandler(prisma: KanbanDatabaseService['client'], logger: ILogger): (req: Request, res: Response) => Promise<void> {
-  return async (req: Request, res: Response): Promise<void> => {
+function createTaskAttemptHandler(prisma: PrismaClient, logger: ILogger) {
+  return async (req: Request, res: Response) => {
     try {
       const { project_id, task_id } = req.params;
       
@@ -140,8 +141,8 @@ function createTaskAttemptHandler(prisma: KanbanDatabaseService['client'], logge
   };
 }
 
-function getSpecificAttemptHandler(prisma: KanbanDatabaseService['client'], logger: ILogger): (req: Request, res: Response) => Promise<void> {
-  return async (req: Request, res: Response): Promise<void> => {
+function getSpecificAttemptHandler(prisma: PrismaClient, logger: ILogger) {
+  return async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
 
@@ -162,8 +163,8 @@ function getSpecificAttemptHandler(prisma: KanbanDatabaseService['client'], logg
   };
 }
 
-function createFollowUpHandler(prisma: KanbanDatabaseService['client'], logger: ILogger): (req: Request, res: Response) => Promise<void> {
-  return async (req: Request, res: Response): Promise<void> => {
+function createFollowUpHandler(prisma: PrismaClient, logger: ILogger) {
+  return async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
       
@@ -194,8 +195,8 @@ function createFollowUpHandler(prisma: KanbanDatabaseService['client'], logger: 
   };
 }
 
-function getBranchStatusHandler(prisma: KanbanDatabaseService['client'], logger: ILogger): (req: Request, res: Response) => Promise<void> {
-  return async (req: Request, res: Response): Promise<void> => {
+function getBranchStatusHandler(prisma: PrismaClient, logger: ILogger) {
+  return async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
 
@@ -227,8 +228,8 @@ function getBranchStatusHandler(prisma: KanbanDatabaseService['client'], logger:
   };
 }
 
-function getDiffStreamHandler(prisma: KanbanDatabaseService['client'], logger: ILogger): (req: Request, res: Response) => Promise<void> {
-  return async (req: Request, res: Response): Promise<void> => {
+function getDiffStreamHandler(prisma: PrismaClient, logger: ILogger) {
+  return async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
 
@@ -265,8 +266,8 @@ function getDiffStreamHandler(prisma: KanbanDatabaseService['client'], logger: I
   };
 }
 
-function stopExecutionsHandler(prisma: KanbanDatabaseService['client'], logger: ILogger): (req: Request, res: Response) => Promise<void> {
-  return async (req: Request, res: Response): Promise<void> => {
+function stopExecutionsHandler(prisma: PrismaClient, logger: ILogger) {
+  return async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
 
@@ -290,7 +291,7 @@ function stopExecutionsHandler(prisma: KanbanDatabaseService['client'], logger: 
 
 // Helper business logic functions
 async function createTaskAttemptInDatabase(
-  prisma: KanbanDatabaseService['client'],
+  prisma: PrismaClient,
   task_id: string,
   task: any,
   attemptData: any,
@@ -322,7 +323,7 @@ async function createTaskAttemptInDatabase(
   return { newAttempt };
 }
 
-async function createFollowUpExecution(prisma: KanbanDatabaseService['client'], id: string, prompt: string, attempt: any): Promise<any> {
+async function createFollowUpExecution(prisma: PrismaClient, id: string, prompt: string, attempt: any): Promise<any> {
   // Create execution process for follow-up
   await prisma.executionProcess.create({
     data: {
@@ -368,7 +369,7 @@ async function streamDiffUpdates(res: Response, attempt: any, logger: ILogger): 
   });
 }
 
-async function stopAllExecutions(prisma: KanbanDatabaseService['client'], id: string): Promise<void> {
+async function stopAllExecutions(prisma: PrismaClient, id: string): Promise<void> {
   // Update all running processes to killed
   await prisma.executionProcess.updateMany({
     where: {
