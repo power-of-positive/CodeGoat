@@ -28,6 +28,16 @@ console.error(
   }`,
 );
 
+// Safety check: ensure we're running from the correct directory
+const currentDir = process.cwd();
+const expectedDir = "/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat";
+if (currentDir !== expectedDir) {
+  console.error(`⚠️ Hook running from wrong directory: ${currentDir}`);
+  console.error(`⚠️ Expected directory: ${expectedDir}`);
+  console.error(`⚠️ Exiting to prevent infinite loop`);
+  process.exit(0); // Exit successfully to allow completion
+}
+
 // Load environment variables synchronously at startup
 const projectRoot = path.resolve(__dirname, "..");
 const envPath = path.join(projectRoot, ".env");
