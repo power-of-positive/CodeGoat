@@ -2,6 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: './e2e',
+  testIgnore: '**/api-integration-pactum.spec.ts',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
@@ -12,11 +13,33 @@ export default defineConfig({
     baseURL: 'http://localhost:5174',
     trace: 'on-first-retry',
   },
+  
+  // Visual regression testing configuration
+  expect: {
+    // Configure screenshot comparison
+    toHaveScreenshot: {
+      // Threshold for pixel differences (0.0 = identical, 1.0 = completely different)  
+      threshold: 0.3,
+      // Animation handling
+      animations: 'disabled',
+      // Clip screenshots to content area to avoid OS-specific chrome
+      clip: { x: 0, y: 0, width: 1280, height: 720 },
+    },
+    // Configure visual comparison behavior
+    toMatchSnapshot: {
+      threshold: 0.2,
+      animations: 'disabled',
+    },
+  },
 
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: { 
+        ...devices['Desktop Chrome'],
+        // Consistent viewport for visual regression testing
+        viewport: { width: 1280, height: 720 },
+      },
     },
   ],
 
