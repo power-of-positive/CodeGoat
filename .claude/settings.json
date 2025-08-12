@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cd /Users/rustameynaliyev/Scientist/Research/personal_projects/vibe-kanban && npx tsx scripts/claude-stop-hook.ts"
+            "command": "cd /Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat && npx tsx scripts/claude-stop-hook.ts"
           }
         ]
       }
