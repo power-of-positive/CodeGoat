@@ -10,7 +10,7 @@ import {
 } from './schemas/api-schemas';
 
 describe('API Integration Tests with PactumJS', () => {
-  const baseUrl = 'http://localhost:3000';
+  const baseUrl = 'http://localhost:3001';
 
   beforeAll(() => {
     // Configure PactumJS base URL

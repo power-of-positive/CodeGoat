@@ -14,7 +14,11 @@ import { createInternalRoutes } from './routes/internal';
 import { createLogsRoutes } from './routes/logs';
 import { createSettingsRoutes } from './routes/settings';
 import { createAnalyticsRoutes } from './routes/analytics';
-// Kanban routes will be imported here once implementation is complete
+import { createKanbanProjectsRoutes } from './routes/kanban-projects';
+import { createKanbanTasksRoutes } from './routes/kanban-tasks';
+import { createKanbanTaskAttemptsRoutes } from './routes/kanban-task-attempts';
+import { createKanbanHealthRoutes } from './routes/kanban-health';
+import { KanbanDatabaseService } from './services/kanban-database.service';
 
 const app = express();
 const configLoader = new ConfigLoader();
@@ -47,7 +51,8 @@ const logCleaner = new LogCleaner(
 // Initialize management API
 // initializeManagementAPI(configLoader, logger);
 
-// Kanban database initialization will be added here
+// Initialize Kanban database
+const kanbanDb = new KanbanDatabaseService(logger);
 
 // CORS configuration for Kanban UI integration
 app.use((req: Request, res: Response, next: NextFunction) => {
@@ -146,7 +151,12 @@ app.use('/api/openrouter-stats', createOpenRouterStatsRoutes(logger));
 app.use('/api/logs', createLogsRoutes(logger));
 app.use('/api/settings', createSettingsRoutes(configLoader, logger));
 app.use('/api/analytics', createAnalyticsRoutes(logger));
-// Kanban routes will be mounted here once implementation is complete
+
+// Mount Kanban API routes
+app.use('/api', createKanbanHealthRoutes(kanbanDb, logger));
+app.use('/api', createKanbanProjectsRoutes(kanbanDb, logger));
+app.use('/api', createKanbanTasksRoutes(kanbanDb, logger));
+app.use('/api', createKanbanTaskAttemptsRoutes(kanbanDb, logger));
 
 // Keep test route for compatibility
 app.get('/test', (_req: Request, res: Response) => {

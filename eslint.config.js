@@ -118,6 +118,12 @@ export default [
   {
     files: ['**/*.test.ts', '**/*.spec.ts', 'tests/**/*.ts'],
     languageOptions: {
+      parser: tsparser,
+      parserOptions: {
+        ecmaVersion: 2022,
+        sourceType: 'module',
+        // Don't use project-based parsing for test files
+      },
       globals: {
         describe: 'readonly',
         it: 'readonly',

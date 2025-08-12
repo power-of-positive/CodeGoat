@@ -8,6 +8,7 @@ module.exports = {
     'node_modules',
     'tests/.*\\.test\\.ts$',  // Exclude E2E tests in tests/ directory
     'tests/routes/.*\\.e2e\\.test\\.ts$',  // Exclude E2E route tests
+    'tests/api-e2e/.*',  // Exclude api-e2e tests (they use Vitest, not Jest)
   ],
   transform: {
     '^.+\\.ts$': 'ts-jest',

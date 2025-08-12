@@ -11,9 +11,9 @@ echo "🚀 Starting backend server..."
 npm start &
 BACKEND_PID=$!
 
-echo "⏳ Waiting for backend server to start on port 3000..."
+echo "⏳ Waiting for backend server to start on port 3001..."
 for i in {1..60}; do
-    if curl -s http://localhost:3000/health > /dev/null 2>&1; then
+    if curl -s http://localhost:3001/health > /dev/null 2>&1; then
         echo "✅ Backend server started successfully"
         break
     fi
