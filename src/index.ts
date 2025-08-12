@@ -14,6 +14,8 @@ import { createInternalRoutes } from './routes/internal';
 import { createLogsRoutes } from './routes/logs';
 import { createSettingsRoutes } from './routes/settings';
 import { createAnalyticsRoutes } from './routes/analytics';
+import { createKanbanHealthRoutes } from './routes/kanban-health';
+import { initializeKanbanDatabase } from './kanban-database';
 
 const app = express();
 const configLoader = new ConfigLoader();
@@ -45,6 +47,43 @@ const logCleaner = new LogCleaner(
 
 // Initialize management API
 // initializeManagementAPI(configLoader, logger);
+
+// Initialize Kanban database
+const kanbanDb = initializeKanbanDatabase(logger);
+
+// Connect to Kanban database
+kanbanDb.connect().catch(error => {
+  logger.error('Failed to connect to Kanban database', error);
+  process.exit(1);
+});
+
+// CORS configuration for Kanban UI integration
+app.use((req: Request, res: Response, next: NextFunction) => {
+  // Allow requests from localhost (development) and same origin
+  const allowedOrigins = [
+    'http://localhost:3000',
+    'http://localhost:5173', // Vite dev server
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:5173',
+  ];
+
+  const origin = req.headers.origin;
+  if (origin && allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+
+  next();
+});
 
 // Configure body parser with large limits and error handling
 app.use(
@@ -113,6 +152,7 @@ app.use('/api/openrouter-stats', createOpenRouterStatsRoutes(logger));
 app.use('/api/logs', createLogsRoutes(logger));
 app.use('/api/settings', createSettingsRoutes(configLoader, logger));
 app.use('/api/analytics', createAnalyticsRoutes(logger));
+app.use('/api', createKanbanHealthRoutes(kanbanDb, logger));
 
 // Keep test route for compatibility
 app.get('/test', (_req: Request, res: Response) => {
