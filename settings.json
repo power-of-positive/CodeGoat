@@ -71,51 +71,6 @@
         "enabled": false,
         "continueOnFailure": true,
         "order": 7
-      },
-      {
-        "id": "stage-1754985967651",
-        "name": "New Validation Stage",
-        "command": "echo \"Configure your command\"",
-        "timeout": 30000,
-        "enabled": true,
-        "continueOnFailure": false,
-        "order": 8
-      },
-      {
-        "id": "stage-1754986810443",
-        "name": "New Validation Stage",
-        "command": "echo \"Configure your command\"",
-        "timeout": 30000,
-        "enabled": true,
-        "continueOnFailure": false,
-        "order": 9
-      },
-      {
-        "id": "stage-1754986952461",
-        "name": "New Validation Stage",
-        "command": "echo \"Configure your command\"",
-        "timeout": 30000,
-        "enabled": true,
-        "continueOnFailure": false,
-        "order": 10
-      },
-      {
-        "id": "stage-1754987155872",
-        "name": "New Validation Stage",
-        "command": "echo \"Configure your command\"",
-        "timeout": 30000,
-        "enabled": true,
-        "continueOnFailure": false,
-        "order": 11
-      },
-      {
-        "id": "stage-1754996144133",
-        "name": "New Validation Stage",
-        "command": "echo \"Configure your command\"",
-        "timeout": 30000,
-        "enabled": true,
-        "continueOnFailure": false,
-        "order": 12
       }
     ],
     "enableMetrics": true,

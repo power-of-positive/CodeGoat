@@ -1,7 +1,12 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Settings Functionality', () => {
+  let addedStageIds: string[] = [];
+
   test.beforeEach(async ({ page }) => {
+    // Reset the added stage IDs for each test
+    addedStageIds = [];
+    
     // Navigate to the dashboard
     await page.goto('/');
     
@@ -13,6 +18,43 @@ test.describe('Settings Functionality', () => {
     
     // Wait for settings content to load
     await page.waitForSelector('h2:has-text("Settings")', { timeout: 10000 });
+  });
+
+  test.afterEach(async ({ page }) => {
+    // Clean up any validation stages added during the test
+    if (addedStageIds.length > 0) {
+      // Navigate to settings page if not already there
+      await page.goto('/');
+      await page.waitForSelector('a:has-text("Settings")', { timeout: 10000 });
+      await page.click('a:has-text("Settings")');
+      await page.waitForSelector('h2:has-text("Settings")', { timeout: 10000 });
+      
+      // Delete each added stage by looking for "New Validation Stage" entries
+      let attempts = 0;
+      while (attempts < addedStageIds.length && attempts < 10) {
+        try {
+          // Find any stage container with "New Validation Stage" text
+          const stageContainer = page.locator('.bg-gray-700').filter({ hasText: 'New Validation Stage' }).first();
+          if (await stageContainer.isVisible()) {
+            // Find the delete button within this stage (button with Trash2 icon)
+            const deleteButton = stageContainer.locator('button').filter({ has: page.locator('svg') }).nth(3); // Trash2 is the 4th button
+            if (await deleteButton.isVisible()) {
+              await deleteButton.click();
+              // Wait for the deletion to process
+              await page.waitForTimeout(1000);
+            } else {
+              break; // No more delete buttons
+            }
+          } else {
+            break; // No more stages to delete
+          }
+        } catch (error) {
+          console.warn(`Failed to cleanup stage attempt ${attempts}:`, error);
+          break;
+        }
+        attempts++;
+      }
+    }
   });
 
   test('should display all settings tabs', async ({ page }) => {
@@ -60,6 +102,9 @@ test.describe('Settings Functionality', () => {
       const currentCount = await page.locator('.bg-gray-700').count();
       expect(currentCount).toBe(initialStageCount + 1);
     }).toPass({ timeout: 10000 });
+    
+    // Track that we added a stage for cleanup
+    addedStageIds.push('test-stage-added');
     
     // Verify the newest stage has the expected default values
     const newStage = page.locator('.bg-gray-700').last();
