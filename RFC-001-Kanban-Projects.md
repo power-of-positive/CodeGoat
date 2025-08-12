@@ -34,20 +34,17 @@ vibe-kanban              →  Our Implementation
 
 ### 2. Data Models (Based on vibe-kanban Schema)
 
-#### 2.1 Core Entities (Mirroring vibe-kanban)
+#### 2.1 Core Entities (Exact vibe-kanban Schema)
 ```sql
--- Projects table (enhanced from vibe-kanban)
+-- Projects table (from vibe-kanban)
 CREATE TABLE projects (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     description TEXT,
     git_repo_path TEXT NOT NULL UNIQUE DEFAULT '',
     setup_script TEXT DEFAULT '',
-    dev_server_script TEXT DEFAULT '',
-    validation_script TEXT DEFAULT '',
+    dev_script TEXT DEFAULT '', -- Note: vibe-kanban uses 'dev_script' not 'dev_server_script'
     cleanup_script TEXT DEFAULT '',
-    status TEXT DEFAULT 'active' CHECK (status IN ('active', 'archived')),
-    settings TEXT, -- JSON: ProjectSettings
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
@@ -56,7 +53,7 @@ CREATE TABLE projects (
 CREATE TABLE tasks (
     id TEXT PRIMARY KEY,
     project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-    parent_task_id TEXT REFERENCES tasks(id) ON DELETE SET NULL,
+    parent_task_attempt TEXT REFERENCES task_attempts(id) ON DELETE SET NULL, -- Note: references task_attempts, not tasks
     template_id TEXT REFERENCES task_templates(id) ON DELETE SET NULL,
     title TEXT NOT NULL,
     description TEXT,
@@ -116,22 +113,124 @@ CREATE TABLE execution_processes (
     updated_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
--- Process activity log (from vibe-kanban)
-CREATE TABLE task_attempt_activities (
+-- Execution process logs (from vibe-kanban)
+CREATE TABLE execution_process_logs (
+    id TEXT PRIMARY KEY,
+    execution_process_id TEXT NOT NULL REFERENCES execution_processes(id) ON DELETE CASCADE,
+    stream TEXT NOT NULL CHECK (stream IN ('stdout', 'stderr')),
+    data TEXT NOT NULL,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Executor sessions (from vibe-kanban)
+CREATE TABLE executor_sessions (
     id TEXT PRIMARY KEY,
     task_attempt_id TEXT NOT NULL REFERENCES task_attempts(id) ON DELETE CASCADE,
-    status TEXT NOT NULL CHECK (status IN (
-        'worktree_created', 'setup_started', 'setup_completed', 'setup_failed',
-        'agent_started', 'agent_completed', 'agent_failed',
-        'validation_started', 'validation_passed', 'validation_failed',
-        'pr_created', 'cleanup_completed'
-    )),
-    note TEXT,
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    executor TEXT NOT NULL,
+    status TEXT NOT NULL CHECK (status IN ('running', 'completed', 'failed', 'killed')),
+    started_at TEXT,
+    completed_at TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 ```
 
-#### 2.2 AI Model Configuration (Local Endpoints)
+#### 2.2 vibe-kanban API Response Types
+```typescript
+// Generic API Response wrapper (from vibe-kanban)
+type ApiResponse<T, E = T> = {
+  success: boolean;
+  data: T | null;
+  error_data: E | null;
+  message: string | null;
+};
+
+// Task status enumeration (from vibe-kanban)
+type TaskStatus = "todo" | "inprogress" | "inreview" | "done" | "cancelled";
+
+// Execution process status (from vibe-kanban)
+type ExecutionProcessStatus = "running" | "completed" | "failed" | "killed";
+
+// Execution process run reason (from vibe-kanban)
+type ExecutionProcessRunReason = "setupscript" | "cleanupscript" | "codingagent" | "devserver";
+
+// Base coding agents (from vibe-kanban)
+type BaseCodingAgent = "CLAUDE_CODE" | "AMP" | "GEMINI" | "CODEX" | "OPENCODE";
+
+// Enhanced task with attempt status (from vibe-kanban)
+interface TaskWithAttemptStatus extends Task {
+  has_in_progress_attempt: boolean;
+  has_merged_attempt: boolean;
+  last_attempt_failed: boolean;
+  base_coding_agent: string;
+}
+
+// Git branch info (from vibe-kanban)
+interface GitBranch {
+  name: string;
+  is_current: boolean;
+  is_remote: boolean;
+  last_commit_date: Date;
+}
+
+// Search results (from vibe-kanban)
+interface SearchResult {
+  path: string;
+  is_file: boolean;
+  match_type: "FileName" | "DirectoryName" | "FullPath";
+}
+
+// Branch status (from vibe-kanban)
+interface BranchStatus {
+  is_behind: boolean;
+  commits_behind: number;
+  commits_ahead: number;
+  up_to_date: boolean;
+  merged: boolean;
+  has_uncommitted_changes: boolean;
+  base_branch_name: string;
+}
+
+// Diff types (from vibe-kanban)
+interface WorktreeDiff {
+  files: FileDiff[];
+}
+
+interface FileDiff {
+  path: string;
+  chunks: DiffChunk[];
+}
+
+interface DiffChunk {
+  chunk_type: "Equal" | "Insert" | "Delete";
+  content: string;
+}
+
+// Normalized conversation logs (from vibe-kanban)
+interface NormalizedConversation {
+  entries: NormalizedEntry[];
+  session_id: string | null;
+  executor_type: string;
+  prompt: string | null;
+  summary: string | null;
+}
+
+interface NormalizedEntry {
+  timestamp: string | null;
+  entry_type: NormalizedEntryType;
+  content: string;
+}
+
+type NormalizedEntryType = 
+  | { type: "user_message" }
+  | { type: "assistant_message" }
+  | { type: "tool_use"; tool_name: string; action_type: ActionType }
+  | { type: "system_message" }
+  | { type: "error_message" }
+  | { type: "thinking" };
+```
+
+#### 2.3 CodeGoat Enhancements (Our Additions)
 ```sql
 -- AI model configurations (user-configured endpoints)
 CREATE TABLE ai_models (
@@ -163,45 +262,26 @@ CREATE TABLE execution_metrics (
 );
 ```
 
-#### 2.3 TypeScript Interfaces
+#### 2.4 TypeScript Interfaces (vibe-kanban Compatible)
 ```typescript
-// Project types (enhanced from vibe-kanban)
+// Project types (from vibe-kanban schema)
 interface Project {
     id: string;
     name: string;
     description?: string;
     gitRepoPath: string;
     setupScript: string;
-    devServerScript: string;
-    validationScript: string;
-    cleanupScript?: string;
-    status: 'active' | 'archived';
-    settings: ProjectSettings;
+    devScript: string; // vibe-kanban uses 'devScript' not 'devServerScript'
+    cleanupScript: string;
     createdAt: string;
     updatedAt: string;
-}
-
-interface ProjectSettings {
-    defaultBranch: string;
-    workTreePrefix: string;
-    defaultAgentModel: string; // Reference to ai_models.name
-    fallbackModels: string[]; // Array of model names
-    validationTimeout: number;
-    autoCleanupWorkTrees: boolean;
-    maxRetryAttempts: number; // Validation loop retry count
-    enableMetrics: boolean;
-    githubIntegration: {
-        enabled: boolean;
-        autoCreatePR: boolean;
-        prTemplate?: string;
-    };
 }
 
 // Task types (exactly from vibe-kanban)
 interface Task {
     id: string;
     projectId: string;
-    parentTaskId?: string;
+    parentTaskAttempt?: string; // vibe-kanban references task_attempts, not tasks
     templateId?: string;
     title: string;
     description?: string;
@@ -212,10 +292,83 @@ interface Task {
     updatedAt: string;
 }
 
+// Task template (from vibe-kanban)
+interface TaskTemplate {
+    id: string;
+    projectId?: string; // NULL for global templates
+    templateName: string;
+    title: string;
+    description?: string;
+    defaultPrompt: string;
+    tags: string[];
+    estimatedHours?: number;
+    createdAt: string;
+    updatedAt: string;
+}
+
+// Task attempt (from vibe-kanban)
+interface TaskAttempt {
+    id: string;
+    taskId: string;
+    worktreePath: string;
+    branchName: string;
+    mergeCommit?: string;
+    executor: string; // AI model used
+    status: AttemptStatus;
+    stdout?: string;
+    stderr?: string;
+    createdAt: string;
+    updatedAt: string;
+    completedAt?: string;
+}
+
+// Execution process (from vibe-kanban)
+interface ExecutionProcess {
+    id: string;
+    taskAttemptId: string;
+    processType: ProcessType;
+    status: ProcessStatus;
+    command: string;
+    args: string[];
+    workingDirectory: string;
+    stdout?: string;
+    stderr?: string;
+    exitCode?: number;
+    startedAt?: string;
+    completedAt?: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
+// Execution process log (from vibe-kanban)
+interface ExecutionProcessLog {
+    id: string;
+    executionProcessId: string;
+    stream: 'stdout' | 'stderr';
+    data: string;
+    createdAt: string;
+}
+
+// Executor session (from vibe-kanban)
+interface ExecutorSession {
+    id: string;
+    taskAttemptId: string;
+    executor: string;
+    status: ProcessStatus;
+    startedAt?: string;
+    completedAt?: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
+// Enums (from vibe-kanban)
 type TaskStatus = 'todo' | 'inprogress' | 'inreview' | 'done' | 'cancelled';
 type Priority = 'low' | 'medium' | 'high' | 'urgent';
+type AttemptStatus = 'created' | 'running' | 'completed' | 'failed' | 'cancelled';
+type ProcessType = 'setupscript' | 'codingagent' | 'devserver' | 'validation' | 'cleanup';
+type ProcessStatus = 'running' | 'completed' | 'failed' | 'killed';
 
-// AI Model configuration
+// AI Model configuration (our CodeGoat addition)
 interface AIModel {
     id: string;
     name: string;
@@ -233,60 +386,122 @@ interface AIModel {
     createdAt: string;
     updatedAt: string;
 }
+
+// Project settings (our CodeGoat addition for enhanced functionality)
+interface ProjectSettings {
+    defaultBranch: string;
+    workTreePrefix: string;
+    defaultAgentModel: string; // Reference to ai_models.name
+    fallbackModels: string[]; // Array of model names
+    validationTimeout: number;
+    autoCleanupWorkTrees: boolean;
+    maxRetryAttempts: number; // Validation loop retry count
+    enableMetrics: boolean;
+    githubIntegration: {
+        enabled: boolean;
+        autoCreatePR: boolean;
+        prTemplate?: string;
+    };
+}
 ```
 
-### 3. Local API Endpoints (Express.js/TypeScript)
+### 3. API Endpoints (vibe-kanban Compatible)
 
-#### 3.1 AI Model Configuration API
+#### 3.1 Authentication API (Enhanced for Local-First)
 ```typescript
-// Local AI model management
-GET    /api/ai-models                    - List configured AI models
-POST   /api/ai-models                    - Add new AI model endpoint  
-GET    /api/ai-models/:id                - Get model details
-PUT    /api/ai-models/:id                - Update model configuration
-DELETE /api/ai-models/:id                - Delete model configuration
-POST   /api/ai-models/:id/test           - Test model connection
+// GitHub OAuth (optional for PR creation)
+POST   /api/auth/github/device/start     - Start GitHub device flow
+POST   /api/auth/github/device/poll      - Poll for device authorization
+GET    /api/auth/github/check            - Check GitHub token validity
 
-// Authentication (local only)
-POST   /api/auth/login                   - Basic local login
+// Local authentication (our addition)
+POST   /api/auth/login                   - Local application login
 POST   /api/auth/logout                  - Logout session
 GET    /api/auth/status                  - Check auth status
 ```
 
-#### 3.2 Core APIs (Following vibe-kanban patterns)
+#### 3.2 Projects API (vibe-kanban Compatible)
 ```typescript
-// Projects API (enhanced from vibe-kanban)
-GET    /api/projects                     - List all projects
-POST   /api/projects                     - Create project
-GET    /api/projects/:id                 - Get project details  
+GET    /api/projects                     - Get all projects
+POST   /api/projects                     - Create new project
+GET    /api/projects/:id                 - Get specific project
 PUT    /api/projects/:id                 - Update project
-DELETE /api/projects/:id                 - Archive project
+DELETE /api/projects/:id                 - Delete project
+GET    /api/projects/:id/branches        - Get git branches for project
+GET    /api/projects/:id/search          - Search files within project (?q=query)
+POST   /api/projects/:id/open-editor     - Open project in editor
+```
 
-// Tasks API (from vibe-kanban)
-GET    /api/projects/:projectId/tasks    - List project tasks
-POST   /api/projects/:projectId/tasks    - Create task
-GET    /api/tasks/:id                    - Get task details
+#### 3.3 Tasks API (vibe-kanban Compatible)
+```typescript
+GET    /api/tasks                        - Get tasks (?project_id=uuid)
+POST   /api/tasks                        - Create new task
+POST   /api/tasks/create-and-start       - Create task and start attempt
+GET    /api/tasks/:id                    - Get specific task
 PUT    /api/tasks/:id                    - Update task
-DELETE /api/tasks/:id                    - Delete task
+DELETE /api/tasks/:id                    - Delete task and attempts
+```
 
-// Task execution (like vibe-kanban but enhanced)
-POST   /api/tasks/:id/execute            - Execute task with local agent
-GET    /api/tasks/:id/attempts           - Get execution attempts
-GET    /api/attempts/:id                 - Get attempt details with processes
-POST   /api/attempts/:id/cancel          - Cancel running attempt
+#### 3.4 Task Attempts API (vibe-kanban Compatible)
+```typescript
+GET    /api/task-attempts                - Get attempts (?task_id=uuid)
+POST   /api/task-attempts                - Create new attempt
+GET    /api/task-attempts/:id            - Get specific attempt
+POST   /api/task-attempts/:id/follow-up  - Create follow-up execution
+GET    /api/task-attempts/:id/diff       - Stream diff changes (SSE)
+POST   /api/task-attempts/:id/merge      - Merge attempt to base branch
+POST   /api/task-attempts/:id/rebase     - Rebase attempt on new base
+POST   /api/task-attempts/:id/pr         - Create GitHub PR
+GET    /api/task-attempts/:id/branch-status - Get git branch status
+POST   /api/task-attempts/:id/open-editor - Open worktree in editor
+POST   /api/task-attempts/:id/delete-file - Delete file (?file_path=path)
+POST   /api/task-attempts/:id/start-dev-server - Start dev server
+GET    /api/task-attempts/:id/children   - Get child tasks
+POST   /api/task-attempts/:id/stop       - Stop all running executions
+```
 
-// Templates (from vibe-kanban)
-GET    /api/templates                    - List all templates
-POST   /api/templates                    - Create global template
-GET    /api/projects/:id/templates       - List project templates
-POST   /api/projects/:id/templates       - Create project template
+#### 3.5 Execution Processes API (vibe-kanban Compatible)
+```typescript
+GET    /api/execution-processes          - Get processes (?task_attempt_id=uuid)
+GET    /api/execution-processes/:id      - Get specific process
+GET    /api/execution-processes/:id/raw-logs - Stream raw logs (SSE)
+GET    /api/execution-processes/:id/normalized-logs - Stream normalized logs (SSE)
+POST   /api/execution-processes/:id/stop - Stop running process
+```
 
-// Real-time execution monitoring
-GET    /api/attempts/:id/processes       - List processes for attempt  
-GET    /api/processes/:id/logs           - Stream process logs (SSE)
-POST   /api/processes/:id/kill           - Kill running process
+#### 3.6 Task Templates API (vibe-kanban Compatible)
+```typescript
+GET    /api/task-templates               - Get templates (?project_id=uuid)
+POST   /api/task-templates               - Create template
+GET    /api/task-templates/:id           - Get specific template
+PUT    /api/task-templates/:id           - Update template
+DELETE /api/task-templates/:id           - Delete template
+```
 
-// Local analytics
+#### 3.7 Configuration API (vibe-kanban Compatible)
+```typescript
+GET    /api/config                       - Get system configuration
+PUT    /api/config                       - Update configuration
+```
+
+#### 3.8 AI Model Management API (Our CodeGoat Addition)
+```typescript
+GET    /api/ai-models                    - List configured AI models
+POST   /api/ai-models                    - Add new AI model endpoint
+GET    /api/ai-models/:id                - Get model details
+PUT    /api/ai-models/:id                - Update model configuration
+DELETE /api/ai-models/:id                - Delete model configuration
+POST   /api/ai-models/:id/test           - Test model connection
+```
+
+#### 3.9 Real-time Events (vibe-kanban Compatible)
+```typescript
+GET    /api/stream/:process_id           - WebSocket streaming for process updates
+GET    /api/events                       - Server-Sent Events for DB changes
+```
+
+#### 3.10 Analytics API (Our CodeGoat Addition)
+```typescript
 GET    /api/analytics/validation-stats   - Local validation metrics
 GET    /api/analytics/models             - Model performance metrics
 GET    /api/analytics/export             - Export metrics (local file)
@@ -529,29 +744,26 @@ class TaskExecutionService {
 
 ### 5. Database Schema (SQLite with TypeScript/Prisma)
 
-#### Core Tables (Based on vibe-kanban schema)
+#### Core Tables (Exact vibe-kanban Schema)
 ```sql
--- Projects table
+-- Projects table (from vibe-kanban)
 CREATE TABLE projects (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
   description TEXT,
   git_repo_path TEXT NOT NULL UNIQUE DEFAULT '',
   setup_script TEXT DEFAULT '',
-  dev_server_script TEXT DEFAULT '',
-  validation_script TEXT DEFAULT '',
+  dev_script TEXT DEFAULT '', -- vibe-kanban uses 'dev_script'
   cleanup_script TEXT DEFAULT '',
-  settings TEXT, -- JSON: ProjectSettings
-  status TEXT DEFAULT 'active' CHECK (status IN ('active', 'archived')),
   created_at TEXT DEFAULT CURRENT_TIMESTAMP,
   updated_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
--- Tasks table
+-- Tasks table (from vibe-kanban)
 CREATE TABLE tasks (
   id TEXT PRIMARY KEY,
   project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-  parent_task_id TEXT REFERENCES tasks(id) ON DELETE SET NULL,
+  parent_task_attempt TEXT REFERENCES task_attempts(id) ON DELETE SET NULL, -- vibe-kanban references task_attempts
   template_id TEXT REFERENCES task_templates(id) ON DELETE SET NULL,
   title TEXT NOT NULL,
   description TEXT,
@@ -562,7 +774,7 @@ CREATE TABLE tasks (
   updated_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
--- Task templates
+-- Task templates (from vibe-kanban)
 CREATE TABLE task_templates (
   id TEXT PRIMARY KEY,
   project_id TEXT REFERENCES projects(id) ON DELETE CASCADE, -- NULL for global templates
@@ -577,7 +789,7 @@ CREATE TABLE task_templates (
   UNIQUE(project_id, template_name)
 );
 
--- Task execution attempts
+-- Task execution attempts (from vibe-kanban)
 CREATE TABLE task_attempts (
   id TEXT PRIMARY KEY,
   task_id TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
@@ -593,7 +805,7 @@ CREATE TABLE task_attempts (
   completed_at TEXT
 );
 
--- Individual process tracking within attempts
+-- Individual process tracking (from vibe-kanban)
 CREATE TABLE execution_processes (
   id TEXT PRIMARY KEY,
   task_attempt_id TEXT NOT NULL REFERENCES task_attempts(id) ON DELETE CASCADE,
@@ -611,21 +823,28 @@ CREATE TABLE execution_processes (
   updated_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
--- Activity log for attempts
-CREATE TABLE task_attempt_activities (
+-- Process logs for streaming (from vibe-kanban)
+CREATE TABLE execution_process_logs (
   id TEXT PRIMARY KEY,
-  task_attempt_id TEXT NOT NULL REFERENCES task_attempts(id) ON DELETE CASCADE,
-  status TEXT NOT NULL CHECK (status IN (
-    'worktree_created', 'setup_started', 'setup_completed', 'setup_failed',
-    'agent_started', 'agent_completed', 'agent_failed',
-    'validation_started', 'validation_passed', 'validation_failed',
-    'pr_created', 'cleanup_completed'
-  )),
-  note TEXT,
+  execution_process_id TEXT NOT NULL REFERENCES execution_processes(id) ON DELETE CASCADE,
+  stream TEXT NOT NULL CHECK (stream IN ('stdout', 'stderr')),
+  data TEXT NOT NULL,
   created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
--- Enhanced metrics for CodeGoat integration
+-- Executor sessions (from vibe-kanban)
+CREATE TABLE executor_sessions (
+  id TEXT PRIMARY KEY,
+  task_attempt_id TEXT NOT NULL REFERENCES task_attempts(id) ON DELETE CASCADE,
+  executor TEXT NOT NULL,
+  status TEXT NOT NULL CHECK (status IN ('running', 'completed', 'failed', 'killed')),
+  started_at TEXT,
+  completed_at TEXT,
+  created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Enhanced metrics for CodeGoat integration (our addition)
 CREATE TABLE execution_metrics (
   id TEXT PRIMARY KEY,
   attempt_id TEXT NOT NULL REFERENCES task_attempts(id) ON DELETE CASCADE,
@@ -640,51 +859,178 @@ CREATE TABLE execution_metrics (
 );
 ```
 
-#### Prisma Schema Definition
+#### Prisma Schema Definition (vibe-kanban Compatible)
 ```typescript
 // schema.prisma
 model Project {
-  id                String   @id @default(uuid())
-  name              String
-  description       String?
-  gitRepoPath       String   @unique @map("git_repo_path")
-  setupScript       String   @default("") @map("setup_script")
-  devServerScript   String   @default("") @map("dev_server_script")
-  validationScript  String   @default("") @map("validation_script")
-  cleanupScript     String?  @map("cleanup_script")
-  settings          Json     // ProjectSettings type
-  status            ProjectStatus @default(ACTIVE)
-  createdAt         DateTime @default(now()) @map("created_at")
-  updatedAt         DateTime @updatedAt @map("updated_at")
+  id            String   @id @default(uuid())
+  name          String
+  description   String?
+  gitRepoPath   String   @unique @map("git_repo_path")
+  setupScript   String   @default("") @map("setup_script")
+  devScript     String   @default("") @map("dev_script") // vibe-kanban naming
+  cleanupScript String   @default("") @map("cleanup_script")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
   
-  tasks            Task[]
-  taskTemplates    TaskTemplate[]
+  tasks         Task[]
+  taskTemplates TaskTemplate[]
   @@map("projects")
 }
 
 model Task {
-  id           String     @id @default(uuid())
-  projectId    String     @map("project_id")
-  parentTaskId String?    @map("parent_task_id")
-  templateId   String?    @map("template_id")
-  title        String
-  description  String?
-  status       TaskStatus @default(TODO)
-  priority     Priority   @default(MEDIUM)
-  tags         Json       // string[]
-  createdAt    DateTime   @default(now()) @map("created_at")
-  updatedAt    DateTime   @updatedAt @map("updated_at")
+  id                 String     @id @default(uuid())
+  projectId          String     @map("project_id")
+  parentTaskAttempt  String?    @map("parent_task_attempt") // vibe-kanban references task_attempts
+  templateId         String?    @map("template_id")
+  title              String
+  description        String?
+  status             TaskStatus @default(TODO)
+  priority           Priority   @default(MEDIUM)
+  tags               Json       // string[]
+  createdAt          DateTime   @default(now()) @map("created_at")
+  updatedAt          DateTime   @updatedAt @map("updated_at")
   
-  project      Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  parentTask   Task?      @relation("TaskHierarchy", fields: [parentTaskId], references: [id])
-  subtasks     Task[]     @relation("TaskHierarchy")
-  template     TaskTemplate? @relation(fields: [templateId], references: [id])
-  attempts     TaskAttempt[]
+  project            Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  parentAttempt      TaskAttempt? @relation("TaskHierarchy", fields: [parentTaskAttempt], references: [id])
+  template           TaskTemplate? @relation(fields: [templateId], references: [id])
+  attempts           TaskAttempt[]
   
   @@map("tasks")
 }
 
-// Additional models for TaskAttempt, ExecutionProcess, etc.
+model TaskTemplate {
+  id             String   @id @default(uuid())
+  projectId      String?  @map("project_id")
+  templateName   String   @map("template_name")
+  title          String
+  description    String?
+  defaultPrompt  String   @map("default_prompt")
+  tags           Json     // string[]
+  estimatedHours Int?     @map("estimated_hours")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+  
+  project        Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tasks          Task[]
+  
+  @@unique([projectId, templateName])
+  @@map("task_templates")
+}
+
+model TaskAttempt {
+  id           String        @id @default(uuid())
+  taskId       String        @map("task_id")
+  worktreePath String        @map("worktree_path")
+  branchName   String        @map("branch_name")
+  mergeCommit  String?       @map("merge_commit")
+  executor     String
+  status       AttemptStatus
+  stdout       String?
+  stderr       String?
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+  completedAt  DateTime?     @map("completed_at")
+  
+  task               Task                  @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  childTasks         Task[]                @relation("TaskHierarchy")
+  executionProcesses ExecutionProcess[]
+  executorSessions   ExecutorSession[]
+  
+  @@map("task_attempts")
+}
+
+model ExecutionProcess {
+  id               String        @id @default(uuid())
+  taskAttemptId    String        @map("task_attempt_id")
+  processType      ProcessType   @map("process_type")
+  status           ProcessStatus
+  command          String
+  args             Json          // string[]
+  workingDirectory String        @map("working_directory")
+  stdout           String?
+  stderr           String?
+  exitCode         Int?          @map("exit_code")
+  startedAt        DateTime?     @map("started_at")
+  completedAt      DateTime?     @map("completed_at")
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+  
+  taskAttempt      TaskAttempt             @relation(fields: [taskAttemptId], references: [id], onDelete: Cascade)
+  logs             ExecutionProcessLog[]
+  
+  @@map("execution_processes")
+}
+
+model ExecutionProcessLog {
+  id                  String          @id @default(uuid())
+  executionProcessId  String          @map("execution_process_id")
+  stream              LogStream
+  data                String
+  createdAt           DateTime        @default(now()) @map("created_at")
+  
+  executionProcess    ExecutionProcess @relation(fields: [executionProcessId], references: [id], onDelete: Cascade)
+  
+  @@map("execution_process_logs")
+}
+
+model ExecutorSession {
+  id            String        @id @default(uuid())
+  taskAttemptId String        @map("task_attempt_id")
+  executor      String
+  status        ProcessStatus
+  startedAt     DateTime?     @map("started_at")
+  completedAt   DateTime?     @map("completed_at")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+  
+  taskAttempt   TaskAttempt   @relation(fields: [taskAttemptId], references: [id], onDelete: Cascade)
+  
+  @@map("executor_sessions")
+}
+
+enum TaskStatus {
+  TODO        @map("todo")
+  INPROGRESS  @map("inprogress")
+  INREVIEW    @map("inreview")
+  DONE        @map("done")
+  CANCELLED   @map("cancelled")
+}
+
+enum Priority {
+  LOW     @map("low")
+  MEDIUM  @map("medium")
+  HIGH    @map("high")
+  URGENT  @map("urgent")
+}
+
+enum AttemptStatus {
+  CREATED   @map("created")
+  RUNNING   @map("running")
+  COMPLETED @map("completed")
+  FAILED    @map("failed")
+  CANCELLED @map("cancelled")
+}
+
+enum ProcessType {
+  SETUPSCRIPT @map("setupscript")
+  CODINGAGENT @map("codingagent")
+  DEVSERVER   @map("devserver")
+  VALIDATION  @map("validation")
+  CLEANUP     @map("cleanup")
+}
+
+enum ProcessStatus {
+  RUNNING   @map("running")
+  COMPLETED @map("completed")
+  FAILED    @map("failed")
+  KILLED    @map("killed")
+}
+
+enum LogStream {
+  STDOUT @map("stdout")
+  STDERR @map("stderr")
+}
 ```
 
 ### 6. Integration with CodeGoat Infrastructure

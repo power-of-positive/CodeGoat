@@ -423,20 +423,17 @@ Create a local-first development workflow platform that combines visual task man
 
 ### 6.4 Database Schema (Based on vibe-kanban)
 
-#### 6.4.1 Core Tables
+#### 6.4.1 Core Tables (Exact vibe-kanban Schema)
 ```sql
--- Projects table (enhanced from vibe-kanban)
+-- Projects table (from vibe-kanban)
 CREATE TABLE projects (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     description TEXT,
     git_repo_path TEXT NOT NULL UNIQUE DEFAULT '',
     setup_script TEXT DEFAULT '',
-    dev_server_script TEXT DEFAULT '',
-    validation_script TEXT DEFAULT '',
+    dev_script TEXT DEFAULT '', -- vibe-kanban uses 'dev_script'
     cleanup_script TEXT DEFAULT '',
-    status TEXT DEFAULT 'active' CHECK (status IN ('active', 'archived')),
-    settings TEXT, -- JSON: ProjectSettings
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
@@ -445,7 +442,7 @@ CREATE TABLE projects (
 CREATE TABLE tasks (
     id TEXT PRIMARY KEY,
     project_id TEXT NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
-    parent_task_id TEXT REFERENCES tasks(id) ON DELETE SET NULL,
+    parent_task_attempt TEXT REFERENCES task_attempts(id) ON DELETE SET NULL, -- vibe-kanban references task_attempts
     template_id TEXT REFERENCES task_templates(id) ON DELETE SET NULL,
     title TEXT NOT NULL,
     description TEXT,
@@ -505,18 +502,25 @@ CREATE TABLE execution_processes (
     updated_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
--- Process activity log (from vibe-kanban)
-CREATE TABLE task_attempt_activities (
+-- Execution process logs (from vibe-kanban)
+CREATE TABLE execution_process_logs (
+    id TEXT PRIMARY KEY,
+    execution_process_id TEXT NOT NULL REFERENCES execution_processes(id) ON DELETE CASCADE,
+    stream TEXT NOT NULL CHECK (stream IN ('stdout', 'stderr')),
+    data TEXT NOT NULL,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Executor sessions (from vibe-kanban)
+CREATE TABLE executor_sessions (
     id TEXT PRIMARY KEY,
     task_attempt_id TEXT NOT NULL REFERENCES task_attempts(id) ON DELETE CASCADE,
-    status TEXT NOT NULL CHECK (status IN (
-        'worktree_created', 'setup_started', 'setup_completed', 'setup_failed',
-        'agent_started', 'agent_completed', 'agent_failed',
-        'validation_started', 'validation_passed', 'validation_failed',
-        'pr_created', 'cleanup_completed'
-    )),
-    note TEXT,
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    executor TEXT NOT NULL,
+    status TEXT NOT NULL CHECK (status IN ('running', 'completed', 'failed', 'killed')),
+    started_at TEXT,
+    completed_at TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 
 -- AI model configurations (local endpoints)
@@ -570,22 +574,52 @@ CREATE INDEX idx_execution_metrics_created_at ON execution_metrics(created_at);
 
 #### 6.5.1 Core Data Types
 ```typescript
-// Project types
+// Project types (from vibe-kanban schema)
 interface Project {
     id: string;
     name: string;
     description?: string;
     gitRepoPath: string;
     setupScript: string;
-    devServerScript: string;
-    validationScript: string;
-    cleanupScript?: string;
-    status: 'active' | 'archived';
-    settings: ProjectSettings;
+    devScript: string; // vibe-kanban uses 'devScript'
+    cleanupScript: string;
     createdAt: string;
     updatedAt: string;
 }
 
+// Task types (from vibe-kanban)
+interface Task {
+    id: string;
+    projectId: string;
+    parentTaskAttempt?: string; // vibe-kanban references task_attempts
+    templateId?: string;
+    title: string;
+    description?: string;
+    status: TaskStatus;
+    priority: Priority;
+    tags: string[];
+    createdAt: string;
+    updatedAt: string;
+}
+
+// Task template (from vibe-kanban)
+interface TaskTemplate {
+    id: string;
+    projectId?: string;
+    templateName: string;
+    title: string;
+    description?: string;
+    defaultPrompt: string;
+    tags: string[];
+    estimatedHours?: number;
+    createdAt: string;
+    updatedAt: string;
+}
+
+type TaskStatus = 'todo' | 'inprogress' | 'inreview' | 'done' | 'cancelled';
+type Priority = 'low' | 'medium' | 'high' | 'urgent';
+
+// Project settings (CodeGoat enhancement)
 interface ProjectSettings {
     defaultBranch: string;
     workTreePrefix: string;
@@ -601,24 +635,6 @@ interface ProjectSettings {
         prTemplate?: string;
     };
 }
-
-// Task types (from vibe-kanban)
-interface Task {
-    id: string;
-    projectId: string;
-    parentTaskId?: string;
-    templateId?: string;
-    title: string;
-    description?: string;
-    status: TaskStatus;
-    priority: Priority;
-    tags: string[];
-    createdAt: string;
-    updatedAt: string;
-}
-
-type TaskStatus = 'todo' | 'inprogress' | 'inreview' | 'done' | 'cancelled';
-type Priority = 'low' | 'medium' | 'high' | 'urgent';
 
 // Execution types
 interface TaskAttempt {
@@ -657,6 +673,27 @@ interface ExecutionProcess {
 
 type ProcessType = 'setupscript' | 'codingagent' | 'devserver' | 'validation' | 'cleanup';
 type ProcessStatus = 'running' | 'completed' | 'failed' | 'killed';
+
+// Execution process log (from vibe-kanban)
+interface ExecutionProcessLog {
+    id: string;
+    executionProcessId: string;
+    stream: 'stdout' | 'stderr';
+    data: string;
+    createdAt: string;
+}
+
+// Executor session (from vibe-kanban)
+interface ExecutorSession {
+    id: string;
+    taskAttemptId: string;
+    executor: string;
+    status: ProcessStatus;
+    startedAt?: string;
+    completedAt?: string;
+    createdAt: string;
+    updatedAt: string;
+}
 
 // AI Model configuration
 interface AIModel {
