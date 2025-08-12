@@ -43,7 +43,7 @@ Claude Code will automatically run validation steps before completing tasks usin
 This hook runs validation stages when Claude Code attempts to complete a task:
 
 ```bash
-node scripts/validate-task.js
+npx ts-node scripts/validate-task.ts
 ```
 
 The validation runner:

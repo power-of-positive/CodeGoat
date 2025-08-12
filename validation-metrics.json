@@ -211,5 +211,23 @@
         "duration": 4587
       }
     ]
+  },
+  {
+    "timestamp": "2025-08-12T15:09:48.105Z",
+    "startTime": 1755011382658,
+    "totalTime": 5447,
+    "totalStages": 11,
+    "passed": 0,
+    "failed": 1,
+    "success": false,
+    "sessionId": null,
+    "stages": [
+      {
+        "id": "lint",
+        "name": "Code Linting",
+        "success": false,
+        "duration": 5442
+      }
+    ]
   }
 ]
