@@ -27,10 +27,13 @@ npm run typescript-check
 # Unit tests
 npm test
 
-# E2E tests (optimized - recommended)
+# E2E tests (unified - recommended for resolved CommonJS/ESM conflicts)
+npm run test:e2e:unified
+
+# E2E tests (optimized - performance focused)
 npm run test:e2e:optimized
 
-# E2E tests (standard)
+# E2E tests (standard Jest-based)
 npm run test:e2e
 
 # Build

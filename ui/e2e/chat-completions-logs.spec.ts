@@ -6,7 +6,7 @@ import { test, expect, Page } from '@playwright/test';
  */
 
 const API_BASE_URL = 'http://localhost:3001';
-const UI_BASE_URL = 'http://localhost:5173';
+const UI_BASE_URL = 'http://localhost:5175';
 
 // Test chat completion request payload
 const TEST_COMPLETION_PAYLOAD = {

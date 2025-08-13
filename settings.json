@@ -33,7 +33,7 @@
         "command": "npm test",
         "timeout": 60000,
         "enabled": true,
-        "continueOnFailure": true,
+        "continueOnFailure": false,
         "order": 3
       },
       {
@@ -42,7 +42,7 @@
         "command": "npx ts-node scripts/check-typescript-preference.ts",
         "timeout": 10000,
         "enabled": true,
-        "continueOnFailure": true,
+        "continueOnFailure": false,
         "order": 4
       },
       {
@@ -51,7 +51,7 @@
         "command": "npx ts-node src/tools/ai-code-reviewer.ts",
         "timeout": 120000,
         "enabled": true,
-        "continueOnFailure": true,
+        "continueOnFailure": false,
         "order": 5
       },
       {
@@ -60,7 +60,7 @@
         "command": "node scripts/visual-regression.js",
         "timeout": 60000,
         "enabled": true,
-        "continueOnFailure": true,
+        "continueOnFailure": false,
         "order": 6
       },
       {
@@ -69,7 +69,7 @@
         "command": "cd ui && npm run test:e2e",
         "timeout": 120000,
         "enabled": false,
-        "continueOnFailure": true,
+        "continueOnFailure": false,
         "order": 7
       }
     ],
