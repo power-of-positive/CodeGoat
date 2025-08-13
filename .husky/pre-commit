@@ -1,20 +1,49 @@
-# Run lint-staged for code formatting and linting
-npx lint-staged
+#!/usr/bin/env sh
+set -e  # Exit immediately if any command fails
 
-# Run type checking
-npm run type-check
+echo "🚀 Running pre-commit quality checks..."
 
-# Check for code duplication
+# 1. Run lint-staged for code formatting and linting
+echo "📝 Step 1/7: Running lint-staged (ESLint + Prettier)..."
+if ! npx lint-staged; then
+  echo "❌ Lint-staged failed - commit blocked"
+  exit 1
+fi
+echo "✅ Lint-staged passed"
+
+# 2. Run TypeScript type checking
+echo "🔍 Step 2/7: Running TypeScript type checking..."
+if ! npm run type-check; then
+  echo "❌ TypeScript type checking failed - commit blocked"
+  exit 1
+fi
+echo "✅ TypeScript type checking passed"
+
+# 3. Check for code duplication
+echo "🔍 Step 3/7: Running code duplication detection..."
 echo "Checking for code duplication in backend..."
-npm run duplication-check
+if ! npm run duplication-check; then
+  echo "❌ Backend code duplication check failed - commit blocked"
+  exit 1
+fi
+
 echo "Checking for code duplication in frontend..."
-cd ui && npm run duplication-check && cd ..
+if ! (cd ui && npm run duplication-check); then
+  echo "❌ Frontend code duplication check failed - commit blocked"
+  exit 1
+fi
+echo "✅ Code duplication checks passed"
 
-# Run unit tests (management route mocking tests may fail - that's acceptable)
-npm run test 
+# 4. Run full unit test suite
+echo "🧪 Step 4/7: Running full unit test suite..."
+if ! npm run test; then
+  echo "❌ Unit tests failed - commit blocked"
+  exit 1
+fi
+echo "✅ Unit tests passed"
 
-# Run E2E tests - must pass to allow commit
-echo "Running E2E tests with robust server management..."
+# 5. Run E2E tests
+echo "🌐 Step 5/7: Running E2E tests..."
 cd ui
 if ! npm run test:e2e:robust; then
   echo "❌ E2E tests failed - commit blocked"
@@ -22,11 +51,22 @@ if ! npm run test:e2e:robust; then
   exit 1
 fi
 cd ..
+echo "✅ E2E tests passed"
 
-# Validate todo list format and show next task
-echo "Validating todo list format..."
-npx ts-node scripts/validate-todo-list.ts
+# 6. Validate todo list format
+echo "📋 Step 6/7: Validating todo list format..."
+if ! npx ts-node scripts/validate-todo-list.ts; then
+  echo "❌ Todo list validation failed - commit blocked"
+  exit 1
+fi
+echo "✅ Todo list validation passed"
 
-# Run AI code review (if enabled)
-echo "Running AI code review..."
-npm run ai-review || echo "AI code review completed with issues"
+# 7. Run AI code review
+echo "🤖 Step 7/7: Running AI code review..."
+if ! npm run ai-review; then
+  echo "❌ AI code review failed - commit blocked"
+  exit 1
+fi
+echo "✅ AI code review passed"
+
+echo "🎉 All pre-commit quality checks passed! Commit proceeding..."
