@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Button } from '@/components/ui/button';
+import { Button } from '../ui/button';
 import {
   Dialog,
   DialogContent,
@@ -7,13 +7,13 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { FolderPicker } from '@/components/ui/folder-picker';
-import { TaskTemplateManager } from '@/components/TaskTemplateManager';
+} from '../ui/Dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
+import { FolderPicker } from '../ui/folder-picker';
+import { TaskTemplateManager } from '../TaskTemplateManager';
 import { ProjectFormFields } from './project-form-fields';
 import { CreateProject, Project, UpdateProject } from 'shared/types';
-import { projectsApi } from '@/lib/api';
+import { projectsApi } from '../../lib/api';
 
 interface ProjectFormProps {
   open: boolean;

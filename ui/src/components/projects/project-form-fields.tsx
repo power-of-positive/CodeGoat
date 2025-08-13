@@ -1,13 +1,13 @@
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Label } from '../ui/Label';
+import { Input } from '../ui/Input';
+import { Button } from '../ui/button';
+import { Alert, AlertDescription } from '../ui/alert';
 import { AlertCircle, Folder } from 'lucide-react';
 import {
   createScriptPlaceholderStrategy,
   ScriptPlaceholderContext,
-} from '@/utils/script-placeholders';
-import { useUserSystem } from '@/components/config-provider';
+} from '../../utils/script-placeholders';
+import { useUserSystem } from '../config-provider';
 
 interface ProjectFormFieldsProps {
   isEditing: boolean;

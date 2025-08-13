@@ -3,15 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import {
   useKanbanKeyboardNavigation,
   useKeyboardShortcuts,
-} from '@/lib/keyboard-shortcuts';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+} from '../../lib/keyboard-shortcuts';
+import { Button } from '../ui/button';
+import { Card, CardContent } from '../ui/card';
+import { Alert, AlertDescription } from '../ui/alert';
 import { Project } from 'shared/types';
 import { ProjectForm } from './project-form';
-import { projectsApi } from '@/lib/api';
+import { projectsApi } from '../../lib/api';
 import { AlertCircle, Loader2, Plus } from 'lucide-react';
-import ProjectCard from '@/components/projects/ProjectCard.tsx';
+import ProjectCard from './ProjectCard';
 
 export function ProjectList() {
   const navigate = useNavigate();
@@ -29,10 +29,23 @@ export function ProjectList() {
 
     try {
       const result = await projectsApi.getAll();
-      setProjects(result);
+      // Ensure result is an array
+      if (Array.isArray(result)) {
+        setProjects(result);
+      } else if (result && Array.isArray(result.data)) {
+        // Handle case where API returns { success: true, data: [...] }
+        setProjects(result.data);
+      } else if (result && Array.isArray(result.projects)) {
+        // Handle case where API returns { projects: [...] }
+        setProjects(result.projects);
+      } else {
+        console.error('Unexpected API response format:', result);
+        setProjects([]);
+      }
     } catch (error) {
       console.error('Failed to fetch projects:', error);
-      setError('Failed to fetch projects');
+      setError('Failed to fetch projects. Make sure the backend server is running.');
+      setProjects([]);
     } finally {
       setLoading(false);
     }
@@ -58,10 +71,13 @@ export function ProjectList() {
       grouped[`column-${i}`] = [];
     }
 
-    projects.forEach((project, index) => {
-      const columnIndex = index % columns;
-      grouped[`column-${columnIndex}`].push(project);
-    });
+    // Ensure projects is an array before calling forEach
+    if (Array.isArray(projects)) {
+      projects.forEach((project, index) => {
+        const columnIndex = index % columns;
+        grouped[`column-${columnIndex}`].push(project);
+      });
+    }
 
     return grouped;
   };

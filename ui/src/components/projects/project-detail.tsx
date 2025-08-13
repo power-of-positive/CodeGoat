@@ -1,18 +1,18 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
+import { Button } from '../ui/button';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+} from '../ui/card';
+import { Badge } from '../ui/badge';
+import { Alert, AlertDescription } from '../ui/alert';
 import { Project } from 'shared/types';
 import { ProjectForm } from './project-form';
-import { projectsApi } from '@/lib/api';
+import { projectsApi } from '../../lib/api';
 import {
   AlertCircle,
   ArrowLeft,
@@ -23,7 +23,7 @@ import {
   Loader2,
   Trash2,
 } from 'lucide-react';
-import { useKeyboardShortcuts } from '@/lib/keyboard-shortcuts';
+import { useKeyboardShortcuts } from '../../lib/keyboard-shortcuts';
 
 interface ProjectDetailProps {
   projectId: string;

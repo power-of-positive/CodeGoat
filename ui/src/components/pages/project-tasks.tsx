@@ -1,37 +1,37 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
+import { Button } from '../ui/button';
+import { Card, CardContent } from '../ui/card';
+import { Input } from '../ui/Input';
 import { FolderOpen, Plus, Settings, LibraryBig, Globe2 } from 'lucide-react';
-import { Loader } from '@/components/ui/loader';
-import { projectsApi, tasksApi, templatesApi } from '@/lib/api';
-import { TaskFormDialog } from '@/components/tasks/TaskFormDialog';
-import { ProjectForm } from '@/components/projects/project-form';
-import { TaskTemplateManager } from '@/components/TaskTemplateManager';
-import { useKeyboardShortcuts } from '@/lib/keyboard-shortcuts';
+import { Loader } from '../ui/loader';
+import { projectsApi, tasksApi, templatesApi } from '../../lib/api';
+import { TaskFormDialog } from '../tasks/TaskFormDialog';
+import { ProjectForm } from '../projects/project-form';
+import { TaskTemplateManager } from '../TaskTemplateManager';
+import { useKeyboardShortcuts } from '../../lib/keyboard-shortcuts';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
-} from '@/components/ui/dropdown-menu';
+} from '../ui/dropdown-menu';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogFooter,
-} from '@/components/ui/dialog';
+} from '../ui/Dialog';
 
 import {
   getKanbanSectionClasses,
   getMainContainerClasses,
-} from '@/lib/responsive-config';
+} from '../../lib/responsive-config';
 
-import TaskKanbanBoard from '@/components/tasks/TaskKanbanBoard';
-import { TaskDetailsPanel } from '@/components/tasks/TaskDetailsPanel';
+import TaskKanbanBoard from '../tasks/TaskKanbanBoard';
+import { TaskDetailsPanel } from '../tasks/TaskDetailsPanel';
 import type {
   TaskStatus,
   TaskWithAttemptStatus,
@@ -39,7 +39,7 @@ import type {
   TaskTemplate,
 } from 'shared/types';
 import type { CreateTask } from 'shared/types';
-import type { DragEndEvent } from '@/components/ui/shadcn-io/kanban';
+import type { DragEndEvent } from '../ui/shadcn-io/kanban';
 
 type Task = TaskWithAttemptStatus;
 

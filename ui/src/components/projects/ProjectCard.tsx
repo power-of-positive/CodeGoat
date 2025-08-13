@@ -3,15 +3,15 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card.tsx';
-import { Badge } from '@/components/ui/badge.tsx';
+} from '../ui/card';
+import { Badge } from '../ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu.tsx';
-import { Button } from '@/components/ui/button.tsx';
+} from '../ui/dropdown-menu';
+import { Button } from '../ui/button';
 import {
   Calendar,
   Edit,
@@ -21,7 +21,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { projectsApi } from '@/lib/api.ts';
+import { projectsApi } from '../../lib/api';
 import { Project } from 'shared/types';
 import { useEffect, useRef } from 'react';
 

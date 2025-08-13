@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '../ui/button';
+import { Input } from '../ui/Input';
+import { Label } from '../ui/Label';
+import { Alert, AlertDescription } from '../ui/alert';
 import { Loader2, Github } from 'lucide-react';
-import { githubApi, RepositoryInfo } from '@/lib/api';
+import { githubApi, RepositoryInfo } from '../../lib/api';
 
 interface GitHubRepositoryPickerProps {
   selectedRepository: RepositoryInfo | null;
