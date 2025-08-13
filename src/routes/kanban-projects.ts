@@ -1,5 +1,11 @@
 import { Router, Request, Response } from 'express';
-import { ApiResponse, Project, GitBranch, SearchResult, ProjectWithBranch } from '../types/kanban.types';
+import {
+  ApiResponse,
+  Project,
+  GitBranch,
+  SearchResult,
+  ProjectWithBranch,
+} from '../types/kanban.types';
 import { ILogger } from '../logger-interface';
 import { KanbanDatabaseService } from '../services/kanban-database.service';
 import { mapPrismaProjectToApi } from '../utils/kanban-mappers';
@@ -14,7 +20,7 @@ const CreateProjectSchema = z.object({
   git_repo_path: z.string().min(1, 'Git repository path is required'),
   use_existing_repo: z.boolean(),
   setup_script: z.string().optional(),
-  dev_script: z.string().optional(), 
+  dev_script: z.string().optional(),
   cleanup_script: z.string().optional(),
 });
 
@@ -83,14 +89,14 @@ export function createKanbanProjectsRoutes(
       res.status(200).json(response);
     } catch (error) {
       logger.error('Failed to list projects', error as Error);
-      
+
       const response = {
         success: false,
         data: null,
         error_data: null,
         message: 'Failed to retrieve projects',
       };
-      
+
       res.status(200).json(response);
     }
   });
@@ -102,15 +108,15 @@ export function createKanbanProjectsRoutes(
   router.post('/projects', async (req: Request, res: Response) => {
     try {
       const validation = CreateProjectSchema.safeParse(req.body);
-      
+
       if (!validation.success) {
         const response: ApiResponse<Project> = {
           success: false,
           data: null,
           error_data: null,
-                    message: `Validation error: ${validation.error.issues.map(e => e.message).join(', ')}`,
+          message: `Validation error: ${validation.error.issues.map(e => e.message).join(', ')}`,
         };
-        
+
         return res.status(200).json(response);
       }
 
@@ -123,9 +129,9 @@ export function createKanbanProjectsRoutes(
             success: false,
             data: null,
             error_data: null,
-                        message: 'Git repository path does not exist',
+            message: 'Git repository path does not exist',
           };
-          
+
           return res.status(200).json(response);
         }
 
@@ -136,9 +142,9 @@ export function createKanbanProjectsRoutes(
             success: false,
             data: null,
             error_data: null,
-                        message: 'Directory is not a git repository',
+            message: 'Directory is not a git repository',
           };
-          
+
           return res.status(200).json(response);
         }
       }
@@ -165,14 +171,32 @@ export function createKanbanProjectsRoutes(
       res.status(200).json(response);
     } catch (error) {
       logger.error('Failed to create project', error as Error);
-      
+
+      // Check if it's a unique constraint violation
+      const prismaError = error as any;
+
+      if (
+        prismaError.code === 'P2002' &&
+        (prismaError.meta?.target?.includes('gitRepoPath') ||
+          prismaError.meta?.target?.includes('git_repo_path'))
+      ) {
+        const response: ApiResponse<Project> = {
+          success: false,
+          data: null,
+          error_data: null,
+          message: 'git repository path already exists',
+        };
+
+        return res.status(200).json(response);
+      }
+
       const response: ApiResponse<Project> = {
         success: false,
         data: null,
         error_data: null,
-                message: 'Failed to create project',
+        message: 'Failed to create project',
       };
-      
+
       res.status(200).json(response);
     }
   });
@@ -183,7 +207,7 @@ export function createKanbanProjectsRoutes(
   router.get('/projects/:id', async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
-      
+
       // Validate ID is a valid UUID
       const idValidation = z.string().uuid().safeParse(id);
       if (!idValidation.success) {
@@ -193,7 +217,7 @@ export function createKanbanProjectsRoutes(
           error_data: null,
           message: 'Invalid project ID format',
         };
-        
+
         return res.status(400).json(response);
       }
 
@@ -206,10 +230,10 @@ export function createKanbanProjectsRoutes(
           success: false,
           data: null,
           error_data: null,
-                    message: 'Project not found',
+          message: 'Project not found',
         };
-        
-        return res.status(200).json(response);
+
+        return res.status(404).json(response);
       }
 
       const apiProject = mapPrismaProjectToApi(project);
@@ -223,14 +247,14 @@ export function createKanbanProjectsRoutes(
       res.status(200).json(response);
     } catch (error) {
       logger.error('Failed to get project', error as Error);
-      
+
       const response: ApiResponse<Project> = {
         success: false,
         data: null,
         error_data: null,
-                message: 'Failed to retrieve project',
+        message: 'Failed to retrieve project',
       };
-      
+
       res.status(200).json(response);
     }
   });
@@ -241,17 +265,17 @@ export function createKanbanProjectsRoutes(
   router.put('/projects/:id', async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
-      
+
       const validation = UpdateProjectSchema.safeParse(req.body);
-      
+
       if (!validation.success) {
         const response: ApiResponse<Project> = {
           success: false,
           data: null,
           error_data: null,
-                    message: `Validation error: ${validation.error.issues.map(e => e.message).join(', ')}`,
+          message: `Validation error: ${validation.error.issues.map(e => e.message).join(', ')}`,
         };
-        
+
         return res.status(200).json(response);
       }
 
@@ -267,9 +291,9 @@ export function createKanbanProjectsRoutes(
           success: false,
           data: null,
           error_data: null,
-                    message: 'Project not found',
+          message: 'Project not found',
         };
-        
+
         return res.status(200).json(response);
       }
 
@@ -281,7 +305,9 @@ export function createKanbanProjectsRoutes(
           ...(updateData.git_repo_path && { gitRepoPath: updateData.git_repo_path }),
           ...(updateData.setup_script !== undefined && { setupScript: updateData.setup_script }),
           ...(updateData.dev_script !== undefined && { devScript: updateData.dev_script }),
-          ...(updateData.cleanup_script !== undefined && { cleanupScript: updateData.cleanup_script }),
+          ...(updateData.cleanup_script !== undefined && {
+            cleanupScript: updateData.cleanup_script,
+          }),
         },
       });
 
@@ -296,14 +322,14 @@ export function createKanbanProjectsRoutes(
       res.status(200).json(response);
     } catch (error) {
       logger.error('Failed to update project', error as Error);
-      
+
       const response: ApiResponse<Project> = {
         success: false,
         data: null,
         error_data: null,
-                message: 'Failed to update project',
+        message: 'Failed to update project',
       };
-      
+
       res.status(200).json(response);
     }
   });
@@ -325,9 +351,9 @@ export function createKanbanProjectsRoutes(
           success: false,
           data: null,
           error_data: null,
-                    message: 'Project not found',
+          message: 'Project not found',
         };
-        
+
         return res.status(200).json(response);
       }
 
@@ -345,14 +371,14 @@ export function createKanbanProjectsRoutes(
       res.status(200).json(response);
     } catch (error) {
       logger.error('Failed to delete project', error as Error);
-      
+
       const response: ApiResponse<null> = {
         success: false,
         data: null,
         error_data: null,
-                message: 'Failed to delete project',
+        message: 'Failed to delete project',
       };
-      
+
       res.status(200).json(response);
     }
   });
@@ -374,9 +400,9 @@ export function createKanbanProjectsRoutes(
           success: false,
           data: null,
           error_data: null,
-                    message: 'Project not found',
+          message: 'Project not found',
         };
-        
+
         return res.status(200).json(response);
       }
 
@@ -392,14 +418,14 @@ export function createKanbanProjectsRoutes(
       res.status(200).json(response);
     } catch (error) {
       logger.error('Failed to get git branches', error as Error);
-      
+
       const response: ApiResponse<GitBranch[]> = {
         success: false,
         data: null,
         error_data: null,
-                message: 'Failed to retrieve git branches',
+        message: 'Failed to retrieve git branches',
       };
-      
+
       res.status(200).json(response);
     }
   });
@@ -410,17 +436,17 @@ export function createKanbanProjectsRoutes(
   router.get('/projects/:id/search', async (req: Request, res: Response) => {
     try {
       const { id } = req.params;
-      
+
       const validation = SearchQuerySchema.safeParse(req.query);
-      
+
       if (!validation.success) {
         const response: ApiResponse<SearchResult[]> = {
           success: false,
           data: null,
           error_data: null,
-                    message: 'Query parameter is required',
+          message: 'Query parameter is required',
         };
-        
+
         return res.status(200).json(response);
       }
 
@@ -436,9 +462,9 @@ export function createKanbanProjectsRoutes(
           success: false,
           data: null,
           error_data: null,
-                    message: 'Project not found',
+          message: 'Project not found',
         };
-        
+
         return res.status(200).json(response);
       }
 
@@ -454,14 +480,14 @@ export function createKanbanProjectsRoutes(
       res.status(200).json(response);
     } catch (error) {
       logger.error('Failed to search files', error as Error);
-      
+
       const response: ApiResponse<SearchResult[]> = {
         success: false,
         data: null,
         error_data: null,
-                message: 'Failed to search files',
+        message: 'Failed to search files',
       };
-      
+
       res.status(200).json(response);
     }
   });
@@ -473,18 +499,18 @@ export function createKanbanProjectsRoutes(
  * Get current git branch
  */
 async function getCurrentBranch(repoPath: string): Promise<string | undefined> {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     const git = spawn('git', ['branch', '--show-current'], {
       cwd: repoPath,
       stdio: 'pipe',
     });
 
     let output = '';
-    git.stdout.on('data', (data) => {
+    git.stdout.on('data', data => {
       output += data.toString();
     });
 
-    git.on('close', (code) => {
+    git.on('close', code => {
       if (code === 0) {
         resolve(output.trim() || undefined);
       } else {
@@ -503,26 +529,33 @@ async function getCurrentBranch(repoPath: string): Promise<string | undefined> {
  */
 async function getGitBranches(repoPath: string): Promise<GitBranch[]> {
   return new Promise((resolve, reject) => {
-    const git = spawn('git', ['branch', '-a', '--format=%(refname:short),%(HEAD),%(upstream:short),%(committerdate)'], {
-      cwd: repoPath,
-      stdio: 'pipe',
-    });
+    const git = spawn(
+      'git',
+      ['branch', '-a', '--format=%(refname:short),%(HEAD),%(upstream:short),%(committerdate)'],
+      {
+        cwd: repoPath,
+        stdio: 'pipe',
+      }
+    );
 
     let output = '';
     let errorOutput = '';
 
-    git.stdout.on('data', (data) => {
+    git.stdout.on('data', data => {
       output += data.toString();
     });
 
-    git.stderr.on('data', (data) => {
+    git.stderr.on('data', data => {
       errorOutput += data.toString();
     });
 
-    git.on('close', (code) => {
+    git.on('close', code => {
       if (code === 0) {
         const branches: GitBranch[] = [];
-        const lines = output.trim().split('\n').filter(line => line.trim());
+        const lines = output
+          .trim()
+          .split('\n')
+          .filter(line => line.trim());
 
         for (const line of lines) {
           const parts = line.split(',');
@@ -564,7 +597,7 @@ async function getGitBranches(repoPath: string): Promise<GitBranch[]> {
       }
     });
 
-    git.on('error', (error) => {
+    git.on('error', error => {
       reject(error);
     });
   });
@@ -588,7 +621,8 @@ async function searchFiles(projectPath: string, query: string): Promise<SearchRe
 
         // Skip hidden files and common ignore patterns
         if (entry.name.startsWith('.') && entry.name !== '.gitignore') continue;
-        if (entry.name === 'node_modules' || entry.name === 'target' || entry.name === 'dist') continue;
+        if (entry.name === 'node_modules' || entry.name === 'target' || entry.name === 'dist')
+          continue;
 
         const fullPath = path.join(currentPath, entry.name);
         const entryRelativePath = relativePath ? path.join(relativePath, entry.name) : entry.name;
@@ -599,7 +633,7 @@ async function searchFiles(projectPath: string, query: string): Promise<SearchRe
 
         if (nameMatch || pathMatch) {
           let matchType: 'FileName' | 'DirectoryName' | 'FullPath' = 'FullPath';
-          
+
           if (nameMatch) {
             matchType = entry.isDirectory() ? 'DirectoryName' : 'FileName';
           }

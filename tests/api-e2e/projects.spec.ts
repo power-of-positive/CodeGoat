@@ -5,44 +5,44 @@
  * Perfect for Rust→TypeScript migration confidence
  */
 
-import { test, expect, beforeAll, afterAll, describe } from "vitest";
-import pactum from "pactum";
-import { DatabaseValidator } from "./setup/database-utils";
+import { test, expect, beforeAll, afterAll, describe } from 'vitest';
+import pactum from 'pactum';
+import { DatabaseValidator } from './setup/database-utils';
 
-describe("Projects API E2E Tests - Ultra-Minimal Pactum", () => {
+describe('Projects API E2E Tests - Ultra-Minimal Pactum', () => {
   let dbValidator: DatabaseValidator;
   const timestamp = Date.now();
 
   beforeAll(async () => {
-    pactum.request.setBaseUrl("http://localhost:3001");
+    pactum.request.setBaseUrl('http://localhost:3001');
     dbValidator = new DatabaseValidator();
 
     // Wait for server - single line
-    await pactum.spec().get("/api/health").expectStatus(200).toss();
+    await pactum.spec().get('/api/health').expectStatus(200).toss();
   });
 
   afterAll(() => {
     dbValidator?.close();
   });
 
-  describe("GET /api/projects", () => {
-    test("should return projects array", async () => {
+  describe('GET /api/projects', () => {
+    test('should return projects array', async () => {
       // Ultra-minimal: Single line test
       await pactum
         .spec()
-        .get("/api/projects")
+        .get('/api/projects')
         .expectStatus(200)
-        .expectJsonSchema("data", { type: "array" });
+        .expectJsonSchema('data', { type: 'array' });
     });
 
-    test("should return all created projects", async () => {
+    test('should return all created projects', async () => {
       const projects: Record<string, unknown>[] = [];
 
       // Create 3 projects - minimal lines
       for (let i = 1; i <= 3; i++) {
         const project = await pactum
           .spec()
-          .post("/api/projects")
+          .post('/api/projects')
           .withJson({
             name: `Pactum Test Project ${i}`,
             git_repo_path: `/tmp/pactum-test-${i}-${timestamp}`,
@@ -50,7 +50,7 @@ describe("Projects API E2E Tests - Ultra-Minimal Pactum", () => {
           })
           .expectStatus(200)
           .expectJsonLike({ data: { name: `Pactum Test Project ${i}` } })
-          .returns("data");
+          .returns('data');
 
         projects.push(project);
       }
@@ -58,41 +58,36 @@ describe("Projects API E2E Tests - Ultra-Minimal Pactum", () => {
       // Validate all projects exist
       const allProjects = await pactum
         .spec()
-        .get("/api/projects")
+        .get('/api/projects')
         .expectStatus(200)
-        .returns("data");
+        .returns('data');
 
       const ourProjects = (allProjects as Record<string, unknown>[]).filter(
         (p: Record<string, unknown>) =>
-          projects.some(
-            (created: Record<string, unknown>) => created.id === p.id,
-          ),
+          projects.some((created: Record<string, unknown>) => created.id === p.id)
       );
       expect(ourProjects).toHaveLength(3);
 
       // Cleanup
       for (const project of projects) {
-        await pactum
-          .spec()
-          .delete(`/api/projects/${project.id}`)
-          .expectStatus(200);
+        await pactum.spec().delete(`/api/projects/${project.id}`).expectStatus(200);
       }
     });
   });
 
-  describe("GET /api/projects/:id", () => {
-    test("should return specific project by ID", async () => {
+  describe('GET /api/projects/:id', () => {
+    test('should return specific project by ID', async () => {
       // Create project and retrieve in minimal lines
       const project = await pactum
         .spec()
-        .post("/api/projects")
+        .post('/api/projects')
         .withJson({
-          name: "Get By ID Test",
+          name: 'Get By ID Test',
           git_repo_path: `/tmp/get-by-id-${timestamp}`,
           use_existing_repo: false,
         })
         .expectStatus(200)
-        .returns("data");
+        .returns('data');
 
       // Retrieve and validate - single fluent chain
       await pactum
@@ -102,35 +97,29 @@ describe("Projects API E2E Tests - Ultra-Minimal Pactum", () => {
         .expectJsonLike({
           data: {
             id: project.id,
-            name: "Get By ID Test",
+            name: 'Get By ID Test',
             git_repo_path: `/tmp/get-by-id-${timestamp}`,
           },
         })
-        .expectJsonSchema("data.created_at", { type: "string" })
-        .expectJsonSchema("data.updated_at", { type: "string" });
+        .expectJsonSchema('data.created_at', { type: 'string' })
+        .expectJsonSchema('data.updated_at', { type: 'string' });
 
       // Cleanup
-      await pactum
-        .spec()
-        .delete(`/api/projects/${project.id}`)
-        .expectStatus(200);
+      await pactum.spec().delete(`/api/projects/${project.id}`).expectStatus(200);
     });
 
-    test("should throw error for non-existent project", async () => {
-      const nonExistentId = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee";
+    test('should throw error for non-existent project', async () => {
+      const nonExistentId = '01234567-89ab-4def-a123-456789abcdef';
 
       // Error testing - single line
-      await pactum
-        .spec()
-        .get(`/api/projects/${nonExistentId}`)
-        .expectStatus(404);
+      await pactum.spec().get(`/api/projects/${nonExistentId}`).expectStatus(404);
     });
   });
 
-  describe("POST /api/projects", () => {
-    test("should create new project and validate database", async () => {
+  describe('POST /api/projects', () => {
+    test('should create new project and validate database', async () => {
       const projectData = {
-        name: "Ultra-Minimal Create Test",
+        name: 'Ultra-Minimal Create Test',
         git_repo_path: `/tmp/create-test-${timestamp}`,
         use_existing_repo: false,
       };
@@ -147,7 +136,7 @@ describe("Projects API E2E Tests - Ultra-Minimal Pactum", () => {
       // NEW WAY (1 fluent chain):
       const project = await pactum
         .spec()
-        .post("/api/projects")
+        .post('/api/projects')
         .withJson(projectData)
         .expectStatus(200)
         .expectJsonLike({
@@ -156,10 +145,10 @@ describe("Projects API E2E Tests - Ultra-Minimal Pactum", () => {
             git_repo_path: projectData.git_repo_path,
           },
         })
-        .expectJsonSchema("data.id", { type: "string" })
-        .expectJsonSchema("data.created_at", { type: "string" })
-        .expectJsonSchema("data.updated_at", { type: "string" })
-        .returns("data");
+        .expectJsonSchema('data.id', { type: 'string' })
+        .expectJsonSchema('data.created_at', { type: 'string' })
+        .expectJsonSchema('data.updated_at', { type: 'string' })
+        .returns('data');
 
       // Database validation (migration confidence)
       const dbProject = dbValidator.getDbProject(project.id);
@@ -174,26 +163,23 @@ describe("Projects API E2E Tests - Ultra-Minimal Pactum", () => {
         .expectJsonLike({ data: { name: projectData.name } });
 
       // Cleanup
-      await pactum
-        .spec()
-        .delete(`/api/projects/${project.id}`)
-        .expectStatus(200);
+      await pactum.spec().delete(`/api/projects/${project.id}`).expectStatus(200);
     });
 
-    test("should prevent duplicate git repository paths", async () => {
+    test('should prevent duplicate git repository paths', async () => {
       const uniquePath = `/tmp/duplicate-test-${timestamp}`;
 
       // Create first project
       const firstProject = await pactum
         .spec()
-        .post("/api/projects")
+        .post('/api/projects')
         .withJson({
-          name: "First Project",
+          name: 'First Project',
           git_repo_path: uniquePath,
           use_existing_repo: false,
         })
         .expectStatus(200)
-        .returns("data");
+        .returns('data');
 
       // OLD WAY (multiple lines with manual error handling):
       // await expect(apiClient.projects.create(duplicateData)).rejects.toThrow(/already exists/i);
@@ -201,55 +187,52 @@ describe("Projects API E2E Tests - Ultra-Minimal Pactum", () => {
       // NEW WAY (single line error validation):
       await pactum
         .spec()
-        .post("/api/projects")
+        .post('/api/projects')
         .withJson({
-          name: "Duplicate Path Project",
+          name: 'Duplicate Path Project',
           git_repo_path: uniquePath, // Same path
           use_existing_repo: false,
         })
         .expectStatus(200)
-        .expectJson("success", false)
-        .expectBodyContains("git repository path already exists");
+        .expectJson('success', false)
+        .expectBodyContains('git repository path already exists');
 
       // Cleanup
-      await pactum
-        .spec()
-        .delete(`/api/projects/${firstProject.id}`)
-        .expectStatus(200);
+      await pactum.spec().delete(`/api/projects/${firstProject.id}`).expectStatus(200);
     });
 
-    test("should validate required fields", async () => {
+    test('should validate required fields', async () => {
       // OLD WAY: Multiple lines with try/catch
       // NEW WAY: Single line validation
       await pactum
         .spec()
-        .post("/api/projects")
+        .post('/api/projects')
         .withJson({
-          name: "", // Empty name
-          git_repo_path: "", // Empty path
+          name: '', // Empty name
+          git_repo_path: '', // Empty path
           use_existing_repo: false,
         })
         .expectStatus(200)
-        .expectJson("success", false);
+        .expectJson('success', false);
     });
   });
 
-  describe("PUT /api/projects/:id", () => {
-    test("should update project and validate in database", async () => {
+  describe('PUT /api/projects/:id', () => {
+    test('should update project and validate in database', async () => {
       // Create project
       const project = await pactum
         .spec()
-        .post("/api/projects")
+        .post('/api/projects')
         .withJson({
-          name: "Original Name",
+          name: 'Original Name',
           git_repo_path: `/tmp/update-test-${timestamp}`,
           use_existing_repo: false,
         })
         .expectStatus(200)
-        .returns("data");
+        .returns('data');
 
       const updateData = {
-        name: "Updated Name",
+        name: 'Updated Name',
         git_repo_path: `/tmp/updated-path-${timestamp}`,
       };
 
@@ -267,39 +250,34 @@ describe("Projects API E2E Tests - Ultra-Minimal Pactum", () => {
         .expectStatus(200)
         .expectJsonLike({
           data: {
-            name: "Updated Name",
+            name: 'Updated Name',
             git_repo_path: `/tmp/updated-path-${timestamp}`,
           },
         });
 
       // Database validation (migration confidence)
       const updatedDbProject = dbValidator.getDbProject(project.id);
-      expect(updatedDbProject?.name).toBe("Updated Name");
-      expect(updatedDbProject?.git_repo_path).toBe(
-        `/tmp/updated-path-${timestamp}`,
-      );
+      expect(updatedDbProject?.name).toBe('Updated Name');
+      expect(updatedDbProject?.git_repo_path).toBe(`/tmp/updated-path-${timestamp}`);
 
       // Cleanup
-      await pactum
-        .spec()
-        .delete(`/api/projects/${project.id}`)
-        .expectStatus(200);
+      await pactum.spec().delete(`/api/projects/${project.id}`).expectStatus(200);
     });
   });
 
-  describe("DELETE /api/projects/:id", () => {
-    test("should delete project and validate cascade deletion", async () => {
+  describe('DELETE /api/projects/:id', () => {
+    test('should delete project and validate cascade deletion', async () => {
       // Create project with tasks and attempts
       const project = await pactum
         .spec()
-        .post("/api/projects")
+        .post('/api/projects')
         .withJson({
-          name: "To Delete",
+          name: 'To Delete',
           git_repo_path: `/tmp/delete-test-${timestamp}`,
           use_existing_repo: false,
         })
         .expectStatus(200)
-        .returns("data");
+        .returns('data');
 
       // Create tasks
       const task1 = await pactum
@@ -307,43 +285,40 @@ describe("Projects API E2E Tests - Ultra-Minimal Pactum", () => {
         .post(`/api/projects/${project.id}/tasks`)
         .withJson({
           project_id: project.id,
-          title: "Task 1",
-          status: "todo",
+          title: 'Task 1',
+          status: 'todo',
         })
         .expectStatus(200)
-        .returns("data");
+        .returns('data');
 
       const task2 = await pactum
         .spec()
         .post(`/api/projects/${project.id}/tasks`)
         .withJson({
           project_id: project.id,
-          title: "Task 2",
-          status: "todo",
+          title: 'Task 2',
+          status: 'todo',
         })
         .expectStatus(200)
-        .returns("data");
+        .returns('data');
 
       // Create attempts
       const attempt1 = await pactum
         .spec()
         .post(`/api/projects/${project.id}/tasks/${task1.id}/attempts`)
-        .withJson({ executor: "test-executor" })
+        .withJson({ executor: 'test-executor' })
         .expectStatus(200)
-        .returns("data");
+        .returns('data');
 
       const attempt2 = await pactum
         .spec()
         .post(`/api/projects/${project.id}/tasks/${task2.id}/attempts`)
-        .withJson({ executor: "test-executor" })
+        .withJson({ executor: 'test-executor' })
         .expectStatus(200)
-        .returns("data");
+        .returns('data');
 
       // Delete project - single line
-      await pactum
-        .spec()
-        .delete(`/api/projects/${project.id}`)
-        .expectStatus(200);
+      await pactum.spec().delete(`/api/projects/${project.id}`).expectStatus(200);
 
       // Validate cascade deletion (migration confidence)
       const cascadeResult = dbValidator.validateCascadeDelete(project.id);
