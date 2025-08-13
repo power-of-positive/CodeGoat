@@ -7,7 +7,7 @@ interface ValidationStageChartProps {
 
 export function ValidationStageChart({ analytics }: ValidationStageChartProps) {
   const formatPercentage = (num: number) => {
-    return `${(num * 100).toFixed(1)}%`;
+    return `${num.toFixed(1)}%`;
   };
 
   return (

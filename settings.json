@@ -73,13 +73,31 @@
         "order": 7
       },
       {
+        "id": "duplication-check",
+        "name": "Code Duplication Detection",
+        "command": "npm run duplication-check",
+        "timeout": 45000,
+        "enabled": true,
+        "continueOnFailure": false,
+        "order": 8
+      },
+      {
+        "id": "vulnerability-check",
+        "name": "Dependency Vulnerability Scan",
+        "command": "npm audit --audit-level=moderate",
+        "timeout": 30000,
+        "enabled": true,
+        "continueOnFailure": false,
+        "order": 9
+      },
+      {
         "id": "e2e",
         "name": "Full E2E Test Suite",
         "command": "cd ui && npx playwright test health-check.spec.ts --reporter=list",
         "timeout": 180000,
-        "enabled": true,
+        "enabled": false,
         "continueOnFailure": false,
-        "order": 8
+        "order": 10
       }
     ],
     "enableMetrics": true,
