@@ -27,11 +27,18 @@ npm run typescript-check
 # Unit tests
 npm test
 
-# E2E tests
+# E2E tests (optimized - recommended)
+npm run test:e2e:optimized
+
+# E2E tests (standard)
 npm run test:e2e
 
 # Build
 npm run build
+
+# Log management (optimized)
+npm run logs:clean:optimized
+npm run logs:stats
 ```
 
 ## Validation Hook Configuration

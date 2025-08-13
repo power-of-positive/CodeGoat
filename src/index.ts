@@ -42,13 +42,13 @@ const logger = new WinstonLogger({
   maxSize: '10485760', // 10MB
 });
 
-// Initialize log cleaner (logger already implements ILogger interface)
+// Initialize optimized log cleaner for better performance
 const logCleaner = new LogCleaner(
   {
     logsDir,
-    maxLogFiles: 50,
-    maxLogAge: 30, // Keep logs for 30 days
-    maxLogSize: 10 * 1024 * 1024, // 10MB per log file
+    maxLogFiles: 25, // Reduced from 50 for better performance
+    maxLogAge: 14, // Reduced from 30 days for active development
+    maxLogSize: 5 * 1024 * 1024, // 5MB instead of 10MB for more frequent rotation
   },
   logger
 );
