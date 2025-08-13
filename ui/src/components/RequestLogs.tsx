@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Button } from './ui/Button';
+import { Button } from './ui/button';
 import { LogDetailCollapsible } from './LogDetailCollapsible';
 import { RefreshCw, Globe, ChevronDown, ChevronRight, AlertCircle } from 'lucide-react';
 import { api } from '../services/api';

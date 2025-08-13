@@ -28,15 +28,15 @@ export function extractModelName(model: string): string {
  */
 export function getProviderFromModel(model: string): string {
   if (model.startsWith('anthropic/')) {
-    return 'Anthropic';
+    return 'anthropic';
   }
   if (model.startsWith('openrouter/')) {
-    return 'OpenRouter';
+    return 'openrouter';
   }
   if (model.startsWith('openai/') || !model.includes('/')) {
-    return 'OpenAI';
+    return 'openai';
   }
-  return 'Unknown';
+  return 'unknown';
 }
 
 /**

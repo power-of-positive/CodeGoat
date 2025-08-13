@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Trash2, Edit, TestTube, ExternalLink, Loader2 } from 'lucide-react';
 import { api } from '../services/api';
-import { Button } from './ui/Button';
+import { Button } from './ui/button';
 import type { UIModelConfig } from '../types/api';
 import { OpenRouterStats } from './OpenRouterStats';
 import { PROVIDER_INFO_URLS } from '../constants/api';

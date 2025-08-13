@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import type { UseFormRegister, FieldError } from 'react-hook-form';
-import { Input } from '../ui/Input';
-import { Label } from '../ui/Label';
-import { Button } from '../ui/Button';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
+import { Button } from '../ui/button';
 import type { ModelFormData } from './modelFormSchema';
 
 interface ModelApiKeyFieldProps {

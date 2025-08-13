@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { ChevronDown, ChevronUp, BarChart3, Server, Clock, DollarSign } from 'lucide-react';
-import { Button } from './ui/Button';
+import { Button } from './ui/button';
 import { api } from '../services/api';
 import type { OpenRouterStats } from '../types/api';
 

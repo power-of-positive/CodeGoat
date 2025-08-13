@@ -9,8 +9,16 @@ export * from '../../src/types/kanban.types';
 // Additional types needed by frontend that aren't in backend types
 
 // Theme and UI types
-export type ThemeMode = 'light' | 'dark' | 'system';
-export type EditorType = 'vscode' | 'cursor' | 'other';
+export enum ThemeMode {
+  LIGHT = 'light',
+  DARK = 'dark', 
+  SYSTEM = 'system'
+}
+export enum EditorType {
+  VSCODE = 'vscode',
+  CURSOR = 'cursor', 
+  OTHER = 'other'
+}
 export type SoundFile = string;
 
 // Base coding agents (define here since it's needed by AgentProfile)
@@ -30,6 +38,8 @@ export interface DirectoryEntry {
   name: string;
   path: string;
   is_file: boolean;
+  is_directory: boolean;
+  is_git_repo: boolean;
   children?: DirectoryEntry[];
 }
 
@@ -114,19 +124,29 @@ export interface UserSystemInfo {
   shell: string;
   home_directory: string;
   current_directory: string;
+  config: Config;
+  environment: Environment | null;
+  profiles: AgentProfile[] | null;
 }
 
 export interface Config {
-  theme: ThemeMode;
-  editor: EditorType;
+  theme: ThemeMode | 'light' | 'dark' | 'system';
+  editor: {
+    editor_type: EditorType;
+    custom_command: string | null;
+  };
   sound_enabled: boolean;
   sound_file?: SoundFile;
   auto_save: boolean;
-  github_token?: string;
+  github?: {
+    token?: string;
+  };
   user_system_info?: UserSystemInfo;
   disclaimer_acknowledged?: boolean;
   onboarding_acknowledged?: boolean;
   telemetry_acknowledged?: boolean;
+  github_login_acknowledged?: boolean;
+  profile: string;
 }
 
 // WebSocket message types
@@ -163,5 +183,62 @@ export interface PaginatedResponse<T> {
   has_prev: boolean;
 }
 
-// Re-export base coding agents for consistency
-export { BaseCodingAgent } from '../../src/types/kanban.types';
+// Missing types that were imported by frontend
+export interface Environment {
+  name: string;
+  description?: string;
+  variables: Record<string, string>;
+}
+
+// Re-export and define additional required types
+export enum DevicePollStatus {
+  SLOW_DOWN = 'SLOW_DOWN',
+  AUTHORIZATION_PENDING = 'AUTHORIZATION_PENDING', 
+  SUCCESS = 'SUCCESS',
+  EXPIRED = 'EXPIRED',
+  ACCESS_DENIED = 'ACCESS_DENIED'
+}
+
+export interface CheckTokenResponse {
+  valid: boolean;
+  data: {
+    token?: string;
+    username?: string;
+    oauth_token?: string;
+  } | null;
+}
+
+export interface DeviceFlowStartResponse {
+  user_code: string;
+  verification_uri: string;
+  expires_in: number;
+  interval: number;
+}
+
+// JSON Patch type for live updates
+export interface PatchType {
+  op: 'add' | 'remove' | 'replace' | 'move' | 'copy' | 'test';
+  path: string;
+  value?: any;
+  from?: string;
+}
+
+// Keyboard shortcuts configuration
+export interface KeyboardShortcutsConfig {
+  [key: string]: {
+    key: string;
+    description: string;
+    action: () => void;
+  };
+}
+
+// Branch status information
+export interface BranchStatus {
+  is_behind: boolean;
+  commits_behind: number;
+  commits_ahead: number;
+  up_to_date: boolean;
+  can_fast_forward: boolean;
+  can_merge: boolean;
+  diverged: boolean;
+}

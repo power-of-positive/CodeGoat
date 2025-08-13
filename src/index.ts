@@ -113,19 +113,32 @@ app.use(
 // Handle body parser errors (including payload too large)
 app.use((error: Error & { type?: string }, req: Request, res: Response, next: NextFunction) => {
   if (error instanceof SyntaxError && 'body' in error) {
-    logger.error('Body parser syntax error', error);
+    logger.error('Body parser syntax error', error, {
+      method: req.method,
+      path: req.path,
+      contentType: req.headers['content-type'],
+      contentLength: req.headers['content-length'],
+    });
     return res.status(400).json({
       error: 'Invalid JSON in request body',
     });
   }
 
   if (error.type === 'entity.too.large') {
-    logger.error('Request entity too large', error);
+    logger.error('Request entity too large at Express level', error, {
+      method: req.method,
+      path: req.path,
+      contentType: req.headers['content-type'],
+      contentLength: req.headers['content-length'],
+      userAgent: req.headers['user-agent'],
+      limit: '100MB',
+    });
     return res.status(413).json({
       error: {
-        message: 'Request payload too large',
+        message: 'Request payload too large (Express limit: 100MB)',
         type: 'payload_too_large_error',
         limit: '100MB',
+        suggestion: 'Reduce request size or contact administrator about limits',
       },
     });
   }

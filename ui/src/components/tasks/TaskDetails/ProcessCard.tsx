@@ -12,8 +12,8 @@ import type {
   ExecutionProcessStatus,
   ExecutionProcessSummary,
 } from 'shared/types';
-import { useLogStream } from '@/hooks/useLogStream';
-import { useProcessConversation } from '@/hooks/useProcessConversation';
+import { useLogStream } from '@/components/hooks/useLogStream';
+import { useProcessConversation } from '@/components/hooks/useProcessConversation';
 import DisplayConversationEntry from '@/components/NormalizedConversation/DisplayConversationEntry';
 
 interface ProcessCardProps {

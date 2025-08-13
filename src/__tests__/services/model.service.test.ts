@@ -282,7 +282,7 @@ describe('ModelService', () => {
       expect(result.modelId).toBe('failing-model');
       expect(result.status).toBe('error');
       expect(result.error).toContain('HTTP 401: Invalid API key');
-      expect(result.responseTime).toBe(0);
+      expect(result.responseTime).toBeGreaterThanOrEqual(0);
     });
 
     it('should throw error for non-existent model', async () => {

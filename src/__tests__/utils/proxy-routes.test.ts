@@ -319,7 +319,7 @@ describe('ProxyRoutes', () => {
       expect(mockResponse.status).toHaveBeenCalledWith(500);
       expect(mockResponse.json).toHaveBeenCalledWith({
         error: {
-          message: 'All model attempts failed',
+          message: 'Unknown request error',
           type: 'internal_error',
         },
       });

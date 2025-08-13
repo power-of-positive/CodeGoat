@@ -36,8 +36,23 @@ afterAll(() => {
 });
 
 describe('AI Code Reviewer', () => {
+  const originalEnv = process.env;
+
+  beforeEach(() => {
+    // Reset environment to clean state for each test
+    process.env = { ...originalEnv };
+  });
+
+  afterEach(() => {
+    // Restore original environment
+    process.env = originalEnv;
+  });
+
   describe('shouldBlockCommit', () => {
     it('should block on medium severity when configured for medium', () => {
+      // Explicitly set the severity level to ensure test consistency
+      process.env.AI_REVIEWER_MAX_SEVERITY = 'medium';
+      
       const reviews: ReviewItem[] = [
         {
           line: 10,
@@ -58,6 +73,9 @@ describe('AI Code Reviewer', () => {
     });
 
     it('should not block on low severity when configured for medium', () => {
+      // Explicitly set the severity level to ensure test consistency
+      process.env.AI_REVIEWER_MAX_SEVERITY = 'medium';
+      
       const reviews: ReviewItem[] = [
         {
           line: 10,
@@ -78,6 +96,9 @@ describe('AI Code Reviewer', () => {
     });
 
     it('should block on high severity when configured for medium', () => {
+      // Explicitly set the severity level to ensure test consistency
+      process.env.AI_REVIEWER_MAX_SEVERITY = 'medium';
+      
       const reviews: ReviewItem[] = [
         {
           line: 10,
@@ -92,6 +113,9 @@ describe('AI Code Reviewer', () => {
     });
 
     it('should block on critical severity when configured for medium', () => {
+      // Explicitly set the severity level to ensure test consistency
+      process.env.AI_REVIEWER_MAX_SEVERITY = 'medium';
+      
       const reviews: ReviewItem[] = [
         {
           line: 5,
@@ -131,6 +155,9 @@ describe('AI Code Reviewer', () => {
     });
 
     it('should handle empty reviews', () => {
+      // Explicitly set the severity level to ensure test consistency
+      process.env.AI_REVIEWER_MAX_SEVERITY = 'medium';
+      
       const reviews: ReviewItem[] = [];
       const result = shouldBlockCommit(reviews);
       expect(result).toBe(false); // No issues, no blocking
@@ -139,6 +166,9 @@ describe('AI Code Reviewer', () => {
 
   describe('formatResults', () => {
     it('should correctly format results and identify blocking status', () => {
+      // Explicitly set the severity level to ensure test consistency
+      process.env.AI_REVIEWER_MAX_SEVERITY = 'medium';
+      
       const fileResults: FileReviewResult[] = [
         {
           file: 'src/index.ts',
@@ -218,15 +248,6 @@ describe('AI Code Reviewer', () => {
   });
 
   describe('Config', () => {
-    const originalEnv = process.env;
-
-    beforeEach(() => {
-      process.env = { ...originalEnv };
-    });
-
-    afterEach(() => {
-      process.env = originalEnv;
-    });
 
     it('should default to medium severity blocking', () => {
       delete process.env.AI_REVIEWER_MAX_SEVERITY;

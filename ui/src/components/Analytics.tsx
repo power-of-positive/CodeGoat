@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { BarChart3, Activity } from 'lucide-react';
-import { Button } from './ui/Button';
+import { Button } from './ui/button';
 import { api } from '../services/api';
 import { QUERY_CONFIG } from '../constants/api';
 import type { DevelopmentAnalytics, SessionMetrics } from '../types/api';

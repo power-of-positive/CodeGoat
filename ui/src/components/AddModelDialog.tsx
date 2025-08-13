@@ -5,8 +5,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from './ui/Dialog';
-import { Button } from './ui/Button';
+} from './ui/dialog';
+import { Button } from './ui/button';
 import { ModelForm } from './forms/ModelForm';
 import type { ModelFormData } from './forms/modelFormSchema';
 

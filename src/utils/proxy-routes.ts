@@ -2,12 +2,13 @@
  * Proxy route handlers for chat completions and model requests
  */
 
-import axios, { AxiosRequestConfig, AxiosError } from 'axios';
+import axios, { AxiosRequestConfig } from 'axios';
 import { Request, Response } from 'express';
 import { ModelConfig } from '../types';
 import { SettingsService } from '../services/settings.service';
 import { ILogger } from '../logger-interface';
 import { AxiosResponse } from 'axios';
+import { ProxyErrorHandler } from './proxy-error-handler';
 
 interface FallbackSettings {
   maxRetries: number;
@@ -29,6 +30,7 @@ import { shouldFallbackOnError, extractErrorMessage, delay } from './fallback';
 
 export class ProxyRoutes {
   private readonly logger: ILogger;
+  private readonly errorHandler: ProxyErrorHandler;
 
   constructor(
     private config: ModelConfig,
@@ -36,6 +38,7 @@ export class ProxyRoutes {
     logger: ILogger
   ) {
     this.logger = logger;
+    this.errorHandler = new ProxyErrorHandler(logger);
   }
 
   async handleChatCompletions(req: Request, res: Response): Promise<void> {
@@ -55,7 +58,8 @@ export class ProxyRoutes {
         await this.tryFallbackModels(req, res, requestData, modelId, result.error);
       }
     } catch (error: unknown) {
-      this.handleChatError(error, res);
+      const errorResult = this.errorHandler.handleChatError(error);
+      res.status(errorResult.status).json({ error: errorResult.message });
     }
   }
 
@@ -117,16 +121,6 @@ export class ProxyRoutes {
 
     res.status(500).json({
       error: { message: error || 'All model attempts failed', type: 'internal_error' },
-    });
-  }
-
-  private handleChatError(error: unknown, res: Response): void {
-    this.logger.error('Proxy error', error as Error);
-    res.status(500).json({
-      error: {
-        message: `Provider returned error: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        type: 'internal_error',
-      },
     });
   }
 
@@ -206,7 +200,7 @@ export class ProxyRoutes {
       // Handle successful response
       return this.handleSuccessfulResponse(req, res, response, requestSetup.requestInfo || {});
     } catch (error: unknown) {
-      return this.handleRequestError(error, attempt);
+      return this.errorHandler.handleRequestError(error, attempt);
     }
   }
 
@@ -227,14 +221,19 @@ export class ProxyRoutes {
       return { success: false, error: 'API key not configured' };
     }
 
-    const targetUrl = getTargetUrl(targetModel);
-    const headers = buildProxyHeaders(targetModel, apiKey, req.headers);
-
     const requestBody = {
       ...(requestData as Record<string, unknown>),
       model: extractModelName(targetModel),
     };
 
+    // Validate request size
+    const sizeValidation = this.errorHandler.validateRequestSize(requestBody, targetModel);
+    if (!sizeValidation.valid) {
+      return { success: false, error: sizeValidation.error };
+    }
+
+    const targetUrl = getTargetUrl(targetModel);
+    const headers = buildProxyHeaders(targetModel, apiKey, req.headers);
     const config: AxiosRequestConfig = {
       method: 'POST',
       url: targetUrl,
@@ -242,13 +241,10 @@ export class ProxyRoutes {
       data: requestBody,
       validateStatus: () => true,
       timeout: 30000,
-      maxBodyLength: Infinity,
-      maxContentLength: Infinity,
+      maxBodyLength: sizeValidation.maxSize,
+      maxContentLength: sizeValidation.maxSize * 2,
+      responseType: req.body.stream ? 'stream' : undefined,
     };
-
-    if (req.body.stream) {
-      config.responseType = 'stream';
-    }
 
     const requestInfo = {
       model: extractModelName(targetModel),
@@ -268,21 +264,15 @@ export class ProxyRoutes {
   ): Promise<{ success: boolean; error?: string; shouldFallback?: boolean } | null> {
     if (response.status === 413) {
       this.logger.warn?.('Request too large, retrying', { attempt, status: 413 });
-      if (attempt < maxRetries) {
-        return null; // Continue retry loop
-      }
-      return { success: false, error: 'Request entity too large' };
+      return attempt < maxRetries ? null : { success: false, error: 'Request entity too large' };
     }
-
     if (response.status >= 500) {
       this.logger.warn?.('Request failed, retrying', { attempt, status: response.status });
-      if (attempt < maxRetries) {
-        return null; // Continue retry loop
-      }
-      return { success: false, error: `Server error: ${response.status}` };
+      return attempt < maxRetries
+        ? null
+        : { success: false, error: `Server error: ${response.status}` };
     }
-
-    return null; // No retry needed
+    return null;
   }
 
   private async handleFallbackConditions(
@@ -297,13 +287,15 @@ export class ProxyRoutes {
     if (shouldFallbackOnError(response.status, response.data, fallbackConditions)) {
       const error = extractErrorMessage(response.data);
 
-      // Log API errors that trigger fallback to ensure they're captured in logs
+      const requestSize = response.config?.data ? JSON.stringify(response.config.data).length : 0;
+      const responseSize = response.data ? JSON.stringify(response.data).length : 0;
       this.logger.error('API error triggering fallback', new Error(error), {
         status: response.status,
         errorData: response.data,
-        provider: 'unknown', // Could be enhanced with actual provider info
+        provider: 'unknown',
+        requestSize,
+        responseSize,
       });
-
       this.logger.info('Model capability error detected, trying fallback', {
         status: response.status,
       });
@@ -346,16 +338,5 @@ export class ProxyRoutes {
     }
 
     return { success: true };
-  }
-
-  private handleRequestError(error: unknown, attempt: number): { success: boolean; error: string } {
-    const axiosError = error as AxiosError;
-    this.logger.error('Request attempt failed', new Error(axiosError.message), { attempt });
-
-    if (axiosError.response?.status === 413) {
-      return { success: false, error: 'Request entity too large' };
-    }
-
-    return { success: false, error: axiosError.message };
   }
 }

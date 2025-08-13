@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, FileText, Settings as SettingsIcon, BarChart3 } from 'lucide-react';
+import { Home, FileText, Settings as SettingsIcon, BarChart3, FolderKanban } from 'lucide-react';
 
 interface LayoutProps {
   children: ReactNode;
@@ -15,6 +15,12 @@ export function Layout({ children }: LayoutProps) {
       name: 'Dashboard', 
       icon: Home, 
       path: '/dashboard' 
+    },
+    { 
+      id: 'projects', 
+      name: 'Projects', 
+      icon: FolderKanban, 
+      path: '/projects' 
     },
     { 
       id: 'logs', 
@@ -42,10 +48,10 @@ export function Layout({ children }: LayoutProps) {
         <div className="py-8">
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-100">
-              Proxy Management
+              CodeGoat
             </h1>
             <p className="mt-2 text-sm text-gray-400">
-              Manage your AI model configurations and API keys
+              AI-powered project management with proxy capabilities
             </p>
           </div>
 
@@ -55,7 +61,8 @@ export function Layout({ children }: LayoutProps) {
               <nav className="flex space-x-8">
                 {tabs.map((tab) => {
                   const Icon = tab.icon;
-                  const isActive = location.pathname === tab.path;
+                  const isActive = location.pathname === tab.path || 
+                    (tab.id === 'projects' && location.pathname.startsWith('/projects'));
                   
                   return (
                     <Link

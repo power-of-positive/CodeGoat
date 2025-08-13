@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ModelList } from '../components/ModelList';
 import { ServerStatus } from '../components/ServerStatus';
 import { AddModelDialog } from '../components/AddModelDialog';
-import { Button } from '../components/ui/Button';
+import { Button } from '../components/ui/button';
 import { Plus, RefreshCw } from 'lucide-react';
 import { api } from '../services/api';
 import type { UIModelConfig } from '../types/api';

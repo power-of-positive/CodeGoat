@@ -1,6 +1,6 @@
-import { Input } from './ui/Input';
-import { Label } from './ui/Label';
-import { Select } from './ui/Select';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import { Select } from './ui/select';
 import { FileText } from 'lucide-react';
 import type { LoggingSettings as LoggingSettingsType, Settings } from '../types/api';
 

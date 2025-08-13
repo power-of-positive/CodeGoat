@@ -1,5 +1,5 @@
-import { Input } from './ui/Input';
-import { Label } from './ui/Label';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
 import { RefreshCw } from 'lucide-react';
 import type { FallbackSettings as FallbackSettingsType, Settings } from '../types/api';
 

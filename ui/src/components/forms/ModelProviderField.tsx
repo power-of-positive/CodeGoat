@@ -1,6 +1,6 @@
 import type { FieldError } from 'react-hook-form';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/Select';
-import { Label } from '../ui/Label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Label } from '../ui/label';
 import { providerOptions } from './providerUtils';
 import type { ModelFormData } from './modelFormSchema';
 

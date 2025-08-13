@@ -62,7 +62,8 @@ export function UserSystemProvider({ children }: UserSystemProviderProps) {
   useEffect(() => {
     const loadUserSystem = async () => {
       try {
-        const userSystemInfo: UserSystemInfo = await configApi.getConfig();
+        const response = await configApi.getConfig();
+        const userSystemInfo: UserSystemInfo = response.data;
         setConfig(userSystemInfo.config);
         setEnvironment(userSystemInfo.environment);
         setProfiles(userSystemInfo.profiles);
@@ -85,13 +86,10 @@ export function UserSystemProvider({ children }: UserSystemProviderProps) {
         // Network/server error: do not update githubTokenInvalid
         return;
       }
-      switch (valid) {
-        case CheckTokenResponse.VALID:
-          setGithubTokenInvalid(false);
-          break;
-        case CheckTokenResponse.INVALID:
-          setGithubTokenInvalid(true);
-          break;
+      if (valid.valid) {
+        setGithubTokenInvalid(false);
+      } else {
+        setGithubTokenInvalid(true);
       }
     };
     checkToken();
@@ -120,8 +118,8 @@ export function UserSystemProvider({ children }: UserSystemProviderProps) {
         : null;
       try {
         if (!newConfig) return false;
-        const saved = await configApi.saveConfig(newConfig);
-        setConfig(saved);
+        const response = await configApi.saveConfig(newConfig);
+        setConfig(response.data);
         return true;
       } catch (err) {
         console.error('Error saving config:', err);

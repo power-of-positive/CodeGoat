@@ -4,7 +4,7 @@ import type { VariableSizeList as VariableSizeListType } from 'react-window';
 import { Cog } from 'lucide-react';
 import useMeasure from 'react-use-measure';
 import { TaskAttemptDataContext } from '@/components/context/taskDetailsContext.ts';
-import { useProcessesLogs } from '@/hooks/useProcessesLogs';
+import { useProcessesLogs } from '@/components/hooks/useProcessesLogs';
 import LogEntryRow from '@/components/logs/LogEntryRow';
 import type { UnifiedLogEntry } from '@/types/logs';
 

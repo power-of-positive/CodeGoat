@@ -229,5 +229,101 @@
         "duration": 5442
       }
     ]
+  },
+  {
+    "timestamp": "2025-08-13T17:05:08.988Z",
+    "startTime": 1755104677086,
+    "totalTime": 31899,
+    "totalStages": 7,
+    "passed": 2,
+    "failed": 1,
+    "success": false,
+    "sessionId": "husky-precommit-1755104674-38214",
+    "stages": [
+      {
+        "id": "lint",
+        "name": "Code Linting",
+        "success": true,
+        "duration": 5946
+      },
+      {
+        "id": "typecheck",
+        "name": "Type Checking",
+        "success": true,
+        "duration": 5544
+      },
+      {
+        "id": "test",
+        "name": "Unit Tests",
+        "success": false,
+        "duration": 20404
+      }
+    ]
+  },
+  {
+    "timestamp": "2025-08-13T17:08:41.421Z",
+    "startTime": 1755104893580,
+    "totalTime": 27840,
+    "totalStages": 7,
+    "passed": 2,
+    "failed": 1,
+    "success": false,
+    "sessionId": "husky-precommit-1755104891-48771",
+    "stages": [
+      {
+        "id": "lint",
+        "name": "Code Linting",
+        "success": true,
+        "duration": 5218
+      },
+      {
+        "id": "typecheck",
+        "name": "Type Checking",
+        "success": true,
+        "duration": 5790
+      },
+      {
+        "id": "test",
+        "name": "Unit Tests",
+        "success": false,
+        "duration": 16827
+      }
+    ]
+  },
+  {
+    "timestamp": "2025-08-13T17:10:54.431Z",
+    "startTime": 1755105023177,
+    "totalTime": 31252,
+    "totalStages": 7,
+    "passed": 3,
+    "failed": 1,
+    "success": false,
+    "sessionId": "husky-precommit-1755105020-57026",
+    "stages": [
+      {
+        "id": "lint",
+        "name": "Code Linting",
+        "success": true,
+        "duration": 5008
+      },
+      {
+        "id": "typecheck",
+        "name": "Type Checking",
+        "success": true,
+        "duration": 5790
+      },
+      {
+        "id": "test",
+        "name": "Unit Tests",
+        "success": true,
+        "duration": 17694
+      },
+      {
+        "id": "typescript-preference",
+        "name": "TypeScript Preference Check",
+        "success": false,
+        "duration": 2750
+      }
+    ]
   }
 ]

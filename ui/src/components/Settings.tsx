@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Button } from './ui/Button';
+import { Button } from './ui/button';
 import { 
   Settings as SettingsIcon, 
   RefreshCw, 

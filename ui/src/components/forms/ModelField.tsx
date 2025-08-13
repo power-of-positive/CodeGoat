@@ -1,6 +1,6 @@
 import type { UseFormRegister, FieldError } from 'react-hook-form';
-import { Input } from '../ui/Input';
-import { Label } from '../ui/Label';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
 import type { ModelFormData } from './modelFormSchema';
 
 interface ModelFieldProps {

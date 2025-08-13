@@ -104,7 +104,14 @@ class TypeScriptPreferenceChecker {
     
     for (const pattern of patterns) {
       const files = await glob(pattern, { 
-        ignore: this.allowedJsFiles,
+        ignore: [
+          ...this.allowedJsFiles,
+          '**/node_modules/**',
+          'node_modules/**',
+          '**/build/**',
+          '**/dist/**',
+          '**/coverage/**'
+        ],
         absolute: false 
       });
       allFiles = allFiles.concat(files);

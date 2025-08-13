@@ -1,5 +1,5 @@
 import { DiffCard } from '@/components/NormalizedConversation/DiffCard.tsx';
-import { useDiffStream } from '@/hooks/useDiffStream';
+import { useDiffStream } from '@/components/hooks/useDiffStream';
 import type { WorktreeDiff, FileDiff } from 'shared/types';
 import { useMemo, useContext } from 'react';
 import { TaskSelectedAttemptContext } from '@/components/context/taskDetailsContext.ts';

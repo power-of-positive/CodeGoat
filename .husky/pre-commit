@@ -1,72 +1,25 @@
 #!/usr/bin/env sh
 set -e  # Exit immediately if any command fails
 
-echo "🚀 Running pre-commit quality checks..."
+echo "🚀 Running pre-commit validation checks from settings.json..."
 
-# 1. Run lint-staged for code formatting and linting
-echo "📝 Step 1/7: Running lint-staged (ESLint + Prettier)..."
-if ! npx lint-staged; then
-  echo "❌ Lint-staged failed - commit blocked"
-  exit 1
+# Generate a unique session ID for this commit validation
+SESSION_ID="husky-precommit-$(date +%s)-$$"
+
+# Run the validation script with session ID
+# This reads validation stages from settings.json and runs them sequentially
+# with early exit on failure (just like the hardcoded steps before)
+npx ts-node scripts/validate-task.ts "$SESSION_ID"
+VALIDATION_RESULT=$?
+
+echo ""
+
+if [ $VALIDATION_RESULT -eq 0 ]; then
+    echo "🎉 All pre-commit validation checks passed! Commit proceeding..."
+    exit 0
+else
+    echo "❌ Pre-commit validation failed - commit blocked"
+    echo "💡 Fix the validation issues above before committing."
+    echo "💡 You can run 'npx ts-node scripts/validate-task.ts' to see detailed output."
+    exit 1
 fi
-echo "✅ Lint-staged passed"
-
-# 2. Run TypeScript type checking
-echo "🔍 Step 2/7: Running TypeScript type checking..."
-if ! npm run type-check; then
-  echo "❌ TypeScript type checking failed - commit blocked"
-  exit 1
-fi
-echo "✅ TypeScript type checking passed"
-
-# 3. Check for code duplication
-echo "🔍 Step 3/7: Running code duplication detection..."
-echo "Checking for code duplication in backend..."
-if ! npm run duplication-check; then
-  echo "❌ Backend code duplication check failed - commit blocked"
-  exit 1
-fi
-
-echo "Checking for code duplication in frontend..."
-if ! (cd ui && npm run duplication-check); then
-  echo "❌ Frontend code duplication check failed - commit blocked"
-  exit 1
-fi
-echo "✅ Code duplication checks passed"
-
-# 4. Run full unit test suite
-echo "🧪 Step 4/7: Running full unit test suite..."
-if ! npm run test; then
-  echo "❌ Unit tests failed - commit blocked"
-  exit 1
-fi
-echo "✅ Unit tests passed"
-
-# 5. Run E2E tests
-echo "🌐 Step 5/7: Running E2E tests..."
-cd ui
-if ! npm run test:e2e:robust; then
-  echo "❌ E2E tests failed - commit blocked"
-  cd ..
-  exit 1
-fi
-cd ..
-echo "✅ E2E tests passed"
-
-# 6. Validate todo list format
-echo "📋 Step 6/7: Validating todo list format..."
-if ! npx ts-node scripts/validate-todo-list.ts; then
-  echo "❌ Todo list validation failed - commit blocked"
-  exit 1
-fi
-echo "✅ Todo list validation passed"
-
-# 7. Run AI code review
-echo "🤖 Step 7/7: Running AI code review..."
-if ! npm run ai-review; then
-  echo "❌ AI code review failed - commit blocked"
-  exit 1
-fi
-echo "✅ AI code review passed"
-
-echo "🎉 All pre-commit quality checks passed! Commit proceeding..."

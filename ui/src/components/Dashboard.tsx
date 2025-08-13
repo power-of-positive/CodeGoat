@@ -6,7 +6,7 @@ import { RequestLogs } from './RequestLogs';
 import { AddModelDialog } from './AddModelDialog';
 import { Settings } from './Settings';
 import { Analytics } from './Analytics';
-import { Button } from './ui/Button';
+import { Button } from './ui/button';
 import { Plus, RefreshCw, Home, FileText, Settings as SettingsIcon, BarChart3 } from 'lucide-react';
 import { api } from '../services/api';
 import type { UIModelConfig } from '../types/api';

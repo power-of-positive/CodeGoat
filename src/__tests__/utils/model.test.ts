@@ -48,46 +48,46 @@ describe('Model Utils', () => {
 
   describe('getProviderFromModel', () => {
     it('should identify Anthropic provider', () => {
-      expect(getProviderFromModel('anthropic/claude-3-opus')).toBe('Anthropic');
-      expect(getProviderFromModel('anthropic/claude-3-sonnet')).toBe('Anthropic');
-      expect(getProviderFromModel('anthropic/claude-2')).toBe('Anthropic');
+      expect(getProviderFromModel('anthropic/claude-3-opus')).toBe('anthropic');
+      expect(getProviderFromModel('anthropic/claude-3-sonnet')).toBe('anthropic');
+      expect(getProviderFromModel('anthropic/claude-2')).toBe('anthropic');
     });
 
     it('should identify OpenRouter provider', () => {
-      expect(getProviderFromModel('openrouter/anthropic/claude-3-opus')).toBe('OpenRouter');
-      expect(getProviderFromModel('openrouter/openai/gpt-4')).toBe('OpenRouter');
-      expect(getProviderFromModel('openrouter/meta-llama/llama-2-70b-chat')).toBe('OpenRouter');
+      expect(getProviderFromModel('openrouter/anthropic/claude-3-opus')).toBe('openrouter');
+      expect(getProviderFromModel('openrouter/openai/gpt-4')).toBe('openrouter');
+      expect(getProviderFromModel('openrouter/meta-llama/llama-2-70b-chat')).toBe('openrouter');
     });
 
     it('should identify OpenAI provider for openai/ prefix', () => {
-      expect(getProviderFromModel('openai/gpt-4')).toBe('OpenAI');
-      expect(getProviderFromModel('openai/gpt-3.5-turbo')).toBe('OpenAI');
-      expect(getProviderFromModel('openai/text-davinci-003')).toBe('OpenAI');
+      expect(getProviderFromModel('openai/gpt-4')).toBe('openai');
+      expect(getProviderFromModel('openai/gpt-3.5-turbo')).toBe('openai');
+      expect(getProviderFromModel('openai/text-davinci-003')).toBe('openai');
     });
 
     it('should default to OpenAI for models without provider prefix', () => {
-      expect(getProviderFromModel('gpt-4')).toBe('OpenAI');
-      expect(getProviderFromModel('gpt-3.5-turbo')).toBe('OpenAI');
-      expect(getProviderFromModel('text-davinci-003')).toBe('OpenAI');
+      expect(getProviderFromModel('gpt-4')).toBe('openai');
+      expect(getProviderFromModel('gpt-3.5-turbo')).toBe('openai');
+      expect(getProviderFromModel('text-davinci-003')).toBe('openai');
     });
 
     it('should return Unknown for unrecognized providers', () => {
-      expect(getProviderFromModel('google/gemini-pro')).toBe('Unknown');
-      expect(getProviderFromModel('cohere/command')).toBe('Unknown');
-      expect(getProviderFromModel('custom-provider/model')).toBe('Unknown');
+      expect(getProviderFromModel('google/gemini-pro')).toBe('unknown');
+      expect(getProviderFromModel('cohere/command')).toBe('unknown');
+      expect(getProviderFromModel('custom-provider/model')).toBe('unknown');
     });
 
     it('should handle edge cases', () => {
-      expect(getProviderFromModel('')).toBe('OpenAI');
-      expect(getProviderFromModel('/')).toBe('Unknown');
-      expect(getProviderFromModel('anthropic/')).toBe('Anthropic');
-      expect(getProviderFromModel('openrouter/')).toBe('OpenRouter');
+      expect(getProviderFromModel('')).toBe('openai');
+      expect(getProviderFromModel('/')).toBe('unknown');
+      expect(getProviderFromModel('anthropic/')).toBe('anthropic');
+      expect(getProviderFromModel('openrouter/')).toBe('openrouter');
     });
 
     it('should be case sensitive', () => {
-      expect(getProviderFromModel('ANTHROPIC/claude')).toBe('Unknown');
-      expect(getProviderFromModel('Anthropic/claude')).toBe('Unknown');
-      expect(getProviderFromModel('OPENROUTER/model')).toBe('Unknown');
+      expect(getProviderFromModel('ANTHROPIC/claude')).toBe('unknown');
+      expect(getProviderFromModel('Anthropic/claude')).toBe('unknown');
+      expect(getProviderFromModel('OPENROUTER/model')).toBe('unknown');
     });
   });
 
@@ -396,7 +396,7 @@ describe('Model Utils', () => {
       const targetUrl = getTargetUrl(fullModel);
 
       expect(modelName).toBe('anthropic/claude-3-opus-20240229');
-      expect(provider).toBe('OpenRouter');
+      expect(provider).toBe('openrouter');
       expect(targetUrl).toBe('https://openrouter.ai/api/v1/chat/completions');
 
       // Build headers
@@ -415,7 +415,7 @@ describe('Model Utils', () => {
       const edgeModel = '';
 
       expect(extractModelName(edgeModel)).toBe('');
-      expect(getProviderFromModel(edgeModel)).toBe('OpenAI');
+      expect(getProviderFromModel(edgeModel)).toBe('openai');
       expect(getTargetUrl(edgeModel)).toBe('https://api.openai.com/v1/chat/completions');
 
       const headers = buildProxyHeaders(edgeModel, 'test-key', {});
