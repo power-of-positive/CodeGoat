@@ -19,14 +19,18 @@ const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:3001';
 const UI_BASE_URL = process.env.UI_BASE_URL || 'http://localhost:5174';
 
 // Test data constants
-const TEST_PROJECT = {
-  name: 'Kanban Test Project',
-  git_repo_path: '/tmp/test-kanban-repo',
-  use_existing_repo: false,
-  setup_script: 'echo "Setup complete"',
-  dev_script: 'npm run dev',
-  cleanup_script: 'echo "Cleanup complete"'
-};
+function generateTestProject() {
+  const timestamp = Date.now();
+  const randomId = Math.random().toString(36).substring(7);
+  return {
+    name: `Kanban Test Project ${timestamp}-${randomId}`,
+    git_repo_path: `/tmp/test-kanban-repo-${timestamp}-${randomId}`,
+    use_existing_repo: false,
+    setup_script: 'echo "Setup complete"',
+    dev_script: 'npm run dev',
+    cleanup_script: 'echo "Cleanup complete"'
+  };
+}
 
 const TEST_TASKS = [
   {
@@ -48,34 +52,48 @@ const TEST_TASKS = [
 
 // Helper functions
 async function createTestProject() {
+  const testProject = generateTestProject();
   const response = await fetch(`${API_BASE_URL}/api/projects`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(TEST_PROJECT),
+    body: JSON.stringify(testProject),
   });
   
   if (!response.ok) {
-    throw new Error(`Failed to create test project: ${response.status}`);
+    const errorText = await response.text();
+    console.error(`Failed to create test project: ${response.status} - ${errorText}`);
+    throw new Error(`Failed to create test project: ${response.status} - ${errorText}`);
   }
   
   const result = await response.json();
-  return result.data || result;
+  
+  // Handle both success response format and error response format
+  if (result.success === false) {
+    throw new Error(`Project creation failed: ${result.message}`);
+  }
+  
+  const project = result.data || result;
+  console.log('Created test project:', project);
+  return project;
 }
 
 async function createTestTask(projectId: string, task: any) {
+  console.log('Creating task with projectId:', projectId, 'task:', task);
   const response = await fetch(`${API_BASE_URL}/api/projects/${projectId}/tasks`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      project_id: projectId,
       title: task.title,
       description: task.description,
+      // Don't include project_id in body - it's in the URL path
       // Don't include parent_task_attempt if it's null/undefined - it's optional
     }),
   });
   
   if (!response.ok) {
-    throw new Error(`Failed to create test task: ${response.status}`);
+    const errorText = await response.text();
+    console.error(`Failed to create test task: ${response.status} - ${errorText}`);
+    throw new Error(`Failed to create test task: ${response.status} - ${errorText}`);
   }
   
   const result = await response.json();

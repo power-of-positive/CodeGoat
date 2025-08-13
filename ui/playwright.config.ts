@@ -45,10 +45,14 @@ export default defineConfig({
 
   webServer: process.env.SKIP_WEB_SERVER ? undefined : [
     {
-      command: 'cd .. && npm run build && npm start',
+      command: 'cd .. && cp .env.test .env && npm run build && npm start',
       port: 3001,
       timeout: 120000, // 2 minutes for backend to build and start
       reuseExistingServer: !process.env.CI,
+      env: {
+        NODE_ENV: 'test',
+        KANBAN_DATABASE_URL: 'file:./prisma/kanban-test.db',
+      },
     },
     {
       command: 'npm run dev',
