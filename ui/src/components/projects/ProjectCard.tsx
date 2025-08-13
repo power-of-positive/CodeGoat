@@ -85,6 +85,7 @@ function ProjectCard({
 
   return (
     <Card
+      data-testid="project-card"
       className={`hover:shadow-md transition-shadow cursor-pointer focus:ring-2 focus:ring-primary outline-none`}
       onClick={() => navigate(`/projects/${project.id}/tasks`)}
       tabIndex={isFocused ? 0 : -1}

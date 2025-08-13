@@ -168,9 +168,21 @@ async function callReviewAPI(config: Config, prompt: string): Promise<string> {
 export async function reviewCode(filePath: string, content: string): Promise<ReviewResult> {
   const config = getConfig();
 
-  if (!config.openaiApiKey) {
-    console.warn('No API key configured for AI code reviewer');
-    return { reviews: [], summary: 'No API key configured' };
+  if (!config.openaiApiKey || config.openaiApiKey === 'your_openrouter_api_key_here') {
+    console.warn('❌ No valid API key configured for AI code reviewer');
+    console.warn('   Please set either OPENAI_API_KEY or OPENROUTER_API_KEY environment variable');
+    console.warn('   Current API endpoint:', config.apiEndpoint);
+    console.warn('   Current model:', config.model);
+    return { 
+      reviews: [{
+        line: null,
+        severity: 'info',
+        category: 'system',
+        message: 'AI code review skipped - no valid API key configured. Set OPENAI_API_KEY or OPENROUTER_API_KEY environment variable.',
+        suggestion: 'Configure API key in .env file or environment variables'
+      }], 
+      summary: 'No valid API key configured - review skipped' 
+    };
   }
 
   try {
