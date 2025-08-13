@@ -175,7 +175,6 @@ export function ProjectTasks() {
           project_id: projectId!,
           title,
           description: description || null,
-          parent_task_attempt: null,
         });
         await fetchTasks();
         // Open the newly created task in the details panel
@@ -196,7 +195,6 @@ export function ProjectTasks() {
           project_id: projectId!,
           title,
           description: description || null,
-          parent_task_attempt: null,
         };
         const result = await tasksApi.createAndStart(payload);
         await fetchTasks();
@@ -218,7 +216,6 @@ export function ProjectTasks() {
           title,
           description: description || null,
           status,
-          parent_task_attempt: null,
         });
         await fetchTasks();
         setEditingTask(null);
@@ -289,12 +286,18 @@ export function ProjectTasks() {
       );
 
       try {
-        await tasksApi.update(taskId, {
+        const updateData: any = {
           title: task.title,
           description: task.description,
           status: newStatus,
-          parent_task_attempt: task.parent_task_attempt,
-        });
+        };
+        
+        // Only include parent_task_attempt if it has a valid value
+        if (task.parent_task_attempt) {
+          updateData.parent_task_attempt = task.parent_task_attempt;
+        }
+        
+        await tasksApi.update(taskId, updateData);
       } catch (err) {
         // Revert the optimistic update if the API call failed
         setTasks((prev) =>

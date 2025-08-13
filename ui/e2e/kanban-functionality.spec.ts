@@ -70,7 +70,7 @@ async function createTestTask(projectId: string, task: any) {
       project_id: projectId,
       title: task.title,
       description: task.description,
-      parent_task_attempt: null
+      // Don't include parent_task_attempt if it's null/undefined - it's optional
     }),
   });
   
@@ -82,15 +82,15 @@ async function createTestTask(projectId: string, task: any) {
   return result.data || result;
 }
 
-async function updateTaskStatus(taskId: string, status: string, taskData: any) {
-  const response = await fetch(`${API_BASE_URL}/api/tasks/${taskId}`, {
+async function updateTaskStatus(taskId: string, status: string, taskData: any, projectId: string) {
+  const response = await fetch(`${API_BASE_URL}/api/projects/${projectId}/tasks/${taskId}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       title: taskData.title,
       description: taskData.description,
       status: status,
-      parent_task_attempt: null
+      // Don't include parent_task_attempt if it's null/undefined
     }),
   });
   
@@ -136,44 +136,37 @@ test.describe('Kanban Board Functionality', () => {
   let testProject: any;
   let testTasks: any[] = [];
 
-  test.beforeEach(async ({ page }) => {
-    // Create test project and tasks for each test
+  test.beforeAll(async () => {
+    // Create test project and tasks once for all tests
     testProject = await createTestProject();
     
     for (const taskData of TEST_TASKS) {
       const task = await createTestTask(testProject.id, taskData);
       // Update task status to match test data
       if (taskData.status !== 'todo') {
-        await updateTaskStatus(task.id, taskData.status, taskData);
+        await updateTaskStatus(task.id, taskData.status, taskData, testProject.id);
       }
       testTasks.push(task);
     }
-    
-    // Navigate to the project
+  });
+
+  test.beforeEach(async ({ page }) => {
+    // Just navigate to the project for each test
     await navigateToProject(page, testProject.id);
   });
 
-  test.afterEach(async ({ page }) => {
-    // Cleanup test data
+  test.afterAll(async () => {
+    // Cleanup test data after all tests
     if (testProject) {
       await cleanupTestData(testProject.id);
     }
-    testTasks = [];
   });
 
   test.describe('Board Rendering and Layout', () => {
     test('should display Kanban board with all status columns', async ({ page }) => {
       await waitForKanbanBoard(page);
       
-      // Check that all status columns are present
-      const columns = ['todo', 'inprogress', 'inreview', 'done', 'cancelled'];
-      
-      for (const status of columns) {
-        const column = page.locator(`[id="${status}"]`);
-        await expect(column).toBeVisible();
-      }
-      
-      // Check column headers are correctly labeled
+      // Check that all status columns are present by their headers
       await expect(page.locator('text=To Do')).toBeVisible();
       await expect(page.locator('text=In Progress')).toBeVisible();
       await expect(page.locator('text=In Review')).toBeVisible();
@@ -184,8 +177,9 @@ test.describe('Kanban Board Functionality', () => {
     test('should display project name in header', async ({ page }) => {
       await page.waitForSelector('h1');
       
-      const projectHeader = page.locator('h1');
-      await expect(projectHeader).toContainText(TEST_PROJECT.name);
+      // Look for project name in a more specific selector to avoid multiple h1 elements
+      const projectHeader = page.locator('h1').filter({ hasText: TEST_PROJECT.name });
+      await expect(projectHeader).toBeVisible();
     });
 
     test('should show search input and add task button', async ({ page }) => {

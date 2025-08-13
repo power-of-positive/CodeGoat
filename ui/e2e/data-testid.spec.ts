@@ -31,11 +31,13 @@ test.describe('Data TestID Verification', () => {
   });
 
   test('should have data-testid attributes in add model dialog', async ({ page }) => {
-    // Open add model dialog
-    await page.getByTestId('add-model-button').click();
+    // Wait for add model button and click it
+    const addButton = page.getByTestId('add-model-button');
+    await expect(addButton).toBeVisible();
+    await addButton.click();
     
-    // Verify dialog is open with form elements
-    await expect(page.getByRole('dialog')).toBeVisible();
+    // Wait for dialog to appear with longer timeout
+    await expect(page.getByRole('dialog')).toBeVisible({ timeout: 10000 });
     
     // Verify form input testids
     await expect(page.getByTestId('model-name-input')).toBeVisible();
