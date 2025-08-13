@@ -1,21 +1,21 @@
 import { Dispatch, SetStateAction, useCallback, useContext } from 'react';
-import { Button } from '@/components/ui/button.tsx';
+import { Button } from '../../ui/button';
 import { ArrowDown, Settings2, X } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu.tsx';
+} from '../../ui/dropdown-menu';
 import type { AgentProfile, GitBranch } from 'shared/types';
 import type { TaskAttempt } from 'shared/types';
-import { attemptsApi } from '@/lib/api.ts';
+import { attemptsApi } from '../../../lib/api';
 import {
   TaskAttemptDataContext,
   TaskDetailsContext,
-} from '@/components/context/taskDetailsContext.ts';
-import BranchSelector from '@/components/tasks/BranchSelector.tsx';
-import { useKeyboardShortcuts } from '@/lib/keyboard-shortcuts.ts';
+} from '../../context/taskDetailsContext';
+import BranchSelector from '../BranchSelector';
+import { useKeyboardShortcuts } from '../../../lib/keyboard-shortcuts';
 import {
   Dialog,
   DialogContent,

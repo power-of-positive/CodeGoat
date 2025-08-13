@@ -1,12 +1,12 @@
 import { KeyboardEvent, useCallback, useEffect, useRef } from 'react';
-import { Button } from '@/components/ui/button';
+import { Button } from '../ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { KanbanCard } from '@/components/ui/shadcn-io/kanban';
+} from '../ui/dropdown-menu';
+import { KanbanCard } from '../ui/shadcn-io/kanban';
 import {
   CheckCircle,
   Edit,

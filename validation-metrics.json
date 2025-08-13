@@ -325,5 +325,29 @@
         "duration": 2750
       }
     ]
+  },
+  {
+    "timestamp": "2025-08-13T17:52:04.602Z",
+    "startTime": 1755107509613,
+    "totalTime": 14986,
+    "totalStages": 7,
+    "passed": 1,
+    "failed": 1,
+    "success": false,
+    "sessionId": "husky-precommit-1755107507-42372",
+    "stages": [
+      {
+        "id": "lint",
+        "name": "Code Linting",
+        "success": true,
+        "duration": 6291
+      },
+      {
+        "id": "typecheck",
+        "name": "Type Checking",
+        "success": false,
+        "duration": 8684
+      }
+    ]
   }
 ]

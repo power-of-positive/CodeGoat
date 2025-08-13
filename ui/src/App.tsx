@@ -7,6 +7,7 @@ import { AnalyticsPage } from './pages/AnalyticsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { Projects } from './components/pages/projects';
 import { ProjectTasks } from './components/pages/project-tasks';
+import { UserSystemProvider } from './components/config-provider';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -20,21 +21,23 @@ const queryClient = new QueryClient({
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <Layout>
-          <Routes>
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/logs" element={<RequestLogsPage />} />
-            <Route path="/analytics" element={<AnalyticsPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
-            <Route path="/projects" element={<Projects />} />
-            <Route path="/projects/:projectId" element={<Projects />} />
-            <Route path="/projects/:projectId/tasks" element={<ProjectTasks />} />
-            <Route path="/projects/:projectId/tasks/:taskId" element={<ProjectTasks />} />
-          </Routes>
-        </Layout>
-      </BrowserRouter>
+      <UserSystemProvider>
+        <BrowserRouter>
+          <Layout>
+            <Routes>
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/logs" element={<RequestLogsPage />} />
+              <Route path="/analytics" element={<AnalyticsPage />} />
+              <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/projects" element={<Projects />} />
+              <Route path="/projects/:projectId" element={<Projects />} />
+              <Route path="/projects/:projectId/tasks" element={<ProjectTasks />} />
+              <Route path="/projects/:projectId/tasks/:taskId" element={<ProjectTasks />} />
+            </Routes>
+          </Layout>
+        </BrowserRouter>
+      </UserSystemProvider>
     </QueryClientProvider>
   );
 }

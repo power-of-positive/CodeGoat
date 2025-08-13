@@ -5,14 +5,14 @@ import {
   KanbanCards,
   KanbanHeader,
   KanbanProvider,
-} from '@/components/ui/shadcn-io/kanban';
+} from '../ui/shadcn-io/kanban';
 import { TaskCard } from './TaskCard';
 import type { TaskStatus, TaskWithAttemptStatus } from 'shared/types';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   useKeyboardShortcuts,
   useKanbanKeyboardNavigation,
-} from '@/lib/keyboard-shortcuts.ts';
+} from '../../lib/keyboard-shortcuts';
 
 type Task = TaskWithAttemptStatus;
 
@@ -77,6 +77,10 @@ function TaskKanbanBoard({
 
   // Memoize filtered tasks
   const filteredTasks = useMemo(() => {
+    // Ensure tasks is an array
+    if (!Array.isArray(tasks)) {
+      return [];
+    }
     if (!searchQuery.trim()) {
       return tasks;
     }
@@ -94,14 +98,17 @@ function TaskKanbanBoard({
     allTaskStatuses.forEach((status) => {
       groups[status] = [];
     });
-    filteredTasks.forEach((task) => {
+    // Ensure filteredTasks is an array before calling forEach
+    if (Array.isArray(filteredTasks)) {
+      filteredTasks.forEach((task) => {
       const normalizedStatus = task.status.toLowerCase() as TaskStatus;
       if (groups[normalizedStatus]) {
         groups[normalizedStatus].push(task);
       } else {
         groups['todo'].push(task);
       }
-    });
+      });
+    }
     return groups;
   }, [filteredTasks]);
 
