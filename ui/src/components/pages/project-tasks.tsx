@@ -138,7 +138,7 @@ export function ProjectTasks() {
         const result = await tasksApi.getAll(projectId!);
         // Only update if data has actually changed
         setTasks((prevTasks) => {
-          const newTasks = result;
+          const newTasks = result.data || result;
           if (JSON.stringify(prevTasks) === JSON.stringify(newTasks)) {
             return prevTasks; // Return same reference to prevent re-render
           }
@@ -174,7 +174,7 @@ export function ProjectTasks() {
         const createdTask = await tasksApi.create({
           project_id: projectId!,
           title,
-          description: description || null,
+          description: description || undefined,
         });
         await fetchTasks();
         // Open the newly created task in the details panel
@@ -194,7 +194,7 @@ export function ProjectTasks() {
         const payload: CreateTask = {
           project_id: projectId!,
           title,
-          description: description || null,
+          description: description || undefined,
         };
         const result = await tasksApi.createAndStart(payload);
         await fetchTasks();
@@ -214,7 +214,7 @@ export function ProjectTasks() {
       try {
         await tasksApi.update(editingTask.id, {
           title,
-          description: description || null,
+          description: description || undefined,
           status,
         });
         await fetchTasks();

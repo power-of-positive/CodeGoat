@@ -111,6 +111,7 @@ export const KanbanCard = ({
       tabIndex={tabIndex}
       onClick={onClick}
       onKeyDown={onKeyDown}
+      data-testid="kanban-card"
     >
       {children ?? <p className="m-0 font-medium text-sm">{name}</p>}
     </Card>
