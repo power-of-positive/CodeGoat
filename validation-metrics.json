@@ -349,5 +349,107 @@
         "duration": 8684
       }
     ]
+  },
+  {
+    "timestamp": "2025-08-13T17:56:22.084Z",
+    "startTime": 1755107621809,
+    "totalTime": 160263,
+    "totalStages": 7,
+    "passed": 6,
+    "failed": 1,
+    "success": false,
+    "sessionId": "husky-precommit-1755107619-57048",
+    "stages": [
+      {
+        "id": "lint",
+        "name": "Code Linting",
+        "success": true,
+        "duration": 4503
+      },
+      {
+        "id": "typecheck",
+        "name": "Type Checking",
+        "success": true,
+        "duration": 6250
+      },
+      {
+        "id": "test",
+        "name": "Unit Tests",
+        "success": true,
+        "duration": 22506
+      },
+      {
+        "id": "typescript-preference",
+        "name": "TypeScript Preference Check",
+        "success": true,
+        "duration": 3284
+      },
+      {
+        "id": "ai-code-review",
+        "name": "AI Code Review",
+        "success": true,
+        "duration": 2156
+      },
+      {
+        "id": "visual-regression",
+        "name": "Visual Regression Tests",
+        "success": true,
+        "duration": 1547
+      },
+      {
+        "id": "e2e",
+        "name": "Full E2E Test Suite",
+        "success": false,
+        "duration": 120013
+      }
+    ]
+  },
+  {
+    "timestamp": "2025-08-13T17:57:38.045Z",
+    "startTime": 1755107813409,
+    "totalTime": 44635,
+    "totalStages": 6,
+    "passed": 6,
+    "failed": 0,
+    "success": true,
+    "sessionId": "husky-precommit-1755107811-66359",
+    "stages": [
+      {
+        "id": "lint",
+        "name": "Code Linting",
+        "success": true,
+        "duration": 8355
+      },
+      {
+        "id": "typecheck",
+        "name": "Type Checking",
+        "success": true,
+        "duration": 7020
+      },
+      {
+        "id": "test",
+        "name": "Unit Tests",
+        "success": true,
+        "duration": 22833
+      },
+      {
+        "id": "typescript-preference",
+        "name": "TypeScript Preference Check",
+        "success": true,
+        "duration": 2701
+      },
+      {
+        "id": "ai-code-review",
+        "name": "AI Code Review",
+        "success": true,
+        "duration": 2252
+      },
+      {
+        "id": "visual-regression",
+        "name": "Visual Regression Tests",
+        "success": true,
+        "duration": 1469
+      }
+    ]
   }
 ]
