@@ -17,7 +17,7 @@ export function LogDetailCollapsible({ log }: LogDetailCollapsibleProps) {
   const errorInfo = getErrorInfo();
 
   return (
-    <div className="bg-gray-800 rounded-lg p-4 space-y-4">
+    <div className="log-details bg-gray-800 rounded-lg p-4 space-y-4">
       {/* Basic Info Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pb-4 border-b border-gray-700">
         <div>

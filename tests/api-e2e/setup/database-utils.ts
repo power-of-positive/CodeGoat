@@ -40,7 +40,7 @@ export interface TaskAttempt {
 export class DatabaseValidator {
   private db: Database.Database;
 
-  constructor(dbPath: string = '../prisma/kanban.db') {
+  constructor(dbPath: string = '../../prisma/kanban.db') {
     this.db = new Database(dbPath);
   }
 
