@@ -1249,5 +1249,53 @@
         "duration": 1350
       }
     ]
+  },
+  {
+    "timestamp": "2025-08-13T20:25:11.759Z",
+    "startTime": 1755116679036,
+    "totalTime": 32721,
+    "totalStages": 6,
+    "passed": 6,
+    "failed": 0,
+    "success": true,
+    "sessionId": "husky-precommit-1755116677-48508",
+    "stages": [
+      {
+        "id": "lint",
+        "name": "Code Linting",
+        "success": true,
+        "duration": 5011
+      },
+      {
+        "id": "typecheck",
+        "name": "Type Checking",
+        "success": true,
+        "duration": 5288
+      },
+      {
+        "id": "test",
+        "name": "Unit Tests",
+        "success": true,
+        "duration": 15503
+      },
+      {
+        "id": "typescript-preference",
+        "name": "TypeScript Preference Check",
+        "success": true,
+        "duration": 2399
+      },
+      {
+        "id": "ai-code-review",
+        "name": "AI Code Review",
+        "success": true,
+        "duration": 3040
+      },
+      {
+        "id": "visual-regression",
+        "name": "Visual Regression Tests",
+        "success": true,
+        "duration": 1472
+      }
+    ]
   }
 ]
