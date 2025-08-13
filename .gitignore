@@ -26,3 +26,7 @@ prisma/*.db
 # Todo list files (temporary/runtime)
 .claude_todo.json
 todo-list.json
+
+# Test files (temporary/runtime)
+test_request.json
+tests/api-e2e/test-results.xml
