@@ -47,6 +47,8 @@ export const KanbanBoard = ({ id, children, className }: KanbanBoardProps) => {
         className
       )}
       ref={setNodeRef}
+      data-testid={`kanban-column-${id}`}
+      data-column={id}
     >
       {children}
     </div>
@@ -112,6 +114,7 @@ export const KanbanCard = ({
       onClick={onClick}
       onKeyDown={onKeyDown}
       data-testid="kanban-card"
+      data-rfd-draggable-id={id}
     >
       {children ?? <p className="m-0 font-medium text-sm">{name}</p>}
     </Card>
