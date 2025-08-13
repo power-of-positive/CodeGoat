@@ -68,7 +68,7 @@
         "name": "Full E2E Test Suite",
         "command": "cd ui && npm run test:e2e",
         "timeout": 120000,
-        "enabled": false,
+        "enabled": true,
         "continueOnFailure": false,
         "order": 7
       }
