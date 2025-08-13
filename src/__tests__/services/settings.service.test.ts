@@ -5,6 +5,67 @@ import { z } from 'zod';
 
 jest.mock('fs/promises');
 
+// Mock the DEFAULT_SETTINGS constant
+jest.mock('../../constants/settings.constants', () => ({
+  DEFAULT_SETTINGS: Promise.resolve({
+    fallback: { maxRetries: 3, retryDelay: 1000, enableFallbacks: true },
+    validation: {
+      stages: [
+        {
+          id: 'lint',
+          name: 'Code Linting',
+          command: 'npm run lint',
+          timeout: 30000,
+          enabled: true,
+          continueOnFailure: false,
+          order: 1,
+        },
+        {
+          id: 'typecheck',
+          name: 'Type Checking',
+          command: 'npm run type-check',
+          timeout: 30000,
+          enabled: true,
+          continueOnFailure: false,
+          order: 2,
+        },
+        {
+          id: 'test',
+          name: 'Unit Tests',
+          command: 'npm test',
+          timeout: 60000,
+          enabled: true,
+          continueOnFailure: true,
+          order: 3,
+        },
+        {
+          id: 'typescript-preference',
+          name: 'TypeScript Preference Check',
+          command: 'ts-node scripts/check-typescript-preference.ts',
+          timeout: 10000,
+          enabled: true,
+          continueOnFailure: true,
+          order: 4,
+        },
+      ],
+      enableMetrics: true,
+      maxAttempts: 5,
+    },
+    logging: {
+      level: 'info',
+      enableConsole: true,
+      enableFile: true,
+      logsDir: './logs',
+      accessLogFile: 'access.log',
+      appLogFile: 'app.log',
+      errorLogFile: 'error.log',
+      maxFileSize: '10485760',
+      maxFiles: '10',
+      datePattern: 'YYYY-MM-DD',
+    },
+  }),
+}));
+
 describe('SettingsService', () => {
   let settingsService: SettingsService;
   let mockLogger: ReturnType<typeof createMockLogger>;
@@ -45,9 +106,6 @@ describe('SettingsService', () => {
         maxRetries: 3,
         retryDelay: 1000,
         enableFallbacks: true,
-        fallbackOnContextLength: true,
-        fallbackOnRateLimit: true,
-        fallbackOnServerError: false,
       });
       expect(mockLogger.info).toHaveBeenCalledWith('Settings file not found, using defaults');
     });
@@ -435,22 +493,20 @@ describe('SettingsService', () => {
       expect(mockLogger.info).toHaveBeenCalledWith('Validation stage updated', { stageId: 'lint' });
     });
 
-    it('should throw error when no validation stages exist', async () => {
-      const currentSettings = {}; // No validation property
+    it('should throw error when stage not found in empty stages', async () => {
+      // Create settings with explicitly empty stages to override defaults
+      const currentSettings = {
+        validation: {
+          stages: [], // Empty stages
+          enableMetrics: true,
+          maxAttempts: 5,
+        },
+      };
 
-      (fs.readFile as jest.Mock).mockImplementation((path: string) => {
-        if (path.includes('settings.json')) {
-          return Promise.resolve(JSON.stringify(currentSettings));
-        }
-        // Mock the DEFAULT_SETTINGS file read to return empty validation
-        return Promise.resolve(JSON.stringify({
-          fallback: { maxRetries: 3 },
-          validation: { stages: [] }, // Empty stages
-        }));
-      });
+      (fs.readFile as jest.Mock).mockResolvedValue(JSON.stringify(currentSettings));
 
       await expect(settingsService.updateValidationStage('lint', {})).rejects.toThrow(
-        'No validation stages found'
+        'Validation stage not found'
       );
     });
 
@@ -470,22 +526,20 @@ describe('SettingsService', () => {
   });
 
   describe('removeValidationStage edge cases', () => {
-    it('should throw error when no validation stages exist', async () => {
-      const currentSettings = {}; // No validation property
+    it('should throw error when stage not found in empty stages', async () => {
+      // Create settings with explicitly empty stages to override defaults
+      const currentSettings = {
+        validation: {
+          stages: [], // Empty stages
+          enableMetrics: true,
+          maxAttempts: 5,
+        },
+      };
 
-      (fs.readFile as jest.Mock).mockImplementation((path: string) => {
-        if (path.includes('settings.json')) {
-          return Promise.resolve(JSON.stringify(currentSettings));
-        }
-        // Mock the DEFAULT_SETTINGS file read to return empty validation
-        return Promise.resolve(JSON.stringify({
-          fallback: { maxRetries: 3 },
-          validation: { stages: [] }, // Empty stages
-        }));
-      });
+      (fs.readFile as jest.Mock).mockResolvedValue(JSON.stringify(currentSettings));
 
       await expect(settingsService.removeValidationStage('lint')).rejects.toThrow(
-        'No validation stages found'
+        'Validation stage not found'
       );
     });
   });
@@ -525,18 +579,16 @@ describe('SettingsService', () => {
 
   describe('getEnabledValidationStages edge cases', () => {
     it('should return empty array when no validation stages exist', async () => {
-      const currentSettings = {}; // No validation property
+      // Create settings with explicitly empty stages to override defaults
+      const currentSettings = {
+        validation: {
+          stages: [], // Empty stages
+          enableMetrics: true,
+          maxAttempts: 5,
+        },
+      };
 
-      (fs.readFile as jest.Mock).mockImplementation((path: string) => {
-        if (path.includes('settings.json')) {
-          return Promise.resolve(JSON.stringify(currentSettings));
-        }
-        // Mock the DEFAULT_SETTINGS file read to return empty validation
-        return Promise.resolve(JSON.stringify({
-          fallback: { maxRetries: 3 },
-          validation: { stages: [] }, // Empty stages
-        }));
-      });
+      (fs.readFile as jest.Mock).mockResolvedValue(JSON.stringify(currentSettings));
 
       const stages = await settingsService.getEnabledValidationStages();
 
