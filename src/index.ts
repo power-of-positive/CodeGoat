@@ -18,7 +18,9 @@ import { createKanbanProjectsRoutes } from './routes/kanban-projects';
 import { createKanbanTasksRoutes } from './routes/kanban-tasks';
 import { createKanbanTaskAttemptsRoutes } from './routes/kanban-task-attempts';
 import { createKanbanHealthRoutes } from './routes/kanban-health';
+// import { createAiAgentExecutionRoutes } from './routes/ai-agent-execution';
 import { KanbanDatabaseService } from './services/kanban-database.service';
+// import { SettingsService } from './services/settings.service';
 
 const app = express();
 const configLoader = new ConfigLoader();
@@ -51,8 +53,9 @@ const logCleaner = new LogCleaner(
 // Initialize management API
 // initializeManagementAPI(configLoader, logger);
 
-// Initialize Kanban database
+// Initialize Kanban database and services
 const kanbanDb = new KanbanDatabaseService(logger);
+// const settingsService = new SettingsService(logger); // Will be used for AI agent integration
 
 // CORS configuration for Kanban UI integration
 app.use((req: Request, res: Response, next: NextFunction) => {
@@ -157,6 +160,8 @@ app.use('/api', createKanbanHealthRoutes(kanbanDb, logger));
 app.use('/api', createKanbanProjectsRoutes(kanbanDb, logger));
 app.use('/api', createKanbanTasksRoutes(kanbanDb, logger));
 app.use('/api', createKanbanTaskAttemptsRoutes(kanbanDb, logger));
+// AI Agent execution routes will be added once implementation is complete
+// app.use('/api/ai-agent', createAiAgentExecutionRoutes(kanbanDb, settingsService, config.modelConfig!, logger));
 
 // Keep test route for compatibility
 app.get('/test', (_req: Request, res: Response) => {
