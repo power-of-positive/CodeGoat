@@ -37,13 +37,22 @@
         "order": 3
       },
       {
+        "id": "coverage",
+        "name": "Test Coverage Check",
+        "command": "npm run test:coverage",
+        "timeout": 90000,
+        "enabled": false,
+        "continueOnFailure": false,
+        "order": 4
+      },
+      {
         "id": "typescript-preference",
         "name": "TypeScript Preference Check",
         "command": "npx ts-node scripts/check-typescript-preference.ts",
         "timeout": 10000,
         "enabled": true,
         "continueOnFailure": false,
-        "order": 4
+        "order": 5
       },
       {
         "id": "ai-code-review",
@@ -52,7 +61,7 @@
         "timeout": 120000,
         "enabled": true,
         "continueOnFailure": false,
-        "order": 5
+        "order": 6
       },
       {
         "id": "visual-regression",
@@ -61,7 +70,7 @@
         "timeout": 60000,
         "enabled": true,
         "continueOnFailure": false,
-        "order": 6
+        "order": 7
       },
       {
         "id": "e2e",
@@ -70,7 +79,7 @@
         "timeout": 180000,
         "enabled": true,
         "continueOnFailure": false,
-        "order": 7
+        "order": 8
       }
     ],
     "enableMetrics": true,

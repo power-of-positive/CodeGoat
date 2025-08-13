@@ -12,7 +12,7 @@
     "start:prod": "NODE_ENV=production node dist/src/index.js",
     "test": "jest --passWithNoTests",
     "test:unit": "jest --passWithNoTests src/",
-    "test:e2e": "jest --testPathIgnorePatterns=[] tests/",
+    "test:e2e": "cd ui && npm run test:e2e:robust",
     "test:e2e:optimized": "cd tests/api-e2e && npx vitest run --config=vitest-optimized.config.ts",
     "test:e2e:unified": "cd tests/api-e2e && npx vitest run --config=vitest-unified.config.ts",
     "test:e2e:single": "jest tests/e2e.test.ts",
