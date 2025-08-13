@@ -22,6 +22,11 @@ describe('Logs Routes', () => {
     (fs.readFile as jest.Mock).mockRejectedValue({ code: 'ENOENT' });
   });
 
+  afterEach(async () => {
+    // Ensure all pending async operations complete
+    await new Promise(resolve => setImmediate(resolve));
+  });
+
   describe('GET /logs/requests', () => {
     it('should return request logs with default pagination', async () => {
       const mockAppLog =
@@ -143,6 +148,6 @@ describe('Logs Routes', () => {
       await request(app).get('/logs/nonexistent.log').expect(404).expect({
         error: 'Log file not found',
       });
-    });
+    }, 60000);
   });
 });

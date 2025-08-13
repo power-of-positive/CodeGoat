@@ -883,5 +883,83 @@
         "duration": 1293
       }
     ]
+  },
+  {
+    "timestamp": "2025-08-13T19:38:32.047Z",
+    "startTime": 1755113881522,
+    "totalTime": 30523,
+    "totalStages": 6,
+    "passed": 6,
+    "failed": 0,
+    "success": true,
+    "sessionId": "husky-precommit-1755113879-52106",
+    "stages": [
+      {
+        "id": "lint",
+        "name": "Code Linting",
+        "success": true,
+        "duration": 4417
+      },
+      {
+        "id": "typecheck",
+        "name": "Type Checking",
+        "success": true,
+        "duration": 5359
+      },
+      {
+        "id": "test",
+        "name": "Unit Tests",
+        "success": true,
+        "duration": 15082
+      },
+      {
+        "id": "typescript-preference",
+        "name": "TypeScript Preference Check",
+        "success": true,
+        "duration": 2371
+      },
+      {
+        "id": "ai-code-review",
+        "name": "AI Code Review",
+        "success": true,
+        "duration": 1861
+      },
+      {
+        "id": "visual-regression",
+        "name": "Visual Regression Tests",
+        "success": true,
+        "duration": 1424
+      }
+    ]
+  },
+  {
+    "timestamp": "2025-08-13T19:40:08.405Z",
+    "startTime": 1755113956871,
+    "totalTime": 51533,
+    "totalStages": 6,
+    "passed": 2,
+    "failed": 1,
+    "success": false,
+    "sessionId": "husky-precommit-1755113954-57031",
+    "stages": [
+      {
+        "id": "lint",
+        "name": "Code Linting",
+        "success": true,
+        "duration": 4963
+      },
+      {
+        "id": "typecheck",
+        "name": "Type Checking",
+        "success": true,
+        "duration": 5259
+      },
+      {
+        "id": "test",
+        "name": "Unit Tests",
+        "success": false,
+        "duration": 41300
+      }
+    ]
   }
 ]
