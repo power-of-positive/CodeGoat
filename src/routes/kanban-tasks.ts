@@ -1,10 +1,8 @@
 import { Router, Request, Response } from 'express';
-import { 
-  ApiResponse,
-  TaskStatus
-} from '../types/kanban.types';
+import { ApiResponse, TaskStatus } from '../types/kanban.types';
 import { ILogger } from '../logger-interface';
 import { KanbanDatabaseService } from '../services/kanban-database.service';
+import { WebSocketService } from '../services/websocket.service';
 import { mapPrismaTaskToApiWithStatus, mapPrismaTaskToApi } from '../utils/kanban-mappers';
 import { PrismaClient, TaskStatus as PrismaTaskStatus } from '@prisma/client';
 import { z } from 'zod';
@@ -58,12 +56,18 @@ function createSuccessResponse<T>(data: T, message: string | null = null): ApiRe
 // Map API TaskStatus to Prisma TaskStatus
 function mapApiStatusToPrisma(status: TaskStatus): PrismaTaskStatus {
   switch (status) {
-    case 'todo': return PrismaTaskStatus.TODO;
-    case 'inprogress': return PrismaTaskStatus.INPROGRESS;
-    case 'inreview': return PrismaTaskStatus.INREVIEW;
-    case 'done': return PrismaTaskStatus.DONE;
-    case 'cancelled': return PrismaTaskStatus.CANCELLED;
-    default: return PrismaTaskStatus.TODO;
+    case 'todo':
+      return PrismaTaskStatus.TODO;
+    case 'inprogress':
+      return PrismaTaskStatus.INPROGRESS;
+    case 'inreview':
+      return PrismaTaskStatus.INREVIEW;
+    case 'done':
+      return PrismaTaskStatus.DONE;
+    case 'cancelled':
+      return PrismaTaskStatus.CANCELLED;
+    default:
+      return PrismaTaskStatus.TODO;
   }
 }
 
@@ -72,7 +76,8 @@ function mapApiStatusToPrisma(status: TaskStatus): PrismaTaskStatus {
  */
 export function createKanbanTasksRoutes(
   kanbanDb: KanbanDatabaseService,
-  logger: ILogger
+  logger: ILogger,
+  webSocketService: WebSocketService
 ): Router {
   const router = Router();
   const prisma = kanbanDb.getClient();
@@ -81,7 +86,7 @@ export function createKanbanTasksRoutes(
   router.get('/projects/:id/tasks', async (req: Request, res: Response) => {
     try {
       const { id: project_id } = req.params;
-      
+
       const validation = z.string().uuid().safeParse(project_id);
       if (!validation.success) {
         return res.status(400).json(createErrorResponse('Invalid project ID format'));
@@ -110,19 +115,19 @@ export function createKanbanTasksRoutes(
   router.post('/projects/:id/tasks', async (req: Request, res: Response) => {
     try {
       const { id: project_id } = req.params;
-      
+
       const projectIdValidation = z.string().uuid().safeParse(project_id);
       if (!projectIdValidation.success) {
         return res.status(400).json(createErrorResponse('Invalid project ID format'));
       }
-      
+
       const CreateTaskSchema = z.object({
         title: z.string().min(1, 'Title is required'),
         description: z.string().optional(),
         status: z.enum(['todo', 'inprogress', 'inreview', 'done', 'cancelled']).optional(),
         parent_task_attempt: z.string().uuid().optional(),
       });
-      
+
       const validation = CreateTaskSchema.safeParse(req.body);
       if (!validation.success) {
         const message = `Validation error: ${validation.error.issues.map(e => e.message).join(', ')}`;
@@ -155,6 +160,17 @@ export function createKanbanTasksRoutes(
       });
 
       const apiTask = mapPrismaTaskToApi(newTask);
+
+      // Broadcast task creation to WebSocket clients
+      webSocketService.broadcastTaskUpdate({
+        type: 'task_created',
+        data: {
+          taskId: newTask.id,
+          projectId: project_id,
+          task: apiTask,
+        },
+      });
+
       res.status(200).json(createSuccessResponse(apiTask, 'Task created successfully'));
     } catch (error) {
       logger.error('Failed to create task', error as Error);
@@ -186,7 +202,7 @@ export function createKanbanTasksRoutes(
         }
       }
 
-      const result = await prisma.$transaction(async (tx) => {
+      const result = await prisma.$transaction(async tx => {
         const newTask = await tx.task.create({
           data: {
             projectId: taskData.project_id,
@@ -221,7 +237,9 @@ export function createKanbanTasksRoutes(
       }
 
       const taskWithStatus = mapPrismaTaskToApiWithStatus(result);
-      res.status(200).json(createSuccessResponse(taskWithStatus, 'Task created and started successfully'));
+      res
+        .status(200)
+        .json(createSuccessResponse(taskWithStatus, 'Task created and started successfully'));
     } catch (error) {
       logger.error('Failed to create and start task', error as Error);
       res.status(200).json(createErrorResponse('Failed to create and start task'));
@@ -251,7 +269,7 @@ export function createKanbanTasksRoutes(
     try {
       const { task_id } = req.params;
       const validation = UpdateTaskSchema.safeParse(req.body);
-      
+
       if (!validation.success) {
         const message = `Validation error: ${validation.error.issues.map(e => e.message).join(', ')}`;
         return res.status(200).json(createErrorResponse(message));
@@ -286,6 +304,18 @@ export function createKanbanTasksRoutes(
       });
 
       const apiTask = mapPrismaTaskToApi(updatedTask);
+
+      // Broadcast task update to WebSocket clients
+      webSocketService.broadcastTaskUpdate({
+        type: 'task_updated',
+        data: {
+          taskId: task_id,
+          projectId: existingTask.projectId,
+          task: apiTask,
+          changes: updateFields,
+        },
+      });
+
       res.status(200).json(createSuccessResponse(apiTask, 'Task updated successfully'));
     } catch (error) {
       logger.error('Failed to update task', error as Error);
@@ -303,6 +333,16 @@ export function createKanbanTasksRoutes(
       }
 
       await deleteTaskById(prisma, task_id);
+
+      // Broadcast task deletion to WebSocket clients
+      webSocketService.broadcastTaskUpdate({
+        type: 'task_deleted',
+        data: {
+          taskId: task_id,
+          projectId: existingTask.projectId,
+        },
+      });
+
       res.status(200).json(createSuccessResponse(null, 'Task deleted successfully'));
     } catch (error) {
       logger.error('Failed to delete task', error as Error);

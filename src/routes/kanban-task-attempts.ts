@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { TaskAttempt, BranchStatus, CreateTaskAttempt } from '../types/kanban.types';
 import { ILogger } from '../logger-interface';
 import { KanbanDatabaseService } from '../services/kanban-database.service';
+import { WebSocketService } from '../services/websocket.service';
 import { mapPrismaTaskAttemptToApi } from '../utils/kanban-mappers';
 import { PrismaClient } from '@prisma/client';
 import * as path from 'path';
@@ -21,7 +22,8 @@ import {
  */
 export function createKanbanTaskAttemptsRoutes(
   kanbanDb: KanbanDatabaseService,
-  logger: ILogger
+  logger: ILogger,
+  _webSocketService: WebSocketService
 ): Router {
   const router = Router();
   const prisma = kanbanDb.getClient();

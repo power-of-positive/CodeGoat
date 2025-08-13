@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import express, { Request, Response, NextFunction } from 'express';
+import { createServer } from 'http';
 import path from 'path';
 import { ConfigLoader } from './config';
 import { RouteMatcher } from './matcher';
@@ -18,8 +19,10 @@ import { createKanbanProjectsRoutes } from './routes/kanban-projects';
 import { createKanbanTasksRoutes } from './routes/kanban-tasks';
 import { createKanbanTaskAttemptsRoutes } from './routes/kanban-task-attempts';
 import { createKanbanHealthRoutes } from './routes/kanban-health';
+import { createWebSocketStatsRoutes } from './routes/websocket-stats';
 // import { createAiAgentExecutionRoutes } from './routes/ai-agent-execution';
 import { KanbanDatabaseService } from './services/kanban-database.service';
+import { WebSocketService } from './services/websocket.service';
 // import { SettingsService } from './services/settings.service';
 
 const app = express();
@@ -55,6 +58,7 @@ const logCleaner = new LogCleaner(
 
 // Initialize Kanban database and services
 const kanbanDb = new KanbanDatabaseService(logger);
+const webSocketService = new WebSocketService(logger);
 // const settingsService = new SettingsService(logger); // Will be used for AI agent integration
 
 // CORS configuration for Kanban UI integration
@@ -154,12 +158,13 @@ app.use('/api/openrouter-stats', createOpenRouterStatsRoutes(logger));
 app.use('/api/logs', createLogsRoutes(logger));
 app.use('/api/settings', createSettingsRoutes(configLoader, logger));
 app.use('/api/analytics', createAnalyticsRoutes(logger));
+app.use('/api/websocket', createWebSocketStatsRoutes(webSocketService, logger));
 
 // Mount Kanban API routes
 app.use('/api', createKanbanHealthRoutes(kanbanDb, logger));
 app.use('/api', createKanbanProjectsRoutes(kanbanDb, logger));
-app.use('/api', createKanbanTasksRoutes(kanbanDb, logger));
-app.use('/api', createKanbanTaskAttemptsRoutes(kanbanDb, logger));
+app.use('/api', createKanbanTasksRoutes(kanbanDb, logger, webSocketService));
+app.use('/api', createKanbanTaskAttemptsRoutes(kanbanDb, logger, webSocketService));
 // AI Agent execution routes will be added once implementation is complete
 // app.use('/api/ai-agent', createAiAgentExecutionRoutes(kanbanDb, settingsService, config.modelConfig!, logger));
 
@@ -226,8 +231,15 @@ process.on('SIGHUP', () => {
   }
 });
 
-const server = app.listen(config.proxy.port, config.proxy.host, () => {
+// Create HTTP server
+const httpServer = createServer(app);
+
+// Initialize WebSocket server
+webSocketService.initialize(httpServer);
+
+const server = httpServer.listen(config.proxy.port, config.proxy.host, () => {
   logger.info(`Proxy server running on ${config.proxy.host}:${config.proxy.port}`);
+  logger.info(`WebSocket server initialized on same port`);
 
   // Run initial log cleanup
   void logCleaner.cleanLogs();
@@ -243,7 +255,12 @@ const server = app.listen(config.proxy.port, config.proxy.host, () => {
 server.timeout = 300000; // 5 minutes
 
 process.on('SIGTERM', () => {
-  logger.info('SIGTERM signal received: closing HTTP server');
+  logger.info('SIGTERM signal received: closing servers');
+
+  // Close WebSocket server first
+  webSocketService.shutdown();
+
+  // Then close HTTP server
   server.close(() => {
     logger.info('HTTP server closed');
     process.exit(0);
