@@ -23,6 +23,10 @@ if ! npm run test:e2e:robust; then
 fi
 cd ..
 
+# Validate todo list format and show next task
+echo "Validating todo list format..."
+npx ts-node scripts/validate-todo-list.ts
+
 # Run AI code review (if enabled)
 echo "Running AI code review..."
 npm run ai-review || echo "AI code review completed with issues"

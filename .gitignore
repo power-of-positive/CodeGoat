@@ -22,3 +22,7 @@ ui/playwright-report/*
 *.sqlite3
 prisma/kanban.db
 prisma/*.db
+
+# Todo list files (temporary/runtime)
+.claude_todo.json
+todo-list.json
