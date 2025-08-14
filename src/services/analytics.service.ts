@@ -1,6 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { ILogger } from '../logger-interface';
+import { ValidationMetricsConverter } from '../utils/validation-metrics-converter';
 import type {
   SessionMetrics,
   ValidationAttemptMetrics,
@@ -111,12 +112,22 @@ export class AnalyticsService {
    * Get current development analytics
    */
   async getAnalytics(): Promise<DevelopmentAnalytics> {
+    // First try to load sessions data (for backward compatibility and tests)
     const sessions = await this.loadAllSessions();
-
-    if (sessions.length === 0) {
-      return this.getEmptyAnalytics();
+    if (sessions.length > 0) {
+      return this.calculateAnalyticsFromSessions(sessions);
     }
 
+    // Try to load validation metrics data (existing production data)
+    const validationMetrics = await this.loadValidationMetrics();
+    if (validationMetrics.length > 0) {
+      return ValidationMetricsConverter.calculateAnalytics(validationMetrics);
+    }
+
+    return this.getEmptyAnalytics();
+  }
+
+  private calculateAnalyticsFromSessions(sessions: SessionMetrics[]): DevelopmentAnalytics {
     const successfulSessions = sessions.filter(s => s.finalSuccess);
     const successRate = (successfulSessions.length / sessions.length) * 100;
 
@@ -220,9 +231,21 @@ export class AnalyticsService {
    * Get recent sessions
    */
   async getRecentSessions(limit: number = 10): Promise<SessionMetrics[]> {
+    // First try to get sessions data (for backward compatibility and tests)
     const sessions = await this.loadAllSessions();
-    return sessions.sort((a, b) => b.startTime - a.startTime).slice(0, limit);
+    if (sessions.length > 0) {
+      return sessions.sort((a, b) => b.startTime - a.startTime).slice(0, limit);
+    }
+
+    // Fallback to creating session-like objects from validation metrics
+    const validationMetrics = await this.loadValidationMetrics();
+    if (validationMetrics.length === 0) {
+      return [];
+    }
+
+    return ValidationMetricsConverter.convertToSessions(validationMetrics, limit);
   }
+
 
   /**
    * Clean up old sessions (keep only last N sessions)
@@ -287,4 +310,17 @@ export class AnalyticsService {
       throw new Error('Failed to save sessions');
     }
   }
+
+  /**
+   * Load validation metrics from validation-metrics.json
+   */
+  private async loadValidationMetrics(): Promise<Record<string, unknown>[]> {
+    try {
+      const content = await fs.readFile(this.metricsPath, 'utf-8');
+      return JSON.parse(content);
+    } catch {
+      return [];
+    }
+  }
+
 }
