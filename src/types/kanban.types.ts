@@ -154,6 +154,9 @@ export interface TaskTemplate {
   title: string;
   description?: string;
   template_name: string;
+  default_prompt?: string;
+  tags?: string[];
+  estimated_hours?: number;
   created_at: string;
   updated_at: string;
 }
@@ -163,12 +166,18 @@ export interface CreateTaskTemplate {
   title: string;
   description?: string;
   template_name: string;
+  default_prompt?: string;
+  tags?: string[];
+  estimated_hours?: number;
 }
 
 export interface UpdateTaskTemplate {
   title?: string;
   description?: string;
   template_name?: string;
+  default_prompt?: string;
+  tags?: string[];
+  estimated_hours?: number;
 }
 
 // Git branch info (from vibe-kanban)

@@ -117,13 +117,18 @@ export function mapPrismaTaskAttemptToApi(prismaAttempt: PrismaTaskAttempt): Tas
 /**
  * Convert Prisma TaskTemplate to API TaskTemplate
  */
-export function mapPrismaTaskTemplateToApi(prismaTemplate: PrismaTaskTemplate): TaskTemplate {
+export function mapPrismaTaskTemplateToApi(
+  prismaTemplate: PrismaTaskTemplate & { project?: PrismaProject | null }
+): TaskTemplate {
   return {
     id: prismaTemplate.id,
     project_id: prismaTemplate.projectId || undefined,
     title: prismaTemplate.title,
     description: prismaTemplate.description || undefined,
     template_name: prismaTemplate.templateName,
+    default_prompt: prismaTemplate.defaultPrompt || undefined,
+    tags: prismaTemplate.tags ? parseJsonSafely(prismaTemplate.tags, []) : undefined,
+    estimated_hours: prismaTemplate.estimatedHours || undefined,
     created_at: prismaTemplate.createdAt.toISOString(),
     updated_at: prismaTemplate.updatedAt.toISOString(),
   };

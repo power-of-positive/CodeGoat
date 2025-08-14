@@ -18,6 +18,7 @@ import { createAnalyticsRoutes } from './routes/analytics';
 import { createKanbanProjectsRoutes } from './routes/kanban-projects';
 import { createKanbanTasksRoutes } from './routes/kanban-tasks';
 import { createKanbanTaskAttemptsRoutes } from './routes/kanban-task-attempts';
+import { createKanbanTemplatesRoutes } from './routes/kanban-templates';
 import { createKanbanHealthRoutes } from './routes/kanban-health';
 import { createWebSocketStatsRoutes } from './routes/websocket-stats';
 // import { createAiAgentExecutionRoutes } from './routes/ai-agent-execution';
@@ -178,6 +179,7 @@ app.use('/api', createKanbanHealthRoutes(kanbanDb, logger));
 app.use('/api', createKanbanProjectsRoutes(kanbanDb, logger));
 app.use('/api', createKanbanTasksRoutes(kanbanDb, logger, webSocketService));
 app.use('/api', createKanbanTaskAttemptsRoutes(kanbanDb, logger, webSocketService));
+app.use('/api', createKanbanTemplatesRoutes(kanbanDb, logger));
 // AI Agent execution routes will be added once implementation is complete
 // app.use('/api/ai-agent', createAiAgentExecutionRoutes(kanbanDb, settingsService, config.modelConfig!, logger));
 
