@@ -93,9 +93,9 @@
       {
         "id": "e2e",
         "name": "Full E2E Test Suite",
-        "command": "cd ui && npx playwright test health-check.spec.ts --reporter=list",
+        "command": "cd ui && npx playwright test health-check.spec.ts task-details-opening.spec.ts --reporter=list",
         "timeout": 180000,
-        "enabled": false,
+        "enabled": true,
         "continueOnFailure": false,
         "order": 10
       }

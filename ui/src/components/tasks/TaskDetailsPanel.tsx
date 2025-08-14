@@ -74,10 +74,10 @@ export function TaskDetailsPanel({
           projectHasDevScript={projectHasDevScript}
         >
           {/* Backdrop - only on smaller screens (overlay mode) */}
-          <div className={getBackdropClasses()} onClick={onClose} />
+          <div className={getBackdropClasses(true)} onClick={onClose} />
 
           {/* Panel */}
-          <div className={getTaskPanelClasses()}>
+          <div className={getTaskPanelClasses(true)} data-testid="task-details-panel">
             <div className="flex flex-col h-full">
               <TaskDetailsHeader
                 onClose={onClose}
@@ -85,7 +85,8 @@ export function TaskDetailsPanel({
                 onDeleteTask={onDeleteTask}
               />
 
-              <CollapsibleToolbar />
+              {/* Temporarily disable CollapsibleToolbar to fix the task details opening issue */}
+              {/* <CollapsibleToolbar /> */}
 
               <TabNavigation
                 activeTab={activeTab}

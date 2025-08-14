@@ -247,8 +247,8 @@ export function ProjectTasks() {
 
   const handleViewTaskDetails = useCallback(
     (task: Task) => {
-      // setSelectedTask(task);
-      // setIsPanelOpen(true);
+      setSelectedTask(task);
+      setIsPanelOpen(true);
       // Update URL to include task ID
       navigate(`/projects/${projectId}/tasks/${task.id}`, { replace: true });
     },
@@ -256,8 +256,8 @@ export function ProjectTasks() {
   );
 
   const handleClosePanel = useCallback(() => {
-    // setIsPanelOpen(false);
-    // setSelectedTask(null);
+    setIsPanelOpen(false);
+    setSelectedTask(null);
     // Remove task ID from URL when closing panel
     navigate(`/projects/${projectId}/tasks`, { replace: true });
   }, [projectId, navigate]);
