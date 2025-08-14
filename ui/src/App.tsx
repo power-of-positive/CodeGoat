@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { Layout } from './components/Layout';
+import { SidebarLayout } from './components/SidebarLayout';
 import { DashboardPage } from './pages/DashboardPage';
 import { RequestLogsPage } from './pages/RequestLogsPage';
 import { AnalyticsPage } from './pages/AnalyticsPage';
@@ -23,7 +23,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <UserSystemProvider>
         <BrowserRouter>
-          <Layout>
+          <SidebarLayout>
             <Routes>
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
               <Route path="/dashboard" element={<DashboardPage />} />
@@ -35,7 +35,7 @@ function App() {
               <Route path="/projects/:projectId/tasks" element={<ProjectTasks />} />
               <Route path="/projects/:projectId/tasks/:taskId" element={<ProjectTasks />} />
             </Routes>
-          </Layout>
+          </SidebarLayout>
         </BrowserRouter>
       </UserSystemProvider>
     </QueryClientProvider>
