@@ -26,7 +26,7 @@ export interface BackendProcess {
  */
 export function createBackendConfig(): BackendConfig {
   const port = process.env.BACKEND_PORT || '3001';
-  const projectRoot = join(process.cwd(), '../../');
+  const projectRoot = process.cwd(); // We're already in the project root
   
   return {
     port,

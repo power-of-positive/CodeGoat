@@ -6,7 +6,7 @@ import { join } from 'path';
  */
 export default defineConfig({
   test: {
-    globalSetup: ['./setup/global-setup.ts'],
+    globalSetup: ['tests/api-e2e/setup/global-setup.ts'],
     globals: true,
 
     // Performance optimizations
