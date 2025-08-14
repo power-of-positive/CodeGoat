@@ -24,6 +24,7 @@ import { createWebSocketStatsRoutes } from './routes/websocket-stats';
 // import { createAiAgentExecutionRoutes } from './routes/ai-agent-execution';
 import { KanbanDatabaseService } from './services/kanban-database.service';
 import { WebSocketService } from './services/websocket.service';
+import { WorktreeExecutionService } from './services/worktree-execution.service';
 // import { SettingsService } from './services/settings.service';
 
 const app = express();
@@ -60,6 +61,7 @@ const logCleaner = new LogCleaner(
 // Initialize Kanban database and services
 const kanbanDb = new KanbanDatabaseService(logger);
 const webSocketService = new WebSocketService(logger);
+const worktreeExecutionService = new WorktreeExecutionService(logger, kanbanDb);
 // const settingsService = new SettingsService(logger); // Will be used for AI agent integration
 
 // CORS configuration for Kanban UI integration
@@ -177,7 +179,7 @@ app.use('/api/websocket', createWebSocketStatsRoutes(webSocketService, logger));
 // Mount Kanban API routes
 app.use('/api', createKanbanHealthRoutes(kanbanDb, logger));
 app.use('/api', createKanbanProjectsRoutes(kanbanDb, logger));
-app.use('/api', createKanbanTasksRoutes(kanbanDb, logger, webSocketService));
+app.use('/api', createKanbanTasksRoutes(kanbanDb, logger, webSocketService, worktreeExecutionService));
 app.use('/api', createKanbanTaskAttemptsRoutes(kanbanDb, logger, webSocketService));
 app.use('/api', createKanbanTemplatesRoutes(kanbanDb, logger));
 // AI Agent execution routes will be added once implementation is complete
@@ -274,6 +276,9 @@ process.on('SIGTERM', () => {
 
   // Close WebSocket server first
   webSocketService.shutdown();
+
+  // Cleanup worktree execution service
+  worktreeExecutionService.destroy();
 
   // Then close HTTP server
   server.close(() => {

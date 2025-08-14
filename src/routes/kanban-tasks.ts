@@ -3,6 +3,7 @@ import { ApiResponse, TaskStatus } from '../types/kanban.types';
 import { ILogger } from '../logger-interface';
 import { KanbanDatabaseService } from '../services/kanban-database.service';
 import { WebSocketService } from '../services/websocket.service';
+import { WorktreeExecutionService } from '../services/worktree-execution.service';
 import { mapPrismaTaskToApiWithStatus, mapPrismaTaskToApi } from '../utils/kanban-mappers';
 import { PrismaClient, TaskStatus as PrismaTaskStatus } from '@prisma/client';
 import { z } from 'zod';
@@ -72,12 +73,121 @@ function mapApiStatusToPrisma(status: TaskStatus): PrismaTaskStatus {
 }
 
 /**
+ * Start worktree execution for a task when it's set to "in progress"
+ */
+async function startWorktreeExecution(
+  prisma: PrismaClient,
+  logger: ILogger,
+  worktreeService: WorktreeExecutionService,
+  taskId: string
+): Promise<void> {
+  try {
+    // Get task with project information
+    const task = await prisma.task.findUnique({
+      where: { id: taskId },
+      include: {
+        project: true,
+        attempts: {
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        },
+      },
+    });
+
+    if (!task || !task.project) {
+      logger.error('Task or project not found for worktree execution', new Error('Task or project not found'), { taskId });
+      return;
+    }
+
+    // Check if there's already an active attempt
+    if (task.attempts.length > 0 && task.attempts[0].status === 'RUNNING') {
+      logger.info('Task already has running attempt, skipping worktree execution', {
+        taskId,
+        attemptId: task.attempts[0].id,
+      });
+      return;
+    }
+
+    // Create new task attempt if one doesn't exist
+    let taskAttempt = task.attempts[0];
+    if (!taskAttempt || taskAttempt.status === 'COMPLETED' || taskAttempt.status === 'FAILED') {
+      const branchName = `task-${taskId}-${Date.now()}`;
+      const worktreePath = `./worktrees/${branchName}`;
+
+      taskAttempt = await prisma.taskAttempt.create({
+        data: {
+          taskId: taskId,
+          branchName,
+          worktreePath,
+          executor: 'CLAUDE_CODE',
+          status: 'CREATED',
+        },
+      });
+
+      logger.info('Created new task attempt for worktree execution', {
+        taskId,
+        attemptId: taskAttempt.id,
+        branchName,
+      });
+    }
+
+    // Configure worktree execution
+    const worktreeConfig = {
+      projectPath: task.project.gitRepoPath,
+      taskId: task.id,
+      taskTitle: task.title,
+      taskDescription: task.description || undefined,
+      branchName: taskAttempt.branchName,
+      worktreePath: taskAttempt.worktreePath,
+      baseBranch: 'main',
+      claudeProfile: 'default',
+    };
+
+    const executionOptions = {
+      timeout: 30 * 60 * 1000, // 30 minutes
+      autoCommit: true,
+      continueOnError: false,
+    };
+
+    logger.info('Starting worktree execution', {
+      taskId,
+      attemptId: taskAttempt.id,
+      projectPath: task.project.gitRepoPath,
+    });
+
+    // Start worktree execution asynchronously (fire and forget)
+    worktreeService.executeInWorktree(worktreeConfig, executionOptions)
+      .then(result => {
+        logger.info('Worktree execution completed', {
+          taskId,
+          attemptId: taskAttempt.id,
+          success: result.success,
+          duration: result.duration,
+          commitHash: result.commitHash,
+        });
+      })
+      .catch(error => {
+        logger.error('Worktree execution failed', error, {
+          taskId,
+          attemptId: taskAttempt.id,
+        });
+      });
+
+  } catch (error) {
+    logger.error('Failed to start worktree execution', error as Error, {
+      taskId,
+    });
+  }
+}
+
+/**
  * Create tasks API routes for Kanban system
  */
 export function createKanbanTasksRoutes(
   kanbanDb: KanbanDatabaseService,
   logger: ILogger,
-  webSocketService: WebSocketService
+  webSocketService: WebSocketService,
+  worktreeExecutionService?: WorktreeExecutionService
 ): Router {
   const router = Router();
   const prisma = kanbanDb.getClient();
@@ -237,6 +347,23 @@ export function createKanbanTasksRoutes(
       }
 
       const taskWithStatus = mapPrismaTaskToApiWithStatus(result);
+
+      // Start worktree execution using the new service
+      if (worktreeExecutionService) {
+        logger.info('Task created with inprogress status, starting worktree execution', {
+          taskId: result.id,
+          projectPath: project.gitRepoPath,
+        });
+
+        // Start worktree execution asynchronously (don't await to avoid blocking the response)
+        startWorktreeExecution(prisma, logger, worktreeExecutionService, result.id)
+          .catch(error => {
+            logger.error('Failed to trigger worktree execution for create-and-start task', error, {
+              taskId: result.id,
+            });
+          });
+      }
+
       res
         .status(200)
         .json(createSuccessResponse(taskWithStatus, 'Task created and started successfully'));
@@ -304,6 +431,23 @@ export function createKanbanTasksRoutes(
       });
 
       const apiTask = mapPrismaTaskToApi(updatedTask);
+
+      // Start worktree execution if task status is set to "inprogress"
+      if (updateData.status === 'inprogress' && existingTask.status !== 'INPROGRESS' && worktreeExecutionService) {
+        logger.info('Task status changed to inprogress, starting worktree execution', {
+          taskId: task_id,
+          previousStatus: existingTask.status,
+          newStatus: updateData.status,
+        });
+        
+        // Start worktree execution asynchronously (don't await to avoid blocking the response)
+        startWorktreeExecution(prisma, logger, worktreeExecutionService, task_id)
+          .catch(error => {
+            logger.error('Failed to trigger worktree execution for task status update', error, {
+              taskId: task_id,
+            });
+          });
+      }
 
       // Broadcast task update to WebSocket clients
       webSocketService.broadcastTaskUpdate({
