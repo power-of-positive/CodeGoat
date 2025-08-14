@@ -12,6 +12,7 @@ import { execSync } from "child_process";
 import * as process from "process";
 import { config } from "dotenv";
 import * as path from "path";
+import * as fs from "fs";
 import { runPrecommitChecks } from "./lib";
 import {
   performCodeReview,
@@ -86,41 +87,66 @@ function hasUncommittedFiles(): boolean {
 }
 
 /**
- * Parse and validate todo list from CLAUDE_TOOL_INPUT
+ * Parse and validate todo list from CLAUDE_TOOL_INPUT or todo-list.json file
  * Blocks Claude if there are unfinished high priority tasks
  */
 function validateTodoList(): { shouldBlock: boolean; reason?: string } {
+  let todos: TodoItem[] = [];
+  let todoSource = "";
+
+  // Try to get todos from CLAUDE_TOOL_INPUT first
   const toolInput = process.env.CLAUDE_TOOL_INPUT;
-  
-  if (!toolInput) {
-    // No todo list provided - allow completion
-    console.error("📝 No todo list provided in CLAUDE_TOOL_INPUT");
+  if (toolInput) {
+    try {
+      console.error("📝 Reading todo list from CLAUDE_TOOL_INPUT");
+      
+      // Handle different possible formats
+      if (toolInput.startsWith('[')) {
+        // Direct array format
+        todos = JSON.parse(toolInput);
+        todoSource = "CLAUDE_TOOL_INPUT";
+      } else {
+        // Try to extract JSON from tool input
+        const match = toolInput.match(/\[[\s\S]*\]/);
+        if (match) {
+          todos = JSON.parse(match[0]);
+          todoSource = "CLAUDE_TOOL_INPUT";
+        }
+      }
+    } catch (error) {
+      console.error("📝 Failed to parse CLAUDE_TOOL_INPUT:", error);
+    }
+  }
+
+  // If no todos from CLAUDE_TOOL_INPUT, try reading from todo-list.json file
+  if (todos.length === 0) {
+    const todoFilePath = path.join(process.cwd(), "todo-list.json");
+    try {
+      console.error("📝 Reading todo list from todo-list.json");
+      if (fs.existsSync(todoFilePath)) {
+        const fileContent = fs.readFileSync(todoFilePath, "utf-8");
+        todos = JSON.parse(fileContent);
+        todoSource = "todo-list.json";
+      }
+    } catch (error) {
+      console.error("📝 Failed to read todo-list.json:", error);
+    }
+  }
+
+  // If still no todos found, allow completion
+  if (todos.length === 0) {
+    console.error("📝 No todo list found in CLAUDE_TOOL_INPUT or todo-list.json");
     return { shouldBlock: false };
   }
 
+  if (!Array.isArray(todos)) {
+    console.error("📝 Todo list is not an array");
+    return { shouldBlock: false };
+  }
+
+  console.error(`📝 Using todo list from: ${todoSource}`);
+
   try {
-    // Try to parse as JSON
-    let todos: TodoItem[];
-    
-    // Handle different possible formats
-    if (toolInput.startsWith('[')) {
-      // Direct array format
-      todos = JSON.parse(toolInput);
-    } else {
-      // Try to extract JSON from tool input
-      const match = toolInput.match(/\[[\s\S]*\]/);
-      if (!match) {
-        console.error("📝 No valid todo array found in CLAUDE_TOOL_INPUT");
-        return { shouldBlock: false };
-      }
-      todos = JSON.parse(match[0]);
-    }
-
-    if (!Array.isArray(todos)) {
-      console.error("📝 Todo list is not an array");
-      return { shouldBlock: false };
-    }
-
     // Filter for unfinished tasks
     const unfinishedTasks = todos.filter(
       (todo: TodoItem) => todo.status === "pending" || todo.status === "in_progress"
@@ -159,7 +185,7 @@ function validateTodoList(): { shouldBlock: boolean; reason?: string } {
     return { shouldBlock: false };
 
   } catch (error) {
-    console.error("📝 Error parsing todo list:", error);
+    console.error("📝 Error validating todo list:", error);
     // Don't block on parse errors - allow completion
     return { shouldBlock: false };
   }
