@@ -1,12 +1,8 @@
-    ☐ Fix broken task details opening when
-      clicking on task
     ☐ Fix success rate calculation showing
       5507.2% - implement proper percentage
       calculation
     ☐ Create E2E test for sidebar collapse
       functionality
-    ☐ Enable E2E test stage in validation
-      pipeline
     ☐ Fix all failing E2E tests
     ☐ Enable coverage check and increase coverage
       across whole repo (frontend, backend,
@@ -15,6 +11,12 @@
       between Jest and Vitest for entire repo
     ☐ Align ESLint configs - use single config
       across whole repo
+    ☐ Mirror vibe-kanban Rust backend
+      functionality - support same agent running
+      and worktree management capabilities
+    ☐ Add todo list validation to claude-stop
+      hook - block Claude from stopping if
+      unfinished tasks exist
     ☐ Add statistic of average time per stage
       taken in analytics
     ☐ Fix avg time to success - should be average
@@ -35,4 +37,3 @@
       with non-transparent content
     ☐ Move validation stages to separate
       'Validation' page out of settings
-    ☐ Clean up dev database polluted projects
