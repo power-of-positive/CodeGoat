@@ -29,5 +29,5 @@ todo-list.json
 
 # Test files (temporary/runtime)
 test_request.json
-tests/api-e2e/test-results.xml
 validation-metrics.json
+test-results.xml
