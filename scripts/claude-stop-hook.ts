@@ -19,6 +19,14 @@ import {
   processReviewResults,
 } from "./lib/utils/review-processor";
 
+// Todo list types for validation
+interface TodoItem {
+  content: string;
+  status: "pending" | "in_progress" | "completed";
+  priority: "high" | "medium" | "low";
+  id: string;
+}
+
 // Log that the hook is being called (stderr to match shell version)
 console.error(`🔥 CLAUDE STOP HOOK EXECUTING - ${new Date()}`);
 console.error(`🔥 Hook arguments: ${process.argv.slice(2).join(" ")}`);
@@ -75,6 +83,86 @@ function getChangedFiles(): string {
 function hasUncommittedFiles(): boolean {
   const changes = getChangedFiles();
   return changes.trim().length > 0;
+}
+
+/**
+ * Parse and validate todo list from CLAUDE_TOOL_INPUT
+ * Blocks Claude if there are unfinished high priority tasks
+ */
+function validateTodoList(): { shouldBlock: boolean; reason?: string } {
+  const toolInput = process.env.CLAUDE_TOOL_INPUT;
+  
+  if (!toolInput) {
+    // No todo list provided - allow completion
+    console.error("📝 No todo list provided in CLAUDE_TOOL_INPUT");
+    return { shouldBlock: false };
+  }
+
+  try {
+    // Try to parse as JSON
+    let todos: TodoItem[];
+    
+    // Handle different possible formats
+    if (toolInput.startsWith('[')) {
+      // Direct array format
+      todos = JSON.parse(toolInput);
+    } else {
+      // Try to extract JSON from tool input
+      const match = toolInput.match(/\[[\s\S]*\]/);
+      if (!match) {
+        console.error("📝 No valid todo array found in CLAUDE_TOOL_INPUT");
+        return { shouldBlock: false };
+      }
+      todos = JSON.parse(match[0]);
+    }
+
+    if (!Array.isArray(todos)) {
+      console.error("📝 Todo list is not an array");
+      return { shouldBlock: false };
+    }
+
+    // Filter for unfinished tasks
+    const unfinishedTasks = todos.filter(
+      (todo: TodoItem) => todo.status === "pending" || todo.status === "in_progress"
+    );
+
+    // Filter for high priority unfinished tasks
+    const highPriorityUnfinished = unfinishedTasks.filter(
+      (todo: TodoItem) => todo.priority === "high"
+    );
+
+    console.error(`📝 Todo list analysis:`);
+    console.error(`   Total tasks: ${todos.length}`);
+    console.error(`   Unfinished tasks: ${unfinishedTasks.length}`);
+    console.error(`   High priority unfinished: ${highPriorityUnfinished.length}`);
+
+    if (highPriorityUnfinished.length > 0) {
+      const taskList = highPriorityUnfinished
+        .map((task: TodoItem) => `  - ${task.content}`)
+        .join('\n');
+      
+      return {
+        shouldBlock: true,
+        reason: `High priority tasks remain unfinished:\n${taskList}`
+      };
+    }
+
+    // Check if there are many medium/low priority unfinished tasks
+    if (unfinishedTasks.length >= 10) {
+      return {
+        shouldBlock: true,
+        reason: `Too many unfinished tasks (${unfinishedTasks.length}). Please complete some tasks before stopping.`
+      };
+    }
+
+    console.error("✅ Todo list validation passed");
+    return { shouldBlock: false };
+
+  } catch (error) {
+    console.error("📝 Error parsing todo list:", error);
+    // Don't block on parse errors - allow completion
+    return { shouldBlock: false };
+  }
 }
 
 /**
@@ -158,7 +246,20 @@ async function main(): Promise<void> {
   }, GLOBAL_TIMEOUT);
 
   try {
-    // First check: Block if there are uncommitted files
+    // First check: Block if there are unfinished high priority todos
+    const todoValidation = validateTodoList();
+    if (todoValidation.shouldBlock) {
+      console.error("⚠️ Unfinished high priority tasks detected - blocking completion");
+      console.error("💡 Please complete the high priority tasks before stopping");
+      const blockResult = {
+        decision: "block",
+        reason: todoValidation.reason || "Unfinished high priority tasks detected",
+      };
+      console.log(JSON.stringify(blockResult));
+      process.exit(2);
+    }
+
+    // Second check: Block if there are uncommitted files
     if (hasUncommittedFiles()) {
       console.error("⚠️ Uncommitted files detected - blocking completion");
       console.error("💡 Please commit your changes before completing");
