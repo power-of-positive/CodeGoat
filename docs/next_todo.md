@@ -1,16 +1,38 @@
-    ☐ Confirm that the AI reviewer works as
-      expected as part of validation checks on
-      pre-commit
-    ☐ Run and fix any failing Playwright tests
-    ☐ Run and fix any failing API E2E tests
-    ☐ Go through vibe kanban PRD, RFC and code
-      including API E2E tests to create
-      comprehensive Playwright tests for full E2E
-      coverage
-    ☐ Add missing Playwright tests identified
-      from code review to achieve full E2E
-      coverage
-    ☐ Code review existing Playwright tests for
-      kanban functionality - remove duplicates,
-      identify gaps
+    ☐ Fix broken task details opening when
+      clicking on task
+    ☐ Fix success rate calculation showing
+      5507.2% - implement proper percentage
+      calculation
+    ☐ Create E2E test for sidebar collapse
+      functionality
+    ☐ Enable E2E test stage in validation
+      pipeline
+    ☐ Fix all failing E2E tests
+    ☐ Enable coverage check and increase coverage
+      across whole repo (frontend, backend,
+      scripts)
+    ☐ Align unit testing strategy - choose
+      between Jest and Vitest for entire repo
+    ☐ Align ESLint configs - use single config
+      across whole repo
+    ☐ Add statistic of average time per stage
+      taken in analytics
+    ☐ Fix avg time to success - should be average
+      total time of all stages succeeding
+    ☐ Add line chart of success % per stage in
+      analytics
+    ☐ Fix font color within modal inputs - font
+      should be dark
+    ☐ Make sidebar collapsible
+    ☐ Move most failed stage info tooltip above
+      the stage statistics
+    ☐ Move current dashboard content to new Model
+      Management page
+    ☐ Add dead code detection to validation
+      stages
+    ☐ Remove task templates functionality
+    ☐ Fix modal backgrounds - transparent overlay
+      with non-transparent content
+    ☐ Move validation stages to separate
+      'Validation' page out of settings
     ☐ Clean up dev database polluted projects
