@@ -64,8 +64,12 @@ export const tasksApi = {
     return response.data;
   },
   
-  update: async (id: string, data: any) => {
-    const response = await api.put(`/tasks/${id}`, data);
+  update: async (id: string, data: any, projectId?: string) => {
+    // If projectId is provided, use the proper endpoint format
+    const endpoint = projectId 
+      ? `/projects/${projectId}/tasks/${id}`
+      : `/tasks/${id}`; // Fallback for backward compatibility
+    const response = await api.put(endpoint, data);
     return response.data;
   },
   

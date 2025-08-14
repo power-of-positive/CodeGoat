@@ -113,7 +113,7 @@ export const KanbanCard = ({
       tabIndex={tabIndex}
       onClick={onClick}
       onKeyDown={onKeyDown}
-      data-testid="kanban-card"
+      data-testid={`task-card-${id}`}
       data-rfd-draggable-id={id}
     >
       {children ?? <p className="m-0 font-medium text-sm">{name}</p>}

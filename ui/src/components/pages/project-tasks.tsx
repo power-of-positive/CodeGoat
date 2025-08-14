@@ -216,7 +216,7 @@ export function ProjectTasks() {
           title,
           description: description || undefined,
           status,
-        });
+        }, projectId);
         await fetchTasks();
         setEditingTask(null);
       } catch (err) {
@@ -297,7 +297,7 @@ export function ProjectTasks() {
           updateData.parent_task_attempt = task.parent_task_attempt;
         }
         
-        await tasksApi.update(taskId, updateData);
+        await tasksApi.update(taskId, updateData, projectId);
       } catch (err) {
         // Revert the optimistic update if the API call failed
         setTasks((prev) =>
@@ -305,7 +305,8 @@ export function ProjectTasks() {
             t.id === taskId ? { ...t, status: previousStatus } : t
           )
         );
-        setError('Failed to update task status');
+        console.error('Failed to update task status:', err);
+        setError('Failed to update task status. Please try again.');
       }
     },
     [projectId, tasks]
