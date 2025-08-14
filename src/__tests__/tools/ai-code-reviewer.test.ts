@@ -380,8 +380,14 @@ describe('AI Code Reviewer', () => {
       const result = await reviewCode('test.ts', 'const x = 1;');
 
       expect(result).toEqual({
-        reviews: [],
-        summary: 'No API key configured',
+        reviews: [{
+          line: null,
+          severity: 'info',
+          category: 'system',
+          message: 'AI code review skipped - no valid API key configured. Set OPENAI_API_KEY or OPENROUTER_API_KEY environment variable.',
+          suggestion: 'Configure API key in .env file or environment variables'
+        }],
+        summary: 'No valid API key configured - review skipped',
       });
     });
 
