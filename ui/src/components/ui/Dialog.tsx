@@ -24,7 +24,7 @@ const Dialog = React.forwardRef<
   return (
     <div className="fixed inset-0 z-[9999] flex items-start justify-center p-4 overflow-y-auto">
       <div
-        className="fixed inset-0 bg-black/50"
+        className="fixed inset-0 bg-black"
         onClick={() => (uncloseable ? {} : onOpenChange?.(false))}
       />
       <div
