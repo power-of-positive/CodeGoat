@@ -33,24 +33,19 @@ const mockKanbanDb: KanbanDatabaseService = {
   getClient: jest.fn().mockReturnValue(mockPrisma),
 } as any;
 
-const mockAgentExecutor: AgentExecutorService = {
+const mockAgentExecutor = {
   getProfile: jest.fn().mockReturnValue({
     type: 'claude',
     name: 'Claude Default',
     command: ['claude'],
     timeout: 30 * 60 * 1000
   }),
-  executeAgent: jest.fn().mockResolvedValue({
-    success: true,
-    exitCode: 0,
-    stdout: 'Task completed successfully',
-    stderr: '',
-    duration: 5000,
-    agentType: 'claude',
-    profileName: 'claude-default'
-  }),
+  executeAgent: jest.fn(),
   getAvailableProfiles: jest.fn(),
   addCustomProfile: jest.fn(),
+  killExecution: jest.fn(),
+  getActiveExecutions: jest.fn(),
+  shutdown: jest.fn(),
 } as any;
 
 // Mock child process
@@ -95,6 +90,17 @@ describe('WorktreeExecutionService', () => {
       status: 'RUNNING',
     });
     mockPrisma.taskAttempt.update.mockResolvedValue({});
+    
+    // Reset agent executor mock to default successful behavior
+    mockAgentExecutor.executeAgent.mockResolvedValue({
+      success: true,
+      exitCode: 0,
+      stdout: 'Task completed successfully',
+      stderr: '',
+      duration: 5000,
+      agentType: 'claude',
+      profileName: 'claude-default'
+    });
   });
 
   afterEach(() => {
@@ -120,53 +126,29 @@ describe('WorktreeExecutionService', () => {
         stderr: { on: jest.fn() },
       };
 
-      // Mock successful Claude Code execution
-      const mockClaudeProcess = {
-        stdout: { 
-          on: jest.fn((event, callback) => {
-            if (event === 'data') {
-              callback('Claude Code output\n');
-            }
-          })
-        },
-        stderr: { 
-          on: jest.fn((event, callback) => {
-            if (event === 'data') {
-              callback('');
-            }
-          })
-        },
-        on: jest.fn((event, callback) => {
-          if (event === 'close') {
-            setTimeout(() => callback(0), 50); // Successful execution
-          }
-        }),
-        kill: jest.fn(),
-      };
-
       mockSpawn
-        .mockReturnValueOnce(mockGitProcess as any) // git rev-parse --git-dir (validation)
-        .mockReturnValueOnce(mockGitProcess as any) // git worktree add
-        .mockReturnValueOnce(mockClaudeProcess as any) // claude-code
-        .mockReturnValueOnce(mockGitProcess as any) // git status --porcelain
-        .mockReturnValueOnce(mockGitProcess as any) // git add .
-        .mockReturnValueOnce(mockGitProcess as any) // git commit
-        .mockReturnValueOnce(mockGitProcess as any); // git rev-parse HEAD
+        .mockReturnValue(mockGitProcess as any); // All git commands
 
       const result = await service.executeInWorktree(mockConfig);
 
       expect(result.success).toBe(true);
       expect(result.exitCode).toBe(0);
       expect(result.stdout).toBe('Task completed successfully');
-      expect(mockSpawn).toHaveBeenCalledWith('claude-code', [
-        '--directory', mockConfig.worktreePath,
-        '--profile', mockConfig.agentProfile,
-        '--prompt', `Task: ${mockConfig.taskTitle}\n\nDescription: ${mockConfig.taskDescription}`,
-      ], expect.any(Object));
+      
+      // Verify agent executor was called with correct parameters
+      expect(mockAgentExecutor.executeAgent).toHaveBeenCalledWith({
+        profile: expect.objectContaining({
+          type: 'claude',
+          name: 'Claude Default'
+        }),
+        workingDirectory: mockConfig.worktreePath,
+        prompt: `Task: ${mockConfig.taskTitle}\n\nDescription: ${mockConfig.taskDescription}\n\nPlease help me implement this task. Review the codebase, understand the requirements, and make the necessary changes.`,
+        timeout: undefined
+      });
 
       expect(mockPrisma.taskAttempt.update).toHaveBeenLastCalledWith({
         where: { id: 'attempt-123' },
-        data: { status: 'COMPLETED', stdout: 'Claude Code output', stderr: '', completedAt: expect.any(Date) },
+        data: { status: 'COMPLETED', stdout: 'Task completed successfully', stderr: '', completedAt: expect.any(Date) },
       });
     });
 
@@ -192,7 +174,7 @@ describe('WorktreeExecutionService', () => {
       const result = await service.executeInWorktree(mockConfig);
 
       expect(result.success).toBe(false);
-      expect(result.error).toContain('fatal: not a git repository');
+      expect(result.error).toContain('Project path is not a valid git repository');
       
       expect(mockPrisma.taskAttempt.update).toHaveBeenCalledWith({
         where: { id: 'attempt-123' },
@@ -217,34 +199,19 @@ describe('WorktreeExecutionService', () => {
         stderr: { on: jest.fn() },
       };
 
-      // Mock failed Claude Code execution
-      const mockClaudeProcess = {
-        stdout: { 
-          on: jest.fn((event, callback) => {
-            if (event === 'data') {
-              callback('Claude Code stdout\n');
-            }
-          })
-        },
-        stderr: { 
-          on: jest.fn((event, callback) => {
-            if (event === 'data') {
-              callback('Claude Code error\n');
-            }
-          })
-        },
-        on: jest.fn((event, callback) => {
-          if (event === 'close') {
-            setTimeout(() => callback(1), 50); // Failed execution
-          }
-        }),
-        kill: jest.fn(),
-      };
+      // Mock failed agent execution
+      mockAgentExecutor.executeAgent.mockResolvedValueOnce({
+        success: false,
+        exitCode: 1,
+        stdout: 'Claude Code stdout',
+        stderr: 'Claude Code error',
+        duration: 5000,
+        agentType: 'claude',
+        profileName: 'claude-default',
+        error: 'Execution failed'
+      });
 
-      mockSpawn
-        .mockReturnValueOnce(mockGitProcess as any) // git rev-parse --git-dir
-        .mockReturnValueOnce(mockGitProcess as any) // git worktree add
-        .mockReturnValueOnce(mockClaudeProcess as any); // claude-code
+      mockSpawn.mockReturnValue(mockGitProcess as any);
 
       const result = await service.executeInWorktree(mockConfig);
 
@@ -274,23 +241,19 @@ describe('WorktreeExecutionService', () => {
         stderr: { on: jest.fn() },
       };
 
-      // Mock Claude Code process that gets killed due to timeout
-      const mockClaudeProcess = {
-        stdout: { on: jest.fn() },
-        stderr: { on: jest.fn() },
-        on: jest.fn((event, callback) => {
-          if (event === 'close') {
-            // Simulate process being killed after timeout
-            setTimeout(() => callback(143), 150); // SIGTERM exit code
-          }
-        }),
-        kill: jest.fn(),
-      };
+      // Mock agent execution that times out
+      mockAgentExecutor.executeAgent.mockResolvedValueOnce({
+        success: false,
+        exitCode: 143, // SIGTERM exit code
+        stdout: '',
+        stderr: 'Process timed out',
+        duration: 100,
+        agentType: 'claude',
+        profileName: 'claude-default',
+        error: 'Process timed out'
+      });
 
-      mockSpawn
-        .mockReturnValueOnce(mockGitProcess as any) // git rev-parse --git-dir
-        .mockReturnValueOnce(mockGitProcess as any) // git worktree add
-        .mockReturnValueOnce(mockClaudeProcess as any); // claude-code
+      mockSpawn.mockReturnValue(mockGitProcess as any);
 
       const options: ExecutionOptions = { timeout: 100 }; // Very short timeout
       
@@ -298,7 +261,9 @@ describe('WorktreeExecutionService', () => {
       
       expect(result.success).toBe(false);
       expect(result.exitCode).toBe(143); // SIGTERM exit code
-      expect(mockClaudeProcess.kill).toHaveBeenCalledWith('SIGTERM');
+      expect(mockAgentExecutor.executeAgent).toHaveBeenCalledWith(expect.objectContaining({
+        timeout: 100
+      }));
     }, 10000);
 
     it('should skip auto-commit when disabled', async () => {

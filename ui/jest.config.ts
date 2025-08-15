@@ -15,9 +15,12 @@ const config: Config = {
     'test-results/',
   ],
   transform: {
-    '^.+\\.(ts|tsx)$': ['ts-jest', {
-      tsconfig: 'tsconfig.app.json',
-    }],
+    '^.+\\.(ts|tsx)$': [
+      'ts-jest',
+      {
+        tsconfig: 'tsconfig.app.json',
+      },
+    ],
   },
   collectCoverageFrom: [
     'src/**/*.{ts,tsx}',
@@ -32,10 +35,10 @@ const config: Config = {
   coverageReporters: ['text', 'lcov', 'html'],
   coverageThreshold: {
     global: {
-      branches: 0.1,
-      functions: 0.1,
-      lines: 0.1,
-      statements: 0.1,
+      branches: 80,
+      functions: 80,
+      lines: 80,
+      statements: 80,
     },
   },
   setupFilesAfterEnv: ['<rootDir>/src/test/setup.ts'],
