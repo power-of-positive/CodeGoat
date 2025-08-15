@@ -15,7 +15,7 @@ describe('Settings Routes', () => {
     app = express();
     app.use(express.json());
     // Pass null for configLoader since settings routes don't actually use it
-    app.use('/settings', createSettingsRoutes(null as any, mockLogger));
+    app.use('/settings', createSettingsRoutes(mockLogger));
     jest.clearAllMocks();
   });
 

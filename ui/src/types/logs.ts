@@ -19,6 +19,9 @@ export interface ProcessStartPayload {
   command: string;
   working_directory?: string;
   environment?: Record<string, string>;
+  runReason?: string;
+  startedAt?: string;
+  status?: 'running' | 'completed' | 'failed';
 }
 
 export interface UnifiedLogEntry {
@@ -29,4 +32,6 @@ export interface UnifiedLogEntry {
   source?: string;
   metadata?: Record<string, unknown>;
   process_id?: string;
+  channel?: 'stdout' | 'stderr' | 'normalized' | 'process_start';
+  payload?: unknown;
 }

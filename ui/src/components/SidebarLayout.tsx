@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, FileText, Settings as SettingsIcon, BarChart3, FolderKanban, Menu, X } from 'lucide-react';
+import { Settings as SettingsIcon, BarChart3, Menu, X } from 'lucide-react';
 
 interface SidebarLayoutProps {
   children: ReactNode;
@@ -11,24 +11,6 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const tabs = [
-    { 
-      id: 'dashboard', 
-      name: 'Dashboard', 
-      icon: Home, 
-      path: '/dashboard' 
-    },
-    { 
-      id: 'projects', 
-      name: 'Projects', 
-      icon: FolderKanban, 
-      path: '/projects' 
-    },
-    { 
-      id: 'logs', 
-      name: 'Request Logs', 
-      icon: FileText, 
-      path: '/logs' 
-    },
     { 
       id: 'analytics', 
       name: 'Analytics', 
@@ -57,7 +39,7 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
                   CodeGoat
                 </h1>
                 <p className="mt-1 text-xs text-gray-400">
-                  AI-powered project management
+                  Validation Analytics
                 </p>
               </div>
             )}
@@ -76,8 +58,7 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
           <ul className="space-y-1">
             {tabs.map((tab) => {
               const Icon = tab.icon;
-              const isActive = location.pathname === tab.path || 
-                (tab.id === 'projects' && location.pathname.startsWith('/projects'));
+              const isActive = location.pathname === tab.path;
               
               return (
                 <li key={tab.id}>

@@ -1,5 +1,4 @@
 import { Router, Request, Response } from 'express';
-import { ConfigLoader } from '../config';
 import { ILogger } from '../logger-interface';
 import { z } from 'zod';
 import { SettingsService } from '../services/settings.service';
@@ -237,7 +236,7 @@ function createGetStagesHandler(settingsService: SettingsService, logger: ILogge
   };
 }
 
-export function createSettingsRoutes(configLoader: ConfigLoader, logger: ILogger): Router {
+export function createSettingsRoutes(logger: ILogger): Router {
   const router = Router();
   const settingsService = new SettingsService(logger);
 

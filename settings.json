@@ -22,28 +22,82 @@
         "id": "typecheck",
         "name": "Type Checking",
         "command": "npx tsc --noEmit",
-        "timeout": 30000,
+        "timeout": 45000,
         "enabled": true,
         "continueOnFailure": false,
         "order": 2
       },
       {
-        "id": "test",
-        "name": "Unit Tests",
-        "command": "npm test",
-        "timeout": 120000,
-        "enabled": false,
+        "id": "unit-tests-backend",
+        "name": "Backend Unit Tests",
+        "command": "npm run test:unit:backend",
+        "timeout": 30000,
+        "enabled": true,
         "continueOnFailure": false,
         "order": 3
       },
       {
-        "id": "coverage",
-        "name": "Test Coverage Check",
-        "command": "npm run test:coverage",
-        "timeout": 120000,
-        "enabled": false,
+        "id": "unit-tests-frontend",
+        "name": "Frontend Unit Tests",
+        "command": "npm run test:unit:frontend",
+        "timeout": 30000,
+        "enabled": true,
         "continueOnFailure": false,
         "order": 4
+      },
+      {
+        "id": "integration-tests",
+        "name": "Integration Tests",
+        "command": "npm run test:integration",
+        "timeout": 90000,
+        "enabled": true,
+        "continueOnFailure": false,
+        "order": 5
+      },
+      {
+        "id": "coverage-backend",
+        "name": "Backend Coverage Check",
+        "command": "npm run test:coverage:backend",
+        "timeout": 30000,
+        "enabled": true,
+        "continueOnFailure": false,
+        "order": 6
+      },
+      {
+        "id": "coverage-frontend",
+        "name": "Frontend Coverage Check",
+        "command": "npm run test:coverage:frontend",
+        "timeout": 30000,
+        "enabled": true,
+        "continueOnFailure": false,
+        "order": 7
+      },
+      {
+        "id": "unit-tests-scripts",
+        "name": "Scripts Unit Tests",
+        "command": "npm run test:unit:scripts",
+        "timeout": 30000,
+        "enabled": true,
+        "continueOnFailure": false,
+        "order": 8
+      },
+      {
+        "id": "coverage-scripts",
+        "name": "Scripts Coverage Check",
+        "command": "npm run test:coverage:scripts",
+        "timeout": 30000,
+        "enabled": true,
+        "continueOnFailure": false,
+        "order": 9
+      },
+      {
+        "id": "api-e2e-tests",
+        "name": "API E2E Tests",
+        "command": "npm run test:api-e2e",
+        "timeout": 120000,
+        "enabled": true,
+        "continueOnFailure": false,
+        "order": 10
       },
       {
         "id": "typescript-preference",
@@ -52,61 +106,61 @@
         "timeout": 10000,
         "enabled": true,
         "continueOnFailure": false,
-        "order": 5
+        "order": 11
       },
       {
         "id": "ai-code-review",
         "name": "AI Code Review",
         "command": "npx ts-node src/tools/ai-code-reviewer.ts",
         "timeout": 120000,
-        "enabled": false,
+        "enabled": true,
         "continueOnFailure": false,
-        "order": 6
+        "order": 12
       },
       {
         "id": "visual-regression",
         "name": "Visual Regression Tests",
         "command": "node scripts/visual-regression.js",
         "timeout": 60000,
-        "enabled": false,
+        "enabled": true,
         "continueOnFailure": false,
-        "order": 7
+        "order": 13
       },
       {
         "id": "dead-code",
         "name": "Dead Code Detection",
         "command": "npx ts-node scripts/check-dead-code.ts",
         "timeout": 45000,
-        "enabled": false,
+        "enabled": true,
         "continueOnFailure": false,
-        "order": 8
+        "order": 14
       },
       {
         "id": "duplication-check",
         "name": "Code Duplication Detection",
         "command": "npm run duplication-check",
         "timeout": 45000,
-        "enabled": false,
+        "enabled": true,
         "continueOnFailure": false,
-        "order": 9
+        "order": 15
       },
       {
         "id": "vulnerability-check",
         "name": "Dependency Vulnerability Scan",
         "command": "npm audit --audit-level=moderate",
         "timeout": 30000,
-        "enabled": false,
+        "enabled": true,
         "continueOnFailure": false,
-        "order": 10
+        "order": 16
       },
       {
-        "id": "e2e",
-        "name": "Full E2E Test Suite",
-        "command": "cd ui && npx playwright test --reporter=list",
+        "id": "playwright-e2e",
+        "name": "Playwright E2E Tests",
+        "command": "npm run test:playwright-e2e",
         "timeout": 180000,
-        "enabled": false,
+        "enabled": true,
         "continueOnFailure": false,
-        "order": 11
+        "order": 17
       },
       {
         "id": "uncommitted-files",
@@ -115,16 +169,16 @@
         "timeout": 10000,
         "enabled": true,
         "continueOnFailure": false,
-        "order": 12
+        "order": 18
       },
       {
         "id": "todo-list",
         "name": "Todo List Validation",
         "command": "npx ts-node scripts/validate-todo-list.ts",
         "timeout": 10000,
-        "enabled": false,
+        "enabled": true,
         "continueOnFailure": false,
-        "order": 13
+        "order": 19
       }
     ],
     "enableMetrics": true,

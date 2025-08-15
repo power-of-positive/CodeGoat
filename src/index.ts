@@ -2,42 +2,16 @@ import 'dotenv/config';
 import express, { Request, Response, NextFunction } from 'express';
 import { createServer } from 'http';
 import path from 'path';
-import { ConfigLoader } from './config';
-import { RouteMatcher } from './matcher';
-import { ConfigurableProxyHandler } from './proxy-handler';
 import { WinstonLogger } from './logger-winston';
 import { LogCleaner } from './utils/log-cleaner';
-import { ProxyRequest } from './types';
-import { createModelRoutes } from './routes/models';
-import { createStatusRoutes } from './routes/status';
-import { createOpenRouterStatsRoutes } from './routes/openrouter-stats';
-import { createInternalRoutes } from './routes/internal';
-import { createLogsRoutes } from './routes/logs';
 import { createSettingsRoutes } from './routes/settings';
 import { createAnalyticsRoutes } from './routes/analytics';
-import { createKanbanProjectsRoutes } from './routes/kanban-projects';
-import { createKanbanTasksRoutes } from './routes/kanban-tasks';
-import { createKanbanTaskAttemptsRoutes } from './routes/kanban-task-attempts';
-import { createKanbanHealthRoutes } from './routes/kanban-health';
-import { createWebSocketStatsRoutes } from './routes/websocket-stats';
-import { createAgentProfilesRoutes } from './routes/agent-profiles';
-// import { createAiAgentExecutionRoutes } from './routes/ai-agent-execution';
-import { KanbanDatabaseService } from './services/kanban-database.service';
-import { WebSocketService } from './services/websocket.service';
-import { WorktreeExecutionService } from './services/worktree-execution.service';
-import { AgentExecutorService } from './services/agent-executor.service';
-// import { SettingsService } from './services/settings.service';
 
 const app = express();
-const configLoader = new ConfigLoader();
-const routeMatcher = new RouteMatcher();
-
-let config = configLoader.load();
-const proxyHandler = new ConfigurableProxyHandler(config.modelConfig!);
 
 const logsDir = path.join(process.cwd(), 'logs');
 const logger = new WinstonLogger({
-  level: config.settings.logging.level,
+  level: 'info',
   logsDir,
   enableConsole: true,
   enableFile: true,
@@ -56,17 +30,7 @@ const logCleaner = new LogCleaner(
   logger
 );
 
-// Initialize management API
-// initializeManagementAPI(configLoader, logger);
-
-// Initialize Kanban database and services
-const kanbanDb = new KanbanDatabaseService(logger);
-const webSocketService = new WebSocketService(logger);
-const agentExecutorService = new AgentExecutorService(logger);
-const worktreeExecutionService = new WorktreeExecutionService(logger, kanbanDb, agentExecutorService);
-// const settingsService = new SettingsService(logger); // Will be used for AI agent integration
-
-// CORS configuration for Kanban UI integration
+// CORS configuration for UI integration
 app.use((req: Request, res: Response, next: NextFunction) => {
   // Allow requests from localhost (development) and same origin
   const allowedOrigins = [
@@ -96,26 +60,20 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
-// Configure body parser with large limits and error handling
+// Configure body parser
 app.use(
   express.json({
-    limit: '100mb',
-  })
-);
-app.use(
-  express.raw({
-    type: '*/*',
-    limit: '100mb',
+    limit: '10mb',
   })
 );
 app.use(
   express.urlencoded({
-    limit: '100mb',
+    limit: '10mb',
     extended: true,
   })
 );
 
-// Handle body parser errors (including payload too large)
+// Handle body parser errors
 app.use((error: Error & { type?: string }, req: Request, res: Response, next: NextFunction) => {
   if (error instanceof SyntaxError && 'body' in error) {
     logger.error('Body parser syntax error', error, {
@@ -130,21 +88,14 @@ app.use((error: Error & { type?: string }, req: Request, res: Response, next: Ne
   }
 
   if (error.type === 'entity.too.large') {
-    logger.error('Request entity too large at Express level', error, {
+    logger.error('Request entity too large', error, {
       method: req.method,
       path: req.path,
       contentType: req.headers['content-type'],
       contentLength: req.headers['content-length'],
-      userAgent: req.headers['user-agent'],
-      limit: '100MB',
     });
     return res.status(413).json({
-      error: {
-        message: 'Request payload too large (Express limit: 100MB)',
-        type: 'payload_too_large_error',
-        limit: '100MB',
-        suggestion: 'Reduce request size or contact administrator about limits',
-      },
+      error: 'Request payload too large',
     });
   }
 
@@ -168,97 +119,29 @@ app.use(logger.middleware());
 const uiDistPath = path.join(__dirname, '../ui/dist');
 app.use('/ui', express.static(uiDistPath));
 
-// Mount route modules
-app.use('/internal', createInternalRoutes());
-app.use('/api/models', createModelRoutes(configLoader, logger));
-app.use('/api/status', createStatusRoutes(configLoader, logger));
-app.use('/api/openrouter-stats', createOpenRouterStatsRoutes(logger));
-app.use('/api/logs', createLogsRoutes(logger));
-app.use('/api/settings', createSettingsRoutes(configLoader, logger));
+// Mount API routes
+app.use('/api/settings', createSettingsRoutes(logger));
 app.use('/api/analytics', createAnalyticsRoutes(logger));
-app.use('/api/websocket', createWebSocketStatsRoutes(webSocketService, logger));
 
-// Mount Kanban API routes
-app.use('/api', createKanbanHealthRoutes(kanbanDb, logger));
-app.use('/api', createKanbanProjectsRoutes(kanbanDb, logger));
-app.use('/api', createKanbanTasksRoutes(kanbanDb, logger, webSocketService, worktreeExecutionService));
-app.use('/api', createKanbanTaskAttemptsRoutes(kanbanDb, logger, webSocketService));
-app.use('/api/agent-profiles', createAgentProfilesRoutes(worktreeExecutionService, logger));
-// AI Agent execution routes will be added once implementation is complete
-// app.use('/api/ai-agent', createAiAgentExecutionRoutes(kanbanDb, settingsService, config.modelConfig!, logger));
-
-// Keep test route for compatibility
-app.get('/test', (_req: Request, res: Response) => {
-  res.json({ message: 'Test route works!' });
+// Health check endpoint
+app.get('/health', (_req: Request, res: Response) => {
+  res.json({ status: 'ok' });
 });
 
-// Proxy middleware - only for non-management routes
-app.use(async (req: Request, res: Response, next: NextFunction) => {
-  logger.debug('Proxy middleware called', { method: req.method, path: req.path });
-
-  // Skip proxy routing for API and internal routes
-  if (
-    req.path.startsWith('/api/') ||
-    req.path.startsWith('/internal/') ||
-    req.path.startsWith('/ui/') ||
-    req.path === '/test'
-  ) {
-    logger.debug('Skipping proxy', { path: req.path });
-    return next();
-  }
-
-  try {
-    const proxyRequest: ProxyRequest = {
-      path: req.path,
-      method: req.method,
-      headers: req.headers as Record<string, string | string[]>,
-      body: req.body,
-      query: req.query as Record<string, string>,
-    };
-
-    const matchedRoute = routeMatcher.matchRoute(config.routes, proxyRequest);
-
-    if (!matchedRoute) {
-      return res.status(404).json({ error: 'No matching route found' });
-    }
-
-    // Add route information for logging
-    (req as Request & { routeName?: string }).routeName = matchedRoute.name;
-
-    const rewrittenPath = routeMatcher.rewritePath(matchedRoute, req.path);
-    (req as Request & { targetUrl?: string }).targetUrl = matchedRoute.target.url + rewrittenPath;
-
-    await proxyHandler.handleRequest(req, res, matchedRoute, rewrittenPath);
-  } catch (error) {
-    logger.error('Request handling error', error as Error);
-    if (!res.headersSent) {
-      res.status(500).json({ error: 'Internal server error' });
-    }
-  }
+// Catch-all for unmatched routes
+app.use('*', (_req: Request, res: Response) => {
+  res.status(404).json({ error: 'Not found' });
 });
 
-process.on('SIGHUP', () => {
-  logger.info('Reloading configuration...');
-  try {
-    config = configLoader.reload();
-    const newProxyHandler = new ConfigurableProxyHandler(config.modelConfig!);
-    Object.setPrototypeOf(proxyHandler, Object.getPrototypeOf(newProxyHandler));
-    Object.assign(proxyHandler, newProxyHandler);
-    logger.info('Configuration reloaded successfully');
-  } catch (error) {
-    logger.error('Failed to reload configuration', error as Error);
-  }
-});
 
 // Create HTTP server
 const httpServer = createServer(app);
 
-// Initialize WebSocket server
-webSocketService.initialize(httpServer);
+const PORT = process.env.PORT || 3000;
+const HOST = process.env.HOST || 'localhost';
 
-const server = httpServer.listen(config.proxy.port, config.proxy.host, () => {
-  logger.info(`Proxy server running on ${config.proxy.host}:${config.proxy.port}`);
-  logger.info(`WebSocket server initialized on same port`);
+const server = httpServer.listen(Number(PORT), HOST, () => {
+  logger.info(`Validation analytics server running on ${HOST}:${PORT}`);
 
   // Run initial log cleanup
   void logCleaner.cleanLogs();
@@ -270,19 +153,12 @@ const server = httpServer.listen(config.proxy.port, config.proxy.host, () => {
   }, SIX_HOURS);
 });
 
-// Set server timeout to handle large payloads
-server.timeout = 300000; // 5 minutes
+// Set reasonable server timeout
+server.timeout = 30000; // 30 seconds
 
 process.on('SIGTERM', () => {
-  logger.info('SIGTERM signal received: closing servers');
+  logger.info('SIGTERM signal received: closing server');
 
-  // Close WebSocket server first
-  webSocketService.shutdown();
-
-  // Cleanup worktree execution service
-  worktreeExecutionService.destroy();
-
-  // Then close HTTP server
   server.close(() => {
     logger.info('HTTP server closed');
     process.exit(0);

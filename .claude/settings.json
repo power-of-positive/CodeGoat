@@ -1,4 +1,11 @@
 {
+  "permissions": {
+    "deny": [
+      "Update(.claude/settings.json)",
+      "Update(settings.json)",
+      "Update(tsconfig.json)"
+    ]
+  },
   "hooks": {
     "PostToolUse": [
       {

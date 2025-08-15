@@ -361,5 +361,75 @@
     "assignee_id": "unassigned",
     "priority": "high",
     "id": "68"
+  },
+  {
+    "content": "Tighten ESLint rules further to improve code quality - reduce max function length, complexity, and other quality metrics beyond current settings",
+    "status": "pending",
+    "assignee_id": "unassigned", 
+    "priority": "medium",
+    "id": "69"
+  },
+  {
+    "content": "Create a plan for running validator from outside of the repository - design a separate standalone program that cannot be changed from within this repo, ensuring validation pipeline integrity and preventing circumvention",
+    "status": "pending",
+    "assignee_id": "unassigned",
+    "priority": "high", 
+    "id": "70"
+  },
+  {
+    "content": "Remove redundant documentation and test files throughout the repository",
+    "status": "pending",
+    "assignee_id": "unassigned",
+    "priority": "medium",
+    "id": "71"
+  },
+  {
+    "content": "Do a thorough security review of the repository and fix any issues",
+    "status": "pending",
+    "assignee_id": "unassigned",
+    "priority": "high",
+    "id": "72"
+  },
+  {
+    "content": "Do accessibility review of the UI and fix any issues",
+    "status": "pending",
+    "assignee_id": "unassigned",
+    "priority": "medium",
+    "id": "73"
+  },
+  {
+    "content": "Add tasks from todo-list.json into the tasks database for a new project called 'code-goat' in the dev database",
+    "status": "pending",
+    "assignee_id": "unassigned",
+    "priority": "medium",
+    "id": "74"
+  },
+  {
+    "content": "Update tasks functionality of kanban board to include all fields from todo-list.json - auto-calculate endTime and duration when task marked as completed, startTime when marked as in_progress",
+    "status": "pending",
+    "assignee_id": "unassigned",
+    "priority": "high",
+    "id": "75"
+  },
+  {
+    "content": "Add analytics data on task completion times and other kanban productivity metrics",
+    "status": "pending",
+    "assignee_id": "unassigned",
+    "priority": "medium",
+    "id": "76"
+  },
+  {
+    "content": "Update validate-todo-list.ts to query the API for tasks instead of using the static file",
+    "status": "pending",
+    "assignee_id": "unassigned",
+    "priority": "high",
+    "id": "77"
+  },
+  {
+    "content": "Fix test execution issues - tests hang and do not run properly, create a simple script that works like it did in the past",
+    "status": "pending",
+    "assignee_id": "unassigned",
+    "priority": "high",
+    "id": "78"
   }
 ]

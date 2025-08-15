@@ -7,6 +7,7 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
+  maxFailures: process.env.CI ? 5 : undefined, // Allow up to 5 failures in CI
   reporter: 'html',
   timeout: 30 * 1000, // 30 seconds per test
   use: {
@@ -48,7 +49,7 @@ export default defineConfig({
       command: 'cd .. && cp .env.test .env && npm run db:test:migrate && npm run build && npm start',
       port: 3001,
       timeout: 120000, // 2 minutes for backend to build and start
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: true,
       env: {
         NODE_ENV: 'test',
         KANBAN_DATABASE_URL: 'file:./prisma/kanban-test.db',
@@ -58,7 +59,7 @@ export default defineConfig({
       command: 'npm run dev',
       port: 5174,
       timeout: 60000, // 1 minute for frontend to start
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: true,
     },
   ],
 });
