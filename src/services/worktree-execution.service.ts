@@ -8,13 +8,13 @@
  * - Cleanup of worktrees and processes
  */
 
-import { spawn, ChildProcess } from 'child_process';
+import { ChildProcess } from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import { ILogger } from '../logger-interface';
 import { KanbanDatabaseService } from './kanban-database.service';
 import { AgentExecutorService, AgentProfile } from './agent-executor.service';
-import { runGitCommand, isGitRepository, cleanupWorktree, buildClaudeArgs } from './worktree-execution.helpers';
+import { runGitCommand, isGitRepository, cleanupWorktree } from './worktree-execution.helpers';
 
 export interface WorktreeConfig {
   projectPath: string;

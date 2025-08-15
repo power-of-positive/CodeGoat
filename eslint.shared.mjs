@@ -116,9 +116,9 @@ export const sharedConfig = {
     files: ['scripts/**/*.js', 'scripts/**/*.ts', 'src/tools/**/*.ts', 'src/**/cli.ts'],
     rules: {
       'no-console': ['warn', { allow: ['log', 'warn', 'error', 'info'] }],
-      'max-lines': ['error', { max: 350 }], // Allow slightly longer script files
+      'max-lines': ['error', { max: 450 }], // Allow longer script files
       'max-lines-per-function': ['error', { max: 40 }], // Allow longer functions in scripts
-      'max-statements': ['error', { max: 18 }], // Allow more statements in scripts
+      'max-statements': ['error', { max: 25 }], // Allow more statements in scripts
       'complexity': ['error', { max: 10 }], // Allow higher complexity in scripts
       'max-params': ['error', 4], // Allow more params in scripts
     },

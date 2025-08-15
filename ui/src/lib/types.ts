@@ -1,4 +1,5 @@
 // Frontend-specific types for task details and diff processing
+import type { ExecutionProcess } from 'shared/types';
 
 export interface ProcessedLine {
   line_number: number;
@@ -77,12 +78,4 @@ export interface DiffLine {
   new_line_number?: number;
 }
 
-// ExecutionProcess type definition
-export interface ExecutionProcess {
-  id: string;
-  status: 'running' | 'completed' | 'failed';
-  command?: string;
-  created_at: string;
-  updated_at: string;
-  metadata?: Record<string, unknown>;
-}
+// ExecutionProcess type imported from shared/types

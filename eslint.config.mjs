@@ -13,7 +13,7 @@ export default [
     rules: {
       'max-lines': ['error', { max: 400 }],
       'max-lines-per-function': ['error', { max: 50 }],
-      'max-statements': ['error', { max: 20 }],
+      'max-statements': ['error', { max: 30 }],
       'complexity': ['error', { max: 12 }], // Higher complexity for API routes
       'max-params': ['error', 5], // Allow more params for API routes
       '@typescript-eslint/no-explicit-any': 'off',

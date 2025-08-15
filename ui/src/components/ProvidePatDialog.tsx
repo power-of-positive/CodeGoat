@@ -33,7 +33,7 @@ export function ProvidePatDialog({
       await updateAndSaveConfig({
         github: {
           ...config.github,
-          pat,
+          token: pat,
         },
       });
       onOpenChange(false);
