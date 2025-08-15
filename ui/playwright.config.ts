@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
-  testDir: './e2e',
+  testDir: './tests',
   testIgnore: '**/api-integration-pactum.spec.ts',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
@@ -44,15 +44,14 @@ export default defineConfig({
     },
   ],
 
-  webServer: process.env.SKIP_WEB_SERVER ? undefined : [
+  webServer: (process.env.SKIP_WEB_SERVER || process.env.CI) ? undefined : [
     {
-      command: 'cd .. && cp .env.test .env && npm run db:test:migrate && npm run build && npm start',
-      port: 3001,
-      timeout: 120000, // 2 minutes for backend to build and start
+      command: 'cd .. && npm run build && npm start',
+      port: 3000,
+      timeout: 60000, // 1 minute for backend to build and start
       reuseExistingServer: true,
       env: {
         NODE_ENV: 'test',
-        KANBAN_DATABASE_URL: 'file:./prisma/kanban-test.db',
       },
     },
     {

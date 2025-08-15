@@ -1,10 +1,8 @@
 import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { SidebarLayout } from './components/SidebarLayout';
-import { AnalyticsPage } from './pages/AnalyticsPage';
-import { SettingsPage } from './pages/SettingsPage';
-import { UserSystemProvider } from './components/config-provider';
+import { Analytics } from './components/Analytics';
+import { Settings } from './components/Settings';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -18,17 +16,17 @@ const queryClient = new QueryClient({
 function App(): React.JSX.Element {
   return (
     <QueryClientProvider client={queryClient}>
-      <UserSystemProvider>
-        <BrowserRouter>
-          <SidebarLayout>
+      <BrowserRouter>
+        <div className="min-h-screen bg-gray-50">
+          <div className="max-w-7xl mx-auto">
             <Routes>
               <Route path="/" element={<Navigate to="/analytics" replace />} />
-              <Route path="/analytics" element={<AnalyticsPage />} />
-              <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/analytics" element={<Analytics />} />
+              <Route path="/settings" element={<Settings />} />
             </Routes>
-          </SidebarLayout>
-        </BrowserRouter>
-      </UserSystemProvider>
+          </div>
+        </div>
+      </BrowserRouter>
     </QueryClientProvider>
   );
 }

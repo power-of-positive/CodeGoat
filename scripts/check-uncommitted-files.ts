@@ -26,8 +26,8 @@ interface UncommittedFilesConfig {
 }
 
 const DEFAULT_CONFIG: UncommittedFilesConfig = {
-  maxModifiedFiles: 10,
-  maxUntrackedFiles: 5,
+  maxModifiedFiles: 0,
+  maxUntrackedFiles: 0,
   ignorePatterns: [
     'validation-metrics.json',
     'validation-sessions.json',
@@ -40,7 +40,7 @@ const DEFAULT_CONFIG: UncommittedFilesConfig = {
     '*.tmp',
     '*.temp'
   ],
-  failOnExcess: false // Start with warnings only
+  failOnExcess: true // Fail validation if any uncommitted files exist
 };
 
 function loadConfig(): UncommittedFilesConfig {

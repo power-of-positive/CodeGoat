@@ -21,6 +21,30 @@ export interface Config {
   validationStages: ValidationStage[];
 }
 
+export interface Environment {
+  name: string;
+  description?: string;
+  variables: Record<string, string>;
+}
+
+export interface AgentProfile {
+  id: string;
+  name: string;
+  description?: string;
+  enabled: boolean;
+}
+
+export interface UserSystemInfo {
+  os_type: string;
+  architecture: string;
+  shell: string;
+  home_directory: string;
+  current_directory: string;
+  config: Config;
+  environment: Environment | null;
+  profiles: AgentProfile[] | null;
+}
+
 // Validation pipeline types
 export interface ValidationStage {
   id: string;

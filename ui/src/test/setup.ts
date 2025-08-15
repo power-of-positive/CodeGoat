@@ -1,8 +1,9 @@
-import { afterEach } from '@jest/globals';
-import { cleanup } from '@testing-library/react';
+// Jest setup for frontend tests
 import '@testing-library/jest-dom';
 
-// runs a cleanup after each test case (e.g. clearing jsdom)
-afterEach(() => {
-  cleanup();
-});
+// Polyfill TextEncoder/TextDecoder for React Router
+if (typeof global.TextEncoder === 'undefined') {
+  const { TextEncoder, TextDecoder } = require('util');
+  global.TextEncoder = TextEncoder;
+  global.TextDecoder = TextDecoder;
+}

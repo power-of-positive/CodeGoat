@@ -3,7 +3,9 @@
     "deny": [
       "Update(.claude/settings.json)",
       "Update(settings.json)",
-      "Update(tsconfig.json)"
+      "Update(tsconfig.json)",
+      "Update(scripts/claude-stop-hook.ts)",
+      "Update(claude-stop-hook.ts)"
     ]
   },
   "hooks": {
