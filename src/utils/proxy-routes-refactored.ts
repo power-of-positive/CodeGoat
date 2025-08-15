@@ -53,27 +53,27 @@ export class ProxyRoutes {
       this.logger.info(`Processing chat completion for model: ${requestedModel}`, { modelId });
 
       // Try primary model with retries
-      const result = await this.retryHandler.tryModelWithRetries(
+      const result = await this.retryHandler.tryModelWithRetries({
         req,
         res,
         modelConfig,
         requestData,
         modelId,
-        this.createAttemptHandler()
-      );
+        attemptHandler: this.createAttemptHandler()
+      });
 
       // If primary model failed and needs fallback, try fallback models
       if (!result.success || result.shouldFallback) {
         this.logger.warn?.('Primary model failed, attempting fallbacks', { modelId, error: result.error });
         
-        await this.fallbackHandler.tryFallbackModels(
+        await this.fallbackHandler.tryFallbackModels({
           req,
           res,
           requestData,
           modelId,
-          result.error,
-          this.createAttemptHandler()
-        );
+          error: result.error,
+          retryHandler: this.createAttemptHandler()
+        });
       }
     } catch (error: unknown) {
       this.logger.error('Unexpected error in chat completion handler', error as Error);
@@ -87,14 +87,14 @@ export class ProxyRoutes {
    */
   private createAttemptHandler() {
     return async (request: AttemptRequest): Promise<RetryResult> => {
-      return this.executor.attemptModelRequest(
-        request.req,
-        request.res,
-        request.modelConfig,
-        request.requestData,
-        request.attempt,
-        request.maxRetries
-      );
+      return this.executor.attemptModelRequest({
+        req: request.req,
+        res: request.res,
+        modelConfig: request.modelConfig,
+        requestData: request.requestData,
+        attempt: request.attempt,
+        maxRetries: request.maxRetries
+      });
     };
   }
 }

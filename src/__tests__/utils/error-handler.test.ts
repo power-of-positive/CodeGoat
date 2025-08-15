@@ -19,7 +19,7 @@ describe('Error Handler Utils', () => {
       const error = new Error('Test error');
       const operation = 'fetch user data';
 
-      handleApiError(mockResponse as Response, mockLogger, operation, error);
+      handleApiError(mockResponse as Response, { logger: mockLogger, operation, error });
 
       expect(mockLogger.error).toHaveBeenCalledWith('Failed to fetch user data', error);
       expect(mockResponse.status).toHaveBeenCalledWith(500);
@@ -31,7 +31,7 @@ describe('Error Handler Utils', () => {
       const operation = 'find resource';
       const customStatusCode = 404;
 
-      handleApiError(mockResponse as Response, mockLogger, operation, error, customStatusCode);
+      handleApiError(mockResponse as Response, { logger: mockLogger, operation, error, statusCode: customStatusCode });
 
       expect(mockLogger.error).toHaveBeenCalledWith('Failed to find resource', error);
       expect(mockResponse.status).toHaveBeenCalledWith(404);
@@ -42,7 +42,7 @@ describe('Error Handler Utils', () => {
       const error = 'String error';
       const operation = 'process request';
 
-      handleApiError(mockResponse as Response, mockLogger, operation, error);
+      handleApiError(mockResponse as Response, { logger: mockLogger, operation, error });
 
       expect(mockLogger.error).toHaveBeenCalledWith('Failed to process request', error);
       expect(mockResponse.status).toHaveBeenCalledWith(500);
@@ -53,7 +53,7 @@ describe('Error Handler Utils', () => {
       const error = null;
       const operation = 'validate input';
 
-      handleApiError(mockResponse as Response, mockLogger, operation, error);
+      handleApiError(mockResponse as Response, { logger: mockLogger, operation, error });
 
       expect(mockLogger.error).toHaveBeenCalledWith('Failed to validate input', error);
       expect(mockResponse.status).toHaveBeenCalledWith(500);
@@ -64,7 +64,7 @@ describe('Error Handler Utils', () => {
       const error = undefined;
       const operation = 'save data';
 
-      handleApiError(mockResponse as Response, mockLogger, operation, error);
+      handleApiError(mockResponse as Response, { logger: mockLogger, operation, error });
 
       expect(mockLogger.error).toHaveBeenCalledWith('Failed to save data', error);
       expect(mockResponse.status).toHaveBeenCalledWith(500);
@@ -75,7 +75,7 @@ describe('Error Handler Utils', () => {
       const error = { message: 'Database connection failed', code: 'DB_ERROR' };
       const operation = 'connect to database';
 
-      handleApiError(mockResponse as Response, mockLogger, operation, error);
+      handleApiError(mockResponse as Response, { logger: mockLogger, operation, error });
 
       expect(mockLogger.error).toHaveBeenCalledWith('Failed to connect to database', error);
       expect(mockResponse.status).toHaveBeenCalledWith(500);
@@ -94,7 +94,7 @@ describe('Error Handler Utils', () => {
       testCases.forEach(({ statusCode, operation }) => {
         const error = new Error(`${statusCode} error`);
 
-        handleApiError(mockResponse as Response, mockLogger, operation, error, statusCode);
+        handleApiError(mockResponse as Response, { logger: mockLogger, operation, error, statusCode });
 
         expect(mockResponse.status).toHaveBeenCalledWith(statusCode);
         expect(mockResponse.json).toHaveBeenCalledWith({ error: `Failed to ${operation}` });
@@ -105,7 +105,7 @@ describe('Error Handler Utils', () => {
       const error = new Error('Test error');
       const operation = 'test operation';
 
-      handleApiError(mockResponse as Response, mockLogger, operation, error);
+      handleApiError(mockResponse as Response, { logger: mockLogger, operation, error });
 
       // Verify that status is called before json
       const statusCall = (mockResponse.status as jest.Mock).mock.invocationCallOrder[0];
@@ -118,7 +118,7 @@ describe('Error Handler Utils', () => {
       const error = new Error('Test error');
       const operation = 'test operation';
 
-      const result = handleApiError(mockResponse as Response, mockLogger, operation, error);
+      const result = handleApiError(mockResponse as Response, { logger: mockLogger, operation, error });
 
       expect(result).toBeUndefined();
     });
@@ -267,7 +267,7 @@ describe('Error Handler Utils', () => {
 
       // First handle an API error
       const apiError = new Error('API failure');
-      handleApiError(mockResponse as Response, mockLogger, 'handle request', apiError, 500);
+      handleApiError(mockResponse as Response, { logger: mockLogger, operation: 'handle request', error: apiError, statusCode: 500 });
 
       expect(mockResponse.status).toHaveBeenCalledWith(500);
       expect(mockLogger.error).toHaveBeenCalledWith('Failed to handle request', apiError);
@@ -298,7 +298,7 @@ describe('Error Handler Utils', () => {
         const error = new Error(`Error in ${operation}`);
         const statusCode = 400 + index;
 
-        handleApiError(mockResponse as Response, mockLogger, operation, error, statusCode);
+        handleApiError(mockResponse as Response, { logger: mockLogger, operation, error, statusCode });
 
         expect(mockResponse.status).toHaveBeenCalledWith(statusCode);
         expect(mockResponse.json).toHaveBeenCalledWith({ error: `Failed to ${operation}` });

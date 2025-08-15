@@ -152,7 +152,7 @@ async function waitForKanbanBoard(page: Page) {
 
 test.describe('Kanban Board Functionality', () => {
   let testProject: any;
-  let testTasks: any[] = [];
+  const testTasks: any[] = [];
 
   test.beforeAll(async () => {
     // Create test project and tasks once for all tests
@@ -1221,7 +1221,7 @@ test.describe('Kanban Board Functionality', () => {
       await waitForKanbanBoard(page);
       
       // Mock analytics endpoint to capture events
-      let analyticsEvents: any[] = [];
+      const analyticsEvents: any[] = [];
       await page.route('**/api/analytics/**', route => {
         analyticsEvents.push(route.request().postData());
         route.fulfill({ status: 200, body: '{"success": true}' });
@@ -1457,7 +1457,7 @@ test.describe('Kanban Board Functionality', () => {
       const addButton = page.locator('button:has-text("Add Task")');
       await addButton.focus();
       
-      let focusedElement = page.locator(':focus');
+      const focusedElement = page.locator(':focus');
       await expect(focusedElement).toHaveText(/Add Task/);
       
       // Tab through elements and track focus

@@ -79,33 +79,6 @@ export const tasksApi = {
   }
 };
 
-// Templates API
-export const templatesApi = {
-  listByProject: async (projectId: string) => {
-    const response = await api.get(`/templates/project/${projectId}`);
-    return response.data;
-  },
-  
-  listGlobal: async () => {
-    const response = await api.get('/templates/global');
-    return response.data;
-  },
-
-  update: async (id: string, data: any) => {
-    const response = await api.put(`/templates/${id}`, data);
-    return response.data;
-  },
-
-  create: async (data: any) => {
-    const response = await api.post('/templates', data);
-    return response.data;
-  },
-
-  delete: async (id: string) => {
-    const response = await api.delete(`/templates/${id}`);
-    return response.data;
-  }
-};
 
 // Config API (placeholder)
 export const configApi = {

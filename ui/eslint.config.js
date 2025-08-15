@@ -1,36 +1,74 @@
-import js from '@eslint/js'
-import globals from 'globals'
-import reactHooks from 'eslint-plugin-react-hooks'
-import reactRefresh from 'eslint-plugin-react-refresh'
-import tseslint from 'typescript-eslint'
-import { globalIgnores } from 'eslint/config'
+import { sharedConfig } from '../eslint.shared.mjs';
+import globals from 'globals';
+import reactHooks from 'eslint-plugin-react-hooks';
+import reactRefresh from 'eslint-plugin-react-refresh';
+import tsparser from '@typescript-eslint/parser';
 
-export default tseslint.config([
-  globalIgnores(['dist']),
+// Frontend-specific ESLint configuration using shared config
+export default [
+  sharedConfig.typescript,
+  sharedConfig.tests,
   {
+    // Frontend-specific: React and browser environment
     files: ['**/*.{ts,tsx}'],
-    extends: [
-      js.configs.recommended,
-      tseslint.configs.recommended,
-      reactHooks.configs['recommended-latest'],
-      reactRefresh.configs.vite,
-    ],
     languageOptions: {
-      ecmaVersion: 2020,
-      globals: globals.browser,
+      parser: tsparser,
+      parserOptions: {
+        ecmaVersion: 2022,
+        sourceType: 'module',
+        ecmaFeatures: {
+          jsx: true,
+        },
+      },
+      globals: {
+        ...globals.browser,
+        React: 'readonly',
+      },
+    },
+    plugins: {
+      'react-hooks': reactHooks,
+      'react-refresh': reactRefresh,
     },
     rules: {
+      ...reactHooks.configs.recommended.rules,
+      'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
+      // Frontend-specific: Stricter file size limits
       'max-lines': ['error', {
-        max: 200,
+        max: 250, // Smaller than backend for better component organization
         skipBlankLines: true,
         skipComments: true
-      }], // Limit files to 200 lines
+      }],
+      'max-lines-per-function': ['error', {
+        max: 30, // Smaller functions for React components
+        skipBlankLines: true,
+        skipComments: true
+      }],
+      // Allow console in development but warn
+      'no-console': ['warn', { allow: ['warn', 'error'] }],
     },
   },
   {
-    files: ['**/*.{spec,test}.{ts,tsx}', '**/e2e/**/*.{ts,tsx}'],
+    // Frontend-specific: Component files can be slightly larger
+    files: ['src/components/**/*.{ts,tsx}', 'src/pages/**/*.{ts,tsx}'],
     rules: {
-      'max-lines': 'off', // Disable max-lines for test files
+      'max-lines': ['error', { max: 300 }],
+      'max-lines-per-function': ['error', { max: 40 }],
     },
   },
-])
+  {
+    // E2E tests: Very relaxed rules
+    files: ['e2e/**/*.{ts,tsx}'],
+    rules: {
+      '@typescript-eslint/explicit-function-return-type': 'off',
+      'max-lines': 'off',
+      'max-lines-per-function': 'off',
+      'complexity': 'off',
+      'max-statements': 'off',
+      'max-depth': 'off',
+      'max-params': 'off',
+      'no-console': 'off',
+      '@typescript-eslint/no-explicit-any': 'off',
+    },
+  },
+  sharedConfig.ignores,
+];

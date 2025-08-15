@@ -1,13 +1,24 @@
 import { Activity } from 'lucide-react';
-import type { DevelopmentAnalytics } from '../../types/api';
+import type { DevelopmentAnalytics, Settings } from '../../types/api';
 
 interface ValidationStageChartProps {
   analytics: DevelopmentAnalytics;
+  settings?: Settings;
 }
 
-export function ValidationStageChart({ analytics }: ValidationStageChartProps) {
+export function ValidationStageChart({ analytics, settings }: ValidationStageChartProps) {
   const formatPercentage = (num: number) => {
+    // Backend already sends percentages (not decimals), so no need to multiply by 100
     return `${num.toFixed(1)}%`;
+  };
+
+  const formatDuration = (ms: number) => {
+    const seconds = Math.floor(ms / 1000);
+    const minutes = Math.floor(seconds / 60);
+    if (minutes > 0) {
+      return `${minutes}m ${seconds % 60}s`;
+    }
+    return `${seconds}s`;
   };
 
   return (
@@ -26,13 +37,32 @@ export function ValidationStageChart({ analytics }: ValidationStageChartProps) {
       ) : (
         <div className="space-y-4">
           {Object.entries(analytics.stageSuccessRates)
-            .sort(([, a], [, b]) => b.rate - a.rate)
-            .map(([stageId, stats]) => (
+            .sort(([aId], [bId]) => {
+              // Sort by settings order if available, otherwise maintain existing order
+              if (settings?.validation?.stages) {
+                const stageOrder = settings.validation.stages.reduce((acc, stage, index) => {
+                  acc[stage.id] = stage.order;
+                  return acc;
+                }, {} as Record<string, number>);
+                
+                const aOrder = stageOrder[aId] ?? Number.MAX_VALUE;
+                const bOrder = stageOrder[bId] ?? Number.MAX_VALUE;
+                return aOrder - bOrder;
+              }
+              // Fallback to sorting by success rate if no settings
+              const aRate = analytics.stageSuccessRates[aId]?.rate ?? 0;
+              const bRate = analytics.stageSuccessRates[bId]?.rate ?? 0;
+              return bRate - aRate;
+            })
+            .map(([stageId, stats]) => {
+              // Get stage name from settings if available
+              const stageName = settings?.validation?.stages?.find(s => s.id === stageId)?.name || stageId;
+              return (
               <div key={stageId} className="flex items-center justify-between">
                 <div className="flex-1">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-sm font-medium text-gray-700">
-                      {stageId}
+                      {stageName}
                     </span>
                     <span className="text-sm text-gray-500">
                       {formatPercentage(stats.rate)}
@@ -53,10 +83,14 @@ export function ValidationStageChart({ analytics }: ValidationStageChartProps) {
                   <div className="flex justify-between text-xs text-gray-500 mt-1">
                     <span>{stats.successes} successful</span>
                     <span>{stats.attempts} total attempts</span>
+                    {analytics.averageStageTime[stageId] && (
+                      <span>avg: {formatDuration(analytics.averageStageTime[stageId])}</span>
+                    )}
                   </div>
                 </div>
               </div>
-            ))}
+            );
+            })}
         </div>
       )}
     </div>

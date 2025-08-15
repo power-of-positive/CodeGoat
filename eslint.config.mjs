@@ -1,175 +1,36 @@
-import eslint from '@eslint/js';
+import { sharedConfig } from './eslint.shared.mjs';
 import tseslint from '@typescript-eslint/eslint-plugin';
 import tsparser from '@typescript-eslint/parser';
-import eslintComments from 'eslint-plugin-eslint-comments';
-import prettier from 'eslint-config-prettier';
 
+// Backend-specific ESLint configuration using shared config
 export default [
-  eslint.configs.recommended,
+  sharedConfig.typescript,
+  sharedConfig.tests,
+  sharedConfig.scripts,
   {
+    // Backend-specific: Allow longer files and functions for API routes
+    files: ['src/routes/kanban-*.ts'],
+    rules: {
+      'max-lines': ['error', { max: 400 }],
+      'max-lines-per-function': ['error', { max: 50 }],
+      'max-statements': ['error', { max: 20 }],
+      'complexity': ['error', { max: 12 }], // Higher complexity for API routes
+      'max-params': ['error', 5], // Allow more params for API routes
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/explicit-function-return-type': 'off',
+    },
+  },
+  {
+    // Backend-specific: Project-based TypeScript parsing
     files: ['**/*.ts', '**/*.tsx'],
     languageOptions: {
       parser: tsparser,
       parserOptions: {
         ecmaVersion: 2022,
         sourceType: 'module',
-        project: './tsconfig.json',
-      },
-      globals: {
-        console: 'readonly',
-        process: 'readonly',
-        __dirname: 'readonly',
-        __filename: 'readonly',
-        Buffer: 'readonly',
-        global: 'readonly',
-        fetch: 'readonly',
-        AbortSignal: 'readonly',
-        setInterval: 'readonly',
-        clearInterval: 'readonly',
-        setTimeout: 'readonly',
-        clearTimeout: 'readonly',
-      },
-    },
-    plugins: {
-      '@typescript-eslint': tseslint,
-      'eslint-comments': eslintComments,
-    },
-    rules: {
-      ...tseslint.configs.recommended.rules,
-      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
-      '@typescript-eslint/no-explicit-any': 'error', // Enforce no any types
-      '@typescript-eslint/explicit-function-return-type': 'error', // Enforce explicit return types
-      '@typescript-eslint/explicit-module-boundary-types': 'off',
-      '@typescript-eslint/no-inferrable-types': 'off',
-      'no-console': 'error', // Disallow all console statements
-      'no-warning-comments': ['warn', { terms: ['todo', 'fixme', 'hack'], location: 'start' }],
-      'prefer-const': 'error',
-      'no-var': 'error',
-      'max-lines': ['error', {
-        max: 350,
-        skipBlankLines: true,
-        skipComments: true
-      }], // Limit files to 350 lines
-      'max-lines-per-function': ['error', {
-        max: 50,
-        skipBlankLines: true,
-        skipComments: true
-      }], // Limit functions to 50 lines
-      // Disallow eslint-disable comments to enforce consistent code quality
-      'eslint-comments/no-use': ['error', {
-        'allow': []
-      }]
-    },
-  },
-  {
-    // Discourage JavaScript files in favor of TypeScript
-    files: ['src/**/*.js', 'tests/**/*.js'],
-    rules: {
-      'no-console': ['warn', {
-        allow: ['warn', 'error', 'log']
-      }],
-      // Custom warning for JavaScript files in TypeScript project
-      'prefer-const': ['error'],
-      'no-var': ['error'],
-    },
-    languageOptions: {
-      ecmaVersion: 2022,
-      sourceType: 'module',
-      globals: {
-        console: 'readonly',
-        process: 'readonly',
-        __dirname: 'readonly',
-        __filename: 'readonly',
-        Buffer: 'readonly',
-        global: 'readonly',
-        setInterval: 'readonly',
-        clearInterval: 'readonly',
-        setTimeout: 'readonly',
-        clearTimeout: 'readonly',
+        project: './tsconfig.json', // Backend uses project-based parsing
       },
     },
   },
-  {
-    // Allow console statements in CLI tools and scripts
-    files: ['scripts/**/*.js', 'scripts/**/*.ts', 'src/tools/**/*.ts', 'src/**/cli.ts'],
-    rules: {
-      'no-console': ['warn', { allow: ['log', 'warn', 'error', 'info'] }], // Allow console in CLI tools
-    },
-    languageOptions: {
-      parser: tsparser,
-      parserOptions: {
-        ecmaVersion: 2022,
-        sourceType: 'module',
-      },
-      globals: {
-        console: 'readonly',
-        process: 'readonly',
-        __dirname: 'readonly',
-        __filename: 'readonly',
-        Buffer: 'readonly',
-        global: 'readonly',
-        setInterval: 'readonly',
-        clearInterval: 'readonly',
-        setTimeout: 'readonly',
-        clearTimeout: 'readonly',
-      },
-    },
-  },
-  {
-    files: ['**/*.test.ts', '**/*.spec.ts', 'tests/**/*.ts'],
-    languageOptions: {
-      parser: tsparser,
-      parserOptions: {
-        ecmaVersion: 2022,
-        sourceType: 'module',
-        // Don't use project-based parsing for test files
-      },
-      globals: {
-        describe: 'readonly',
-        it: 'readonly',
-        expect: 'readonly',
-        beforeEach: 'readonly',
-        afterEach: 'readonly',
-        beforeAll: 'readonly',
-        afterAll: 'readonly',
-        jest: 'readonly',
-        test: 'readonly',
-        fail: 'readonly',
-        console: 'readonly',
-        process: 'readonly',
-        setTimeout: 'readonly',
-        clearTimeout: 'readonly',
-        require: 'readonly',
-        module: 'readonly',
-        __dirname: 'readonly',
-        __filename: 'readonly',
-        Buffer: 'readonly',
-        global: 'readonly',
-      },
-    },
-    rules: {
-      '@typescript-eslint/no-explicit-any': 'off',
-      '@typescript-eslint/no-unused-vars': 'off',
-      '@typescript-eslint/explicit-function-return-type': 'off',
-      '@typescript-eslint/no-require-imports': 'off',
-      'no-console': 'off',
-      'no-undef': 'off',
-      'max-lines': 'off', // Disable max-lines for test files
-      'max-lines-per-function': 'off', // Disable max-lines-per-function for test files
-    },
-  },
-  {
-    // Kanban route files - allow longer functions and files for API definitions
-    files: ['src/routes/kanban-*.ts'],
-    rules: {
-      'max-lines': ['error', { max: 700 }], // Allow longer files for API routes
-      'max-lines-per-function': ['error', { max: 500 }], // Allow longer functions for route handlers
-      '@typescript-eslint/no-explicit-any': 'off', // Allow any types for complex Prisma/API mappings
-      '@typescript-eslint/explicit-function-return-type': 'off', // Allow inferred return types
-    },
-  },
-  {
-    ignores: ['dist/', 'node_modules/', 'coverage/', '*.js', 'tests/api-e2e/**/*.ts'],
-  },
-  prettier,
+  sharedConfig.ignores,
 ];

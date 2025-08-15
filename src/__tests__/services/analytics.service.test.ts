@@ -281,6 +281,7 @@ describe('AnalyticsService', () => {
         averageAttemptsToSuccess: 0,
         mostFailedStage: 'none',
         stageSuccessRates: {},
+        averageStageTime: {},
         dailyStats: {},
       });
     });
@@ -370,7 +371,7 @@ describe('AnalyticsService', () => {
 
       expect(analytics.totalSessions).toBe(3);
       expect(analytics.successRate).toBe(66.66666666666666); // 2/3 * 100
-      expect(analytics.averageTimeToSuccess).toBe(5500); // (5000 + 6000) / 2
+      expect(analytics.averageTimeToSuccess).toBe(2250); // (2000 + 2500) / 2 - total validation time
       expect(analytics.averageAttemptsToSuccess).toBe(1); // Both successful sessions had 1 attempt
       expect(analytics.mostFailedStage).toBe('test'); // test failed once, lint never failed
 

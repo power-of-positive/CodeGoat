@@ -219,7 +219,7 @@ export interface DeviceFlowStartResponse {
 export interface PatchType {
   op: 'add' | 'remove' | 'replace' | 'move' | 'copy' | 'test';
   path: string;
-  value?: any;
+  value?: unknown;
   from?: string;
 }
 

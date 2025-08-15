@@ -7,10 +7,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '../ui/Dialog';
+} from '../ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs';
 import { FolderPicker } from '../ui/folder-picker';
-import { TaskTemplateManager } from '../TaskTemplateManager';
 import { ProjectFormFields } from './project-form-fields';
 import { CreateProject, Project, UpdateProject } from 'shared/types';
 import { projectsApi } from '../../lib/api';

@@ -174,14 +174,14 @@ describe('ProxyRoutes', () => {
         'Primary model failed, attempting fallbacks',
         { modelId: 'gpt-3.5-turbo', error: errorMessage }
       );
-      expect(mockFallbackHandler.tryFallbackModels).toHaveBeenCalledWith(
-        mockReq,
-        mockRes,
-        { messages: [{ role: 'user', content: 'Hello' }] },
-        'gpt-3.5-turbo',
-        errorMessage,
-        expect.any(Function)
-      );
+      expect(mockFallbackHandler.tryFallbackModels).toHaveBeenCalledWith({
+        req: mockReq,
+        res: mockRes,
+        requestData: { messages: [{ role: 'user', content: 'Hello' }] },
+        modelId: 'gpt-3.5-turbo',
+        error: errorMessage,
+        retryHandler: expect.any(Function)
+      });
     });
 
     it('should return early when validation fails', async () => {
@@ -238,18 +238,18 @@ describe('ProxyRoutes', () => {
 
       await proxyRoutes.handleChatCompletions(customReq as Request, mockRes as Response);
 
-      expect(mockRetryHandler.tryModelWithRetries).toHaveBeenCalledWith(
-        customReq,
-        mockRes,
-        mockConfig.models['claude-3'],
-        {
+      expect(mockRetryHandler.tryModelWithRetries).toHaveBeenCalledWith({
+        req: customReq,
+        res: mockRes,
+        modelConfig: mockConfig.models['claude-3'],
+        requestData: {
           messages: [{ role: 'user', content: 'Test message' }],
           temperature: 0.7,
           max_tokens: 100,
         },
-        'claude-3',
-        expect.any(Function)
-      );
+        modelId: 'claude-3',
+        attemptHandler: expect.any(Function)
+      });
     });
 
     it('should attempt fallback when retry indicates should fallback but success is true', async () => {
@@ -291,14 +291,14 @@ describe('ProxyRoutes', () => {
       const attemptHandler = (proxyRoutes as any).createAttemptHandler();
       const result = await attemptHandler(attemptRequest);
 
-      expect(mockExecutor.attemptModelRequest).toHaveBeenCalledWith(
-        attemptRequest.req,
-        attemptRequest.res,
-        attemptRequest.modelConfig,
-        attemptRequest.requestData,
-        attemptRequest.attempt,
-        attemptRequest.maxRetries
-      );
+      expect(mockExecutor.attemptModelRequest).toHaveBeenCalledWith({
+        req: attemptRequest.req,
+        res: attemptRequest.res,
+        modelConfig: attemptRequest.modelConfig,
+        requestData: attemptRequest.requestData,
+        attempt: attemptRequest.attempt,
+        maxRetries: attemptRequest.maxRetries
+      });
       expect(result).toEqual(expectedResult);
     });
 
@@ -422,14 +422,14 @@ describe('ProxyRoutes', () => {
 
       await proxyRoutes.handleChatCompletions(mockReq as Request, mockRes as Response);
 
-      expect(mockRetryHandler.tryModelWithRetries).toHaveBeenCalledWith(
-        mockReq,
-        mockRes,
-        null, // Invalid model config
-        { messages: [{ role: 'user', content: 'Hello' }] },
-        'invalid-model',
-        expect.any(Function)
-      );
+      expect(mockRetryHandler.tryModelWithRetries).toHaveBeenCalledWith({
+        req: mockReq,
+        res: mockRes,
+        modelConfig: null, // Invalid model config
+        requestData: { messages: [{ role: 'user', content: 'Hello' }] },
+        modelId: 'invalid-model',
+        attemptHandler: expect.any(Function)
+      });
     });
   });
 });

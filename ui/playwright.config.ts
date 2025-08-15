@@ -45,7 +45,7 @@ export default defineConfig({
 
   webServer: process.env.SKIP_WEB_SERVER ? undefined : [
     {
-      command: 'cd .. && cp .env.test .env && npm run build && npm start',
+      command: 'cd .. && cp .env.test .env && npm run db:test:migrate && npm run build && npm start',
       port: 3001,
       timeout: 120000, // 2 minutes for backend to build and start
       reuseExistingServer: !process.env.CI,

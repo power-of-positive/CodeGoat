@@ -4,7 +4,7 @@ import { createContext } from 'react';
 export interface ScriptPlaceholderStrategy {
   name: string;
   description: string;
-  generate: (context: any) => string;
+  generate: (context: Record<string, unknown>) => string;
 }
 
 // Script placeholder context
@@ -21,7 +21,7 @@ export const ScriptPlaceholderContext = createContext<{
 export function createScriptPlaceholderStrategy(
   name: string,
   description: string,
-  generator: (context: any) => string
+  generator: (context: Record<string, unknown>) => string
 ): ScriptPlaceholderStrategy {
   return {
     name,

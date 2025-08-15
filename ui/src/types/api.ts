@@ -200,6 +200,7 @@ export interface DevelopmentAnalytics {
     successes: number;
     rate: number;
   }>;
+  averageStageTime: Record<string, number>; // Average duration per stage in milliseconds
   dailyStats: Record<string, {
     sessions: number;
     successes: number;

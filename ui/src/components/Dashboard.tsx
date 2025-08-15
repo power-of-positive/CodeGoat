@@ -1,87 +1,29 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { ModelList } from './ModelList';
-import { ServerStatus } from './ServerStatus';
-import { RequestLogs } from './RequestLogs';
-import { AddModelDialog } from './AddModelDialog';
 import { Settings } from './Settings';
 import { Analytics } from './Analytics';
-import { Button } from './ui/button';
-import { Plus, RefreshCw, Home, FileText, Settings as SettingsIcon, BarChart3 } from 'lucide-react';
-import { api } from '../services/api';
-import type { UIModelConfig } from '../types/api';
+import { ModelManagement } from './ModelManagement';
+import { Validation } from './Validation';
+import { Home, Settings as SettingsIcon, BarChart3, Server, Target } from 'lucide-react';
 
-type ActiveTab = 'dashboard' | 'logs' | 'settings' | 'analytics';
+type ActiveTab = 'dashboard' | 'models' | 'validation' | 'analytics' | 'settings';
 
 export function Dashboard() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
-  const [showAddModel, setShowAddModel] = useState(false);
-  const [editingModel, setEditingModel] = useState<UIModelConfig | null>(null);
-  const [testingModelIds, setTestingModelIds] = useState<string[]>([]);
-  const queryClient = useQueryClient();
-
-  const addModelMutation = useMutation({
-    mutationFn: api.addModel,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['models'] });
-      setShowAddModel(false);
-    },
-    onError: (error) => {
-      console.error('Failed to add model:', error);
-    },
-  });
-
-  const deleteModelMutation = useMutation({
-    mutationFn: api.deleteModel,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['models'] });
-    },
-    onError: (error) => {
-      console.error('Failed to delete model:', error);
-    },
-  });
-
-  const updateModelMutation = useMutation({
-    mutationFn: ({ id, model }: { id: string; model: Partial<Parameters<typeof api.updateModel>[1]> }) => 
-      api.updateModel(id, model),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['models'] });
-      setEditingModel(null);
-    },
-    onError: (error) => {
-      console.error('Failed to update model:', error);
-    },
-  });
-
-  const testModelMutation = useMutation({
-    mutationFn: api.testModel,
-    onSuccess: (result) => {
-      console.log('Model test result:', result);
-      setTestingModelIds(prev => prev.filter(id => id !== result.modelId));
-      queryClient.invalidateQueries({ queryKey: ['models'] });
-    },
-    onError: (error, modelId) => {
-      console.error('Failed to test model:', error);
-      setTestingModelIds(prev => prev.filter(id => id !== modelId));
-    },
-  });
-
-  const handleRefresh = () => {
-    queryClient.invalidateQueries({ queryKey: ['models'] });
-    queryClient.invalidateQueries({ queryKey: ['status'] });
-  };
 
   const tabs = [
     { id: 'dashboard' as const, name: 'Dashboard', icon: Home },
-    { id: 'logs' as const, name: 'Request Logs', icon: FileText },
+    { id: 'models' as const, name: 'Model Management', icon: Server },
+    { id: 'validation' as const, name: 'Validation', icon: Target },
     { id: 'analytics' as const, name: 'Analytics', icon: BarChart3 },
     { id: 'settings' as const, name: 'Settings', icon: SettingsIcon },
   ];
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'logs':
-        return <RequestLogs />;
+      case 'models':
+        return <ModelManagement />;
+      case 'validation':
+        return <Validation />;
       case 'analytics':
         return <Analytics />;
       case 'settings':
@@ -89,45 +31,48 @@ export function Dashboard() {
       default:
         return (
           <div className="space-y-8">
-            {/* Server Status */}
-            <ServerStatus />
-
-            {/* Models Section */}
-            <div>
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-slate-100">
-                  Model Configurations
-                </h2>
-                <div className="flex items-center gap-2">
-                  <Button 
-                    data-testid="refresh-models-button"
-                    variant="outline" 
-                    onClick={handleRefresh}
-                    size="sm"
-                  >
-                    <RefreshCw className="w-4 h-4" />
-                    Refresh
-                  </Button>
-                  <Button data-testid="add-model-button" onClick={() => setShowAddModel(true)}>
-                    <Plus className="w-4 h-4" />
-                    Add Model
-                  </Button>
-                </div>
+            <div className="text-center py-12">
+              <Home className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+              <h2 className="text-2xl font-semibold text-slate-100 mb-2">
+                Welcome to CodeGoat
+              </h2>
+              <p className="text-gray-400 mb-6">
+                Your AI development workflow management platform
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 max-w-4xl mx-auto">
+                <button
+                  onClick={() => setActiveTab('models')}
+                  className="p-4 bg-gray-800 rounded-lg border border-gray-700 hover:border-blue-500 transition-colors"
+                >
+                  <Server className="h-8 w-8 text-blue-400 mx-auto mb-2" />
+                  <h3 className="font-medium text-slate-100">Model Management</h3>
+                  <p className="text-sm text-gray-400">Configure and test AI models</p>
+                </button>
+                <button
+                  onClick={() => setActiveTab('validation')}
+                  className="p-4 bg-gray-800 rounded-lg border border-gray-700 hover:border-blue-500 transition-colors"
+                >
+                  <Target className="h-8 w-8 text-blue-400 mx-auto mb-2" />
+                  <h3 className="font-medium text-slate-100">Validation</h3>
+                  <p className="text-sm text-gray-400">Configure validation pipeline</p>
+                </button>
+                <button
+                  onClick={() => setActiveTab('analytics')}
+                  className="p-4 bg-gray-800 rounded-lg border border-gray-700 hover:border-blue-500 transition-colors"
+                >
+                  <BarChart3 className="h-8 w-8 text-blue-400 mx-auto mb-2" />
+                  <h3 className="font-medium text-slate-100">Analytics</h3>
+                  <p className="text-sm text-gray-400">View development insights</p>
+                </button>
+                <button
+                  onClick={() => setActiveTab('settings')}
+                  className="p-4 bg-gray-800 rounded-lg border border-gray-700 hover:border-blue-500 transition-colors"
+                >
+                  <SettingsIcon className="h-8 w-8 text-blue-400 mx-auto mb-2" />
+                  <h3 className="font-medium text-slate-100">Settings</h3>
+                  <p className="text-sm text-gray-400">Configure system preferences</p>
+                </button>
               </div>
-              
-              <ModelList 
-                onEdit={setEditingModel}
-                onDelete={(modelId) => {
-                  if (confirm('Are you sure you want to delete this model?')) {
-                    deleteModelMutation.mutate(modelId);
-                  }
-                }}
-                onTest={(modelId) => {
-                  setTestingModelIds(prev => [...prev, modelId]);
-                  testModelMutation.mutate(modelId);
-                }}
-                testingModelIds={testingModelIds}
-              />
             </div>
           </div>
         );
@@ -161,30 +106,6 @@ export function Dashboard() {
 
       {/* Content */}
       {renderContent()}
-
-      {/* Add Model Dialog */}
-      <AddModelDialog 
-        open={showAddModel} 
-        onClose={() => setShowAddModel(false)}
-        onAdd={(modelData) => {
-          addModelMutation.mutate(modelData);
-        }}
-      />
-
-      {/* Edit Model Dialog */}
-      {editingModel && (
-        <AddModelDialog 
-          open={!!editingModel}
-          onClose={() => setEditingModel(null)}
-          editingModel={editingModel}
-          onAdd={(modelData) => {
-            updateModelMutation.mutate({ 
-              id: editingModel.id, 
-              model: modelData 
-            });
-          }}
-        />
-      )}
     </div>
   );
 }

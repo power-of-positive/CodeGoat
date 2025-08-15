@@ -1,4 +1,4 @@
-/* eslint-disable max-lines */
+ 
 import { io, Socket } from 'socket.io-client';
 
 export interface WebSocketEvent {

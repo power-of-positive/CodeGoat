@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Globe2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -18,8 +17,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useUserSystem } from '@/components/config-provider';
-import { templatesApi } from '@/lib/api';
-import type { TaskStatus, TaskTemplate } from 'shared/types';
+import type { TaskStatus } from 'shared/types';
 
 interface Task {
   id: string;
@@ -36,7 +34,6 @@ interface TaskFormDialogProps {
   onOpenChange: (open: boolean) => void;
   task?: Task | null; // Optional for create mode
   projectId?: string; // For file search functionality
-  initialTemplate?: TaskTemplate | null; // For pre-filling from template
   onCreateTask?: (title: string, description: string) => Promise<void>;
   onCreateAndStartTask?: (title: string, description: string) => Promise<void>;
   onUpdateTask?: (
@@ -51,7 +48,6 @@ export function TaskFormDialog({
   onOpenChange,
   task,
   projectId,
-  initialTemplate,
   onCreateTask,
   onCreateAndStartTask,
   onUpdateTask,
@@ -61,8 +57,6 @@ export function TaskFormDialog({
   const [status, setStatus] = useState<TaskStatus>('todo');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmittingAndStart, setIsSubmittingAndStart] = useState(false);
-  const [templates, setTemplates] = useState<TaskTemplate[]>([]);
-  const [selectedTemplate, setSelectedTemplate] = useState<string>('');
 
   const { config } = useUserSystem();
   const isEditMode = Boolean(task);
@@ -73,52 +67,14 @@ export function TaskFormDialog({
       setTitle(task.title);
       setDescription(task.description || '');
       setStatus(task.status);
-    } else if (initialTemplate) {
-      // Create mode with template - pre-fill from template
-      setTitle(initialTemplate.title);
-      setDescription(initialTemplate.description || '');
-      setStatus('todo');
-      setSelectedTemplate('');
     } else {
       // Create mode - reset to defaults
       setTitle('');
       setDescription('');
       setStatus('todo');
-      setSelectedTemplate('');
     }
-  }, [task, initialTemplate, isOpen]);
+  }, [task, isOpen]);
 
-  // Fetch templates when dialog opens in create mode
-  useEffect(() => {
-    if (isOpen && !isEditMode && projectId) {
-      // Fetch both project and global templates
-      Promise.all([
-        templatesApi.listByProject(projectId),
-        templatesApi.listGlobal(),
-      ])
-        .then(([projectTemplates, globalTemplates]) => {
-          // Combine templates with project templates first
-          setTemplates([...projectTemplates, ...globalTemplates]);
-        })
-        .catch(console.error);
-    }
-  }, [isOpen, isEditMode, projectId]);
-
-  // Handle template selection
-  const handleTemplateChange = (templateId: string) => {
-    setSelectedTemplate(templateId);
-    if (templateId === 'none') {
-      // Clear the form when "No template" is selected
-      setTitle('');
-      setDescription('');
-    } else if (templateId) {
-      const template = templates.find((t) => t.id === templateId);
-      if (template) {
-        setTitle(template.title);
-        setDescription(template.description || '');
-      }
-    }
-  };
 
   const handleSubmit = async () => {
     if (!title.trim()) return;
@@ -181,7 +137,6 @@ export function TaskFormDialog({
       setTitle('');
       setDescription('');
       setStatus('todo');
-      setSelectedTemplate('');
     }
     onOpenChange(false);
   }, [task, onOpenChange]);
@@ -275,53 +230,6 @@ export function TaskFormDialog({
             />
           </div>
 
-          {!isEditMode && templates.length > 0 && (
-            <div className="pt-2">
-              <details className="group">
-                <summary className="cursor-pointer text-sm text-muted-foreground hover:text-foreground transition-colors list-none flex items-center gap-2">
-                  <svg
-                    className="h-3 w-3 transition-transform group-open:rotate-90"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                  Use a template
-                </summary>
-                <div className="mt-3 space-y-2">
-                  <p className="text-xs text-muted-foreground">
-                    Templates help you quickly create tasks with predefined
-                    content.
-                  </p>
-                  <Select
-                    value={selectedTemplate}
-                    onValueChange={handleTemplateChange}
-                  >
-                    <SelectTrigger id="task-template" className="w-full">
-                      <SelectValue placeholder="Choose a template to prefill this form" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">No template</SelectItem>
-                      {templates.map((template) => (
-                        <SelectItem key={template.id} value={template.id}>
-                          <div className="flex items-center gap-2">
-                            {template.project_id === null && (
-                              <Globe2 className="h-3 w-3 text-muted-foreground" />
-                            )}
-                            <span>{template.template_name}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </details>
-            </div>
-          )}
 
           {isEditMode && (
             <div className="pt-2">

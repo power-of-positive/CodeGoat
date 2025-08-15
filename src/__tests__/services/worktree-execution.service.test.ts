@@ -1,5 +1,6 @@
 import { WorktreeExecutionService, WorktreeConfig, ExecutionOptions } from '../../services/worktree-execution.service';
 import { KanbanDatabaseService } from '../../services/kanban-database.service';
+import { AgentExecutorService } from '../../services/agent-executor.service';
 import { ILogger } from '../../logger-interface';
 import { spawn } from 'child_process';
 import * as fs from 'fs/promises';
@@ -32,6 +33,26 @@ const mockKanbanDb: KanbanDatabaseService = {
   getClient: jest.fn().mockReturnValue(mockPrisma),
 } as any;
 
+const mockAgentExecutor: AgentExecutorService = {
+  getProfile: jest.fn().mockReturnValue({
+    type: 'claude',
+    name: 'Claude Default',
+    command: ['claude'],
+    timeout: 30 * 60 * 1000
+  }),
+  executeAgent: jest.fn().mockResolvedValue({
+    success: true,
+    exitCode: 0,
+    stdout: 'Task completed successfully',
+    stderr: '',
+    duration: 5000,
+    agentType: 'claude',
+    profileName: 'claude-default'
+  }),
+  getAvailableProfiles: jest.fn(),
+  addCustomProfile: jest.fn(),
+} as any;
+
 // Mock child process
 const mockChildProcess = {
   stdout: {
@@ -52,7 +73,7 @@ describe('WorktreeExecutionService', () => {
     // Reset all mocks
     jest.clearAllMocks();
     
-    service = new WorktreeExecutionService(mockLogger, mockKanbanDb, 1000); // 1 second for testing
+    service = new WorktreeExecutionService(mockLogger, mockKanbanDb, mockAgentExecutor, 1000); // 1 second for testing
     
     mockConfig = {
       projectPath: '/test/project',
@@ -62,7 +83,7 @@ describe('WorktreeExecutionService', () => {
       branchName: 'task-branch-123',
       worktreePath: '/test/worktrees/task-branch-123',
       baseBranch: 'main',
-      claudeProfile: 'default',
+      agentProfile: 'default',
     };
 
     // Setup default mock behavior
@@ -136,10 +157,10 @@ describe('WorktreeExecutionService', () => {
 
       expect(result.success).toBe(true);
       expect(result.exitCode).toBe(0);
-      expect(result.stdout).toBe('Claude Code output');
+      expect(result.stdout).toBe('Task completed successfully');
       expect(mockSpawn).toHaveBeenCalledWith('claude-code', [
         '--directory', mockConfig.worktreePath,
-        '--profile', mockConfig.claudeProfile,
+        '--profile', mockConfig.agentProfile,
         '--prompt', `Task: ${mockConfig.taskTitle}\n\nDescription: ${mockConfig.taskDescription}`,
       ], expect.any(Object));
 
@@ -171,7 +192,7 @@ describe('WorktreeExecutionService', () => {
       const result = await service.executeInWorktree(mockConfig);
 
       expect(result.success).toBe(false);
-      expect(result.error).toContain('Project path is not a valid git repository');
+      expect(result.error).toContain('fatal: not a git repository');
       
       expect(mockPrisma.taskAttempt.update).toHaveBeenCalledWith({
         where: { id: 'attempt-123' },
@@ -373,7 +394,7 @@ describe('WorktreeExecutionService', () => {
 
   describe('cleanup and resource management', () => {
     it('should perform periodic cleanup', async () => {
-      const cleanupService = new WorktreeExecutionService(mockLogger, mockKanbanDb, 100); // Shorter interval for testing
+      const cleanupService = new WorktreeExecutionService(mockLogger, mockKanbanDb, mockAgentExecutor, 100); // Shorter interval for testing
       
       // Schedule some worktrees for cleanup
       cleanupService['scheduleWorktreeCleanup']('/test/worktree1');

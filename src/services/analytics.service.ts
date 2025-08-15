@@ -134,6 +134,7 @@ export class AnalyticsService {
     const averageTimeToSuccess = this.calculateAverageTimeToSuccess(successfulSessions);
     const averageAttemptsToSuccess = this.calculateAverageAttemptsToSuccess(successfulSessions);
     const stageSuccessRates = this.calculateStageSuccessRates(sessions);
+    const averageStageTime = this.calculateAverageStageTime(sessions);
     const mostFailedStage = this.findMostFailedStage(stageSuccessRates);
     const dailyStats = this.calculateDailyStats(sessions);
 
@@ -144,6 +145,7 @@ export class AnalyticsService {
       averageAttemptsToSuccess,
       mostFailedStage,
       stageSuccessRates,
+      averageStageTime,
       dailyStats,
     };
   }
@@ -156,13 +158,14 @@ export class AnalyticsService {
       averageAttemptsToSuccess: 0,
       mostFailedStage: 'none',
       stageSuccessRates: {},
+      averageStageTime: {},
       dailyStats: {},
     };
   }
 
   private calculateAverageTimeToSuccess(successfulSessions: SessionMetrics[]): number {
     if (successfulSessions.length === 0) return 0;
-    return successfulSessions.reduce((sum, s) => sum + (s.totalDuration || 0), 0) / successfulSessions.length;
+    return successfulSessions.reduce((sum, s) => sum + (s.totalValidationTime || 0), 0) / successfulSessions.length;
   }
 
   private calculateAverageAttemptsToSuccess(successfulSessions: SessionMetrics[]): number {
@@ -196,6 +199,29 @@ export class AnalyticsService {
     });
 
     return stageSuccessRates;
+  }
+
+  private calculateAverageStageTime(sessions: SessionMetrics[]): Record<string, number> {
+    const stageTimeStats: Record<string, { totalTime: number; count: number }> = {};
+
+    sessions.forEach(session => {
+      session.attempts.forEach(attempt => {
+        attempt.stages.forEach(stage => {
+          if (!stageTimeStats[stage.id]) {
+            stageTimeStats[stage.id] = { totalTime: 0, count: 0 };
+          }
+          stageTimeStats[stage.id].totalTime += stage.duration;
+          stageTimeStats[stage.id].count++;
+        });
+      });
+    });
+
+    const averageStageTime: Record<string, number> = {};
+    Object.entries(stageTimeStats).forEach(([stageId, stats]) => {
+      averageStageTime[stageId] = stats.count > 0 ? Math.round(stats.totalTime / stats.count) : 0;
+    });
+
+    return averageStageTime;
   }
 
   private findMostFailedStage(stageSuccessRates: Record<string, { rate: number }>): string {

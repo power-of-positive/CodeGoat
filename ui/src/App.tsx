@@ -10,6 +10,7 @@ import { Projects } from './components/pages/projects';
 import { ProjectTasks } from './components/pages/project-tasks';
 import { TaskDetailPage } from './pages/TaskDetailPage';
 import { UserSystemProvider } from './components/config-provider';
+import { JSX } from 'react';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -20,7 +21,7 @@ const queryClient = new QueryClient({
   },
 });
 
-function App() {
+function App(): JSX.Element {
   return (
     <QueryClientProvider client={queryClient}>
       <UserSystemProvider>

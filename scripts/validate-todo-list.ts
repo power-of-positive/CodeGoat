@@ -11,11 +11,11 @@ interface TodoItem {
   id: string;
 }
 
-// Define possible todo list file paths
+// Define possible todo list file paths (prioritize todo-list.json)
 const TODO_LIST_FILES = [
-  path.join(process.cwd(), 'TODO-Kanban-Implementation.md'),
+  path.join(process.cwd(), 'todo-list.json'),
   path.join(process.cwd(), '.claude_todo.json'),
-  path.join(process.cwd(), 'todo-list.json')
+  path.join(process.cwd(), 'TODO-Kanban-Implementation.md')
 ];
 
 // Colors for console output
@@ -119,8 +119,8 @@ function validateTodoListFormat(todos: TodoItem[]): { valid: boolean; errors: st
   // Validate each todo item
   todos.forEach((todo, index) => {
     // Check required fields
-    if (!todo.id || !todo.id.match(/^(kanban|todo)-\d+$/)) {
-      errors.push(`Todo item ${index + 1}: Invalid ID format (expected: kanban-XXX or todo-XXX)`);
+    if (!todo.id || (!todo.id.match(/^(kanban|todo)-\d+$/) && !todo.id.match(/^\d+$/))) {
+      errors.push(`Todo item ${index + 1}: Invalid ID format (expected: kanban-XXX, todo-XXX, or numeric)`);
     }
     
     if (!todo.content || todo.content.trim().length === 0) {
@@ -256,25 +256,22 @@ function main(): number {
   // Display statistics
   displayStatistics(todos);
   
-  // Get next task
-  const nextTodo = getNextTodoItem(todos);
+  // Check for unfinished tasks
+  const unfinishedTasks = todos.filter(
+    todo => todo.status === 'pending' || todo.status === 'in_progress'
+  );
   
-  if (nextTodo) {
-    console.log(`\n${colors.bold}${colors.green}🎯 Next Task to Work On:${colors.reset}`);
-    console.log(`${colors.bold}ID:${colors.reset} ${nextTodo.id}`);
-    console.log(`${colors.bold}Task:${colors.reset} ${nextTodo.content}`);
-    console.log(`${colors.bold}Priority:${colors.reset} ${nextTodo.priority}`);
-    console.log(`${colors.bold}Status:${colors.reset} ${nextTodo.status}`);
-    
-    if (nextTodo.status === 'in_progress') {
-      console.log(`\n${colors.yellow}💡 This task is already in progress. Continue working on it!${colors.reset}`);
-    } else {
-      console.log(`\n${colors.blue}💡 Ready to start this task!${colors.reset}`);
-    }
-  } else {
-    console.log(`\n${colors.bold}${colors.green}🎉 Congratulations! All tasks are completed!${colors.reset}`);
+  if (unfinishedTasks.length > 0) {
+    console.error(`\n${colors.red}❌ Validation failed: ${unfinishedTasks.length} unfinished task(s) detected${colors.reset}`);
+    console.error(`${colors.red}📋 Unfinished tasks:${colors.reset}`);
+    unfinishedTasks.forEach(task => {
+      console.error(`${colors.red}   • [${task.priority}] ${task.content} (${task.status})${colors.reset}`);
+    });
+    console.error(`\n${colors.yellow}💡 Please complete all tasks before proceeding${colors.reset}`);
+    return 1;
   }
   
+  console.log(`\n${colors.bold}${colors.green}🎉 All tasks are completed!${colors.reset}`);
   console.log(`\n${colors.green}✅ Todo list validation passed${colors.reset}`);
   return 0;
 }

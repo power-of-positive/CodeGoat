@@ -18,54 +18,75 @@ function getDefaultLogging(): LoggingSettings {
   };
 }
 
+// Helper functions for creating validation stages
+function createLintStage(): ValidationStage {
+  return {
+    id: 'lint',
+    name: 'Code Linting',
+    command: 'npm run lint',
+    timeout: 30000,
+    enabled: true,
+    continueOnFailure: false,
+    order: 1,
+  };
+}
+
+function createTypeCheckStage(): ValidationStage {
+  return {
+    id: 'typecheck',
+    name: 'Type Checking',
+    command: 'npm run type-check',
+    timeout: 30000,
+    enabled: true,
+    continueOnFailure: false,
+    order: 2,
+  };
+}
+
+function createTestStage(): ValidationStage {
+  return {
+    id: 'test',
+    name: 'Unit Tests',
+    command: 'npm test',
+    timeout: 60000,
+    enabled: true,
+    continueOnFailure: true,
+    order: 3,
+  };
+}
+
+function createTypeScriptPreferenceStage(): ValidationStage {
+  return {
+    id: 'typescript-preference',
+    name: 'TypeScript Preference Check',
+    command: 'ts-node scripts/check-typescript-preference.ts',
+    timeout: 10000,
+    enabled: true,
+    continueOnFailure: true,
+    order: 4,
+  };
+}
+
+function createE2EStage(): ValidationStage {
+  return {
+    id: 'e2e',
+    name: 'E2E Tests',
+    command: 'cd ui && npm run test:e2e',
+    timeout: 120000,
+    enabled: false,
+    continueOnFailure: true,
+    order: 5,
+  };
+}
+
 // Default validation stages configuration
 function getDefaultValidationStages(): ValidationStage[] {
   return [
-    {
-      id: 'lint',
-      name: 'Code Linting',
-      command: 'npm run lint',
-      timeout: 30000,
-      enabled: true,
-      continueOnFailure: false,
-      order: 1,
-    },
-    {
-      id: 'typecheck',
-      name: 'Type Checking',
-      command: 'npm run type-check',
-      timeout: 30000,
-      enabled: true,
-      continueOnFailure: false,
-      order: 2,
-    },
-    {
-      id: 'test',
-      name: 'Unit Tests',
-      command: 'npm test',
-      timeout: 60000,
-      enabled: true,
-      continueOnFailure: true,
-      order: 3,
-    },
-    {
-      id: 'typescript-preference',
-      name: 'TypeScript Preference Check',
-      command: 'ts-node scripts/check-typescript-preference.ts',
-      timeout: 10000,
-      enabled: true,
-      continueOnFailure: true,
-      order: 4,
-    },
-    {
-      id: 'e2e',
-      name: 'E2E Tests',
-      command: 'cd ui && npm run test:e2e',
-      timeout: 120000,
-      enabled: false,
-      continueOnFailure: true,
-      order: 5,
-    },
+    createLintStage(),
+    createTypeCheckStage(),
+    createTestStage(),
+    createTypeScriptPreferenceStage(),
+    createE2EStage(),
   ];
 }
 

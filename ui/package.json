@@ -16,6 +16,10 @@
     "test:api": "jest e2e/api-integration-pactum.spec.ts",
     "test:api:watch": "jest e2e/api-integration-pactum.spec.ts --watch",
     "test:api:verbose": "jest e2e/api-integration-pactum.spec.ts --verbose",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:ui": "jest --watch",
     "duplication-check": "npx jscpd src/ || echo \"Duplication found but within acceptable threshold\""
   },
   "dependencies": {
@@ -55,24 +59,32 @@
   "devDependencies": {
     "@eslint/js": "^9.32.0",
     "@playwright/test": "^1.54.2",
+    "@testing-library/jest-dom": "^6.7.0",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.2.0",
     "@types/react": "^19.1.9",
     "@types/react-dom": "^19.1.7",
     "@vitejs/plugin-react": "^4.7.0",
+    "@vitest/coverage-v8": "^3.2.4",
+    "@vitest/ui": "^3.2.4",
     "autoprefixer": "^10.4.21",
     "eslint": "^9.32.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^16.3.0",
     "jest": "^30.0.5",
+    "jest-environment-jsdom": "^30.0.5",
     "jscpd": "^4.0.5",
+    "jsdom": "^26.1.0",
     "nodemon": "^3.1.10",
     "pactum": "^3.8.0",
     "postcss": "^8.5.6",
     "ts-jest": "^29.4.1",
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.39.0",
-    "vite": "^7.1.0"
+    "vite": "^7.1.0",
+    "vitest": "^3.2.4"
   }
 }

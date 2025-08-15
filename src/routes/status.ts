@@ -24,7 +24,7 @@ export function createStatusRoutes(configLoader: ConfigLoader, logger: ILogger):
         timestamp: new Date().toISOString(),
       });
     } catch (error) {
-      handleApiError(res, logger, 'get server status', error);
+      handleApiError(res, { logger, operation: 'get server status', error });
     }
   });
 
@@ -39,7 +39,7 @@ export function createStatusRoutes(configLoader: ConfigLoader, logger: ILogger):
         timestamp: new Date().toISOString(),
       });
     } catch (error) {
-      handleApiError(res, logger, 'reload configuration', error);
+      handleApiError(res, { logger, operation: 'reload configuration', error });
     }
   });
 

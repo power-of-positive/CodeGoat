@@ -20,14 +20,6 @@ import {
   processReviewResults,
 } from "./lib/utils/review-processor";
 
-// Todo list types for validation
-interface TodoItem {
-  content: string;
-  status: "pending" | "in_progress" | "completed";
-  priority: "high" | "medium" | "low";
-  id: string;
-}
-
 // Log that the hook is being called (stderr to match shell version)
 console.error(`🔥 CLAUDE STOP HOOK EXECUTING - ${new Date()}`);
 console.error(`🔥 Hook arguments: ${process.argv.slice(2).join(" ")}`);
@@ -86,110 +78,6 @@ function hasUncommittedFiles(): boolean {
   return changes.trim().length > 0;
 }
 
-/**
- * Parse and validate todo list from CLAUDE_TOOL_INPUT or todo-list.json file
- * Blocks Claude if there are unfinished high priority tasks
- */
-function validateTodoList(): { shouldBlock: boolean; reason?: string } {
-  let todos: TodoItem[] = [];
-  let todoSource = "";
-
-  // Try to get todos from CLAUDE_TOOL_INPUT first
-  const toolInput = process.env.CLAUDE_TOOL_INPUT;
-  if (toolInput) {
-    try {
-      console.error("📝 Reading todo list from CLAUDE_TOOL_INPUT");
-      
-      // Handle different possible formats
-      if (toolInput.startsWith('[')) {
-        // Direct array format
-        todos = JSON.parse(toolInput);
-        todoSource = "CLAUDE_TOOL_INPUT";
-      } else {
-        // Try to extract JSON from tool input
-        const match = toolInput.match(/\[[\s\S]*\]/);
-        if (match) {
-          todos = JSON.parse(match[0]);
-          todoSource = "CLAUDE_TOOL_INPUT";
-        }
-      }
-    } catch (error) {
-      console.error("📝 Failed to parse CLAUDE_TOOL_INPUT:", error);
-    }
-  }
-
-  // If no todos from CLAUDE_TOOL_INPUT, try reading from todo-list.json file
-  if (todos.length === 0) {
-    const todoFilePath = path.join(process.cwd(), "todo-list.json");
-    try {
-      console.error("📝 Reading todo list from todo-list.json");
-      if (fs.existsSync(todoFilePath)) {
-        const fileContent = fs.readFileSync(todoFilePath, "utf-8");
-        todos = JSON.parse(fileContent);
-        todoSource = "todo-list.json";
-      }
-    } catch (error) {
-      console.error("📝 Failed to read todo-list.json:", error);
-    }
-  }
-
-  // If still no todos found, allow completion
-  if (todos.length === 0) {
-    console.error("📝 No todo list found in CLAUDE_TOOL_INPUT or todo-list.json");
-    return { shouldBlock: false };
-  }
-
-  if (!Array.isArray(todos)) {
-    console.error("📝 Todo list is not an array");
-    return { shouldBlock: false };
-  }
-
-  console.error(`📝 Using todo list from: ${todoSource}`);
-
-  try {
-    // Filter for unfinished tasks
-    const unfinishedTasks = todos.filter(
-      (todo: TodoItem) => todo.status === "pending" || todo.status === "in_progress"
-    );
-
-    // Filter for high priority unfinished tasks
-    const highPriorityUnfinished = unfinishedTasks.filter(
-      (todo: TodoItem) => todo.priority === "high"
-    );
-
-    console.error(`📝 Todo list analysis:`);
-    console.error(`   Total tasks: ${todos.length}`);
-    console.error(`   Unfinished tasks: ${unfinishedTasks.length}`);
-    console.error(`   High priority unfinished: ${highPriorityUnfinished.length}`);
-
-    if (highPriorityUnfinished.length > 0) {
-      const taskList = highPriorityUnfinished
-        .map((task: TodoItem) => `  - ${task.content}`)
-        .join('\n');
-      
-      return {
-        shouldBlock: true,
-        reason: `High priority tasks remain unfinished:\n${taskList}`
-      };
-    }
-
-    // Check if there are many medium/low priority unfinished tasks
-    if (unfinishedTasks.length >= 10) {
-      return {
-        shouldBlock: true,
-        reason: `Too many unfinished tasks (${unfinishedTasks.length}). Please complete some tasks before stopping.`
-      };
-    }
-
-    console.error("✅ Todo list validation passed");
-    return { shouldBlock: false };
-
-  } catch (error) {
-    console.error("📝 Error validating todo list:", error);
-    // Don't block on parse errors - allow completion
-    return { shouldBlock: false };
-  }
-}
 
 /**
  * Handle precommit checks with timeout
@@ -272,20 +160,7 @@ async function main(): Promise<void> {
   }, GLOBAL_TIMEOUT);
 
   try {
-    // First check: Block if there are unfinished high priority todos
-    const todoValidation = validateTodoList();
-    if (todoValidation.shouldBlock) {
-      console.error("⚠️ Unfinished high priority tasks detected - blocking completion");
-      console.error("💡 Please complete the high priority tasks before stopping");
-      const blockResult = {
-        decision: "block",
-        reason: todoValidation.reason || "Unfinished high priority tasks detected",
-      };
-      console.log(JSON.stringify(blockResult));
-      process.exit(2);
-    }
-
-    // Second check: Block if there are uncommitted files
+    // First check: Block if there are uncommitted files
     if (hasUncommittedFiles()) {
       console.error("⚠️ Uncommitted files detected - blocking completion");
       console.error("💡 Please commit your changes before completing");

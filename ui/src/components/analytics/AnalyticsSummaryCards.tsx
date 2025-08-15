@@ -21,7 +21,8 @@ export function AnalyticsSummaryCards({ analytics }: AnalyticsSummaryCardsProps)
   };
 
   const formatPercentage = (num: number) => {
-    return `${(num * 100).toFixed(1)}%`;
+    // Backend already sends percentages (not decimals), so no need to multiply by 100
+    return `${num.toFixed(1)}%`;
   };
 
   return (

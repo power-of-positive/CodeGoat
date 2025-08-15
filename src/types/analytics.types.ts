@@ -39,5 +39,6 @@ export interface DevelopmentAnalytics {
   averageAttemptsToSuccess: number;
   mostFailedStage: string;
   stageSuccessRates: Record<string, { attempts: number; successes: number; rate: number }>;
+  averageStageTime: Record<string, number>; // Average duration per stage in milliseconds
   dailyStats: Record<string, { sessions: number; successes: number; totalTime: number }>;
 }

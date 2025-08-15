@@ -47,14 +47,14 @@ describe('ChatCompletionRetryHandler', () => {
       const successResult: RetryResult = { success: true };
       mockAttemptHandler.mockResolvedValue(successResult);
 
-      const result = await retryHandler.tryModelWithRetries(
-        mockReq as any,
-        mockRes as any,
+      const result = await retryHandler.tryModelWithRetries({
+        req: mockReq as any,
+        res: mockRes as any,
         modelConfig,
         requestData,
         modelId,
-        mockAttemptHandler
-      );
+        attemptHandler: mockAttemptHandler
+      });
 
       expect(result).toEqual(successResult);
       expect(mockAttemptHandler).toHaveBeenCalledTimes(1);
@@ -77,14 +77,14 @@ describe('ChatCompletionRetryHandler', () => {
       };
       mockAttemptHandler.mockResolvedValue(fallbackResult);
 
-      const result = await retryHandler.tryModelWithRetries(
-        mockReq as any,
-        mockRes as any,
+      const result = await retryHandler.tryModelWithRetries({
+        req: mockReq as any,
+        res: mockRes as any,
         modelConfig,
         requestData,
         modelId,
-        mockAttemptHandler
-      );
+        attemptHandler: mockAttemptHandler
+      });
 
       expect(result).toEqual(fallbackResult);
       expect(mockAttemptHandler).toHaveBeenCalledTimes(1);
@@ -101,14 +101,14 @@ describe('ChatCompletionRetryHandler', () => {
         .mockResolvedValueOnce(failureResult)
         .mockResolvedValueOnce(successResult);
 
-      const result = await retryHandler.tryModelWithRetries(
-        mockReq as any,
-        mockRes as any,
+      const result = await retryHandler.tryModelWithRetries({
+        req: mockReq as any,
+        res: mockRes as any,
         modelConfig,
         requestData,
         modelId,
-        mockAttemptHandler
-      );
+        attemptHandler: mockAttemptHandler
+      });
 
       expect(result).toEqual(successResult);
       expect(mockAttemptHandler).toHaveBeenCalledTimes(2);
@@ -120,14 +120,14 @@ describe('ChatCompletionRetryHandler', () => {
       const failureResult: RetryResult = { success: false, error: 'Persistent error' };
       mockAttemptHandler.mockResolvedValue(failureResult);
 
-      const result = await retryHandler.tryModelWithRetries(
-        mockReq as any,
-        mockRes as any,
+      const result = await retryHandler.tryModelWithRetries({
+        req: mockReq as any,
+        res: mockRes as any,
         modelConfig,
         requestData,
         modelId,
-        mockAttemptHandler
-      );
+        attemptHandler: mockAttemptHandler
+      });
 
       expect(result).toEqual({ success: false, error: 'Persistent error' });
       expect(mockAttemptHandler).toHaveBeenCalledTimes(3); // maxRetries
@@ -150,14 +150,14 @@ describe('ChatCompletionRetryHandler', () => {
       const failureResult: RetryResult = { success: false, error: 'Test error' };
       mockAttemptHandler.mockResolvedValue(failureResult);
 
-      const result = await retryHandler.tryModelWithRetries(
-        mockReq as any,
-        mockRes as any,
+      const result = await retryHandler.tryModelWithRetries({
+        req: mockReq as any,
+        res: mockRes as any,
         modelConfig,
         requestData,
         modelId,
-        mockAttemptHandler
-      );
+        attemptHandler: mockAttemptHandler
+      });
 
       expect(result).toEqual({ success: false, error: 'Test error' });
       expect(mockAttemptHandler).toHaveBeenCalledTimes(5); // Custom maxRetries
@@ -171,14 +171,14 @@ describe('ChatCompletionRetryHandler', () => {
       const testError = new Error('Handler threw error');
       mockAttemptHandler.mockRejectedValue(testError);
 
-      await expect(retryHandler.tryModelWithRetries(
-        mockReq as any,
-        mockRes as any,
+      await expect(retryHandler.tryModelWithRetries({
+        req: mockReq as any,
+        res: mockRes as any,
         modelConfig,
         requestData,
         modelId,
-        mockAttemptHandler
-      )).rejects.toThrow('Handler threw error');
+        attemptHandler: mockAttemptHandler
+      })).rejects.toThrow('Handler threw error');
 
       expect(mockAttemptHandler).toHaveBeenCalledTimes(1);
     });
@@ -187,14 +187,14 @@ describe('ChatCompletionRetryHandler', () => {
       const failureResult: RetryResult = { success: false, error: 'Test error' };
       mockAttemptHandler.mockResolvedValue(failureResult);
 
-      await retryHandler.tryModelWithRetries(
-        mockReq as any,
-        mockRes as any,
+      await retryHandler.tryModelWithRetries({
+        req: mockReq as any,
+        res: mockRes as any,
         modelConfig,
         requestData,
         modelId,
-        mockAttemptHandler
-      );
+        attemptHandler: mockAttemptHandler
+      });
 
       expect(mockLogger.debug).toHaveBeenCalledWith('Attempt 1/3 for model test-model');
       expect(mockLogger.debug).toHaveBeenCalledWith('Attempt 2/3 for model test-model');
@@ -209,14 +209,14 @@ describe('ChatCompletionRetryHandler', () => {
         .mockResolvedValueOnce(failureResult)
         .mockResolvedValueOnce(successResult);
 
-      await retryHandler.tryModelWithRetries(
-        mockReq as any,
-        mockRes as any,
+      await retryHandler.tryModelWithRetries({
+        req: mockReq as any,
+        res: mockRes as any,
         modelConfig,
         requestData,
         modelId,
-        mockAttemptHandler
-      );
+        attemptHandler: mockAttemptHandler
+      });
 
       expect(mockLogger.debug).toHaveBeenCalledWith('Waiting 2000ms before next retry');
     });
@@ -225,14 +225,14 @@ describe('ChatCompletionRetryHandler', () => {
       const failureResult: RetryResult = { success: false }; // No error message
       mockAttemptHandler.mockResolvedValue(failureResult);
 
-      const result = await retryHandler.tryModelWithRetries(
-        mockReq as any,
-        mockRes as any,
+      const result = await retryHandler.tryModelWithRetries({
+        req: mockReq as any,
+        res: mockRes as any,
         modelConfig,
         requestData,
         modelId,
-        mockAttemptHandler
-      );
+        attemptHandler: mockAttemptHandler
+      });
 
       expect(result).toEqual({ success: false, error: undefined });
       expect(mockLogger.error).toHaveBeenCalledWith(

@@ -1,0 +1,19 @@
+# Task ID-XX: Brief description of what was done
+#
+# Longer description explaining:
+# - What specific changes were made
+# - Why these changes were necessary 
+# - Any important implementation details
+#
+# Examples:
+# Task 55: Ensure validation stages appear in settings-defined order in analytics page
+# Task 66: Implement automated todo completion via pre-commit hooks
+#
+# Guidelines:
+# - Start with "Task ID-XX:" where XX is the task number from todo-list.json
+# - Use present tense ("Add feature" not "Added feature")
+# - Keep the first line under 72 characters
+# - Reference issue numbers if applicable
+# - Explain the "why" not just the "what"
+#
+# This commit format enables automatic todo list updates when commits succeed.

@@ -392,7 +392,6 @@ async function stopAllExecutions(prisma: PrismaClient, id: string): Promise<void
       completedAt: new Date(),
     },
   });
-
   // Update attempt status
   await prisma.taskAttempt.update({
     where: { id },

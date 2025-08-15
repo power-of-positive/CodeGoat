@@ -12,7 +12,7 @@ function handleGetModels(configLoader: ConfigLoader, logger: ILogger) {
       const models = await ModelService.getAllModels(configLoader);
       res.json({ models });
     } catch (error) {
-      handleApiError(res, logger, 'load models', error);
+      handleApiError(res, { logger, operation: 'load models', error });
     }
   };
 }

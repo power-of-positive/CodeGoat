@@ -1,0 +1,24 @@
+{
+  "maxUnusedExports": 50,
+  "ignorePatterns": [
+    "*.test.ts",
+    "*.test.tsx",
+    "*.spec.ts",
+    "*.spec.tsx",
+    "*.d.ts",
+    "index.ts",
+    "main.ts",
+    "server.ts",
+    "scripts/**",
+    "ui/src/types/**",
+    "pages/api/**",
+    "app/api/**",
+    "src/types/**",
+    "src/services/**service.ts",
+    "src/utils/**"
+  ],
+  "failOnExcess": false,
+  "tsPruneOptions": [
+    "--project", "tsconfig.json"
+  ]
+}

@@ -5,18 +5,16 @@ import {
   Settings as SettingsIcon, 
   RefreshCw, 
   AlertCircle,
-  FileText,
-  Target
+  FileText
 } from 'lucide-react';
 import { api } from '../services/api';
-import { ValidationSettings } from './ValidationSettings';
 import { FallbackSettings } from './FallbackSettings';
 import { LoggingSettings } from './LoggingSettings';
 
-type SettingsTab = 'validation' | 'fallback' | 'logging';
+type SettingsTab = 'fallback' | 'logging';
 
 export function Settings() {
-  const [activeTab, setActiveTab] = useState<SettingsTab>('validation');
+  const [activeTab, setActiveTab] = useState<SettingsTab>('fallback');
   const queryClient = useQueryClient();
 
   const { data: settings, isLoading, error } = useQuery({
@@ -32,7 +30,6 @@ export function Settings() {
   });
 
   const tabs = [
-    { id: 'validation' as const, name: 'Validation Stages', icon: Target },
     { id: 'fallback' as const, name: 'Fallback Config', icon: RefreshCw },
     { id: 'logging' as const, name: 'Logging Config', icon: FileText },
   ];
@@ -61,14 +58,12 @@ export function Settings() {
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'validation':
-        return <ValidationSettings settings={settings} updateSettingsMutation={updateSettingsMutation} />;
       case 'fallback':
         return <FallbackSettings settings={settings} updateSettingsMutation={updateSettingsMutation} />;
       case 'logging':
         return <LoggingSettings settings={settings} updateSettingsMutation={updateSettingsMutation} />;
       default:
-        return <ValidationSettings settings={settings} updateSettingsMutation={updateSettingsMutation} />;
+        return <FallbackSettings settings={settings} updateSettingsMutation={updateSettingsMutation} />;
     }
   };
 
@@ -81,7 +76,7 @@ export function Settings() {
           Settings
         </h2>
         <p className="text-sm text-gray-400">
-          Configure validation stages, fallback behavior, and logging settings
+          Configure fallback behavior and logging settings
         </p>
       </div>
 

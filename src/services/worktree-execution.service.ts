@@ -13,6 +13,7 @@ import * as path from 'path';
 import * as fs from 'fs/promises';
 import { ILogger } from '../logger-interface';
 import { KanbanDatabaseService } from './kanban-database.service';
+import { AgentExecutorService, AgentProfile } from './agent-executor.service';
 import { runGitCommand, isGitRepository, cleanupWorktree, buildClaudeArgs } from './worktree-execution.helpers';
 
 export interface WorktreeConfig {
@@ -23,7 +24,7 @@ export interface WorktreeConfig {
   branchName: string;
   worktreePath: string;
   baseBranch: string;
-  claudeProfile?: string;
+  agentProfile?: string; // Changed from claudeProfile to support multiple agents
 }
 
 export interface ExecutionOptions {
@@ -40,6 +41,8 @@ export interface ExecutionResult {
   duration: number;
   commitHash?: string;
   error?: string;
+  agentType?: string; // Added to track which agent was used
+  agentProfile?: string; // Added to track which profile was used
 }
 
 export class WorktreeExecutionService {
@@ -50,6 +53,7 @@ export class WorktreeExecutionService {
   constructor(
     private logger: ILogger,
     private kanbanDb: KanbanDatabaseService,
+    private agentExecutor: AgentExecutorService,
     private cleanupIntervalMs: number = 5 * 60 * 1000 // 5 minutes
   ) {
     // Start periodic cleanup of orphaned worktrees
@@ -82,8 +86,8 @@ export class WorktreeExecutionService {
       // Update task attempt status
       await this.updateTaskAttemptStatus(config.taskId, 'RUNNING');
 
-      // Execute Claude Code
-      const result = await this.executeClaudeCode(config, options);
+      // Execute AI agent
+      const result = await this.executeAgent(config, options);
 
       // Handle successful execution
       if (result.success && options.autoCommit !== false) {
@@ -152,101 +156,89 @@ export class WorktreeExecutionService {
   }
 
   /**
-   * Execute Claude Code within the worktree
+   * Execute AI agent in the worktree using the configured profile
    */
-  private executeClaudeCode(
+  private async executeAgent(
     config: WorktreeConfig,
     options: ExecutionOptions
   ): Promise<ExecutionResult> {
-    const startTime = Date.now();
-    const { taskId, worktreePath } = config;
-    const timeout = options.timeout || 30 * 60 * 1000;
-
-    return new Promise((resolve) => {
-      const claudeArgs = buildClaudeArgs(config);
-      this.logger.info('Starting Claude Code execution', { taskId, worktreePath });
-
-      const claudeProcess = this.spawnClaudeProcess(claudeArgs, worktreePath);
-      this.activeExecutions.set(taskId, claudeProcess);
-
-      const { stdout, stderr } = this.setupProcessLogging(claudeProcess, taskId);
-      const timeoutHandle = this.setupTimeout(claudeProcess, taskId, timeout);
-
-      this.setupProcessHandlers(claudeProcess, timeoutHandle, taskId, startTime, stdout, stderr, resolve);
-    });
-  }
-
-  private spawnClaudeProcess(claudeArgs: string[], worktreePath: string): ChildProcess {
-    return spawn('claude-code', claudeArgs, {
-      cwd: worktreePath,
-      stdio: 'pipe',
-      env: { ...process.env, PWD: worktreePath }
-    });
-  }
-
-  private setupProcessLogging(process: ChildProcess, taskId: string): { stdout: () => string; stderr: () => string } {
-    let stdout = '';
-    let stderr = '';
-
-    process.stdout?.on('data', (data) => {
-      const output = data.toString();
-      stdout += output;
-      this.logger.debug?.('Claude Code stdout', { taskId, output: output.trim() });
-    });
-
-    process.stderr?.on('data', (data) => {
-      const output = data.toString();
-      stderr += output;
-      this.logger.debug?.('Claude Code stderr', { taskId, output: output.trim() });
-    });
-
-    return { stdout: () => stdout, stderr: () => stderr };
-  }
-
-  private setupTimeout(process: ChildProcess, taskId: string, timeout: number): ReturnType<typeof setTimeout> {
-    return setTimeout(() => {
-      this.logger.warn?.('Claude Code execution timeout', { taskId, timeout });
-      process.kill('SIGTERM');
-      setTimeout(() => process.kill('SIGKILL'), 5000);
-    }, timeout);
-  }
-
-  private setupProcessHandlers(
-    process: ChildProcess,
-    timeoutHandle: ReturnType<typeof setTimeout>,
-    taskId: string,
-    startTime: number,
-    stdout: () => string,
-    stderr: () => string,
-    resolve: (result: ExecutionResult) => void
-  ): void {
-    process.on('close', (code) => {
-      clearTimeout(timeoutHandle);
-      this.activeExecutions.delete(taskId);
-      const duration = Date.now() - startTime;
-
-      resolve({
-        success: code === 0,
-        exitCode: code ?? undefined,
-        stdout: stdout().trim(),
-        stderr: stderr().trim(),
-        duration
-      });
-    });
-
-    process.on('error', (error) => {
-      clearTimeout(timeoutHandle);
-      this.activeExecutions.delete(taskId);
-      const duration = Date.now() - startTime;
-      
-      resolve({
+    const { taskId, taskTitle, taskDescription, worktreePath, agentProfile } = config;
+    
+    // Get the agent profile to use (default to claude-default)
+    const profileName = agentProfile || 'claude-default';
+    const profile = this.agentExecutor.getProfile(profileName);
+    
+    if (!profile) {
+      this.logger.error('Agent profile not found', new Error(`Profile ${profileName} not found`), { profileName, taskId });
+      return {
         success: false,
-        error: error.message,
-        stderr: stderr().trim(),
-        duration
-      });
+        error: `Agent profile '${profileName}' not found`,
+        duration: 0,
+        agentProfile: profileName
+      };
+    }
+
+    // Build the prompt for the agent
+    const prompt = this.buildAgentPrompt(taskTitle, taskDescription);
+    
+    this.logger.info('Starting agent execution', { 
+      taskId, 
+      profileName, 
+      agentType: profile.type,
+      worktreePath 
     });
+
+    // Execute the agent
+    const agentResult = await this.agentExecutor.executeAgent({
+      profile,
+      workingDirectory: worktreePath,
+      prompt,
+      timeout: options.timeout
+    });
+
+    // Convert agent result to execution result format
+    return {
+      success: agentResult.success,
+      exitCode: agentResult.exitCode,
+      stdout: agentResult.stdout,
+      stderr: agentResult.stderr,
+      duration: agentResult.duration,
+      error: agentResult.error,
+      agentType: agentResult.agentType,
+      agentProfile: agentResult.profileName
+    };
   }
+
+  /**
+   * Build a prompt for the AI agent based on task details
+   */
+  private buildAgentPrompt(taskTitle: string, taskDescription?: string): string {
+    let prompt = `Task: ${taskTitle}\n\n`;
+    
+    if (taskDescription) {
+      prompt += `Description: ${taskDescription}\n\n`;
+    }
+    
+    prompt += 'Please help me implement this task. ';
+    prompt += 'Review the codebase, understand the requirements, and make the necessary changes.';
+    
+    return prompt;
+  }
+
+  /**
+   * Get available agent profiles
+   */
+  getAvailableAgentProfiles(): Record<string, AgentProfile> {
+    return this.agentExecutor.getAvailableProfiles();
+  }
+
+  /**
+   * Add a custom agent profile
+   */
+  addCustomAgentProfile(name: string, profile: AgentProfile): void {
+    this.agentExecutor.addCustomProfile(name, profile);
+  }
+
 
   /**
    * Commit changes made during execution

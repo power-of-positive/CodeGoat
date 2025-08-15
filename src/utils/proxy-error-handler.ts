@@ -21,9 +21,8 @@ export interface ErrorDetails {
 export class ProxyErrorHandler {
   constructor(private readonly logger: ILogger) {}
 
-  handleRequestError(error: unknown, attempt: number): RequestErrorResult {
-    const axiosError = error as AxiosError;
-    const errorDetails: ErrorDetails = {
+  private createErrorDetails(axiosError: AxiosError, attempt: number): ErrorDetails {
+    return {
       attempt,
       code: axiosError.code,
       status: axiosError.response?.status,
@@ -32,13 +31,11 @@ export class ProxyErrorHandler {
       requestSize: axiosError.config?.data ? JSON.stringify(axiosError.config.data).length : 0,
       url: axiosError.config?.url,
     };
+  }
 
-    this.logger.error('Request attempt failed', new Error(axiosError.message), errorDetails);
-
+  private getSpecificErrorResult(axiosError: AxiosError): RequestErrorResult | null {
     if (axiosError.response?.status === 413) {
-      const errorMsg = 'Request entity too large - payload exceeds provider limits';
-      this.logger.error('413 Payload Too Large Error', new Error(errorMsg), errorDetails);
-      return { success: false, error: errorMsg };
+      return { success: false, error: 'Request entity too large - payload exceeds provider limits' };
     }
 
     if (axiosError.code === 'ECONNABORTED' && axiosError.message.includes('timeout')) {
@@ -49,7 +46,22 @@ export class ProxyErrorHandler {
       return { success: false, error: 'Request payload exceeds maximum allowed size' };
     }
 
-    return { success: false, error: axiosError.message || 'Unknown request error' };
+    return null;
+  }
+
+  handleRequestError(error: unknown, attempt: number): RequestErrorResult {
+    const axiosError = error as AxiosError;
+    const errorDetails = this.createErrorDetails(axiosError, attempt);
+
+    this.logger.error('Request attempt failed', new Error(axiosError.message), errorDetails);
+
+    if (axiosError.response?.status === 413) {
+      const errorMsg = 'Request entity too large - payload exceeds provider limits';
+      this.logger.error('413 Payload Too Large Error', new Error(errorMsg), errorDetails);
+    }
+
+    const specificError = this.getSpecificErrorResult(axiosError);
+    return specificError || { success: false, error: axiosError.message || 'Unknown request error' };
   }
 
   handleChatError(error: unknown): { status: number; message: string } {

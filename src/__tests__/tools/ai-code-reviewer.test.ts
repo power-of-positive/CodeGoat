@@ -373,22 +373,13 @@ describe('AI Code Reviewer', () => {
       global.fetch = originalFetch;
     });
 
-    it('should return empty review when no API key is configured', async () => {
+    it('should throw error when no API key is configured', async () => {
       delete process.env.OPENAI_API_KEY;
       delete process.env.OPENROUTER_API_KEY;
 
-      const result = await reviewCode('test.ts', 'const x = 1;');
-
-      expect(result).toEqual({
-        reviews: [{
-          line: null,
-          severity: 'info',
-          category: 'system',
-          message: 'AI code review skipped - no valid API key configured. Set OPENAI_API_KEY or OPENROUTER_API_KEY environment variable.',
-          suggestion: 'Configure API key in .env file or environment variables'
-        }],
-        summary: 'No valid API key configured - review skipped',
-      });
+      await expect(reviewCode('test.ts', 'const x = 1;')).rejects.toThrow(
+        'AI code review failed: No valid API key configured. Set OPENAI_API_KEY or OPENROUTER_API_KEY environment variable.'
+      );
     });
 
     it('should make API call and parse response', async () => {
@@ -441,9 +432,10 @@ describe('AI Code Reviewer', () => {
         reviews: [
           {
             line: null,
-            severity: 'info',
+            severity: 'high',
             category: 'system',
             message: 'AI review failed: Network error',
+            suggestion: 'Check network connectivity and API configuration',
           },
         ],
         summary: 'Review failed due to technical issue',
@@ -470,9 +462,10 @@ describe('AI Code Reviewer', () => {
         reviews: [
           {
             line: null,
-            severity: 'info',
+            severity: 'high',
             category: 'system',
             message: expect.stringContaining('AI review failed:'),
+            suggestion: 'Check network connectivity and API configuration',
           },
         ],
         summary: 'Review failed due to technical issue',

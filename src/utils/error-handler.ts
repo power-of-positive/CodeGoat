@@ -6,11 +6,14 @@ import { ILogger } from '../logger-interface';
  */
 export function handleApiError(
   res: Response,
-  logger: ILogger,
-  operation: string,
-  error: unknown,
-  statusCode = 500
+  options: {
+    logger: ILogger;
+    operation: string;
+    error: unknown;
+    statusCode?: number;
+  }
 ): void {
+  const { logger, operation, error, statusCode = 500 } = options;
   logger.error(`Failed to ${operation}`, error as Error);
   res.status(statusCode).json({ error: `Failed to ${operation}` });
 }

@@ -81,14 +81,14 @@ describe('ChatCompletionExecutor', () => {
       
       (mockedAxios as any).mockResolvedValue(mockResponse);
 
-      const result = await executor.attemptModelRequest(
-        mockReq as any,
-        mockRes as any,
+      const result = await executor.attemptModelRequest({
+        req: mockReq as any,
+        res: mockRes as any,
         modelConfig,
         requestData,
-        1,
-        3
-      );
+        attempt: 1,
+        maxRetries: 3
+      });
 
       expect(result).toEqual({ success: true });
       expect(mockRes.status).toHaveBeenCalledWith(200);
@@ -104,14 +104,14 @@ describe('ChatCompletionExecutor', () => {
       
       (mockedAxios as any).mockResolvedValue(mockResponse);
 
-      const result = await executor.attemptModelRequest(
-        mockReq as any,
-        mockRes as any,
+      const result = await executor.attemptModelRequest({
+        req: mockReq as any,
+        res: mockRes as any,
         modelConfig,
         requestData,
-        1,
-        3
-      );
+        attempt: 1,
+        maxRetries: 3
+      });
 
       expect(result).toEqual({ 
         success: false, 
@@ -128,14 +128,14 @@ describe('ChatCompletionExecutor', () => {
       
       (mockedAxios as any).mockResolvedValue(mockResponse);
 
-      const result = await executor.attemptModelRequest(
-        mockReq as any,
-        mockRes as any,
+      const result = await executor.attemptModelRequest({
+        req: mockReq as any,
+        res: mockRes as any,
         modelConfig,
         requestData,
-        1,
-        3
-      );
+        attempt: 1,
+        maxRetries: 3
+      });
 
       expect(result).toEqual({ 
         success: false, 
@@ -152,14 +152,14 @@ describe('ChatCompletionExecutor', () => {
       
       (mockedAxios as any).mockResolvedValue(mockResponse);
 
-      const result = await executor.attemptModelRequest(
-        mockReq as any,
-        mockRes as any,
+      const result = await executor.attemptModelRequest({
+        req: mockReq as any,
+        res: mockRes as any,
         modelConfig,
         requestData,
-        3, // Final attempt
-        3
-      );
+        attempt: 3, // Final attempt
+        maxRetries: 3
+      });
 
       // On final attempt with server error fallback enabled, should not retry but may still succeed 
       // if response is processed successfully
@@ -180,14 +180,14 @@ describe('ChatCompletionExecutor', () => {
       
       (mockedAxios as any).mockResolvedValue(mockResponse);
 
-      const result = await executor.attemptModelRequest(
-        mockReq as any,
-        mockRes as any,
+      const result = await executor.attemptModelRequest({
+        req: mockReq as any,
+        res: mockRes as any,
         modelConfig,
         requestData,
-        1,
-        3
-      );
+        attempt: 1,
+        maxRetries: 3
+      });
 
       expect(result).toEqual({ 
         success: false, 
@@ -205,14 +205,14 @@ describe('ChatCompletionExecutor', () => {
       
       (mockedAxios as any).mockResolvedValue(mockResponse);
 
-      const result = await executor.attemptModelRequest(
-        mockReq as any,
-        mockRes as any,
+      const result = await executor.attemptModelRequest({
+        req: mockReq as any,
+        res: mockRes as any,
         modelConfig,
         requestData,
-        1,
-        3
-      );
+        attempt: 1,
+        maxRetries: 3
+      });
 
       expect(result).toEqual({ 
         success: false, 
@@ -230,14 +230,14 @@ describe('ChatCompletionExecutor', () => {
       
       (mockedAxios as any).mockRejectedValue(networkError);
 
-      const result = await executor.attemptModelRequest(
-        mockReq as any,
-        mockRes as any,
+      const result = await executor.attemptModelRequest({
+        req: mockReq as any,
+        res: mockRes as any,
         modelConfig,
         requestData,
-        2,
-        3
-      );
+        attempt: 2,
+        maxRetries: 3
+      });
 
       expect(result).toEqual({ 
         success: false, 
@@ -257,14 +257,14 @@ describe('ChatCompletionExecutor', () => {
       
       mockedAxios.mockRejectedValue(timeoutError);
 
-      const result = await executor.attemptModelRequest(
-        mockReq as any,
-        mockRes as any,
+      const result = await executor.attemptModelRequest({
+        req: mockReq as any,
+        res: mockRes as any,
         modelConfig,
         requestData,
-        1,
-        3
-      );
+        attempt: 1,
+        maxRetries: 3
+      });
 
       expect(result).toEqual({ 
         success: false, 
@@ -280,14 +280,14 @@ describe('ChatCompletionExecutor', () => {
       
       mockedAxios.mockRejectedValue(apiError);
 
-      const result = await executor.attemptModelRequest(
-        mockReq as any,
-        mockRes as any,
+      const result = await executor.attemptModelRequest({
+        req: mockReq as any,
+        res: mockRes as any,
         modelConfig,
         requestData,
-        1,
-        3
-      );
+        attempt: 1,
+        maxRetries: 3
+      });
 
       expect(result).toEqual({ 
         success: false, 
@@ -300,14 +300,14 @@ describe('ChatCompletionExecutor', () => {
     it('should handle request preparation failures', async () => {
       const invalidModelConfig = { model: '', apiKey: '' };
 
-      const result = await executor.attemptModelRequest(
-        mockReq as any,
-        mockRes as any,
-        invalidModelConfig,
+      const result = await executor.attemptModelRequest({
+        req: mockReq as any,
+        res: mockRes as any,
+        modelConfig: invalidModelConfig,
         requestData,
-        1,
-        3
-      );
+        attempt: 1,
+        maxRetries: 3
+      });
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('API key not configured');
@@ -327,14 +327,14 @@ describe('ChatCompletionExecutor', () => {
         throw new Error('Response processing error');
       });
 
-      const result = await executor.attemptModelRequest(
-        mockReq as any,
-        mockRes as any,
+      const result = await executor.attemptModelRequest({
+        req: mockReq as any,
+        res: mockRes as any,
         modelConfig,
         requestData,
-        1,
-        3
-      );
+        attempt: 1,
+        maxRetries: 3
+      });
 
       expect(result.success).toBe(false);
       expect(result.error).toContain('Response processing failed');
@@ -357,14 +357,14 @@ describe('ChatCompletionExecutor', () => {
       
       (mockedAxios as any).mockResolvedValue(mockResponse);
 
-      const result = await executor.attemptModelRequest(
-        mockReq as any,
-        mockRes as any,
+      const result = await executor.attemptModelRequest({
+        req: mockReq as any,
+        res: mockRes as any,
         modelConfig,
         requestData,
-        3, // Final attempt
-        3
-      );
+        attempt: 3, // Final attempt
+        maxRetries: 3
+      });
 
       // When server error fallback is disabled, should process response normally
       // even with 500 status if response is successful
@@ -392,14 +392,14 @@ describe('ChatCompletionExecutor', () => {
       
       (mockedAxios as any).mockResolvedValue(mockResponse);
 
-      const result = await executor.attemptModelRequest(
-        mockReq as any,
-        mockRes as any,
+      const result = await executor.attemptModelRequest({
+        req: mockReq as any,
+        res: mockRes as any,
         modelConfig,
         requestData,
-        3, // Final attempt
-        3
-      );
+        attempt: 3, // Final attempt
+        maxRetries: 3
+      });
 
       // When rate limit fallback is disabled, should process response normally
       // even with 429 status if response is successful
@@ -417,14 +417,14 @@ describe('ChatCompletionExecutor', () => {
       
       mockedAxios.mockRejectedValue(unknownError);
 
-      const result = await executor.attemptModelRequest(
-        mockReq as any,
-        mockRes as any,
+      const result = await executor.attemptModelRequest({
+        req: mockReq as any,
+        res: mockRes as any,
         modelConfig,
         requestData,
-        1,
-        3
-      );
+        attempt: 1,
+        maxRetries: 3
+      });
 
       expect(result).toEqual({ 
         success: false, 
@@ -448,14 +448,14 @@ describe('ChatCompletionExecutor', () => {
       
       (mockedAxios as any).mockResolvedValue(mockResponse);
 
-      const result = await executor.attemptModelRequest(
-        mockReq as any,
-        mockRes as any,
+      const result = await executor.attemptModelRequest({
+        req: mockReq as any,
+        res: mockRes as any,
         modelConfig,
         requestData,
-        1,
-        3
-      );
+        attempt: 1,
+        maxRetries: 3
+      });
 
       expect(result).toEqual({ success: true });
       expect(mockRes.status).toHaveBeenCalledWith(200);

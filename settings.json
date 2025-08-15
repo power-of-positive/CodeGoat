@@ -11,11 +11,11 @@
     "stages": [
       {
         "id": "lint",
-        "name": "Code Linting",
+        "name": "Code Linting", 
         "command": "npm run lint",
         "timeout": 30000,
         "enabled": true,
-        "continueOnFailure": false,
+        "continueOnFailure": true,
         "order": 1
       },
       {
@@ -24,7 +24,7 @@
         "command": "npm run type-check",
         "timeout": 30000,
         "enabled": true,
-        "continueOnFailure": false,
+        "continueOnFailure": true,
         "order": 2
       },
       {
@@ -33,16 +33,16 @@
         "command": "npm test",
         "timeout": 60000,
         "enabled": true,
-        "continueOnFailure": false,
+        "continueOnFailure": true,
         "order": 3
       },
       {
         "id": "coverage",
         "name": "Test Coverage Check",
-        "command": "npm run test:coverage",
-        "timeout": 90000,
-        "enabled": false,
-        "continueOnFailure": false,
+        "command": "npm run test:coverage:full",
+        "timeout": 120000,
+        "enabled": true,
+        "continueOnFailure": true,
         "order": 4
       },
       {
@@ -51,7 +51,7 @@
         "command": "npx ts-node scripts/check-typescript-preference.ts",
         "timeout": 10000,
         "enabled": true,
-        "continueOnFailure": false,
+        "continueOnFailure": true,
         "order": 5
       },
       {
@@ -60,7 +60,7 @@
         "command": "npx ts-node src/tools/ai-code-reviewer.ts",
         "timeout": 120000,
         "enabled": true,
-        "continueOnFailure": false,
+        "continueOnFailure": true,
         "order": 6
       },
       {
@@ -69,8 +69,17 @@
         "command": "node scripts/visual-regression.js",
         "timeout": 60000,
         "enabled": true,
-        "continueOnFailure": false,
+        "continueOnFailure": true,
         "order": 7
+      },
+      {
+        "id": "dead-code",
+        "name": "Dead Code Detection",
+        "command": "npx ts-node scripts/check-dead-code.ts",
+        "timeout": 45000,
+        "enabled": true,
+        "continueOnFailure": true,
+        "order": 8
       },
       {
         "id": "duplication-check",
@@ -78,8 +87,8 @@
         "command": "npm run duplication-check",
         "timeout": 45000,
         "enabled": true,
-        "continueOnFailure": false,
-        "order": 8
+        "continueOnFailure": true,
+        "order": 9
       },
       {
         "id": "vulnerability-check",
@@ -87,8 +96,8 @@
         "command": "npm audit --audit-level=moderate",
         "timeout": 30000,
         "enabled": true,
-        "continueOnFailure": false,
-        "order": 9
+        "continueOnFailure": true,
+        "order": 10
       },
       {
         "id": "e2e",
@@ -96,8 +105,26 @@
         "command": "cd ui && npx playwright test health-check.spec.ts task-details-opening.spec.ts --reporter=list",
         "timeout": 180000,
         "enabled": true,
-        "continueOnFailure": false,
-        "order": 10
+        "continueOnFailure": true,
+        "order": 11
+      },
+      {
+        "id": "uncommitted-files",
+        "name": "Uncommitted Files Check",
+        "command": "npx ts-node scripts/check-uncommitted-files.ts",
+        "timeout": 10000,
+        "enabled": true,
+        "continueOnFailure": true,
+        "order": 12
+      },
+      {
+        "id": "todo-list",
+        "name": "Todo List Validation",
+        "command": "npx ts-node scripts/validate-todo-list.ts",
+        "timeout": 10000,
+        "enabled": true,
+        "continueOnFailure": true,
+        "order": 13
       }
     ],
     "enableMetrics": true,

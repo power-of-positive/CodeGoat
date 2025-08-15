@@ -22,6 +22,15 @@ export interface AttemptRequest {
   maxRetries: number;
 }
 
+interface RetryOptions {
+  req: Request;
+  res: Response;
+  modelConfig: unknown;
+  requestData: unknown;
+  modelId: string;
+  attemptHandler: (request: AttemptRequest) => Promise<RetryResult>;
+}
+
 export class ChatCompletionRetryHandler {
   constructor(
     private settingsService: SettingsService,
@@ -30,64 +39,108 @@ export class ChatCompletionRetryHandler {
 
   /**
    * Attempts to execute a model request with retry logic and exponential backoff
-   * @param req - Express request object
-   * @param res - Express response object  
-   * @param modelConfig - Model configuration
-   * @param requestData - Chat completion request data
-   * @param modelId - Model identifier for logging
-   * @param attemptHandler - Function that attempts the actual request
+   * @param options - Configuration for retry processing
    * @returns Result indicating success, failure, or need for fallback
    */
-  async tryModelWithRetries(
-    req: Request,
-    res: Response,
-    modelConfig: unknown,
-    requestData: unknown,
-    modelId: string,
-    attemptHandler: (request: AttemptRequest) => Promise<RetryResult>
-  ): Promise<RetryResult> {
+  async tryModelWithRetries(options: RetryOptions): Promise<RetryResult> {
     const fallbackSettings = await this.settingsService.getFallbackSettings();
     const maxRetries = fallbackSettings.maxRetries;
-    let lastError: string | undefined;
+    
+    this.logRetryStart(options.modelId, maxRetries, fallbackSettings.retryDelay);
+    
+    return await this.executeRetryLoop(options, maxRetries, fallbackSettings.retryDelay);
+  }
 
+  /**
+   * Logs the start of retry attempts
+   */
+  private logRetryStart(modelId: string, maxRetries: number, retryDelay: number): void {
     this.logger.info(`Starting retry attempts for model ${modelId}`, {
       maxRetries,
-      retryDelay: fallbackSettings.retryDelay
+      retryDelay
     });
+  }
+
+  /**
+   * Executes the retry loop with exponential backoff
+   */
+  private async executeRetryLoop(
+    options: RetryOptions, 
+    maxRetries: number, 
+    retryDelay: number
+  ): Promise<RetryResult> {
+    let lastError: string | undefined;
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      this.logger.debug?.(`Attempt ${attempt}/${maxRetries} for model ${modelId}`);
-
-      const result = await attemptHandler({
-        req,
-        res,
-        modelConfig,
-        requestData,
-        attempt,
-        maxRetries
-      });
-
-      if (result.success) {
-        this.logger.info(`Model ${modelId} succeeded on attempt ${attempt}`);
-        return result;
-      }
-
-      if (result.shouldFallback) {
-        this.logger.info(`Model ${modelId} requires fallback on attempt ${attempt}: ${result.error}`);
-        return result;
+      const result = await this.executeAttempt(options, attempt, maxRetries);
+      
+      if (result.success || result.shouldFallback) {
+        return this.handleSuccessOrFallback(result, options.modelId, attempt);
       }
 
       lastError = result.error;
-      this.logger.warn?.(`Model ${modelId} failed attempt ${attempt}: ${lastError}`);
+      this.handleFailedAttempt(options.modelId, attempt, lastError);
 
-      // Apply exponential backoff delay before next retry
       if (attempt < maxRetries) {
-        const delayMs = Math.pow(2, attempt) * fallbackSettings.retryDelay;
-        this.logger.debug?.(`Waiting ${delayMs}ms before next retry`);
-        await delay(delayMs);
+        await this.applyBackoffDelay(attempt, retryDelay);
       }
     }
 
+    return this.handleAllAttemptsFailed(options.modelId, lastError);
+  }
+
+  /**
+   * Executes a single attempt
+   */
+  private async executeAttempt(
+    options: RetryOptions, 
+    attempt: number, 
+    maxRetries: number
+  ): Promise<RetryResult> {
+    this.logger.debug?.(`Attempt ${attempt}/${maxRetries} for model ${options.modelId}`);
+    
+    return await options.attemptHandler({
+      req: options.req,
+      res: options.res,
+      modelConfig: options.modelConfig,
+      requestData: options.requestData,
+      attempt,
+      maxRetries
+    });
+  }
+
+  /**
+   * Handles successful attempt or fallback request
+   */
+  private handleSuccessOrFallback(result: RetryResult, modelId: string, attempt: number): RetryResult {
+    if (result.success) {
+      this.logger.info(`Model ${modelId} succeeded on attempt ${attempt}`);
+    } else if (result.shouldFallback) {
+      this.logger.info(`Model ${modelId} requires fallback on attempt ${attempt}: ${result.error}`);
+    }
+    return result;
+  }
+
+  /**
+   * Handles a failed attempt
+   */
+  private handleFailedAttempt(modelId: string, attempt: number, error?: string): void {
+    this.logger.warn?.(`Model ${modelId} failed attempt ${attempt}: ${error}`);
+  }
+
+  /**
+   * Applies exponential backoff delay
+   */
+  private async applyBackoffDelay(attempt: number, retryDelay: number): Promise<void> {
+    const delayMs = Math.pow(2, attempt) * retryDelay;
+    this.logger.debug?.(`Waiting ${delayMs}ms before next retry`);
+    await delay(delayMs);
+  }
+
+  /**
+   * Handles case when all attempts fail
+   */
+  private handleAllAttemptsFailed(modelId: string, lastError?: string): RetryResult {
     this.logger.error(`All retry attempts failed for model ${modelId}`, new Error(lastError || 'Unknown error'));
     return { success: false, error: lastError };
   }

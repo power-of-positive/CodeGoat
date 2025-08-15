@@ -25,7 +25,6 @@ import { toPrettyCase } from '@/utils/string';
 import { useTheme } from '@/components/theme-provider';
 import { useUserSystem } from '@/components/config-provider';
 import { GitHubLoginDialog } from '@/components/GitHubLoginDialog';
-import { TaskTemplateManager } from '@/components/TaskTemplateManager';
 
 export function Settings() {
   const {
@@ -504,18 +503,6 @@ export function Settings() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Task Templates</CardTitle>
-              <CardDescription>
-                Manage global task templates that can be used across all
-                projects.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <TaskTemplateManager isGlobal={true} />
-            </CardContent>
-          </Card>
 
           <Card>
             <CardHeader>

@@ -4,6 +4,11 @@ import { ILogger } from '../logger-interface';
 import { z } from 'zod';
 import { SettingsService } from '../services/settings.service';
 
+interface SettingsContext {
+  settingsService: SettingsService;
+  logger: ILogger;
+}
+
 // Handler functions for settings routes
 function createSettingsHandler(settingsService: SettingsService, logger: ILogger) {
   return async (req: Request, res: Response): Promise<void> => {
@@ -39,41 +44,45 @@ function updateSettingsHandler(settingsService: SettingsService, logger: ILogger
   };
 }
 
+async function handleGetFallback(context: SettingsContext, req: Request, res: Response): Promise<void> {
+  try {
+    const fallbackSettings = await context.settingsService.getFallbackSettings();
+    res.json(fallbackSettings);
+  } catch (error) {
+    context.logger.error('Failed to load fallback settings', error as Error);
+    res.status(500).json({ error: 'Failed to load fallback settings' });
+  }
+}
+
+async function handleUpdateFallback(context: SettingsContext, req: Request, res: Response): Promise<void> {
+  try {
+    const fallbackSettings = await context.settingsService.updateFallbackSettings(req.body);
+    res.json({
+      message: 'Fallback settings updated successfully',
+      fallback: fallbackSettings,
+    });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      res.status(400).json({
+        error: 'Invalid fallback settings',
+        details: error.issues,
+      });
+    } else {
+      context.logger.error('Failed to update fallback settings', error as Error);
+      res.status(500).json({ error: 'Failed to update fallback settings' });
+    }
+  }
+}
+
 function createFallbackHandlers(settingsService: SettingsService, logger: ILogger): {
   getFallback: (req: Request, res: Response) => Promise<void>;
   updateFallback: (req: Request, res: Response) => Promise<void>;
 } {
-  const getFallback = async (req: Request, res: Response): Promise<void> => {
-    try {
-      const fallbackSettings = await settingsService.getFallbackSettings();
-      res.json(fallbackSettings);
-    } catch (error) {
-      logger.error('Failed to load fallback settings', error as Error);
-      res.status(500).json({ error: 'Failed to load fallback settings' });
-    }
+  const context: SettingsContext = { settingsService, logger };
+  return { 
+    getFallback: (req, res) => handleGetFallback(context, req, res),
+    updateFallback: (req, res) => handleUpdateFallback(context, req, res)
   };
-
-  const updateFallback = async (req: Request, res: Response): Promise<void> => {
-    try {
-      const fallbackSettings = await settingsService.updateFallbackSettings(req.body);
-      res.json({
-        message: 'Fallback settings updated successfully',
-        fallback: fallbackSettings,
-      });
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        res.status(400).json({
-          error: 'Invalid fallback settings',
-          details: error.issues,
-        });
-      } else {
-        logger.error('Failed to update fallback settings', error as Error);
-        res.status(500).json({ error: 'Failed to update fallback settings' });
-      }
-    }
-  };
-
-  return { getFallback, updateFallback };
 }
 
 function createValidationHandlers(settingsService: SettingsService, logger: ILogger): {

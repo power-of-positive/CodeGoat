@@ -18,13 +18,14 @@ import { createAnalyticsRoutes } from './routes/analytics';
 import { createKanbanProjectsRoutes } from './routes/kanban-projects';
 import { createKanbanTasksRoutes } from './routes/kanban-tasks';
 import { createKanbanTaskAttemptsRoutes } from './routes/kanban-task-attempts';
-import { createKanbanTemplatesRoutes } from './routes/kanban-templates';
 import { createKanbanHealthRoutes } from './routes/kanban-health';
 import { createWebSocketStatsRoutes } from './routes/websocket-stats';
+import { createAgentProfilesRoutes } from './routes/agent-profiles';
 // import { createAiAgentExecutionRoutes } from './routes/ai-agent-execution';
 import { KanbanDatabaseService } from './services/kanban-database.service';
 import { WebSocketService } from './services/websocket.service';
 import { WorktreeExecutionService } from './services/worktree-execution.service';
+import { AgentExecutorService } from './services/agent-executor.service';
 // import { SettingsService } from './services/settings.service';
 
 const app = express();
@@ -61,7 +62,8 @@ const logCleaner = new LogCleaner(
 // Initialize Kanban database and services
 const kanbanDb = new KanbanDatabaseService(logger);
 const webSocketService = new WebSocketService(logger);
-const worktreeExecutionService = new WorktreeExecutionService(logger, kanbanDb);
+const agentExecutorService = new AgentExecutorService(logger);
+const worktreeExecutionService = new WorktreeExecutionService(logger, kanbanDb, agentExecutorService);
 // const settingsService = new SettingsService(logger); // Will be used for AI agent integration
 
 // CORS configuration for Kanban UI integration
@@ -181,7 +183,7 @@ app.use('/api', createKanbanHealthRoutes(kanbanDb, logger));
 app.use('/api', createKanbanProjectsRoutes(kanbanDb, logger));
 app.use('/api', createKanbanTasksRoutes(kanbanDb, logger, webSocketService, worktreeExecutionService));
 app.use('/api', createKanbanTaskAttemptsRoutes(kanbanDb, logger, webSocketService));
-app.use('/api', createKanbanTemplatesRoutes(kanbanDb, logger));
+app.use('/api/agent-profiles', createAgentProfilesRoutes(worktreeExecutionService, logger));
 // AI Agent execution routes will be added once implementation is complete
 // app.use('/api/ai-agent', createAiAgentExecutionRoutes(kanbanDb, settingsService, config.modelConfig!, logger));
 

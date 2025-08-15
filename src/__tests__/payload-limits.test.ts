@@ -28,7 +28,7 @@ describe('Payload Limits', () => {
 
     // Handle body parser errors
     app.use(
-      (error: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+      (error: Error & { type?: string }, _req: express.Request, res: express.Response) => {
         if (error instanceof SyntaxError && 'body' in error) {
           return res.status(400).json({
             error: 'Invalid JSON in request body',
@@ -45,7 +45,7 @@ describe('Payload Limits', () => {
           });
         }
 
-        next(error);
+        // next(error);
       }
     );
 

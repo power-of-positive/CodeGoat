@@ -70,14 +70,14 @@ describe('ChatCompletionFallbackHandler', () => {
       const successResult: RetryResult = { success: true };
       mockRetryHandler.mockResolvedValue(successResult);
 
-      await fallbackHandler.tryFallbackModels(
-        mockReq as any,
-        mockRes as any,
+      await fallbackHandler.tryFallbackModels({
+        req: mockReq as any,
+        res: mockRes as any,
         requestData,
-        primaryModelId,
+        modelId: primaryModelId,
         error,
-        mockRetryHandler
-      );
+        retryHandler: mockRetryHandler
+      });
 
       expect(mockRetryHandler).toHaveBeenCalledTimes(1);
       expect(mockRetryHandler).toHaveBeenCalledWith({
@@ -100,14 +100,14 @@ describe('ChatCompletionFallbackHandler', () => {
         .mockResolvedValueOnce(failureResult)
         .mockResolvedValueOnce(successResult);
 
-      await fallbackHandler.tryFallbackModels(
-        mockReq as any,
-        mockRes as any,
+      await fallbackHandler.tryFallbackModels({
+        req: mockReq as any,
+        res: mockRes as any,
         requestData,
-        primaryModelId,
+        modelId: primaryModelId,
         error,
-        mockRetryHandler
-      );
+        retryHandler: mockRetryHandler
+      });
 
       expect(mockRetryHandler).toHaveBeenCalledTimes(2);
       expect(mockLogger.warn).toHaveBeenCalledWith('Fallback model fallback-model-1 failed: Fallback failed');
@@ -119,14 +119,14 @@ describe('ChatCompletionFallbackHandler', () => {
       const failureResult: RetryResult = { success: false, error: 'All fallbacks failed' };
       mockRetryHandler.mockResolvedValue(failureResult);
 
-      await fallbackHandler.tryFallbackModels(
-        mockReq as any,
-        mockRes as any,
+      await fallbackHandler.tryFallbackModels({
+        req: mockReq as any,
+        res: mockRes as any,
         requestData,
-        primaryModelId,
+        modelId: primaryModelId,
         error,
-        mockRetryHandler
-      );
+        retryHandler: mockRetryHandler
+      });
 
       expect(mockRetryHandler).toHaveBeenCalledTimes(2); // Two fallback models
       expect(mockLogger.error).toHaveBeenCalledWith(
@@ -143,14 +143,14 @@ describe('ChatCompletionFallbackHandler', () => {
     });
 
     it('should handle model with no fallbacks configured', async () => {
-      await fallbackHandler.tryFallbackModels(
-        mockReq as any,
-        mockRes as any,
+      await fallbackHandler.tryFallbackModels({
+        req: mockReq as any,
+        res: mockRes as any,
         requestData,
-        'model-without-fallbacks',
+        modelId: 'model-without-fallbacks',
         error,
-        mockRetryHandler
-      );
+        retryHandler: mockRetryHandler
+      });
 
       expect(mockRetryHandler).not.toHaveBeenCalled();
       expect(mockLogger.warn).toHaveBeenCalledWith('No fallbacks configured for model model-without-fallbacks');
@@ -164,14 +164,14 @@ describe('ChatCompletionFallbackHandler', () => {
     });
 
     it('should handle empty fallbacks array', async () => {
-      await fallbackHandler.tryFallbackModels(
-        mockReq as any,
-        mockRes as any,
+      await fallbackHandler.tryFallbackModels({
+        req: mockReq as any,
+        res: mockRes as any,
         requestData,
-        'no-fallbacks-model',
+        modelId: 'no-fallbacks-model',
         error,
-        mockRetryHandler
-      );
+        retryHandler: mockRetryHandler
+      });
 
       expect(mockRetryHandler).not.toHaveBeenCalled();
       expect(mockLogger.info).toHaveBeenCalledWith('Attempting 0 fallback models for no-fallbacks-model', { 
@@ -193,14 +193,14 @@ describe('ChatCompletionFallbackHandler', () => {
       const successResult: RetryResult = { success: true };
       mockRetryHandler.mockResolvedValue(successResult);
 
-      await handlerWithDisabled.tryFallbackModels(
-        mockReq as any,
-        mockRes as any,
+      await handlerWithDisabled.tryFallbackModels({
+        req: mockReq as any,
+        res: mockRes as any,
         requestData,
-        primaryModelId,
+        modelId: primaryModelId,
         error,
-        mockRetryHandler
-      );
+        retryHandler: mockRetryHandler
+      });
 
       expect(mockLogger.warn).toHaveBeenCalledWith('Fallback model disabled-fallback is not available or disabled');
       expect(mockRetryHandler).toHaveBeenCalledTimes(1);
@@ -226,42 +226,42 @@ describe('ChatCompletionFallbackHandler', () => {
       const successResult: RetryResult = { success: true };
       mockRetryHandler.mockResolvedValue(successResult);
 
-      await handlerWithMissing.tryFallbackModels(
-        mockReq as any,
-        mockRes as any,
+      await handlerWithMissing.tryFallbackModels({
+        req: mockReq as any,
+        res: mockRes as any,
         requestData,
-        primaryModelId,
+        modelId: primaryModelId,
         error,
-        mockRetryHandler
-      );
+        retryHandler: mockRetryHandler
+      });
 
       expect(mockLogger.warn).toHaveBeenCalledWith('Fallback model non-existent-model is not available or disabled');
       expect(mockRetryHandler).toHaveBeenCalledTimes(1);
     });
 
     it('should handle missing retry handler', async () => {
-      await fallbackHandler.tryFallbackModels(
-        mockReq as any,
-        mockRes as any,
+      await fallbackHandler.tryFallbackModels({
+        req: mockReq as any,
+        res: mockRes as any,
         requestData,
-        primaryModelId,
+        modelId: primaryModelId,
         error,
-        undefined
-      );
+        retryHandler: undefined
+      });
 
       expect(mockLogger.error).toHaveBeenCalledWith('No retry handler provided to fallback handler');
       expect(mockRes.status).toHaveBeenCalledWith(500);
     });
 
     it('should use default error message when none provided', async () => {
-      await fallbackHandler.tryFallbackModels(
-        mockReq as any,
-        mockRes as any,
+      await fallbackHandler.tryFallbackModels({
+        req: mockReq as any,
+        res: mockRes as any,
         requestData,
-        'model-without-fallbacks',
-        undefined,
-        mockRetryHandler
-      );
+        modelId: 'model-without-fallbacks',
+        error: undefined,
+        retryHandler: mockRetryHandler
+      });
 
       expect(mockRes.json).toHaveBeenCalledWith({
         error: { 
@@ -274,28 +274,28 @@ describe('ChatCompletionFallbackHandler', () => {
     it('should handle retry handler throwing errors', async () => {
       mockRetryHandler.mockRejectedValue(new Error('Retry handler error'));
 
-      await expect(fallbackHandler.tryFallbackModels(
-        mockReq as any,
-        mockRes as any,
+      await expect(fallbackHandler.tryFallbackModels({
+        req: mockReq as any,
+        res: mockRes as any,
         requestData,
-        primaryModelId,
+        modelId: primaryModelId,
         error,
-        mockRetryHandler
-      )).rejects.toThrow('Retry handler error');
+        retryHandler: mockRetryHandler
+      })).rejects.toThrow('Retry handler error');
     });
 
     it('should log appropriate attempt information', async () => {
       const failureResult: RetryResult = { success: false, error: 'Test failure' };
       mockRetryHandler.mockResolvedValue(failureResult);
 
-      await fallbackHandler.tryFallbackModels(
-        mockReq as any,
-        mockRes as any,
+      await fallbackHandler.tryFallbackModels({
+        req: mockReq as any,
+        res: mockRes as any,
         requestData,
-        primaryModelId,
+        modelId: primaryModelId,
         error,
-        mockRetryHandler
-      );
+        retryHandler: mockRetryHandler
+      });
 
       expect(mockLogger.info).toHaveBeenCalledWith('Attempting 2 fallback models for primary-model', { 
         fallbacks: ['fallback-model-1', 'fallback-model-2'] 

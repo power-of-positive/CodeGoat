@@ -1,42 +1,20 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { Button } from '../ui/button';
 import { Card, CardContent } from '../ui/card';
 import { Input } from '../ui/Input';
-import { FolderOpen, Plus, Settings, LibraryBig, Globe2 } from 'lucide-react';
+import { FolderOpen, Plus, Settings } from 'lucide-react';
 import { Loader } from '../ui/loader';
-import { projectsApi, tasksApi, templatesApi } from '../../lib/api';
+import { projectsApi, tasksApi } from '../../lib/api';
 import { TaskFormDialog } from '../tasks/TaskFormDialog';
 import { ProjectForm } from '../projects/project-form';
-import { TaskTemplateManager } from '../TaskTemplateManager';
 import { useKeyboardShortcuts } from '../../lib/keyboard-shortcuts';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from '../ui/dropdown-menu';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '../ui/Dialog';
-
-import {
-  getKanbanSectionClasses,
-  getMainContainerClasses,
-} from '../../lib/responsive-config';
 
 import TaskKanbanBoard from '../tasks/TaskKanbanBoard';
-import { TaskDetailsPanel } from '../tasks/TaskDetailsPanel';
 import type {
   TaskStatus,
   TaskWithAttemptStatus,
   Project,
-  TaskTemplate,
 } from 'shared/types';
 import type { CreateTask } from 'shared/types';
 import type { DragEndEvent } from '../ui/shadcn-io/kanban';
@@ -44,11 +22,11 @@ import type { DragEndEvent } from '../ui/shadcn-io/kanban';
 type Task = TaskWithAttemptStatus;
 
 export function ProjectTasks() {
-  const { projectId, taskId } = useParams<{
+  const { projectId } = useParams<{
     projectId: string;
-    taskId?: string;
   }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
@@ -57,31 +35,13 @@ export function ProjectTasks() {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [isProjectSettingsOpen, setIsProjectSettingsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [templates, setTemplates] = useState<TaskTemplate[]>([]);
-  const [selectedTemplate, setSelectedTemplate] = useState<TaskTemplate | null>(
-    null
-  );
-
-  // Template management state
-  const [isTemplateManagerOpen, setIsTemplateManagerOpen] = useState(false);
-
-  // Panel state
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [isPanelOpen, setIsPanelOpen] = useState(false);
 
   // Define task creation handler
   const handleCreateNewTask = useCallback(() => {
     setEditingTask(null);
-    setSelectedTemplate(null);
     setIsTaskDialogOpen(true);
   }, []);
 
-  // Handle template selection
-  const handleTemplateSelect = useCallback((template: TaskTemplate) => {
-    setEditingTask(null);
-    setSelectedTemplate(template);
-    setIsTaskDialogOpen(true);
-  }, []);
 
   const handleOpenInIDE = useCallback(async () => {
     if (!projectId) return;
@@ -101,33 +61,7 @@ export function ProjectTasks() {
     } catch (err) {
       setError('Failed to load project');
     }
-  }, [projectId, navigate]);
-
-  const fetchTemplates = useCallback(async () => {
-    if (!projectId) return;
-
-    try {
-      const [projectTemplates, globalTemplates] = await Promise.all([
-        templatesApi.listByProject(projectId),
-        templatesApi.listGlobal(),
-      ]);
-
-      // Combine templates with project templates first
-      setTemplates([...projectTemplates, ...globalTemplates]);
-    } catch (err) {
-      console.error('Failed to fetch templates:', err);
-    }
   }, [projectId]);
-
-  // Template management handlers
-  const handleOpenTemplateManager = useCallback(() => {
-    setIsTemplateManagerOpen(true);
-  }, []);
-
-  const handleCloseTemplateManager = useCallback(() => {
-    setIsTemplateManagerOpen(false);
-    fetchTemplates(); // Refresh templates list when closing
-  }, [fetchTemplates]);
 
   const fetchTasks = useCallback(
     async (skipLoading = false) => {
@@ -136,27 +70,8 @@ export function ProjectTasks() {
           setLoading(true);
         }
         const result = await tasksApi.getAll(projectId!);
-        // Only update if data has actually changed
-        setTasks((prevTasks) => {
-          const newTasks = result.data || result;
-          if (JSON.stringify(prevTasks) === JSON.stringify(newTasks)) {
-            return prevTasks; // Return same reference to prevent re-render
-          }
-
-          setSelectedTask((prev) => {
-            if (!prev) return prev;
-
-            const updatedSelectedTask = newTasks.find(
-              (task) => task.id === prev.id
-            );
-
-            if (JSON.stringify(prev) === JSON.stringify(updatedSelectedTask))
-              return prev;
-            return updatedSelectedTask || prev;
-          });
-
-          return newTasks;
-        });
+        const newTasks = result.data || result;
+        setTasks(newTasks);
       } catch (err) {
         setError('Failed to load tasks');
       } finally {
@@ -177,10 +92,8 @@ export function ProjectTasks() {
           description: description || undefined,
         });
         await fetchTasks();
-        // Open the newly created task in the details panel
-        navigate(`/projects/${projectId}/tasks/${createdTask.id}`, {
-          replace: true,
-        });
+        // Navigate to the task detail page
+        navigate(`/projects/${projectId}/tasks/${createdTask.id}`);
       } catch (err) {
         setError('Failed to create task');
       }
@@ -198,13 +111,13 @@ export function ProjectTasks() {
         };
         const result = await tasksApi.createAndStart(payload);
         await fetchTasks();
-        // Open the newly created task in the details panel
-        handleViewTaskDetails(result);
+        // Navigate to the task detail page
+        navigate(`/projects/${projectId}/tasks/${result.id}`);
       } catch (err) {
         setError('Failed to create and start task');
       }
     },
-    [projectId, fetchTasks]
+    [projectId, fetchTasks, navigate]
   );
 
   const handleUpdateTask = useCallback(
@@ -247,20 +160,11 @@ export function ProjectTasks() {
 
   const handleViewTaskDetails = useCallback(
     (task: Task) => {
-      setSelectedTask(task);
-      setIsPanelOpen(true);
-      // Update URL to include task ID
-      navigate(`/projects/${projectId}/tasks/${task.id}`, { replace: true });
+      // Navigate to the task detail page
+      navigate(`/projects/${projectId}/tasks/${task.id}`);
     },
     [projectId, navigate]
   );
-
-  const handleClosePanel = useCallback(() => {
-    setIsPanelOpen(false);
-    setSelectedTask(null);
-    // Remove task ID from URL when closing panel
-    navigate(`/projects/${projectId}/tasks`, { replace: true });
-  }, [projectId, navigate]);
 
   const handleProjectSettingsSuccess = useCallback(() => {
     setIsProjectSettingsOpen(false);
@@ -316,8 +220,7 @@ export function ProjectTasks() {
   useKeyboardShortcuts({
     navigate,
     currentPath: `/projects/${projectId}/tasks`,
-    hasOpenDialog:
-      isTaskDialogOpen || isTemplateManagerOpen || isProjectSettingsOpen,
+    hasOpenDialog: isTaskDialogOpen || isProjectSettingsOpen,
     closeDialog: () => setIsTaskDialogOpen(false),
     onC: handleCreateNewTask,
   });
@@ -327,7 +230,6 @@ export function ProjectTasks() {
     if (projectId) {
       fetchProject();
       fetchTasks();
-      fetchTemplates();
 
       // Set up polling to refresh tasks every 5 seconds
       const interval = setInterval(() => {
@@ -337,31 +239,17 @@ export function ProjectTasks() {
       // Cleanup interval on unmount
       return () => clearInterval(interval);
     }
-  }, [projectId]);
+  }, [projectId, fetchProject, fetchTasks]);
 
-  // Handle direct navigation to task URLs
+  // Handle edit task from location state (when navigating back from task detail page)
   useEffect(() => {
-    if (taskId && tasks.length > 0) {
-      const task = tasks.find((t) => t.id === taskId);
-      if (task) {
-        setSelectedTask((prev) => {
-          if (JSON.stringify(prev) === JSON.stringify(task)) return prev;
-          return task;
-        });
-        setIsPanelOpen(true);
-      } else {
-        // Task not found in current array - refetch to get latest data
-        fetchTasks(true);
-      }
-    } else if (taskId && tasks.length === 0 && !loading) {
-      // If we have a taskId but no tasks loaded, fetch tasks
-      fetchTasks();
-    } else if (!taskId) {
-      // Close panel when no taskId in URL
-      setIsPanelOpen(false);
-      setSelectedTask(null);
+    if (location.state?.editTask) {
+      setEditingTask(location.state.editTask);
+      setIsTaskDialogOpen(true);
+      // Clear the state to prevent reopening on refresh
+      navigate(location.pathname, { replace: true, state: {} });
     }
-  }, [taskId, tasks, loading, fetchTasks]);
+  }, [location.state, location.pathname, navigate]);
 
   if (loading) {
     return <Loader message="Loading tasks..." size={32} className="py-8" />;
@@ -372,171 +260,85 @@ export function ProjectTasks() {
   }
 
   return (
-    <div className={getMainContainerClasses(isPanelOpen)}>
-      {/* Left Column - Kanban Section */}
-      <div className={getKanbanSectionClasses(isPanelOpen)}>
-        {/* Header */}
-
-        <div className="px-8 my-12 flex flex-row">
-          <div className="w-full flex items-center gap-3">
-            <h1 className="text-2xl font-bold">{project?.name || 'Project'}</h1>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleOpenInIDE}
-              className="h-8 w-8 p-0"
-              title="Open in IDE"
-            >
-              <FolderOpen className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsProjectSettingsOpen(true)}
-              className="h-8 w-8 p-0"
-              title="Project Settings"
-            >
-              <Settings className="h-4 w-4" />
-            </Button>
-          </div>
-          <div className="flex items-center gap-3">
-            <Input
-              type="text"
-              placeholder="Search tasks..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-64"
-            />
-            <Button onClick={handleCreateNewTask}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Task
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon">
-                  <LibraryBig className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-[250px]">
-                <DropdownMenuItem onClick={handleOpenTemplateManager}>
-                  <Plus className="h-3 w-3 mr-2" />
-                  Manage Templates
-                </DropdownMenuItem>
-                {templates.length > 0 && <DropdownMenuSeparator />}
-
-                {/* Project Templates */}
-                {templates.filter((t) => t.project_id !== null).length > 0 && (
-                  <>
-                    <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground">
-                      Project Templates
-                    </div>
-                    {templates
-                      .filter((t) => t.project_id !== null)
-                      .map((template) => (
-                        <DropdownMenuItem
-                          key={template.id}
-                          onClick={() => handleTemplateSelect(template)}
-                        >
-                          <span className="truncate">
-                            {template.template_name}
-                          </span>
-                        </DropdownMenuItem>
-                      ))}
-                  </>
-                )}
-
-                {/* Separator if both types exist */}
-                {templates.filter((t) => t.project_id !== null).length > 0 &&
-                  templates.filter((t) => t.project_id === null).length > 0 && (
-                    <DropdownMenuSeparator />
-                  )}
-
-                {/* Global Templates */}
-                {templates.filter((t) => t.project_id === null).length > 0 && (
-                  <>
-                    <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground">
-                      Global Templates
-                    </div>
-                    {templates
-                      .filter((t) => t.project_id === null)
-                      .map((template) => (
-                        <DropdownMenuItem
-                          key={template.id}
-                          onClick={() => handleTemplateSelect(template)}
-                        >
-                          <Globe2 className="h-3 w-3 mr-2 text-muted-foreground" />
-                          <span className="truncate">
-                            {template.template_name}
-                          </span>
-                        </DropdownMenuItem>
-                      ))}
-                  </>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+    <div className="container mx-auto px-6 py-8">
+      {/* Header */}
+      <div className="mb-8 flex flex-row">
+        <div className="w-full flex items-center gap-3">
+          <h1 className="text-2xl font-bold">{project?.name || 'Project'}</h1>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleOpenInIDE}
+            className="h-8 w-8 p-0"
+            title="Open in IDE"
+          >
+            <FolderOpen className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsProjectSettingsOpen(true)}
+            className="h-8 w-8 p-0"
+            title="Project Settings"
+          >
+            <Settings className="h-4 w-4" />
+          </Button>
         </div>
-
-        {/* Tasks View */}
-        {tasks.length === 0 ? (
-          <div className="max-w-7xl mx-auto">
-            <Card>
-              <CardContent className="text-center py-8">
-                <p className="text-muted-foreground">
-                  No tasks found for this project.
-                </p>
-                <Button className="mt-4" onClick={handleCreateNewTask}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Create First Task
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-        ) : (
-          <div className="px-8 overflow-x-scroll my-4">
-            <div className="min-w-[900px] max-w-[2000px] relative py-1">
-              <TaskKanbanBoard
-                tasks={tasks}
-                searchQuery={searchQuery}
-                onDragEnd={handleDragEnd}
-                onEditTask={handleEditTask}
-                onDeleteTask={handleDeleteTask}
-                onViewTaskDetails={handleViewTaskDetails}
-                isPanelOpen={isPanelOpen}
-              />
-            </div>
-          </div>
-        )}
+        <div className="flex items-center gap-3">
+          <Input
+            type="text"
+            placeholder="Search tasks..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-64"
+          />
+          <Button onClick={handleCreateNewTask}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Task
+          </Button>
+        </div>
       </div>
 
-      {/* Right Column - Task Details Panel */}
-      {isPanelOpen && (
-        <TaskDetailsPanel
-          task={selectedTask}
-          projectHasDevScript={!!project?.dev_script}
-          projectId={projectId!}
-          onClose={handleClosePanel}
-          onEditTask={handleEditTask}
-          onDeleteTask={handleDeleteTask}
-          isDialogOpen={isTaskDialogOpen || isProjectSettingsOpen}
-        />
+      {/* Tasks View */}
+      {tasks.length === 0 ? (
+        <div className="max-w-7xl mx-auto">
+          <Card>
+            <CardContent className="text-center py-8">
+              <p className="text-muted-foreground">
+                No tasks found for this project.
+              </p>
+              <Button className="mt-4" onClick={handleCreateNewTask}>
+                <Plus className="h-4 w-4 mr-2" />
+                Create First Task
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <div className="min-w-[900px] max-w-[2000px] relative py-1">
+            <TaskKanbanBoard
+              tasks={tasks}
+              searchQuery={searchQuery}
+              onDragEnd={handleDragEnd}
+              onEditTask={handleEditTask}
+              onDeleteTask={handleDeleteTask}
+              onViewTaskDetails={handleViewTaskDetails}
+              isPanelOpen={false}
+            />
+          </div>
+        </div>
       )}
 
-      {/* Dialogs - rendered at main container level to avoid stacking issues */}
+      {/* Dialogs */}
       <TaskFormDialog
         isOpen={isTaskDialogOpen}
-        onOpenChange={(open) => {
-          setIsTaskDialogOpen(open);
-          if (!open) {
-            setSelectedTemplate(null);
-          }
-        }}
+        onOpenChange={setIsTaskDialogOpen}
         task={editingTask}
         projectId={projectId}
         onCreateTask={handleCreateTask}
         onCreateAndStartTask={handleCreateAndStartTask}
         onUpdateTask={handleUpdateTask}
-        initialTemplate={selectedTemplate}
       />
 
       <ProjectForm
@@ -545,24 +347,6 @@ export function ProjectTasks() {
         onSuccess={handleProjectSettingsSuccess}
         project={project}
       />
-
-      {/* Template Manager Dialog */}
-      <Dialog
-        open={isTemplateManagerOpen}
-        onOpenChange={setIsTemplateManagerOpen}
-      >
-        <DialogContent className="sm:max-w-[800px] max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Manage Templates</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <TaskTemplateManager projectId={projectId} />
-          </div>
-          <DialogFooter>
-            <Button onClick={handleCloseTemplateManager}>Done</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

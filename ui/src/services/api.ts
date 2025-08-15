@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { UIModelConfig, ServerStatus, CreateModelRequest, ModelsResponse, ModelTestResult, OpenRouterStats, LogsResponse, LogEntry, Settings } from '../types/api';
+import type { UIModelConfig, ServerStatus, CreateModelRequest, ModelsResponse, ModelTestResult, OpenRouterStats, LogsResponse, LogEntry, Settings, DevelopmentAnalytics, SessionMetrics } from '../types/api';
 import { API_BASE_URL } from '../constants/api';
 
 const apiClient = axios.create({
@@ -84,17 +84,17 @@ export const api = {
   },
 
   // Analytics
-  getAnalytics: async () => {
+  getAnalytics: async (): Promise<DevelopmentAnalytics> => {
     const response = await apiClient.get('/analytics');
     return response.data;
   },
 
-  getRecentSessions: async (limit = 10) => {
+  getRecentSessions: async (limit = 10): Promise<SessionMetrics[]> => {
     const response = await apiClient.get(`/analytics/sessions?limit=${limit}`);
     return response.data;
   },
 
-  getSession: async (sessionId: string) => {
+  getSession: async (sessionId: string): Promise<SessionMetrics> => {
     const response = await apiClient.get(`/analytics/sessions/${sessionId}`);
     return response.data;
   },
