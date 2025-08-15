@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { Button } from '../ui/button';
 import { Card, CardContent } from '../ui/card';
-import { Input } from '../ui/Input';
+import { Input } from '../ui/input';
 import { FolderOpen, Plus, Settings } from 'lucide-react';
 import { Loader } from '../ui/loader';
 import { projectsApi, tasksApi } from '../../lib/api';
@@ -58,7 +58,7 @@ export function ProjectTasks() {
     try {
       const result = await projectsApi.getById(projectId!);
       setProject(result);
-    } catch (err) {
+    } catch {
       setError('Failed to load project');
     }
   }, [projectId]);
@@ -72,7 +72,7 @@ export function ProjectTasks() {
         const result = await tasksApi.getAll(projectId!);
         const newTasks = result.data || result;
         setTasks(newTasks);
-      } catch (err) {
+      } catch {
         setError('Failed to load tasks');
       } finally {
         if (!skipLoading) {
@@ -94,7 +94,7 @@ export function ProjectTasks() {
         await fetchTasks();
         // Navigate to the task detail page
         navigate(`/projects/${projectId}/tasks/${createdTask.id}`);
-      } catch (err) {
+      } catch {
         setError('Failed to create task');
       }
     },
@@ -113,7 +113,7 @@ export function ProjectTasks() {
         await fetchTasks();
         // Navigate to the task detail page
         navigate(`/projects/${projectId}/tasks/${result.id}`);
-      } catch (err) {
+      } catch {
         setError('Failed to create and start task');
       }
     },
@@ -132,7 +132,7 @@ export function ProjectTasks() {
         }, projectId);
         await fetchTasks();
         setEditingTask(null);
-      } catch (err) {
+      } catch {
         setError('Failed to update task');
       }
     },
@@ -146,7 +146,7 @@ export function ProjectTasks() {
       try {
         await tasksApi.delete(taskId);
         await fetchTasks();
-      } catch (error) {
+      } catch {
         setError('Failed to delete task');
       }
     },

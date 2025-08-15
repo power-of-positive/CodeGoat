@@ -60,7 +60,6 @@ function CreatePrDialog({
       setPrTitle(`${task.title} (vibe-kanban)`);
       setPrBody(task.description || '');
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showCreatePRDialog]);
 
   // Update PR base branch when selected attempt changes

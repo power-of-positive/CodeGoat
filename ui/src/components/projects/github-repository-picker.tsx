@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from '../ui/button';
-import { Input } from '../ui/Input';
-import { Label } from '../ui/Label';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
 import { Alert, AlertDescription } from '../ui/alert';
 import { Loader2, Github } from 'lucide-react';
 import { githubApi, RepositoryInfo } from '../../lib/api';

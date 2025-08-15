@@ -13,7 +13,6 @@ import LogsTab from '@/components/tasks/TaskDetails/LogsTab.tsx';
 import ProcessesTab from '@/components/tasks/TaskDetails/ProcessesTab.tsx';
 import DeleteFileConfirmationDialog from '@/components/tasks/DeleteFileConfirmationDialog.tsx';
 import TabNavigation from '@/components/tasks/TaskDetails/TabNavigation.tsx';
-import CollapsibleToolbar from '@/components/tasks/TaskDetails/CollapsibleToolbar.tsx';
 import TaskDetailsProvider from '../context/TaskDetailsContextProvider.tsx';
 
 interface TaskDetailsPanelProps {

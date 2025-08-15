@@ -44,8 +44,8 @@ export function StageSuccessLineChart({ analytics, settings }: StageSuccessLineC
     return bRate - aRate;
   });
   
-  const maxRate = 100;
-  const minRate = 0;
+  // const maxRate = 100; // Reserved for future chart scaling
+  // const minRate = 0; // Reserved for future chart scaling
   const chartWidth = 300;
   const chartHeight = 200;
   const padding = 40;

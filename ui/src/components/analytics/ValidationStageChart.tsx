@@ -40,7 +40,7 @@ export function ValidationStageChart({ analytics, settings }: ValidationStageCha
             .sort(([aId], [bId]) => {
               // Sort by settings order if available, otherwise maintain existing order
               if (settings?.validation?.stages) {
-                const stageOrder = settings.validation.stages.reduce((acc, stage, index) => {
+                const stageOrder = settings.validation.stages.reduce((acc, stage, _index) => {
                   acc[stage.id] = stage.order;
                   return acc;
                 }, {} as Record<string, number>);

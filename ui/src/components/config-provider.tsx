@@ -12,7 +12,6 @@ import {
   type Environment,
   type AgentProfile,
   type UserSystemInfo,
-  CheckTokenResponse,
 } from 'shared/types';
 import { configApi, githubAuthApi } from '../lib/api';
 

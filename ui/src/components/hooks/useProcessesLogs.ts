@@ -39,7 +39,7 @@ export const useProcessesLogs = (
 
   const entries = useMemo(() => {
     const allEntries: UnifiedLogEntry[] = [];
-    const entryCounter = 0;
+    // const entryCounter = 0; // Removed unused counter
 
     // Iterate through processes in order, adding process marker followed by logs
     processes.forEach((process) => {
@@ -47,13 +47,6 @@ export const useProcessesLogs = (
       if (!data?.entries) return;
 
       // Add process start marker first
-      const processStartPayload: ProcessStartPayload = {
-        process_id: process.id,
-        command: process.command || '',
-        working_directory: process.working_directory,
-        environment: process.environment,
-      };
-
       allEntries.push({
         id: `${process.id}-start`,
         timestamp: process.started_at || new Date().toISOString(),

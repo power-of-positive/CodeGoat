@@ -89,14 +89,18 @@ export const createKeyboardShortcuts = (
     key: 's',
     description: 'Stop all executions',
     action: () => {
-      context.stopExecution && context.stopExecution();
+      if (context.stopExecution) {
+        context.stopExecution();
+      }
     },
   },
   KeyN: {
     key: 'n',
     description: 'Create new task attempt',
     action: () => {
-      context.newAttempt && context.newAttempt();
+      if (context.newAttempt) {
+        context.newAttempt();
+      }
     },
   },
 });

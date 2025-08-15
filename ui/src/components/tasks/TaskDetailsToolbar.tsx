@@ -198,7 +198,7 @@ function TaskDetailsToolbar() {
           runningProcessDetails: {},
         });
       }
-    } catch (error) {
+    } catch {
       // we already logged error
     } finally {
       setLoading(false);

@@ -39,9 +39,9 @@
       {
         "id": "coverage",
         "name": "Test Coverage Check",
-        "command": "npm run test:coverage || echo 'Coverage test not available in ui directory'",
+        "command": "cd ui && npm run test:coverage",
         "timeout": 120000,
-        "enabled": false,
+        "enabled": true,
         "continueOnFailure": false,
         "order": 4
       },

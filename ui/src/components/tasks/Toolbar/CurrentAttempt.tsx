@@ -246,7 +246,7 @@ function CurrentAttempt({
         if (JSON.stringify(prev) === JSON.stringify(result)) return prev;
         return result;
       });
-    } catch (err) {
+    } catch {
       setError('Failed to load branch status');
     } finally {
       setBranchStatusLoading(false);

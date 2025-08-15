@@ -37,7 +37,7 @@ export function ProvidePatDialog({
         },
       });
       onOpenChange(false);
-    } catch (err) {
+    } catch {
       setError('Failed to save Personal Access Token');
     } finally {
       setSaving(false);

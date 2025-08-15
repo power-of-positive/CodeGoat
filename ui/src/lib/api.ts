@@ -127,14 +127,14 @@ export const githubAuthApi = {
 // Attempts API (placeholder)
 export const attemptsApi = {
   getAll: async () => ({ data: [] }),
-  getById: async (id: string) => ({ data: null }),
+  getById: async (_id: string) => ({ data: null }),
   create: async (data: any) => ({ data }),
-  openEditor: async (id: string, editorType?: string) => ({ success: true }),
-  stop: async (id: string) => ({ success: true }),
-  getDetails: async (id: string) => ({ data: null }),
-  merge: async (id: string) => ({ success: true }),
-  rebase: async (id: string, branch?: string) => ({ success: true }),
-  getBranchStatus: async (id: string) => ({ 
+  openEditor: async (_id: string, _editorType?: string) => ({ success: true }),
+  stop: async (_id: string) => ({ success: true }),
+  getDetails: async (_id: string) => ({ data: null }),
+  merge: async (_id: string) => ({ success: true }),
+  rebase: async (_id: string, _branch?: string) => ({ success: true }),
+  getBranchStatus: async (_id: string) => ({ 
     data: {
       is_behind: false,
       commits_behind: 0,
@@ -145,24 +145,24 @@ export const attemptsApi = {
       diverged: false
     }
   }),
-  createPR: async (data: any) => ({ success: true, pr_url: 'https://github.com/example/repo/pull/1' }),
-  startDevServer: async (id: string) => ({ success: true })
+  createPR: async (_data: any) => ({ success: true, pr_url: 'https://github.com/example/repo/pull/1' }),
+  startDevServer: async (_id: string) => ({ success: true })
 };
 
 // Execution Processes API (placeholder)
 export const executionProcessesApi = {
   getAll: async () => ({ data: [] }),
-  getById: async (id: string) => ({ data: null }),
-  getExecutionProcesses: async (attemptId: string) => ({ data: [] }),
-  getDetails: async (id: string) => ({ data: null }),
-  stopExecutionProcess: async (id: string) => ({ success: true })
+  getById: async (_id: string) => ({ data: null }),
+  getExecutionProcesses: async (_attemptId: string) => ({ data: [] }),
+  getDetails: async (_id: string) => ({ data: null }),
+  stopExecutionProcess: async (_id: string) => ({ success: true })
 };
 
 // File System API (placeholder)
 export const fileSystemApi = {
-  searchFiles: async (query: string) => ({ data: [] }),
-  listDirectory: async (path: string) => ({ data: [] }),
-  list: async (path: string) => ({ data: [] })
+  searchFiles: async (_query: string) => ({ data: [] }),
+  listDirectory: async (_path: string) => ({ data: [] }),
+  list: async (_path: string) => ({ data: [] })
 };
 
 export default api;

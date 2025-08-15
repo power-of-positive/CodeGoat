@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -15,7 +15,7 @@ import {
 import { ValidationStage } from './ValidationStage';
 import { QUERY_CONFIG } from '../constants/api';
 import { api } from '../services/api';
-import type { ValidationStage as ValidationStageType, Settings } from '../types/api';
+import type { ValidationStage as ValidationStageType } from '../types/api';
 
 export function Validation() {
   const queryClient = useQueryClient();

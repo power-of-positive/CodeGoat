@@ -1,5 +1,5 @@
-import { Label } from '../ui/Label';
-import { Input } from '../ui/Input';
+import { Label } from '../ui/label';
+import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { Alert, AlertDescription } from '../ui/alert';
 import { AlertCircle, Folder } from 'lucide-react';
