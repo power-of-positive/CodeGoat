@@ -347,5 +347,19 @@
     "assignee_id": "agent_1",
     "priority": "high",
     "id": "66"
+  },
+  {
+    "content": "Implement E2E test for every task in todo-list.json with BDD scenarios in gherkin format and add test_url reference to each task pointing to the gherkin scenario file, verify task completion status and update to pending/in_progress if not actually completed, ensure all BDD scenarios pass on pre-commit, add execution results summary and history tracking for each test",
+    "status": "pending",
+    "assignee_id": "unassigned",
+    "priority": "high",
+    "id": "67"
+  },
+  {
+    "content": "Add BDD test dashboard page showing status of all BDD tests with execution history for each test and general statistics on BDD pass rate",
+    "status": "pending",
+    "assignee_id": "unassigned",
+    "priority": "high",
+    "id": "68"
   }
 ]

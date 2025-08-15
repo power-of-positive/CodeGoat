@@ -1,5 +1,6 @@
 import { useTheme } from '@/components/theme-provider';
 import { useEffect, useState } from 'react';
+import { ThemeMode } from 'shared/types';
 
 export function Logo({ className = '' }: { className?: string }) {
   const { theme } = useTheme();
@@ -7,9 +8,9 @@ export function Logo({ className = '' }: { className?: string }) {
 
   useEffect(() => {
     const updateTheme = () => {
-      if (theme === 'LIGHT') {
+      if (theme === ThemeMode.LIGHT) {
         setIsDark(false);
-      } else if (theme === 'SYSTEM') {
+      } else if (theme === ThemeMode.SYSTEM) {
         // System theme
         setIsDark(window.matchMedia('(prefers-color-scheme: dark)').matches);
       } else {
@@ -21,7 +22,7 @@ export function Logo({ className = '' }: { className?: string }) {
     updateTheme();
 
     // Listen for system theme changes when using system theme
-    if (theme === 'SYSTEM') {
+    if (theme === ThemeMode.SYSTEM) {
       const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
       mediaQuery.addEventListener('change', updateTheme);
       return () => mediaQuery.removeEventListener('change', updateTheme);

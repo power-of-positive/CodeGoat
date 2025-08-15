@@ -21,7 +21,7 @@
       {
         "id": "typecheck",
         "name": "Type Checking",
-        "command": "cd ui && npx tsc --noEmit",
+        "command": "npx tsc --noEmit",
         "timeout": 30000,
         "enabled": true,
         "continueOnFailure": false,
@@ -30,7 +30,7 @@
       {
         "id": "test",
         "name": "Unit Tests",
-        "command": "cd ui && npm test",
+        "command": "npm test",
         "timeout": 60000,
         "enabled": true,
         "continueOnFailure": false,
@@ -48,7 +48,7 @@
       {
         "id": "typescript-preference",
         "name": "TypeScript Preference Check",
-        "command": "npx ts-node scripts/check-typescript-preference.ts",
+        "command": "npx ts-node /Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/scripts/check-typescript-preference.ts",
         "timeout": 10000,
         "enabled": true,
         "continueOnFailure": false,

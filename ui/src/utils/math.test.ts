@@ -1,9 +1,6 @@
 import { describe, it, expect } from '@jest/globals';
-
-// Basic math utilities for testing
-export const add = (a: number, b: number): number => a + b;
-export const multiply = (a: number, b: number): number => a * b;
-export const formatPercentage = (value: number): string => `${value.toFixed(1)}%`;
+import { add, multiply, divide } from '@/components/utils/math';
+import { toPrettyCase, toKebabCase, toCamelCase, toSnakeCase, truncate } from '@/utils/string';
 
 describe('Math utilities', () => {
   describe('add', () => {
@@ -36,16 +33,73 @@ describe('Math utilities', () => {
     });
   });
 
-  describe('formatPercentage', () => {
-    it('should format percentage correctly', () => {
-      expect(formatPercentage(55.072)).toBe('55.1%');
-      expect(formatPercentage(100)).toBe('100.0%');
-      expect(formatPercentage(0)).toBe('0.0%');
+  describe('divide', () => {
+    it('should divide two positive numbers', () => {
+      expect(divide(6, 3)).toBe(2);
     });
 
-    it('should round to one decimal place', () => {
-      expect(formatPercentage(33.333)).toBe('33.3%');
-      expect(formatPercentage(66.666)).toBe('66.7%');
+    it('should handle decimals', () => {
+      expect(divide(5, 2)).toBe(2.5);
+    });
+
+    it('should throw error on division by zero', () => {
+      expect(() => divide(5, 0)).toThrow('Division by zero');
+    });
+  });
+});
+
+describe('String utilities', () => {
+  describe('toPrettyCase', () => {
+    it('should convert snake_case to Pretty Case', () => {
+      expect(toPrettyCase('hello_world')).toBe('Hello World');
+    });
+
+    it('should handle single words', () => {
+      expect(toPrettyCase('test')).toBe('Test');
+    });
+  });
+
+  describe('toKebabCase', () => {
+    it('should convert spaces to kebab-case', () => {
+      expect(toKebabCase('Hello World')).toBe('hello-world');
+    });
+
+    it('should handle multiple spaces', () => {
+      expect(toKebabCase('Hello   World  Test')).toBe('hello-world-test');
+    });
+  });
+
+  describe('toCamelCase', () => {
+    it('should convert kebab-case to camelCase', () => {
+      expect(toCamelCase('hello-world')).toBe('helloWorld');
+    });
+
+    it('should convert snake_case to camelCase', () => {
+      expect(toCamelCase('hello_world')).toBe('helloWorld');
+    });
+  });
+
+  describe('toSnakeCase', () => {
+    it('should convert camelCase to snake_case', () => {
+      expect(toSnakeCase('helloWorld')).toBe('hello_world');
+    });
+
+    it('should handle PascalCase', () => {
+      expect(toSnakeCase('HelloWorld')).toBe('hello_world');
+    });
+  });
+
+  describe('truncate', () => {
+    it('should truncate long strings', () => {
+      expect(truncate('This is a long string', 10)).toBe('This is...');
+    });
+
+    it('should not truncate short strings', () => {
+      expect(truncate('Short', 10)).toBe('Short');
+    });
+
+    it('should use custom suffix', () => {
+      expect(truncate('This is a long string', 10, '…')).toBe('This is a…');
     });
   });
 });
