@@ -1,8 +1,10 @@
 import { 
   CheckCircle, 
   XCircle, 
-  Calendar
+  Calendar,
+  ExternalLink
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import type { SessionMetrics } from '../../types/api';
 
 interface RecentSessionsListProps {
@@ -10,6 +12,8 @@ interface RecentSessionsListProps {
 }
 
 export function RecentSessionsList({ sessions }: RecentSessionsListProps) {
+  const navigate = useNavigate();
+  
   const formatDuration = (ms: number) => {
     const seconds = Math.floor(ms / 1000);
     const minutes = Math.floor(seconds / 60);
@@ -40,7 +44,8 @@ export function RecentSessionsList({ sessions }: RecentSessionsListProps) {
           {sessions.map((session) => (
             <div
               key={session.sessionId}
-              className="border border-gray-100 rounded-lg p-3 hover:bg-gray-50 transition-colors"
+              className="border border-gray-100 rounded-lg p-3 hover:bg-gray-50 transition-colors cursor-pointer group"
+              onClick={() => navigate(`/analytics/sessions/${session.sessionId}`)}
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
@@ -50,7 +55,7 @@ export function RecentSessionsList({ sessions }: RecentSessionsListProps) {
                     ) : (
                       <XCircle className="h-4 w-4 text-red-500" />
                     )}
-                    <span className="text-sm font-medium text-gray-900">
+                    <span className="text-sm font-medium text-gray-900 group-hover:text-blue-600 transition-colors">
                       {session.userPrompt || 'Development Session'}
                     </span>
                   </div>
@@ -63,6 +68,9 @@ export function RecentSessionsList({ sessions }: RecentSessionsListProps) {
                       <span>{formatDuration(session.totalDuration)}</span>
                     )}
                   </div>
+                </div>
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                  <ExternalLink className="h-4 w-4 text-gray-400" />
                 </div>
               </div>
             </div>

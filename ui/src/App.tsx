@@ -4,9 +4,11 @@ import { SidebarLayout } from './components/SidebarLayout';
 import { DashboardPage } from './pages/DashboardPage';
 import { RequestLogsPage } from './pages/RequestLogsPage';
 import { AnalyticsPage } from './pages/AnalyticsPage';
+import { ValidationRunDetailsPage } from './pages/ValidationRunDetailsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { Projects } from './components/pages/projects';
 import { ProjectTasks } from './components/pages/project-tasks';
+import { TaskDetailPage } from './pages/TaskDetailPage';
 import { UserSystemProvider } from './components/config-provider';
 
 const queryClient = new QueryClient({
@@ -29,11 +31,12 @@ function App() {
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/logs" element={<RequestLogsPage />} />
               <Route path="/analytics" element={<AnalyticsPage />} />
+              <Route path="/analytics/sessions/:sessionId" element={<ValidationRunDetailsPage />} />
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="/projects" element={<Projects />} />
               <Route path="/projects/:projectId" element={<Projects />} />
               <Route path="/projects/:projectId/tasks" element={<ProjectTasks />} />
-              <Route path="/projects/:projectId/tasks/:taskId" element={<ProjectTasks />} />
+              <Route path="/projects/:projectId/tasks/:taskId" element={<TaskDetailPage />} />
             </Routes>
           </SidebarLayout>
         </BrowserRouter>
