@@ -1,6 +1,5 @@
 import { RequestLogs } from '../components/RequestLogs';
-import { JSX } from 'react';
 
-export function RequestLogsPage(): JSX.Element {
+export function RequestLogsPage(): React.JSX.Element {
   return <RequestLogs />;
 }

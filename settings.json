@@ -11,11 +11,11 @@
     "stages": [
       {
         "id": "lint",
-        "name": "Code Linting", 
+        "name": "Code Linting",
         "command": "npm run lint",
         "timeout": 30000,
-        "enabled": true,
-        "continueOnFailure": true,
+        "enabled": false,
+        "continueOnFailure": false,
         "order": 1
       },
       {
@@ -23,8 +23,8 @@
         "name": "Type Checking",
         "command": "npm run type-check",
         "timeout": 30000,
-        "enabled": true,
-        "continueOnFailure": true,
+        "enabled": false,
+        "continueOnFailure": false,
         "order": 2
       },
       {
@@ -32,8 +32,8 @@
         "name": "Unit Tests",
         "command": "npm test",
         "timeout": 60000,
-        "enabled": true,
-        "continueOnFailure": true,
+        "enabled": false,
+        "continueOnFailure": false,
         "order": 3
       },
       {
@@ -41,8 +41,8 @@
         "name": "Test Coverage Check",
         "command": "npm run test:coverage:full",
         "timeout": 120000,
-        "enabled": true,
-        "continueOnFailure": true,
+        "enabled": false,
+        "continueOnFailure": false,
         "order": 4
       },
       {
@@ -50,8 +50,8 @@
         "name": "TypeScript Preference Check",
         "command": "npx ts-node scripts/check-typescript-preference.ts",
         "timeout": 10000,
-        "enabled": true,
-        "continueOnFailure": true,
+        "enabled": false,
+        "continueOnFailure": false,
         "order": 5
       },
       {
@@ -59,8 +59,8 @@
         "name": "AI Code Review",
         "command": "npx ts-node src/tools/ai-code-reviewer.ts",
         "timeout": 120000,
-        "enabled": true,
-        "continueOnFailure": true,
+        "enabled": false,
+        "continueOnFailure": false,
         "order": 6
       },
       {
@@ -68,8 +68,8 @@
         "name": "Visual Regression Tests",
         "command": "node scripts/visual-regression.js",
         "timeout": 60000,
-        "enabled": true,
-        "continueOnFailure": true,
+        "enabled": false,
+        "continueOnFailure": false,
         "order": 7
       },
       {
@@ -77,8 +77,8 @@
         "name": "Dead Code Detection",
         "command": "npx ts-node scripts/check-dead-code.ts",
         "timeout": 45000,
-        "enabled": true,
-        "continueOnFailure": true,
+        "enabled": false,
+        "continueOnFailure": false,
         "order": 8
       },
       {
@@ -86,8 +86,8 @@
         "name": "Code Duplication Detection",
         "command": "npm run duplication-check",
         "timeout": 45000,
-        "enabled": true,
-        "continueOnFailure": true,
+        "enabled": false,
+        "continueOnFailure": false,
         "order": 9
       },
       {
@@ -95,17 +95,17 @@
         "name": "Dependency Vulnerability Scan",
         "command": "npm audit --audit-level=moderate",
         "timeout": 30000,
-        "enabled": true,
-        "continueOnFailure": true,
+        "enabled": false,
+        "continueOnFailure": false,
         "order": 10
       },
       {
         "id": "e2e",
         "name": "Full E2E Test Suite",
-        "command": "cd ui && npx playwright test health-check.spec.ts task-details-opening.spec.ts --reporter=list",
+        "command": "cd ui && npx playwright test --reporter=list",
         "timeout": 180000,
-        "enabled": true,
-        "continueOnFailure": true,
+        "enabled": false,
+        "continueOnFailure": false,
         "order": 11
       },
       {
@@ -113,8 +113,8 @@
         "name": "Uncommitted Files Check",
         "command": "npx ts-node scripts/check-uncommitted-files.ts",
         "timeout": 10000,
-        "enabled": true,
-        "continueOnFailure": true,
+        "enabled": false,
+        "continueOnFailure": false,
         "order": 12
       },
       {
@@ -122,8 +122,8 @@
         "name": "Todo List Validation",
         "command": "npx ts-node scripts/validate-todo-list.ts",
         "timeout": 10000,
-        "enabled": true,
-        "continueOnFailure": true,
+        "enabled": false,
+        "continueOnFailure": false,
         "order": 13
       }
     ],

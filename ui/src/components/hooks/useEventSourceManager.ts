@@ -72,10 +72,10 @@ export const useEventSourceManager = ({
 
         // Inject process start marker as the first entry
         const processStartPayload: ProcessStartPayload = {
-          processId: process.id,
-          runReason: process.run_reason,
-          startedAt: process.started_at,
-          status: process.status,
+          process_id: process.id,
+          command: process.command || '',
+          working_directory: process.working_directory,
+          environment: process.environment,
         };
 
         const processStartEntry = {

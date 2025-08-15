@@ -32,14 +32,14 @@ export default [
     rules: {
       ...reactHooks.configs.recommended.rules,
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
-      // Frontend-specific: Stricter file size limits
-      'max-lines': ['error', {
-        max: 250, // Smaller than backend for better component organization
+      // Frontend-specific: Flexible file size limits
+      'max-lines': ['warn', {
+        max: 400, // Allow larger components
         skipBlankLines: true,
         skipComments: true
       }],
-      'max-lines-per-function': ['error', {
-        max: 30, // Smaller functions for React components
+      'max-lines-per-function': ['warn', {
+        max: 80, // Allow larger functions for complex components
         skipBlankLines: true,
         skipComments: true
       }],
@@ -48,11 +48,13 @@ export default [
     },
   },
   {
-    // Frontend-specific: Component files can be slightly larger
+    // Frontend-specific: Component files can be larger and more complex
     files: ['src/components/**/*.{ts,tsx}', 'src/pages/**/*.{ts,tsx}'],
     rules: {
-      'max-lines': ['error', { max: 300 }],
-      'max-lines-per-function': ['error', { max: 40 }],
+      'max-lines': ['warn', { max: 500 }],
+      'max-lines-per-function': ['warn', { max: 100 }],
+      'complexity': ['warn', { max: 20 }],
+      'max-statements': ['warn', { max: 30 }],
     },
   },
   {

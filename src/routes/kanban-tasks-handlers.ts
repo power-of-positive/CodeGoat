@@ -99,7 +99,7 @@ export async function handleCreateTask(
     // Validate project ID and request body
     const validationResult = validateCreateTaskRequest(project_id, req.body);
     if (validationResult) {
-      res.status(validationResult.status).json(validationResult.response);
+      res.status(validationResult.status || 400).json(validationResult.response);
       return;
     }
 
@@ -229,7 +229,7 @@ export async function handleUpdateTask(
     // Validate request and get existing task
     const validationResult = await validateUpdateTaskRequest(req, prisma);
     if (validationResult.error) {
-      res.status(validationResult.status).json(validationResult.error);
+      res.status(validationResult.status || 400).json(validationResult.error);
       return;
     }
 

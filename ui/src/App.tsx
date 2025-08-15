@@ -1,3 +1,4 @@
+import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { SidebarLayout } from './components/SidebarLayout';
@@ -10,7 +11,6 @@ import { Projects } from './components/pages/projects';
 import { ProjectTasks } from './components/pages/project-tasks';
 import { TaskDetailPage } from './pages/TaskDetailPage';
 import { UserSystemProvider } from './components/config-provider';
-import { JSX } from 'react';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -21,7 +21,7 @@ const queryClient = new QueryClient({
   },
 });
 
-function App(): JSX.Element {
+function App(): React.JSX.Element {
   return (
     <QueryClientProvider client={queryClient}>
       <UserSystemProvider>

@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite'
+/// <reference types="vitest" />
 import path from 'path'
 
 export default defineConfig({

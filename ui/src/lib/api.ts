@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { EditorType } from '../../shared/types';
 
 const api = axios.create({
   baseURL: '/api',
@@ -92,7 +93,7 @@ export const configApi = {
       config: {
         theme: 'dark' as const,
         editor: {
-          editor_type: 'vscode' as const,
+          editor_type: EditorType.VSCODE,
           custom_command: null
         },
         sound_enabled: false,
@@ -128,7 +129,7 @@ export const attemptsApi = {
   getAll: async () => ({ data: [] }),
   getById: async (id: string) => ({ data: null }),
   create: async (data: any) => ({ data }),
-  openEditor: async (id: string) => ({ success: true }),
+  openEditor: async (id: string, editorType?: string) => ({ success: true }),
   stop: async (id: string) => ({ success: true }),
   getDetails: async (id: string) => ({ data: null }),
   merge: async (id: string) => ({ success: true }),

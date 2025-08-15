@@ -12,7 +12,7 @@ import { useConfig } from './config-provider';
 import { Check, Clipboard, Github } from 'lucide-react';
 import { Loader } from './ui/loader';
 import { githubAuthApi } from '../lib/api';
-import { DeviceFlowStartResponse, DevicePollStatus } from 'shared/types';
+import { DeviceFlowStartResponse } from 'shared/types';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 
 export function GitHubLoginDialog({
@@ -31,7 +31,7 @@ export function GitHubLoginDialog({
   const [copied, setCopied] = useState(false);
 
   const isAuthenticated =
-    !!(config?.github?.username && config?.github?.oauth_token) &&
+    !!((config as any)?.github?.username && (config as any)?.github?.oauth_token) &&
     !githubTokenInvalid;
 
   const handleLogin = async () => {
@@ -58,16 +58,16 @@ export function GitHubLoginDialog({
         try {
           const poll_status = await githubAuthApi.poll();
           switch (poll_status) {
-            case DevicePollStatus.SUCCESS:
+            case 'SUCCESS':
               setPolling(false);
               setDeviceState(null);
               setError(null);
               onOpenChange(false);
               break;
-            case DevicePollStatus.AUTHORIZATION_PENDING:
+            case 'AUTHORIZATION_PENDING':
               timer = setTimeout(poll, deviceState.interval * 1000);
               break;
-            case DevicePollStatus.SLOW_DOWN:
+            case 'SLOW_DOWN':
               timer = setTimeout(poll, (deviceState.interval + 5) * 1000);
           }
         } catch (e: any) {
@@ -153,7 +153,7 @@ export function GitHubLoginDialog({
                   Successfully connected!
                 </div>
                 <div className="text-sm text-muted-foreground">
-                  You are signed in as <b>{config?.github?.username ?? ''}</b>
+                  You are signed in as <b>{(config as any)?.github?.username ?? ''}</b>
                 </div>
               </CardContent>
             </Card>

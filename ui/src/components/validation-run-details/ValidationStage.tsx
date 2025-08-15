@@ -14,7 +14,7 @@ interface ValidationStageProps {
   };
 }
 
-export function ValidationStage({ stage }: ValidationStageProps): JSX.Element {
+export function ValidationStage({ stage }: ValidationStageProps): React.JSX.Element {
   return (
     <div className="flex items-start justify-between p-3 bg-gray-50 rounded-md">
       <div className="flex-1">

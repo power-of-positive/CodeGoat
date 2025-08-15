@@ -1,6 +1,5 @@
 import { Settings } from '../components/Settings';
-import { JSX } from 'react';
 
-export function SettingsPage(): JSX.Element {
+export function SettingsPage(): React.JSX.Element {
   return <Settings />;
 }

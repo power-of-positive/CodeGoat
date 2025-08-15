@@ -47,6 +47,11 @@ const TaskDetailsProvider: FC<{
   const [fileToDelete, setFileToDelete] = useState<string | null>(null);
 
   const [attemptData, setAttemptData] = useState<AttemptData>({
+    id: '',
+    task_id: '',
+    status: 'pending',
+    created_at: '',
+    updated_at: '',
     processes: [],
     runningProcessDetails: {},
   });
@@ -83,7 +88,8 @@ const TaskDetailsProvider: FC<{
           await executionProcessesApi.getExecutionProcesses(attemptId);
 
         if (processesResult !== undefined) {
-          const runningProcesses = processesResult.filter(
+          const processes = Array.isArray(processesResult) ? processesResult : processesResult.data || [];
+          const runningProcesses = processes.filter(
             (process) => process.status === 'running'
           );
 
@@ -93,13 +99,13 @@ const TaskDetailsProvider: FC<{
           for (const process of runningProcesses) {
             const result = await executionProcessesApi.getDetails(process.id);
 
-            if (result !== undefined) {
-              runningProcessDetails[process.id] = result;
+            if (result !== undefined && result.data) {
+              runningProcessDetails[process.id] = result.data;
             }
           }
 
           // Also fetch setup script process details if it exists in the processes
-          const setupProcess = processesResult.find(
+          const setupProcess = processes.find(
             (process) => process.run_reason === 'setupscript'
           );
           if (setupProcess && !runningProcessDetails[setupProcess.id]) {
@@ -107,14 +113,15 @@ const TaskDetailsProvider: FC<{
               setupProcess.id
             );
 
-            if (result !== undefined) {
-              runningProcessDetails[setupProcess.id] = result;
+            if (result !== undefined && result.data) {
+              runningProcessDetails[setupProcess.id] = result.data;
             }
           }
 
           setAttemptData((prev: AttemptData) => {
             const newData = {
-              processes: processesResult,
+              ...prev,
+              processes: processes,
               runningProcessDetails,
             };
             if (JSON.stringify(prev) === JSON.stringify(newData)) return prev;
@@ -139,7 +146,10 @@ const TaskDetailsProvider: FC<{
       return false;
     }
 
-    return attemptData.processes.some(
+    const processes = Array.isArray(attemptData.processes) 
+      ? attemptData.processes 
+      : attemptData.processes?.data || [];
+    return processes.some(
       (process: ExecutionProcessSummary) =>
         (process.run_reason === 'codingagent' ||
           process.run_reason === 'setupscript' ||

@@ -41,10 +41,10 @@ export const useProcessConversation = (
       if (processId) {
         // Inject process start marker as the first entry
         const processStartPayload: ProcessStartPayload = {
-          processId: processId,
-          runReason: 'Manual', // Default value since we don't have process details here
-          startedAt: new Date().toISOString(),
-          status: 'running',
+          process_id: processId,
+          command: 'Manual process', // Default value since we don't have process details here
+          working_directory: undefined,
+          environment: undefined,
         };
 
         const processStartEntry = {

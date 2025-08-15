@@ -39,7 +39,7 @@ export const useProcessesLogs = (
 
   const entries = useMemo(() => {
     const allEntries: UnifiedLogEntry[] = [];
-    let entryCounter = 0;
+    const entryCounter = 0;
 
     // Iterate through processes in order, adding process marker followed by logs
     processes.forEach((process) => {
@@ -48,19 +48,19 @@ export const useProcessesLogs = (
 
       // Add process start marker first
       const processStartPayload: ProcessStartPayload = {
-        processId: process.id,
-        runReason: process.run_reason,
-        startedAt: process.started_at,
-        status: process.status,
+        process_id: process.id,
+        command: process.command || '',
+        working_directory: process.working_directory,
+        environment: process.environment,
       };
 
       allEntries.push({
         id: `${process.id}-start`,
-        ts: entryCounter++,
-        processId: process.id,
-        processName: process.run_reason,
-        channel: 'process_start',
-        payload: processStartPayload,
+        timestamp: process.started_at || new Date().toISOString(),
+        level: 'info',
+        message: `Process started: ${process.run_reason}`,
+        source: 'system',
+        process_id: process.id,
       });
 
       // Then add all logs for this process (skip the injected PROCESS_START entry)
@@ -72,12 +72,13 @@ export const useProcessesLogs = (
           index: number
         ) => {
           // Skip the injected PROCESS_START entry since we handle it above
-          if (patchEntry.type === 'PROCESS_START') return;
+          if ('type' in patchEntry && patchEntry.type === 'PROCESS_START') return;
 
-          let channel: UnifiedLogEntry['channel'];
+          let channel: string | undefined;
           let payload: string | NormalizedEntry;
 
-          switch (patchEntry.type) {
+          if ('type' in patchEntry) {
+            switch (patchEntry.type) {
             case 'STDOUT':
               channel = 'stdout';
               payload = patchEntry.content;
@@ -93,15 +94,19 @@ export const useProcessesLogs = (
             default:
               // Skip unknown patch types
               return;
+            }
+          } else {
+            // Handle PatchType entries (which don't have 'type' property)
+            return; // Skip for now
           }
 
           allEntries.push({
             id: `${process.id}-${index}`,
-            ts: entryCounter++,
-            processId: process.id,
-            processName: process.run_reason,
-            channel,
-            payload,
+            timestamp: new Date().toISOString(),
+            level: 'info',
+            message: typeof payload === 'string' ? payload : JSON.stringify(payload),
+            source: channel,
+            process_id: process.id,
           });
         }
       );

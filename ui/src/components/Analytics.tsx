@@ -1,3 +1,4 @@
+import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { BarChart3, Activity } from 'lucide-react';
 import { Button } from './ui/button';
@@ -34,7 +35,7 @@ function useAnalyticsData(): AnalyticsData {
     staleTime: QUERY_CONFIG.defaultStaleTime,
   });
 
-  const sessionsQuery = useQuery<{ sessions: SessionMetrics[] }>({
+  const sessionsQuery = useQuery<SessionMetrics[]>({
     queryKey: ['analytics-sessions'],
     queryFn: () => api.getRecentSessions(20),
     staleTime: QUERY_CONFIG.defaultStaleTime,
@@ -46,11 +47,11 @@ function useAnalyticsData(): AnalyticsData {
     error: analyticsQuery.error,
     refetch: analyticsQuery.refetch,
     settings: settingsQuery.data,
-    sessions: sessionsQuery.data?.sessions || []
+    sessions: sessionsQuery.data || []
   };
 }
 
-function AnalyticsHeader({ refetch }: { refetch: () => void }): JSX.Element {
+function AnalyticsHeader({ refetch }: { refetch: () => void }): React.JSX.Element {
   return (
     <div className="flex items-center justify-between mb-6">
       <div className="flex items-center gap-3">
@@ -70,7 +71,7 @@ function AnalyticsHeader({ refetch }: { refetch: () => void }): JSX.Element {
   );
 }
 
-export function Analytics(): JSX.Element {
+export function Analytics(): React.JSX.Element {
   const { analytics, isLoading, error, refetch, settings, sessions } = useAnalyticsData();
 
   if (isLoading) {

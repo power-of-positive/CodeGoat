@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:no-typecheck": "TSC_CHECK=false vite",
     "dev:watch": "nodemon",
     "build": "tsc -b && vite build",
     "lint": "eslint .",

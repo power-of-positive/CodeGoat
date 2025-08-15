@@ -8,7 +8,8 @@ import {
   Clock,
   Calendar,
   Play,
-  Activity
+  Activity,
+  AlertCircle
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { api } from '../services/api';
@@ -21,7 +22,7 @@ interface LoadingStateProps {
   onBack: () => void;
 }
 
-function LoadingState({ onBack }: LoadingStateProps): JSX.Element {
+function LoadingState({ onBack }: LoadingStateProps): React.JSX.Element {
   return (
     <div className="p-6">
       <div className="flex items-center gap-3 mb-6">
@@ -42,7 +43,7 @@ interface ErrorStateProps {
   onBack: () => void;
 }
 
-function ErrorState({ onBack }: ErrorStateProps): JSX.Element {
+function ErrorState({ onBack }: ErrorStateProps): React.JSX.Element {
   return (
     <div className="p-6">
       <div className="flex items-center gap-3 mb-6">
@@ -72,7 +73,7 @@ interface SessionInfoProps {
   session: SessionMetrics;
 }
 
-function SessionInfo({ session }: SessionInfoProps): JSX.Element {
+function SessionInfo({ session }: SessionInfoProps): React.JSX.Element {
   return (
     <div>
       <div className="flex items-center gap-2 mb-2">
@@ -108,7 +109,7 @@ function SessionInfo({ session }: SessionInfoProps): JSX.Element {
   );
 }
 
-function SessionOverview({ session }: SessionOverviewProps): JSX.Element {
+function SessionOverview({ session }: SessionOverviewProps): React.JSX.Element {
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
       <div className="flex items-start justify-between mb-4">
@@ -132,7 +133,7 @@ interface ValidationAttemptProps {
 }
 
 
-function ValidationAttempt({ attempt }: ValidationAttemptProps): JSX.Element {
+function ValidationAttempt({ attempt }: ValidationAttemptProps): React.JSX.Element {
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-6">
       <div className="flex items-start justify-between mb-4">
@@ -177,7 +178,7 @@ interface PageHeaderProps {
   onBack: () => void;
 }
 
-function PageHeader({ sessionId, onBack }: PageHeaderProps): JSX.Element {
+function PageHeader({ sessionId, onBack }: PageHeaderProps): React.JSX.Element {
   return (
     <div className="flex items-center gap-3 mb-6">
       <Button variant="outline" size="sm" onClick={onBack}>
@@ -198,7 +199,7 @@ interface AttemptsListProps {
   attempts: ValidationAttemptMetrics[];
 }
 
-function AttemptsList({ attempts }: AttemptsListProps): JSX.Element {
+function AttemptsList({ attempts }: AttemptsListProps): React.JSX.Element {
   return (
     <div className="space-y-4">
       <h3 className="text-lg font-semibold text-gray-900">
@@ -215,7 +216,7 @@ function AttemptsList({ attempts }: AttemptsListProps): JSX.Element {
   );
 }
 
-export function ValidationRunDetailsPage(): JSX.Element {
+export function ValidationRunDetailsPage(): React.JSX.Element {
   const { sessionId } = useParams<{ sessionId: string }>();
   const navigate = useNavigate();
 
@@ -230,7 +231,9 @@ export function ValidationRunDetailsPage(): JSX.Element {
     enabled: !!sessionId,
   });
 
-  const handleBack = (): void => navigate('/analytics');
+  const handleBack = (): void => {
+    navigate('/analytics');
+  };
 
   if (isLoading) {
     return <LoadingState onBack={handleBack} />;

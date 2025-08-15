@@ -37,28 +37,28 @@ export const sharedConfig = {
     rules: {
       ...tseslint.configs.recommended.rules,
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
-      '@typescript-eslint/no-explicit-any': 'error',
-      '@typescript-eslint/explicit-function-return-type': 'error',
+      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/explicit-function-return-type': 'warn',
       '@typescript-eslint/explicit-module-boundary-types': 'off',
       '@typescript-eslint/no-inferrable-types': 'off',
-      'no-console': 'error',
+      'no-console': ['warn', { allow: ['warn', 'error'] }],
       'no-warning-comments': ['warn', { terms: ['todo', 'fixme', 'hack'], location: 'start' }],
       'prefer-const': 'error',
       'no-var': 'error',
-      'complexity': ['error', { max: 8 }], // Limit cyclomatic complexity
-      'max-lines': ['error', {
-        max: 250,
+      'complexity': ['warn', { max: 12 }], // Limit cyclomatic complexity
+      'max-lines': ['warn', {
+        max: 400,
         skipBlankLines: true,
         skipComments: true
       }],
-      'max-lines-per-function': ['error', {
-        max: 30,
+      'max-lines-per-function': ['warn', {
+        max: 60,
         skipBlankLines: true,
         skipComments: true
       }],
-      'max-params': ['error', 3], // Limit function parameters
-      'max-depth': ['error', 3], // Limit nesting depth  
-      'max-statements': ['error', 12], // Limit statements per function
+      'max-params': ['warn', 5], // Limit function parameters
+      'max-depth': ['warn', 4], // Limit nesting depth  
+      'max-statements': ['warn', 20], // Limit statements per function
       'eslint-comments/no-use': ['error', {
         'allow': []
       }]

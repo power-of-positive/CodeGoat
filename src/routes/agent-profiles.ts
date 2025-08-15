@@ -6,7 +6,7 @@ import { handleApiError } from '../utils/error-handler';
 interface AgentProfile {
   type: 'claude' | 'openai' | 'local' | 'custom';
   name: string;
-  command: string;
+  command: string[];
   [key: string]: unknown;
 }
 
