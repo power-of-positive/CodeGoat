@@ -431,5 +431,145 @@
     "assignee_id": "unassigned",
     "priority": "high",
     "id": "78"
+  },
+  {
+    "content": "Fix lint stage to properly fail on explicit 'any' return types - ESLint should catch this",
+    "status": "pending",
+    "assignee_id": "unassigned",
+    "priority": "high",
+    "id": "79"
+  },
+  {
+    "content": "Fix stages showing as disabled when they are actually enabled in settings.json",
+    "status": "pending",
+    "assignee_id": "unassigned",
+    "priority": "high",
+    "id": "80"
+  },
+  {
+    "content": "Add display of 'continue on failure' information for each validation stage",
+    "status": "pending",
+    "assignee_id": "unassigned",
+    "priority": "medium",
+    "id": "81"
+  },
+  {
+    "content": "Investigate where validation run count data is coming from - should reflect actual runs",
+    "status": "pending",
+    "assignee_id": "unassigned",
+    "priority": "high",
+    "id": "82"
+  },
+  {
+    "content": "Remove 'test-stage' phantom stage - all stages should come from settings.json only",
+    "status": "pending",
+    "assignee_id": "unassigned",
+    "priority": "high",
+    "id": "83"
+  },
+  {
+    "content": "Implement proper run logging and analysis from log files instead of mock data",
+    "status": "pending",
+    "assignee_id": "unassigned",
+    "priority": "high",
+    "id": "84"
+  },
+  {
+    "content": "Create stage management page with reordering, enabling/disabling, and field editing",
+    "status": "pending",
+    "assignee_id": "unassigned",
+    "priority": "high",
+    "id": "85"
+  },
+  {
+    "content": "Add stage statistics and history viewing functionality",
+    "status": "pending",
+    "assignee_id": "unassigned",
+    "priority": "medium",
+    "id": "86"
+  },
+  {
+    "content": "Fix npm run test:coverage:frontend hanging issue and coverage calculation",
+    "status": "in_progress",
+    "assignee_id": "agent_1",
+    "priority": "high",
+    "id": "87"
+  },
+  {
+    "content": "Create SQLite database schema for task management system",
+    "status": "pending",
+    "assignee_id": "unassigned",
+    "priority": "high",
+    "id": "88"
+  },
+  {
+    "content": "Build task management UI page with CRUD operations for todo-list.json tasks",
+    "status": "pending",
+    "assignee_id": "unassigned",
+    "priority": "high",
+    "id": "89"
+  },
+  {
+    "content": "Implement task management API endpoints with full CRUD functionality",
+    "status": "pending",
+    "assignee_id": "unassigned",
+    "priority": "high",
+    "id": "90"
+  },
+  {
+    "content": "Add task completion statistics and analytics dashboard",
+    "status": "pending",
+    "assignee_id": "unassigned",
+    "priority": "medium",
+    "id": "91"
+  },
+  {
+    "content": "Update validate-todo-list.ts script to use API for checking incomplete tasks",
+    "status": "pending",
+    "assignee_id": "unassigned",
+    "priority": "high",
+    "id": "92"
+  },
+  {
+    "content": "Create comprehensive unit tests for task management system",
+    "status": "pending",
+    "assignee_id": "unassigned",
+    "priority": "high",
+    "id": "93"
+  },
+  {
+    "content": "Build integration tests for task management API endpoints",
+    "status": "pending",
+    "assignee_id": "unassigned",
+    "priority": "high",
+    "id": "94"
+  },
+  {
+    "content": "Implement Playwright E2E tests for task management UI",
+    "status": "pending",
+    "assignee_id": "unassigned",
+    "priority": "high",
+    "id": "95"
+  },
+  {
+    "content": "Add BDD scenario linking system for completed tasks",
+    "status": "pending",
+    "assignee_id": "unassigned",
+    "priority": "medium",
+    "id": "96"
+  },
+  {
+    "content": "Create BDD scenario execution history tracking and viewing",
+    "status": "pending",
+    "assignee_id": "unassigned",
+    "priority": "medium",
+    "id": "97"
+  },
+  {
+    "content": "Build test suite execution history dashboard with overall statistics",
+    "status": "pending",
+    "assignee_id": "unassigned",
+    "priority": "medium",
+    "id": "98"
   }
 ]

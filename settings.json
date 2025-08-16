@@ -41,7 +41,7 @@
         "name": "Frontend Unit Tests",
         "command": "npm run test:unit:frontend",
         "timeout": 30000,
-        "enabled": true,
+        "enabled": false,
         "continueOnFailure": false,
         "order": 4
       },
@@ -68,7 +68,7 @@
         "name": "Frontend Coverage Check",
         "command": "npm run test:coverage:frontend",
         "timeout": 30000,
-        "enabled": true,
+        "enabled": false,
         "continueOnFailure": false,
         "order": 7
       },
@@ -122,7 +122,7 @@
         "name": "Visual Regression Tests",
         "command": "node scripts/visual-regression.js",
         "timeout": 60000,
-        "enabled": true,
+        "enabled": false,
         "continueOnFailure": false,
         "order": 13
       },

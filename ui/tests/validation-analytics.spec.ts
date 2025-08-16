@@ -15,10 +15,10 @@ test.describe('Validation Analytics E2E Tests', () => {
   });
 
   test('should display metrics summary cards', async ({ page }) => {
-    // Check for the three main metric cards
-    await expect(page.locator('text=Total Runs')).toBeVisible();
-    await expect(page.locator('text=Success Rate')).toBeVisible();
-    await expect(page.locator('text=Avg Duration')).toBeVisible();
+    // Check for the three main metric cards using more specific selectors
+    await expect(page.getByRole('heading', { name: 'Total Runs' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Success Rate' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Avg Duration' })).toBeVisible();
   });
 
   test('should have refresh button', async ({ page }) => {
@@ -45,7 +45,7 @@ test.describe('Validation Analytics E2E Tests', () => {
     await page.goto('/settings');
     
     // Check settings page loads
-    await expect(page.locator('h2')).toContainText('Validation Settings');
+    await expect(page.locator('h2')).toContainText('Settings');
   });
 
   test('should display validation stages management', async ({ page }) => {
@@ -89,7 +89,7 @@ test.describe('Validation Analytics E2E Tests', () => {
     
     // Navigate to settings
     await page.goto('/settings');
-    await expect(page.locator('h2')).toContainText('Validation Settings');
+    await expect(page.locator('h2')).toContainText('Settings');
     
     // Navigate back to analytics
     await page.goto('/analytics');

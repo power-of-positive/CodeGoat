@@ -31,45 +31,48 @@ export default [
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
-      'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
+      'react-refresh/only-export-components': ['error', { allowConstantExport: true }],
       // Frontend-specific: Flexible file size limits
-      'max-lines': ['warn', {
-        max: 400, // Allow larger components
-        skipBlankLines: true,
-        skipComments: true
-      }],
-      'max-lines-per-function': ['warn', {
-        max: 80, // Allow larger functions for complex components
-        skipBlankLines: true,
-        skipComments: true
-      }],
-      // Allow console in development but warn
-      'no-console': ['warn', { allow: ['warn', 'error'] }],
+      'max-lines': [
+        'error',
+        {
+          max: 400, // Allow larger components
+          skipBlankLines: true,
+          skipComments: true,
+        },
+      ],
+      'max-lines-per-function': [
+        'error',
+        {
+          max: 80, // Allow larger functions for complex components
+          skipBlankLines: true,
+          skipComments: true,
+        },
+      ],
+      // Allow console in development but error
     },
   },
   {
     // Frontend-specific: Component files can be larger and more complex
     files: ['src/components/**/*.{ts,tsx}', 'src/pages/**/*.{ts,tsx}'],
     rules: {
-      'max-lines': ['warn', { max: 500 }],
-      'max-lines-per-function': ['warn', { max: 100 }],
-      'complexity': ['warn', { max: 20 }],
-      'max-statements': ['warn', { max: 30 }],
+      'max-lines': ['error', { max: 500 }],
+      'max-lines-per-function': ['error', { max: 100 }],
+      complexity: ['error', { max: 20 }],
+      'max-statements': ['error', { max: 30 }],
     },
   },
   {
     // E2E tests: Very relaxed rules
     files: ['e2e/**/*.{ts,tsx}'],
     rules: {
-      '@typescript-eslint/explicit-function-return-type': 'off',
       'max-lines': 'off',
       'max-lines-per-function': 'off',
-      'complexity': 'off',
+      complexity: 'off',
       'max-statements': 'off',
       'max-depth': 'off',
       'max-params': 'off',
       'no-console': 'off',
-      '@typescript-eslint/no-explicit-any': 'off',
     },
   },
   sharedConfig.ignores,

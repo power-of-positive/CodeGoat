@@ -69,15 +69,23 @@ export interface ValidationStageResult {
   name: string;
   success: boolean;
   duration: number;
+  attempt: number;
   output?: string;
   error?: string;
 }
 
 export interface ValidationMetrics {
   totalRuns: number;
+  successfulRuns: number;
+  failedRuns: number;
   successRate: number;
   averageDuration: number;
   stageMetrics: Record<string, {
+    id: string;
+    name: string;
+    enabled: boolean;
+    attempts: number;
+    successes: number;
     successRate: number;
     averageDuration: number;
     totalRuns: number;

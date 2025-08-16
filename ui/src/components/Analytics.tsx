@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { BarChart3, Activity, AlertCircle } from 'lucide-react';
 import { Button } from './ui/button';
@@ -38,8 +38,8 @@ function AnalyticsHeader({ refetch }: { refetch: () => void }) {
       <div className="flex items-center gap-3">
         <BarChart3 className="h-6 w-6 text-blue-600" />
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Validation Analytics</h2>
-          <p className="text-gray-600">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Validation Analytics</h2>
+          <p className="text-gray-600 dark:text-gray-400">
             Track validation pipeline performance and success rates
           </p>
         </div>
@@ -53,35 +53,39 @@ function AnalyticsHeader({ refetch }: { refetch: () => void }) {
 }
 
 function MetricsSummary({ metrics }: { metrics: ValidationMetrics }) {
+  const totalRuns = metrics.totalRuns || 0;
+  const successRate = metrics.successRate || 0;
+  const averageDuration = metrics.averageDuration || 0;
+  
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium">Total Runs</CardTitle>
+          <CardTitle className="text-sm font-medium text-gray-700 dark:text-gray-300">Total Runs</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">{metrics.totalRuns}</div>
+          <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{totalRuns}</div>
         </CardContent>
       </Card>
       
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium">Success Rate</CardTitle>
+          <CardTitle className="text-sm font-medium text-gray-700 dark:text-gray-300">Success Rate</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-green-600">
-            {(metrics.successRate * 100).toFixed(1)}%
+          <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+            {(successRate * 100).toFixed(1)}%
           </div>
         </CardContent>
       </Card>
       
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium">Avg Duration</CardTitle>
+          <CardTitle className="text-sm font-medium text-gray-700 dark:text-gray-300">Avg Duration</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold">
-            {(metrics.averageDuration / 1000).toFixed(1)}s
+          <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+            {(averageDuration / 1000).toFixed(1)}s
           </div>
         </CardContent>
       </Card>
@@ -90,47 +94,122 @@ function MetricsSummary({ metrics }: { metrics: ValidationMetrics }) {
 }
 
 function RecentRuns({ runs }: { runs: ValidationRun[] }) {
-  const recentRuns = runs.slice(0, 10);
+  const [currentPage, setCurrentPage] = useState(0);
+  const [expandedRun, setExpandedRun] = useState<string | null>(null);
+  const runsPerPage = 5;
+  
+  const totalPages = Math.ceil(runs.length / runsPerPage);
+  const startIndex = currentPage * runsPerPage;
+  const currentRuns = runs.slice(startIndex, startIndex + runsPerPage);
   
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Recent Validation Runs</CardTitle>
+        <div className="flex justify-between items-center">
+          <CardTitle className="text-gray-900 dark:text-gray-100">Recent Validation Runs</CardTitle>
+          {totalPages > 1 && (
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
+                disabled={currentPage === 0}
+              >
+                Previous
+              </Button>
+              <span className="text-sm text-gray-600 dark:text-gray-400">
+                {currentPage + 1} of {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(Math.min(totalPages - 1, currentPage + 1))}
+                disabled={currentPage === totalPages - 1}
+              >
+                Next
+              </Button>
+            </div>
+          )}
+        </div>
       </CardHeader>
       <CardContent>
-        {recentRuns.length === 0 ? (
-          <p className="text-gray-500">No validation runs found</p>
+        {runs.length === 0 ? (
+          <p className="text-gray-500 dark:text-gray-400">No validation runs found</p>
         ) : (
           <div className="space-y-2">
-            {recentRuns.map((run) => (
-              <div
-                key={run.id}
-                className={`p-3 rounded border-l-4 ${
-                  run.success 
-                    ? 'border-green-500 bg-green-50' 
-                    : 'border-red-500 bg-red-50'
-                }`}
-              >
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    {run.success ? (
-                      <div className="w-2 h-2 bg-green-500 rounded-full" />
-                    ) : (
-                      <AlertCircle className="w-4 h-4 text-red-500" />
-                    )}
-                    <span className="font-medium">
-                      {run.stages.length} stages
-                    </span>
+            {currentRuns.map((run) => {
+              const successfulStages = run.stages.filter(stage => stage.success).length;
+              const failedStages = run.stages.length - successfulStages;
+              
+              return (
+                <div key={run.id}>
+                  <div
+                    className={`p-3 rounded border-l-4 cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 ${
+                      run.success 
+                        ? 'border-green-500 bg-green-50 dark:bg-green-900/20' 
+                        : 'border-red-500 bg-red-50 dark:bg-red-900/20'
+                    }`}
+                    onClick={() => setExpandedRun(expandedRun === run.id ? null : run.id)}
+                  >
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-3">
+                        {run.success ? (
+                          <div className="w-2 h-2 bg-green-500 rounded-full" />
+                        ) : (
+                          <AlertCircle className="w-4 h-4 text-red-500" />
+                        )}
+                        <div>
+                          <span className="font-medium text-gray-900 dark:text-gray-100">
+                            {run.stages.length} stages
+                          </span>
+                          <div className="text-xs text-gray-600 dark:text-gray-400">
+                            {successfulStages} passed • {failedStages} failed
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-sm text-gray-500 dark:text-gray-400">
+                          {new Date(run.timestamp).toLocaleString()}
+                        </div>
+                        <div className="text-xs text-gray-600 dark:text-gray-400">
+                          {(run.duration ? run.duration / 1000 : 0).toFixed(1)}s
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-sm text-gray-500">
-                    {new Date(run.timestamp).toLocaleString()}
-                  </div>
+                  
+                  {expandedRun === run.id && (
+                    <div className="mt-2 ml-4 p-3 bg-gray-50 dark:bg-gray-800 rounded border">
+                      <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Stage Details</h4>
+                      <div className="space-y-2">
+                        {run.stages.map((stage, index) => (
+                          <div key={`${stage.id}-${index}`} className="flex justify-between items-center py-1">
+                            <div className="flex items-center gap-2">
+                              {stage.success ? (
+                                <div className="w-2 h-2 bg-green-500 rounded-full" />
+                              ) : (
+                                <div className="w-2 h-2 bg-red-500 rounded-full" />
+                              )}
+                              <span className="text-sm text-gray-900 dark:text-gray-100">
+                                {stage.name || stage.id}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 text-xs">
+                              <span className={stage.success ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
+                                {stage.success ? 'PASS' : 'FAIL'}
+                              </span>
+                              <span className="text-gray-500 dark:text-gray-400">
+                                {(stage.duration / 1000).toFixed(1)}s
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <div className="text-sm text-gray-600 mt-1">
-                  Duration: {(run.duration / 1000).toFixed(1)}s
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </CardContent>
@@ -163,10 +242,10 @@ export function Analytics() {
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
               Failed to load analytics
             </h3>
-            <p className="text-gray-600 mb-4">
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
               There was an error loading the validation analytics data.
             </p>
             <Button onClick={() => refetch()}>

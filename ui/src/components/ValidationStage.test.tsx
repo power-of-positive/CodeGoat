@@ -9,6 +9,7 @@ describe('ValidationStage', () => {
     name: 'lint',
     success: true,
     duration: 2000,
+    attempt: 1,
     output: 'All files pass linting',
     error: undefined,
   };
@@ -18,6 +19,7 @@ describe('ValidationStage', () => {
     name: 'test',
     success: false,
     duration: 5000,
+    attempt: 1,
     output: 'Some tests failed',
     error: 'Test suite failed',
   };

@@ -63,25 +63,48 @@ describe('API Client', () => {
         totalSessions: 10,
         successRate: 80,
         averageTimeToSuccess: 5000,
-        stageSuccessRates: { lint: { attempts: 10, successes: 8, rate: 80 } }
+        stageSuccessRates: { lint: { attempts: 10, successes: 8, rate: 80 } },
+        averageStageTime: { lint: 1500 }
       };
+      const mockStages = [
+        { id: 'lint', name: 'Code Linting', enabled: true, timeout: 30000, continueOnFailure: false, priority: 1 }
+      ];
       const expectedMetrics = {
         totalRuns: 10,
         successfulRuns: 8,
         failedRuns: 2,
-        successRate: 80,
+        successRate: 0.8,
         averageDuration: 5000,
-        stageMetrics: { lint: { attempts: 10, successes: 8, rate: 80 } }
+        stageMetrics: { 
+          lint: { 
+            id: 'lint',
+            name: 'Code Linting',
+            enabled: true,
+            attempts: 10, 
+            successes: 8, 
+            successRate: 0.8, 
+            averageDuration: 1500, 
+            totalRuns: 10 
+          } 
+        }
       };
       
-      (fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
-        ok: true,
-        json: async () => mockAnalytics,
-      } as Response);
+      (fetch as jest.MockedFunction<typeof fetch>)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => mockAnalytics,
+        } as Response)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ stages: mockStages }),
+        } as Response);
 
       const result = await analyticsApi.getValidationMetrics();
       expect(result).toEqual(expectedMetrics);
       expect(fetch).toHaveBeenCalledWith('/api/analytics/', {
+        headers: { 'Content-Type': 'application/json' },
+      });
+      expect(fetch).toHaveBeenCalledWith('/api/settings/validation/stages', {
         headers: { 'Content-Type': 'application/json' },
       });
     });

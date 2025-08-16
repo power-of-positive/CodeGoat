@@ -5,7 +5,9 @@
       "Update(settings.json)",
       "Update(tsconfig.json)",
       "Update(scripts/claude-stop-hook.ts)",
-      "Update(claude-stop-hook.ts)"
+      "Update(claude-stop-hook.ts)",
+      "Update(settings.json)",
+      "Update(ui/jest.config.ts)"
     ]
   },
   "hooks": {

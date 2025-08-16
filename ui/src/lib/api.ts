@@ -71,14 +71,52 @@ export const analyticsApi = {
       }))
     ),
   getValidationMetrics: (): Promise<ValidationMetrics> => 
-    request('/analytics/').then((analytics: any) => ({
-      totalRuns: analytics.totalSessions,
-      successfulRuns: Math.round(analytics.totalSessions * analytics.successRate / 100),
-      failedRuns: analytics.totalSessions - Math.round(analytics.totalSessions * analytics.successRate / 100),
-      successRate: analytics.successRate,
-      averageDuration: analytics.averageTimeToSuccess,
-      stageMetrics: analytics.stageSuccessRates
-    })),
+    Promise.all([
+      request('/analytics/'), 
+      request('/settings/validation/stages').then((data: { stages: ValidationStage[] }) => data.stages)
+    ]).then(([analytics, stages]: [any, ValidationStage[]]) => {
+      // Merge stage success rates with average times and all stages from settings
+      const stageMetrics: Record<string, any> = {};
+      const successRates = (analytics as any).stageSuccessRates || {};
+      const stageTimes = (analytics as any).averageStageTime || {};
+      
+      // First, add all stages from settings with default values
+      stages.forEach(stage => {
+        stageMetrics[stage.id] = {
+          id: stage.id,
+          name: stage.name,
+          enabled: stage.enabled,
+          attempts: 0,
+          successes: 0,
+          successRate: 0,
+          averageDuration: 0,
+          totalRuns: 0
+        };
+      });
+      
+      // Then, override with actual data where available
+      Object.keys(successRates).forEach(stageName => {
+        if (stageMetrics[stageName]) {
+          stageMetrics[stageName] = {
+            ...stageMetrics[stageName],
+            attempts: successRates[stageName].attempts,
+            successes: successRates[stageName].successes,
+            successRate: successRates[stageName].rate / 100, // Convert to decimal
+            averageDuration: stageTimes[stageName] || 0,
+            totalRuns: successRates[stageName].attempts
+          };
+        }
+      });
+      
+      return {
+        totalRuns: (analytics as any).totalSessions,
+        successfulRuns: Math.round((analytics as any).totalSessions * (analytics as any).successRate / 100),
+        failedRuns: (analytics as any).totalSessions - Math.round((analytics as any).totalSessions * (analytics as any).successRate / 100),
+        successRate: (analytics as any).successRate / 100, // Convert from percentage to decimal
+        averageDuration: (analytics as any).averageTimeToSuccess || 0,
+        stageMetrics
+      };
+    }),
 };
 
 // Legacy config API for compatibility (minimal implementation)
