@@ -156,7 +156,7 @@
       {
         "id": "playwright-e2e",
         "name": "Playwright E2E Tests",
-        "command": "npm run test:playwright-e2e",
+        "command": "cd ui && npm run test:e2e",
         "timeout": 180000,
         "enabled": true,
         "continueOnFailure": false,

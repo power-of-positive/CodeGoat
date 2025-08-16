@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { analyticsApi } from '../lib/api';
 import { ValidationRun, ValidationMetrics } from '../../shared/types';
 import { ValidationChart } from './ValidationChart';
+import { TimeSeriesCharts } from './TimeSeriesCharts';
 
 function useAnalyticsData() {
   const metricsQuery = useQuery({
@@ -262,6 +263,11 @@ export function Analytics() {
       <AnalyticsHeader refetch={refetch} />
       
       {metrics && <MetricsSummary metrics={metrics} />}
+      
+      {/* Time Series Charts */}
+      <div className="mb-6">
+        <TimeSeriesCharts runs={runs} />
+      </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <RecentRuns runs={runs} />

@@ -25,13 +25,16 @@
   },
   {
     "content": "Create commit message parser to extract task IDs and update todo-list.json automatically",
-    "status": "in_progress",
+    "status": "completed",
     "priority": "high",
-    "id": "26"
+    "id": "26",
+    "endTime": "2025-08-16T22:53:19+02:00",
+    "startTime": "2025-08-16T22:53:19+02:00",
+    "duration": "0s"
   },
   {
     "content": "Add line charts for success rate tracking over time in analytics",
-    "status": "pending",
+    "status": "in_progress",
     "priority": "medium",
     "id": "35"
   },
