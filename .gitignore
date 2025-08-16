@@ -26,6 +26,7 @@ prisma/*.db
 # Todo list files (temporary/runtime)
 .claude_todo.json
 todo-list.json
+todo-list-backup.json
 
 # Test files (temporary/runtime)
 test_request.json
