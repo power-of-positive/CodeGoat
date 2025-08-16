@@ -97,38 +97,139 @@ function MetricsSummary({ metrics }: { metrics: ValidationMetrics }) {
 function RecentRuns({ runs }: { runs: ValidationRun[] }) {
   const [currentPage, setCurrentPage] = useState(0);
   const [expandedRun, setExpandedRun] = useState<string | null>(null);
-  const runsPerPage = 5;
+  const [runsPerPage, setRunsPerPage] = useState(5);
   
   const totalPages = Math.ceil(runs.length / runsPerPage);
   const startIndex = currentPage * runsPerPage;
   const currentRuns = runs.slice(startIndex, startIndex + runsPerPage);
   
+  // Reset to first page when runs per page changes
+  React.useEffect(() => {
+    setCurrentPage(0);
+  }, [runsPerPage]);
+  
+  // Generate page numbers for pagination
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxVisiblePages = 5;
+    
+    if (totalPages <= maxVisiblePages) {
+      // Show all pages if total is small
+      for (let i = 0; i < totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      // Show ellipsis pagination for large numbers
+      const start = Math.max(0, currentPage - 2);
+      const end = Math.min(totalPages - 1, currentPage + 2);
+      
+      if (start > 0) {
+        pages.push(0);
+        if (start > 1) pages.push(-1); // Ellipsis marker
+      }
+      
+      for (let i = start; i <= end; i++) {
+        pages.push(i);
+      }
+      
+      if (end < totalPages - 1) {
+        if (end < totalPages - 2) pages.push(-1); // Ellipsis marker
+        pages.push(totalPages - 1);
+      }
+    }
+    
+    return pages;
+  };
+  
   return (
     <Card>
       <CardHeader>
-        <div className="flex justify-between items-center">
-          <CardTitle className="text-gray-900">Recent Validation Runs</CardTitle>
-          {totalPages > 1 && (
+        <div className="flex flex-col gap-3">
+          <div className="flex justify-between items-center">
+            <CardTitle className="text-gray-900">Recent Validation Runs</CardTitle>
             <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
-                disabled={currentPage === 0}
+              <label className="text-sm text-gray-600">Show:</label>
+              <select
+                value={runsPerPage}
+                onChange={(e) => setRunsPerPage(Number(e.target.value))}
+                className="border border-gray-300 rounded px-2 py-1 text-sm text-gray-900 bg-white"
               >
-                Previous
-              </Button>
-              <span className="text-sm text-gray-600">
-                {currentPage + 1} of {totalPages}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage(Math.min(totalPages - 1, currentPage + 1))}
-                disabled={currentPage === totalPages - 1}
-              >
-                Next
-              </Button>
+                <option value={5}>5</option>
+                <option value={10}>10</option>
+                <option value={25}>25</option>
+                <option value={50}>50</option>
+                <option value={runs.length}>All ({runs.length})</option>
+              </select>
+              <span className="text-sm text-gray-600">per page</span>
+            </div>
+          </div>
+          
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1">
+                {/* First and Previous buttons */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(0)}
+                  disabled={currentPage === 0}
+                  className="px-2"
+                >
+                  ⟨⟨
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
+                  disabled={currentPage === 0}
+                >
+                  Previous
+                </Button>
+                
+                {/* Page numbers */}
+                <div className="flex items-center gap-1 mx-2">
+                  {getPageNumbers().map((pageNum, index) => (
+                    pageNum === -1 ? (
+                      <span key={`ellipsis-${index}`} className="px-2 text-gray-400">...</span>
+                    ) : (
+                      <Button
+                        key={pageNum}
+                        variant={currentPage === pageNum ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setCurrentPage(pageNum)}
+                        className="min-w-[2rem] px-2"
+                      >
+                        {pageNum + 1}
+                      </Button>
+                    )
+                  ))}
+                </div>
+                
+                {/* Next and Last buttons */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(Math.min(totalPages - 1, currentPage + 1))}
+                  disabled={currentPage === totalPages - 1}
+                >
+                  Next
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(totalPages - 1)}
+                  disabled={currentPage === totalPages - 1}
+                  className="px-2"
+                >
+                  ⟩⟩
+                </Button>
+              </div>
+              
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <span>
+                  Showing {startIndex + 1}-{Math.min(startIndex + runsPerPage, runs.length)} of {runs.length}
+                </span>
+              </div>
             </div>
           )}
         </div>

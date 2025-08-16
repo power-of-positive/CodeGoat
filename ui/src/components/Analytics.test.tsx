@@ -113,7 +113,12 @@ describe('Analytics Component', () => {
     renderWithProviders(<Analytics />);
     
     await waitFor(() => {
-      expect(screen.getByText('50')).toBeInTheDocument(); // Total runs
+      // Use getAllByText to handle multiple "50" elements and check the right one
+      const allFiftyElements = screen.getAllByText('50');
+      const totalRunsFifty = allFiftyElements.find(el => 
+        el.className.includes('text-2xl font-bold')
+      );
+      expect(totalRunsFifty).toBeInTheDocument();
       expect(screen.getByText('80.0%')).toBeInTheDocument(); // Success rate (shows 1 decimal place)
       expect(screen.getByText('120.0s')).toBeInTheDocument(); // Average duration (shows 1 decimal place)
     });

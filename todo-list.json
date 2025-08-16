@@ -34,19 +34,19 @@
   },
   {
     "content": "Add line charts for success rate tracking over time in analytics",
-    "status": "in_progress",
+    "status": "completed",
     "priority": "medium",
     "id": "35"
   },
   {
     "content": "Add line charts for average duration tracking over time in analytics",
-    "status": "pending",
+    "status": "completed",
     "priority": "medium",
     "id": "36"
   },
   {
     "content": "Enable unlimited pagination in recent validation runs section",
-    "status": "pending",
+    "status": "in_progress",
     "priority": "medium",
     "id": "37"
   },
