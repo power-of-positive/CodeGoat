@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
 import { Analytics } from './Analytics';
@@ -143,5 +143,23 @@ describe('Analytics Component', () => {
     
     // Check for loading skeleton animation
     expect(document.querySelector('.animate-pulse')).toBeInTheDocument();
+  });
+
+  it('calls refetch when refresh button is clicked', async () => {
+    renderWithProviders(<Analytics />);
+    
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /refresh/i })).toBeInTheDocument();
+    });
+    
+    // Clear previous calls
+    jest.clearAllMocks();
+    
+    // Click refresh button
+    fireEvent.click(screen.getByRole('button', { name: /refresh/i }));
+    
+    // Should call refetch for both queries
+    expect(analyticsApi.getValidationMetrics).toHaveBeenCalled();
+    expect(analyticsApi.getValidationRuns).toHaveBeenCalled();
   });
 });

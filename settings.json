@@ -68,7 +68,7 @@
         "name": "Frontend Coverage Check",
         "command": "cd ui && npm run test:coverage",
         "timeout": 30000,
-        "enabled": false,
+        "enabled": true,
         "continueOnFailure": false,
         "order": 7
       },
@@ -167,7 +167,7 @@
         "name": "Uncommitted Files Check",
         "command": "npx ts-node scripts/check-uncommitted-files.ts",
         "timeout": 10000,
-        "enabled": false,
+        "enabled": true,
         "continueOnFailure": false,
         "order": 18
       },
@@ -176,7 +176,7 @@
         "name": "Todo List Validation",
         "command": "npx ts-node scripts/validate-todo-list.ts",
         "timeout": 10000,
-        "enabled": false,
+        "enabled": true,
         "continueOnFailure": false,
         "order": 19
       }

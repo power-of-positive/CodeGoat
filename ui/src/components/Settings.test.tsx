@@ -204,4 +204,102 @@ describe('Settings Component', () => {
       expect(screen.getByText(/add your first validation stage/i)).toBeInTheDocument();
     });
   });
+
+  it('handles add stage error and closes form', async () => {
+    const user = userEvent.setup();
+    (settingsApi.addValidationStage as jest.Mock).mockRejectedValue(new Error('Add Error'));
+    
+    renderWithProviders(<Settings />);
+    
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /add stage/i })).toBeInTheDocument();
+    });
+    
+    await user.click(screen.getByRole('button', { name: /add stage/i }));
+    
+    await waitFor(() => {
+      expect(screen.getByLabelText(/stage name/i)).toBeInTheDocument();
+    });
+    
+    await user.type(screen.getByLabelText(/stage name/i), 'Error Test');
+    await user.type(screen.getByLabelText(/command/i), 'npm test');
+    await user.click(screen.getByRole('button', { name: /save/i }));
+    
+    await waitFor(() => {
+      expect(screen.queryByRole('heading', { name: /add new validation stage/i })).not.toBeInTheDocument();
+    });
+  });
+
+  it('handles update stage error and closes form', async () => {
+    const user = userEvent.setup();
+    (settingsApi.updateValidationStage as jest.Mock).mockRejectedValue(new Error('Update Error'));
+    
+    renderWithProviders(<Settings />);
+    
+    await waitFor(() => {
+      expect(screen.getAllByRole('button', { name: /edit/i })).toHaveLength(2);
+    });
+    
+    await user.click(screen.getAllByRole('button', { name: /edit/i })[0]);
+    
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('Code Linting')).toBeInTheDocument();
+    });
+    
+    await user.clear(screen.getByDisplayValue('Code Linting'));
+    await user.type(screen.getByDisplayValue(''), 'Updated Name');
+    await user.click(screen.getByRole('button', { name: /save/i }));
+    
+    await waitFor(() => {
+      expect(screen.queryByDisplayValue('Updated Name')).not.toBeInTheDocument();
+    });
+  });
+
+  it('can toggle enabled checkbox in add form', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<Settings />);
+    
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /add stage/i })).toBeInTheDocument();
+    });
+    
+    await user.click(screen.getByRole('button', { name: /add stage/i }));
+    
+    await waitFor(() => {
+      expect(screen.getByLabelText(/enabled/i)).toBeInTheDocument();
+    });
+    
+    const enabledCheckbox = screen.getByLabelText(/enabled/i);
+    expect(enabledCheckbox).toBeChecked();
+    
+    await user.click(enabledCheckbox);
+    expect(enabledCheckbox).not.toBeChecked();
+    
+    await user.click(enabledCheckbox);
+    expect(enabledCheckbox).toBeChecked();
+  });
+
+  it('can toggle continue on failure checkbox in add form', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<Settings />);
+    
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /add stage/i })).toBeInTheDocument();
+    });
+    
+    await user.click(screen.getByRole('button', { name: /add stage/i }));
+    
+    await waitFor(() => {
+      expect(screen.getByLabelText(/continue on failure/i)).toBeInTheDocument();
+    });
+    
+    const continueCheckbox = screen.getByLabelText(/continue on failure/i);
+    expect(continueCheckbox).not.toBeChecked();
+    
+    await user.click(continueCheckbox);
+    expect(continueCheckbox).toBeChecked();
+    
+    await user.click(continueCheckbox);
+    expect(continueCheckbox).not.toBeChecked();
+  });
 });

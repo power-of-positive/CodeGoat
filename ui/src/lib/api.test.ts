@@ -154,5 +154,76 @@ describe('API Client', () => {
 
       await expect(settingsApi.getSettings()).rejects.toThrow('API request failed: 500 Internal Server Error');
     });
+
+    it('should handle validation stages API error gracefully', async () => {
+      (fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+        statusText: 'Not Found',
+      } as Response);
+
+      await expect(settingsApi.getValidationStages()).rejects.toThrow('API request failed: 404 Not Found');
+    });
+
+    it('should handle add validation stage API error', async () => {
+      const newStage = { 
+        name: 'Test', 
+        command: 'test', 
+        timeout: 30000, 
+        enabled: true, 
+        continueOnFailure: false, 
+        priority: 1 
+      };
+      
+      (fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        statusText: 'Bad Request',
+      } as Response);
+
+      await expect(settingsApi.addValidationStage(newStage)).rejects.toThrow('API request failed: 400 Bad Request');
+    });
+
+    it('should handle update validation stage API error', async () => {
+      const updates = { name: 'Updated' };
+      
+      (fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
+        ok: false,
+        status: 403,
+        statusText: 'Forbidden',
+      } as Response);
+
+      await expect(settingsApi.updateValidationStage('lint', updates)).rejects.toThrow('API request failed: 403 Forbidden');
+    });
+
+    it('should handle remove validation stage API error', async () => {
+      (fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+        statusText: 'Not Found',
+      } as Response);
+
+      await expect(settingsApi.removeValidationStage('nonexistent')).rejects.toThrow('API request failed: 404 Not Found');
+    });
+
+    it('should handle analytics metrics API error', async () => {
+      (fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+        statusText: 'Internal Server Error',
+      } as Response);
+
+      await expect(analyticsApi.getValidationMetrics()).rejects.toThrow('API request failed: 500 Internal Server Error');
+    });
+
+    it('should handle analytics runs API error', async () => {
+      (fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
+        ok: false,
+        status: 502,
+        statusText: 'Bad Gateway',
+      } as Response);
+
+      await expect(analyticsApi.getValidationRuns()).rejects.toThrow('API request failed: 502 Bad Gateway');
+    });
   });
 });

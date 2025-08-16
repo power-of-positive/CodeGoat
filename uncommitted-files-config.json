@@ -1,0 +1,22 @@
+{
+  "maxModifiedFiles": 10,
+  "maxUntrackedFiles": 5,
+  "ignorePatterns": [
+    "validation-metrics.json",
+    "validation-sessions.json",
+    "*.log",
+    "logs/**",
+    "node_modules/**",
+    ".next/**",
+    "dist/**",
+    "build/**",
+    "*.tmp",
+    "*.temp",
+    "coverage/**",
+    "test-results/**",
+    "playwright-report/**",
+    ".env.local",
+    "*.local"
+  ],
+  "failOnExcess": true
+}

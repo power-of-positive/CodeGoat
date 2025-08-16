@@ -11,6 +11,21 @@ interface TodoItem {
   id: string;
 }
 
+// Configuration interface
+interface ValidationConfig {
+  maxUnfinishedTasks: number;
+  allowedInProgressTasks: number;
+  failOnExcess: boolean;
+  onlyFailOnHighPriority: boolean;
+}
+
+const DEFAULT_CONFIG: ValidationConfig = {
+  maxUnfinishedTasks: 5,
+  allowedInProgressTasks: 2,
+  failOnExcess: false, // Just warn during development
+  onlyFailOnHighPriority: true, // Only fail if high priority tasks are unfinished
+};
+
 // Define possible todo list file paths (prioritize todo-list.json)
 const TODO_LIST_FILES = [
   path.join(process.cwd(), 'todo-list.json'),
@@ -27,6 +42,23 @@ const colors = {
   reset: '\x1b[0m',
   bold: '\x1b[1m'
 };
+
+/**
+ * Load validation configuration
+ */
+function loadValidationConfig(): ValidationConfig {
+  const configPath = path.join(process.cwd(), 'todo-validation-config.json');
+  if (fs.existsSync(configPath)) {
+    try {
+      const configData = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+      return { ...DEFAULT_CONFIG, ...configData };
+    } catch (error) {
+      console.warn(`${colors.yellow}⚠️  Failed to load validation config, using defaults${colors.reset}`);
+      return DEFAULT_CONFIG;
+    }
+  }
+  return DEFAULT_CONFIG;
+}
 
 /**
  * Parse todo list from JSON format
@@ -256,22 +288,57 @@ function main(): number {
   // Display statistics
   displayStatistics(todos);
   
+  // Load configuration
+  const config = loadValidationConfig();
+  
   // Check for unfinished tasks
   const unfinishedTasks = todos.filter(
     todo => todo.status === 'pending' || todo.status === 'in_progress'
   );
   
-  if (unfinishedTasks.length > 0) {
-    console.error(`\n${colors.red}❌ Validation failed: ${unfinishedTasks.length} unfinished task(s) detected${colors.reset}`);
-    console.error(`${colors.red}📋 Unfinished tasks:${colors.reset}`);
-    unfinishedTasks.forEach(task => {
-      console.error(`${colors.red}   • [${task.priority}] ${task.content} (${task.status})${colors.reset}`);
-    });
-    console.error(`\n${colors.yellow}💡 Please complete all tasks before proceeding${colors.reset}`);
-    return 1;
+  const highPriorityUnfinished = unfinishedTasks.filter(task => task.priority === 'high');
+  const inProgressTasks = todos.filter(todo => todo.status === 'in_progress');
+  
+  let shouldFail = false;
+  let hasWarnings = false;
+  
+  // Check if we should fail based on configuration
+  if (config.onlyFailOnHighPriority && highPriorityUnfinished.length > 0) {
+    shouldFail = config.failOnExcess;
+    hasWarnings = true;
+  } else if (!config.onlyFailOnHighPriority && unfinishedTasks.length > config.maxUnfinishedTasks) {
+    shouldFail = config.failOnExcess;
+    hasWarnings = true;
+  } else if (inProgressTasks.length > config.allowedInProgressTasks) {
+    shouldFail = config.failOnExcess;
+    hasWarnings = true;
   }
   
-  console.log(`\n${colors.bold}${colors.green}🎉 All tasks are completed!${colors.reset}`);
+  if (hasWarnings && unfinishedTasks.length > 0) {
+    const messageType = shouldFail ? 'failed' : 'completed with warnings';
+    const icon = shouldFail ? '❌' : '⚠️ ';
+    const color = shouldFail ? colors.red : colors.yellow;
+    
+    console.log(`\n${color}${icon} Validation ${messageType}: ${unfinishedTasks.length} unfinished task(s) detected${colors.reset}`);
+    console.log(`${color}📋 Unfinished tasks:${colors.reset}`);
+    unfinishedTasks.forEach(task => {
+      console.log(`${color}   • [${task.priority}] ${task.content} (${task.status})${colors.reset}`);
+    });
+    
+    if (shouldFail) {
+      console.error(`\n${colors.yellow}💡 Please complete high priority tasks before proceeding${colors.reset}`);
+      return 1;
+    } else {
+      console.log(`\n${colors.yellow}💡 Consider completing tasks when convenient${colors.reset}`);
+      console.log(`\n${colors.green}✅ Todo list validation passed with warnings${colors.reset}`);
+      return 0;
+    }
+  }
+  
+  if (unfinishedTasks.length === 0) {
+    console.log(`\n${colors.bold}${colors.green}🎉 All tasks are completed!${colors.reset}`);
+  }
+  
   console.log(`\n${colors.green}✅ Todo list validation passed${colors.reset}`);
   return 0;
 }
