@@ -46,9 +46,12 @@
   },
   {
     "content": "Enable unlimited pagination in recent validation runs section",
-    "status": "in_progress",
+    "status": "completed",
     "priority": "medium",
-    "id": "37"
+    "id": "37",
+    "endTime": "2025-08-16T23:24:19+02:00",
+    "startTime": "2025-08-16T23:24:19+02:00",
+    "duration": "0s"
   },
   {
     "content": "Verify and fix refresh button functionality in analytics page",
