@@ -1,9 +1,38 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { ValidationChart } from './ValidationChart';
 import { ValidationMetrics } from 'shared/types';
+import { settingsApi } from '../lib/api';
+
+// Mock the settings API
+jest.mock('../lib/api', () => ({
+  settingsApi: {
+    getValidationStages: jest.fn(),
+  },
+}));
 
 describe('ValidationChart', () => {
+  const mockStages = [
+    {
+      id: 'lint',
+      name: 'Code Linting',
+      command: 'npm run lint',
+      enabled: true,
+      timeout: 30000,
+      continueOnFailure: false,
+      priority: 1,
+    },
+    {
+      id: 'test',
+      name: 'Unit Tests',
+      command: 'npm test',
+      enabled: true,
+      timeout: 60000,
+      continueOnFailure: true,
+      priority: 2,
+    },
+  ];
+
   const mockMetrics: ValidationMetrics = {
     totalRuns: 10,
     successfulRuns: 8,
@@ -43,6 +72,11 @@ describe('ValidationChart', () => {
       },
     },
   };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (settingsApi.getValidationStages as jest.Mock).mockResolvedValue(mockStages);
+  });
 
   it('renders stage performance overview', () => {
     render(<ValidationChart metrics={mockMetrics} />);
@@ -117,5 +151,32 @@ describe('ValidationChart', () => {
     
     expect(lintSuccessRate).toHaveClass('text-green-600');
     expect(testSuccessRate).toHaveClass('text-yellow-600');
+  });
+
+  it('displays continue on failure information', async () => {
+    render(<ValidationChart metrics={mockMetrics} />);
+    
+    await waitFor(() => {
+      expect(screen.getByText('Stop on fail')).toBeInTheDocument();
+      expect(screen.getByText('Continue on fail')).toBeInTheDocument();
+    });
+  });
+
+  it('shows continue on failure details in expanded view', async () => {
+    render(<ValidationChart metrics={mockMetrics} />);
+    
+    await waitFor(() => {
+      expect(screen.getByText('Code Linting')).toBeInTheDocument();
+    });
+
+    const lintStage = screen.getByText('Code Linting').closest('div');
+    fireEvent.click(lintStage!);
+    
+    await waitFor(() => {
+      expect(screen.getByText('Continue on Failure:')).toBeInTheDocument();
+      expect(screen.getByText('No')).toBeInTheDocument();
+      expect(screen.getByText('Timeout:')).toBeInTheDocument();
+      expect(screen.getByText('30s')).toBeInTheDocument();
+    });
   });
 });

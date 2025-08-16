@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { ValidationMetrics } from 'shared/types';
+import { ValidationMetrics, ValidationStage } from 'shared/types';
+import { settingsApi } from '../lib/api';
 
 interface ValidationChartProps {
   metrics: ValidationMetrics;
@@ -8,7 +9,21 @@ interface ValidationChartProps {
 
 export function ValidationChart({ metrics }: ValidationChartProps) {
   const [selectedStage, setSelectedStage] = useState<string | null>(null);
+  const [stages, setStages] = useState<ValidationStage[]>([]);
   const stageEntries = Object.entries(metrics.stageMetrics);
+
+  useEffect(() => {
+    // Fetch validation stages configuration to get continueOnFailure info
+    settingsApi.getValidationStages()
+      .then(setStages)
+      .catch(console.error);
+  }, []);
+
+  // Create a lookup map for stage configuration
+  const stageConfigMap = stages.reduce((acc, stage) => {
+    acc[stage.id] = stage;
+    return acc;
+  }, {} as Record<string, ValidationStage>);
 
   return (
     <Card>
@@ -20,6 +35,7 @@ export function ValidationChart({ metrics }: ValidationChartProps) {
           {stageEntries.map(([stageName, stageMetrics]) => {
             const isDisabled = !stageMetrics.enabled;
             const hasData = stageMetrics.totalRuns > 0;
+            const stageConfig = stageConfigMap[stageName];
             
             return (
               <div 
@@ -46,6 +62,15 @@ export function ValidationChart({ metrics }: ValidationChartProps) {
                     {!hasData && stageMetrics.enabled && (
                       <span className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded">
                         No Data
+                      </span>
+                    )}
+                    {stageConfig && (
+                      <span className={`text-xs px-2 py-1 rounded ${
+                        stageConfig.continueOnFailure 
+                          ? 'bg-orange-100 text-orange-700' 
+                          : 'bg-red-100 text-red-700'
+                      }`}>
+                        {stageConfig.continueOnFailure ? 'Continue on fail' : 'Stop on fail'}
                       </span>
                     )}
                   </div>
@@ -110,6 +135,24 @@ export function ValidationChart({ metrics }: ValidationChartProps) {
                           {stageMetrics.successes}
                         </div>
                       </div>
+                      {stageConfig && (
+                        <>
+                          <div>
+                            <span className="text-gray-600">Continue on Failure:</span>
+                            <div className={`font-medium ${
+                              stageConfig.continueOnFailure ? 'text-orange-600' : 'text-red-600'
+                            }`}>
+                              {stageConfig.continueOnFailure ? 'Yes' : 'No'}
+                            </div>
+                          </div>
+                          <div>
+                            <span className="text-gray-600">Timeout:</span>
+                            <div className="font-medium text-gray-900">
+                              {(stageConfig.timeout / 1000).toFixed(0)}s
+                            </div>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </div>
                 )}
