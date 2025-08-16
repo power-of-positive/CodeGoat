@@ -84,6 +84,8 @@
       "Bash(kill:*)",
       "Bash(pkill:*)"
     ],
-    "deny": []
+    "deny": [
+      "Update(ui/jest.config.ts)"
+    ]
   }
 }

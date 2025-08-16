@@ -59,29 +59,63 @@ describe('API Client', () => {
 
   describe('analyticsApi', () => {
     it('should get validation metrics', async () => {
-      const mockMetrics = { totalRuns: 10, successRate: 0.8, averageDuration: 5000, stageMetrics: {} };
+      const mockAnalytics = {
+        totalSessions: 10,
+        successRate: 80,
+        averageTimeToSuccess: 5000,
+        stageSuccessRates: { lint: { attempts: 10, successes: 8, rate: 80 } }
+      };
+      const expectedMetrics = {
+        totalRuns: 10,
+        successfulRuns: 8,
+        failedRuns: 2,
+        successRate: 80,
+        averageDuration: 5000,
+        stageMetrics: { lint: { attempts: 10, successes: 8, rate: 80 } }
+      };
+      
       (fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
         ok: true,
-        json: async () => mockMetrics,
+        json: async () => mockAnalytics,
       } as Response);
 
       const result = await analyticsApi.getValidationMetrics();
-      expect(result).toEqual(mockMetrics);
-      expect(fetch).toHaveBeenCalledWith('/api/analytics/validation-metrics', {
+      expect(result).toEqual(expectedMetrics);
+      expect(fetch).toHaveBeenCalledWith('/api/analytics/', {
         headers: { 'Content-Type': 'application/json' },
       });
     });
 
     it('should get validation runs', async () => {
-      const mockRuns = [{ id: '1', timestamp: new Date().toISOString(), success: true, duration: 5000, stages: [] }];
+      const mockSessions = {
+        sessions: [
+          {
+            sessionId: 'session-1',
+            startTime: Date.now(),
+            finalSuccess: true,
+            totalDuration: 5000,
+            attempts: [{ stages: [{ id: 'lint', name: 'Lint', success: true, duration: 1000, attempt: 1 }] }]
+          }
+        ]
+      };
+      const expectedRuns = [
+        {
+          id: 'session-1',
+          timestamp: new Date(mockSessions.sessions[0].startTime).toISOString(),
+          success: true,
+          duration: 5000,
+          stages: [{ id: 'lint', name: 'Lint', success: true, duration: 1000, attempt: 1 }]
+        }
+      ];
+      
       (fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
         ok: true,
-        json: async () => mockRuns,
+        json: async () => mockSessions,
       } as Response);
 
       const result = await analyticsApi.getValidationRuns();
-      expect(result).toEqual(mockRuns);
-      expect(fetch).toHaveBeenCalledWith('/api/analytics/validation-runs', {
+      expect(result).toEqual(expectedRuns);
+      expect(fetch).toHaveBeenCalledWith('/api/analytics/sessions', {
         headers: { 'Content-Type': 'application/json' },
       });
     });

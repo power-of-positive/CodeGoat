@@ -60,8 +60,25 @@ export const settingsApi = {
 
 // Analytics API
 export const analyticsApi = {
-  getValidationRuns: (): Promise<ValidationRun[]> => request('/analytics/validation-runs'),
-  getValidationMetrics: (): Promise<ValidationMetrics> => request('/analytics/validation-metrics'),
+  getValidationRuns: (): Promise<ValidationRun[]> => 
+    request('/analytics/sessions').then((data: { sessions: any[] }) => 
+      data.sessions.map(session => ({
+        id: session.sessionId,
+        timestamp: new Date(session.startTime).toISOString(),
+        success: session.finalSuccess,
+        duration: session.totalDuration || 0,
+        stages: session.attempts.flatMap((attempt: any) => attempt.stages)
+      }))
+    ),
+  getValidationMetrics: (): Promise<ValidationMetrics> => 
+    request('/analytics/').then((analytics: any) => ({
+      totalRuns: analytics.totalSessions,
+      successfulRuns: Math.round(analytics.totalSessions * analytics.successRate / 100),
+      failedRuns: analytics.totalSessions - Math.round(analytics.totalSessions * analytics.successRate / 100),
+      successRate: analytics.successRate,
+      averageDuration: analytics.averageTimeToSuccess,
+      stageMetrics: analytics.stageSuccessRates
+    })),
 };
 
 // Legacy config API for compatibility (minimal implementation)
