@@ -55,9 +55,10 @@
   },
   {
     "content": "Verify and fix refresh button functionality in analytics page",
-    "status": "pending",
+    "status": "in_progress",
     "priority": "medium",
-    "id": "38"
+    "id": "38",
+    "startTime": "2025-08-16T23:46:34+02:00"
   },
   {
     "content": "Re-enable todo list validation stage",
