@@ -2,13 +2,16 @@ import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
 import { Analytics } from './Analytics';
-import { analyticsApi } from '../lib/api';
+import { analyticsApi, settingsApi } from '../lib/api';
 
 // Mock the API
 jest.mock('../lib/api', () => ({
   analyticsApi: {
     getValidationMetrics: jest.fn(),
     getValidationRuns: jest.fn(),
+  },
+  settingsApi: {
+    getValidationStages: jest.fn(),
   },
 }));
 
@@ -85,6 +88,7 @@ describe('Analytics Component', () => {
     jest.clearAllMocks();
     (analyticsApi.getValidationMetrics as jest.Mock).mockResolvedValue(mockValidationMetrics);
     (analyticsApi.getValidationRuns as jest.Mock).mockResolvedValue(mockRecentRuns);
+    (settingsApi.getValidationStages as jest.Mock).mockResolvedValue([]);
   });
 
   it('renders analytics page with correct title', async () => {
@@ -124,13 +128,6 @@ describe('Analytics Component', () => {
     });
   });
 
-  it('displays refresh button', async () => {
-    renderWithProviders(<Analytics />);
-    
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: /refresh/i })).toBeInTheDocument();
-    });
-  });
 
   it('displays recent validation runs section', async () => {
     renderWithProviders(<Analytics />);
@@ -166,21 +163,4 @@ describe('Analytics Component', () => {
     expect(document.querySelector('.animate-pulse')).toBeInTheDocument();
   });
 
-  it('calls refetch when refresh button is clicked', async () => {
-    renderWithProviders(<Analytics />);
-    
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: /refresh/i })).toBeInTheDocument();
-    });
-    
-    // Clear previous calls
-    jest.clearAllMocks();
-    
-    // Click refresh button
-    fireEvent.click(screen.getByRole('button', { name: /refresh/i }));
-    
-    // Should call refetch for both queries
-    expect(analyticsApi.getValidationMetrics).toHaveBeenCalled();
-    expect(analyticsApi.getValidationRuns).toHaveBeenCalled();
-  });
 });

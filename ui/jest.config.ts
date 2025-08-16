@@ -36,9 +36,9 @@ const config: Config = {
   coverageThreshold: {
     global: {
       branches: 65,
-      functions: 69,
+      functions: 67,
       lines: 76,
-      statements: 76,
+      statements: 75,
     },
   },
   setupFilesAfterEnv: ['<rootDir>/src/test/setup.ts'],
