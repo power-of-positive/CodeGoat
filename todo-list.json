@@ -16,9 +16,18 @@
   },
   {
     "content": "Add automatic duration calculation for completed tasks based on commit timestamps",
+    "status": "completed",
+    "priority": "high",
+    "id": "25",
+    "endTime": "2025-08-16T22:50:45+02:00",
+    "startTime": "2025-08-16T22:48:16+02:00",
+    "duration": "2m 29s"
+  },
+  {
+    "content": "Create commit message parser to extract task IDs and update todo-list.json automatically",
     "status": "in_progress",
     "priority": "high",
-    "id": "25"
+    "id": "26"
   },
   {
     "content": "Add line charts for success rate tracking over time in analytics",
