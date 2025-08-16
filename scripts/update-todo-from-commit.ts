@@ -96,9 +96,9 @@ function calculateDuration(startTime: string, endTime: string): string {
 
 function findTaskStartTime(taskId: string): string | null {
   try {
-    // Search git log for when task was first marked as in_progress
+    // Search git log for when task was first referenced (any commit mentioning the task)
     const logOutput = execSync(
-      `git log --grep="task.*${taskId}" --grep="in_progress.*${taskId}" --pretty="%aI" --reverse`,
+      `git log --grep="task.*#?${taskId}" --grep="#${taskId}" --pretty="%aI" --reverse`,
       { encoding: 'utf-8' }
     ).trim();
     
