@@ -28,7 +28,7 @@ interface CommitInfo {
 }
 
 // Pattern to match codegoat prefix and extract task ID
-const CODEGOAT_PATTERN = /codegoat[:\s]+(?:task[:\s#]+)?(\d+)(?:\s|$)/i;
+const CODEGOAT_PATTERN = /codegoat\s+task\s*#?\s*(\d+)/i;
 const TASK_ID_PATTERN = /(?:task|fix|feat|chore|docs|style|refactor|test|build|ci|perf|revert)(?:\s*#?|\s*:?\s*)(\d+)/i;
 
 function loadTodoList(todoListPath: string): TodoItem[] {

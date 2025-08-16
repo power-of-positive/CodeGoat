@@ -7,20 +7,29 @@
   },
   {
     "content": "Implement automatic task completion time tracking with codegoat prefix in commit messages",
+    "status": "completed",
+    "priority": "high",
+    "id": "24",
+    "endTime": "2025-08-16T22:42:46+02:00",
+    "startTime": "2025-08-16T22:42:46+02:00",
+    "duration": "0s"
+  },
+  {
+    "content": "Add automatic duration calculation for completed tasks based on commit timestamps",
     "status": "in_progress",
     "priority": "high",
-    "id": "24"
+    "id": "25"
   },
   {
     "content": "Add line charts for success rate tracking over time in analytics",
-    "status": "pending", 
+    "status": "pending",
     "priority": "medium",
     "id": "35"
   },
   {
-    "content": "Add line charts for average duration tracking over time in analytics", 
+    "content": "Add line charts for average duration tracking over time in analytics",
     "status": "pending",
-    "priority": "medium", 
+    "priority": "medium",
     "id": "36"
   },
   {
@@ -31,14 +40,14 @@
   },
   {
     "content": "Verify and fix refresh button functionality in analytics page",
-    "status": "pending", 
+    "status": "pending",
     "priority": "medium",
     "id": "38"
   },
   {
     "content": "Re-enable todo list validation stage",
     "status": "completed",
-    "priority": "high", 
+    "priority": "high",
     "id": "41"
   }
 ]
