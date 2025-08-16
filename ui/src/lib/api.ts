@@ -6,7 +6,7 @@ import {
   ValidationRun,
   ValidationMetrics,
   UserSystemInfo,
-} from 'shared/types';
+} from '../../shared/types';
 
 const API_BASE = '/api';
 

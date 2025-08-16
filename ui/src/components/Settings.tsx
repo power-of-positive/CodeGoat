@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { settingsApi } from '../lib/api';
-import { ValidationStage, Config } from 'shared/types';
+import { ValidationStage } from '../../shared/types';
 
 function ValidationStageForm({ 
   stage, 

@@ -23,13 +23,10 @@ export default defineConfig({
       threshold: 0.3,
       // Animation handling
       animations: 'disabled',
-      // Clip screenshots to content area to avoid OS-specific chrome
-      clip: { x: 0, y: 0, width: 1280, height: 720 },
     },
     // Configure visual comparison behavior
     toMatchSnapshot: {
       threshold: 0.2,
-      animations: 'disabled',
     },
   },
 

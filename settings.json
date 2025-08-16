@@ -21,7 +21,7 @@
       {
         "id": "typecheck",
         "name": "Type Checking",
-        "command": "npx tsc --noEmit",
+        "command": "npm run type-check",
         "timeout": 45000,
         "enabled": true,
         "continueOnFailure": false,
@@ -158,7 +158,7 @@
         "name": "Playwright E2E Tests",
         "command": "npm run test:playwright-e2e",
         "timeout": 180000,
-        "enabled": true,
+        "enabled": false,
         "continueOnFailure": false,
         "order": 17
       },

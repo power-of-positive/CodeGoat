@@ -131,7 +131,7 @@ app.get('/health', (_req: Request, res: Response) => {
 });
 
 // Catch-all for unmatched routes
-app.use('*', (_req: Request, res: Response) => {
+app.use((_req: Request, res: Response) => {
   res.status(404).json({ error: 'Not found' });
 });
 

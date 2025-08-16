@@ -4,7 +4,7 @@ import { BarChart3, Activity, AlertCircle } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { analyticsApi } from '../lib/api';
-import { ValidationRun, ValidationMetrics } from 'shared/types';
+import { ValidationRun, ValidationMetrics } from '../../shared/types';
 import { ValidationChart } from './ValidationChart';
 
 function useAnalyticsData() {
@@ -138,42 +138,6 @@ function RecentRuns({ runs }: { runs: ValidationRun[] }) {
   );
 }
 
-function StageMetrics({ metrics }: { metrics: ValidationMetrics }) {
-  const stageEntries = Object.entries(metrics.stageMetrics);
-  
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Stage Performance</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {stageEntries.length === 0 ? (
-          <p className="text-gray-500">No stage metrics available</p>
-        ) : (
-          <div className="space-y-3">
-            {stageEntries.map(([stageName, stageMetrics]) => (
-              <div key={stageName} className="p-3 border rounded">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="font-medium">{stageName}</span>
-                  <span className={`text-sm font-medium ${
-                    stageMetrics.successRate > 0.8 ? 'text-green-600' : 
-                    stageMetrics.successRate > 0.5 ? 'text-yellow-600' : 'text-red-600'
-                  }`}>
-                    {(stageMetrics.successRate * 100).toFixed(1)}%
-                  </span>
-                </div>
-                <div className="text-sm text-gray-600">
-                  Avg: {(stageMetrics.averageDuration / 1000).toFixed(1)}s • 
-                  Runs: {stageMetrics.totalRuns}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
 
 export function Analytics() {
   const { metrics, runs, isLoading, error, refetch } = useAnalyticsData();

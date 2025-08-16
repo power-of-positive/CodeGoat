@@ -21,10 +21,10 @@ export class AnalyticsService {
   private metricsPath: string;
   private logger: ILogger;
 
-  constructor(logger: ILogger) {
+  constructor(logger: ILogger, sessionsPath?: string, metricsPath?: string) {
     this.logger = logger;
-    this.sessionsPath = path.join(process.cwd(), 'validation-sessions.json');
-    this.metricsPath = path.join(process.cwd(), 'validation-metrics.json');
+    this.sessionsPath = sessionsPath || path.join(process.cwd(), 'validation-sessions.json');
+    this.metricsPath = metricsPath || path.join(process.cwd(), 'validation-metrics.json');
   }
 
   /**
