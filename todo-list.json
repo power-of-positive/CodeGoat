@@ -1,5 +1,11 @@
 [
   {
+    "content": "Add commit message validation in pre-commit check to ensure task ID from todo-list.json",
+    "status": "completed",
+    "priority": "high",
+    "id": "23"
+  },
+  {
     "content": "Add line charts for success rate tracking over time in analytics",
     "status": "pending", 
     "priority": "medium",

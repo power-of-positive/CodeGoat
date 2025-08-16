@@ -1,0 +1,20 @@
+#!/usr/bin/env sh
+set -e  # Exit immediately if any command fails
+
+echo "🔍 Validating commit message..."
+
+# Run the commit message validation script
+# $1 contains the path to the temporary file with the commit message
+npx ts-node scripts/validate-commit-message.ts "$1"
+VALIDATION_RESULT=$?
+
+if [ $VALIDATION_RESULT -eq 0 ]; then
+    echo "✅ Commit message validation passed!"
+    exit 0
+else
+    echo ""
+    echo "❌ Commit message validation failed"
+    echo "💡 Please ensure your commit message references a valid task ID"
+    echo "💡 Example: 'feat: add new feature (task #35)'"
+    exit 1
+fi
