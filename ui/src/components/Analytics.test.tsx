@@ -16,8 +16,8 @@ const mockValidationMetrics = {
   totalRuns: 50,
   successfulRuns: 40,
   failedRuns: 10,
-  successRate: 80,
-  averageDuration: 120,
+  successRate: 0.8, // As decimal, will be converted to 80% in display
+  averageDuration: 120000, // In milliseconds, will be converted to 120s in display
   stageMetrics: {
     lint: {
       id: 'lint',
@@ -25,8 +25,8 @@ const mockValidationMetrics = {
       enabled: true,
       attempts: 45,
       successes: 40,
-      successRate: 88.8,
-      averageDuration: 30,
+      successRate: 0.888, // As decimal, will be converted to 88.8% in display
+      averageDuration: 30000, // In milliseconds
       totalRuns: 45,
     },
   },
@@ -98,8 +98,8 @@ describe('Analytics Component', () => {
     
     await waitFor(() => {
       expect(screen.getByText('50')).toBeInTheDocument(); // Total runs
-      expect(screen.getByText('80%')).toBeInTheDocument(); // Success rate
-      expect(screen.getByText('120s')).toBeInTheDocument(); // Average duration
+      expect(screen.getByText('80.0%')).toBeInTheDocument(); // Success rate (shows 1 decimal place)
+      expect(screen.getByText('120.0s')).toBeInTheDocument(); // Average duration (shows 1 decimal place)
     });
   });
 

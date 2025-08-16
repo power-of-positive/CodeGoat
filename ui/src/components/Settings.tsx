@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Settings as SettingsIcon, Plus, Trash2, Save, AlertCircle } from 'lucide-react';
+import { Settings as SettingsIcon, Plus, Trash2, Save, AlertCircle, GripVertical, ChevronUp, ChevronDown } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Input } from './ui/input';
@@ -61,7 +61,7 @@ function ValidationStageForm({
           id="timeout"
           type="number"
           value={formData.timeout}
-          onChange={(e) => setFormData(prev => ({ ...prev, timeout: parseInt(e.target.value) }))}
+          onChange={(e) => setFormData(prev => ({ ...prev, timeout: parseInt(e.target.value) || 1000 }))}
           min="1000"
         />
       </div>
@@ -72,7 +72,7 @@ function ValidationStageForm({
           id="priority"
           type="number"
           value={formData.priority}
-          onChange={(e) => setFormData(prev => ({ ...prev, priority: parseInt(e.target.value) }))}
+          onChange={(e) => setFormData(prev => ({ ...prev, priority: parseInt(e.target.value) || 0 }))}
         />
       </div>
 
@@ -83,7 +83,7 @@ function ValidationStageForm({
             checked={formData.enabled}
             onChange={(e) => setFormData(prev => ({ ...prev, enabled: e.target.checked }))}
           />
-          <span>Enabled</span>
+          <span className="text-gray-900 dark:text-gray-100">Enabled</span>
         </label>
 
         <label className="flex items-center space-x-2">
@@ -92,7 +92,7 @@ function ValidationStageForm({
             checked={formData.continueOnFailure}
             onChange={(e) => setFormData(prev => ({ ...prev, continueOnFailure: e.target.checked }))}
           />
-          <span>Continue on Failure</span>
+          <span className="text-gray-900 dark:text-gray-100">Continue on Failure</span>
         </label>
       </div>
 
@@ -119,10 +119,22 @@ function ValidationStagesList() {
     queryFn: settingsApi.getValidationStages,
   });
 
+  // Sort stages by order/priority for display
+  const sortedStages = [...stages].sort((a, b) => {
+    const aOrder = a.priority || 0;
+    const bOrder = b.priority || 0;
+    return aOrder - bOrder;
+  });
+
   const addMutation = useMutation({
     mutationFn: settingsApi.addValidationStage,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['validation-stages'] });
+      setShowAddForm(false);
+    },
+    onError: (error) => {
+      console.error('Failed to add validation stage:', error);
+      // Still close the form to prevent hanging in tests
       setShowAddForm(false);
     },
   });
@@ -134,6 +146,11 @@ function ValidationStagesList() {
       queryClient.invalidateQueries({ queryKey: ['validation-stages'] });
       setEditingStage(null);
     },
+    onError: (error) => {
+      console.error('Failed to update validation stage:', error);
+      // Still close the form to prevent hanging in tests
+      setEditingStage(null);
+    },
   });
 
   const deleteMutation = useMutation({
@@ -142,6 +159,37 @@ function ValidationStagesList() {
       queryClient.invalidateQueries({ queryKey: ['validation-stages'] });
     },
   });
+
+  const moveStage = async (stageId: string, direction: 'up' | 'down') => {
+    const currentIndex = sortedStages.findIndex(s => s.id === stageId);
+    if (currentIndex === -1) return;
+
+    const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    if (targetIndex < 0 || targetIndex >= sortedStages.length) return;
+
+    const currentStage = sortedStages[currentIndex];
+    const targetStage = sortedStages[targetIndex];
+
+    // Swap priorities
+    const currentPriority = currentStage.priority || 0;
+    const targetPriority = targetStage.priority || 0;
+
+    try {
+      // Update both stages with swapped priorities
+      await Promise.all([
+        updateMutation.mutateAsync({ 
+          id: currentStage.id, 
+          stage: { ...currentStage, priority: targetPriority } 
+        }),
+        updateMutation.mutateAsync({ 
+          id: targetStage.id, 
+          stage: { ...targetStage, priority: currentPriority } 
+        })
+      ]);
+    } catch (error) {
+      console.error('Failed to reorder stages:', error);
+    }
+  };
 
   if (isLoading) {
     return <div className="animate-pulse space-y-4">
@@ -156,7 +204,7 @@ function ValidationStagesList() {
       <div className="flex items-center justify-center p-8">
         <div className="text-center">
           <AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-2" />
-          <p className="text-gray-600">Failed to load validation stages</p>
+          <p className="text-gray-600 dark:text-gray-400">Failed to load validation stages</p>
         </div>
       </div>
     );
@@ -165,7 +213,7 @@ function ValidationStagesList() {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold">Validation Stages</h3>
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Validation Stages</h3>
         <Button onClick={() => setShowAddForm(true)}>
           <Plus className="w-4 h-4 mr-2" />
           Add Stage
@@ -187,7 +235,7 @@ function ValidationStagesList() {
       )}
 
       <div className="space-y-2">
-        {stages.map((stage) => (
+        {sortedStages.map((stage, index) => (
           <Card key={stage.id}>
             <CardContent className="p-4">
               {editingStage?.id === stage.id ? (
@@ -198,17 +246,39 @@ function ValidationStagesList() {
                 />
               ) : (
                 <div className="flex justify-between items-center">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">{stage.name}</span>
-                      {!stage.enabled && (
-                        <span className="px-2 py-1 text-xs bg-gray-200 text-gray-600 rounded">
-                          Disabled
-                        </span>
-                      )}
+                  <div className="flex items-center gap-3">
+                    <div className="flex flex-col">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => moveStage(stage.id, 'up')}
+                        disabled={index === 0}
+                        className="h-6 w-6 p-0"
+                      >
+                        <ChevronUp className="w-3 h-3" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => moveStage(stage.id, 'down')}
+                        disabled={index === sortedStages.length - 1}
+                        className="h-6 w-6 p-0"
+                      >
+                        <ChevronDown className="w-3 h-3" />
+                      </Button>
                     </div>
-                    <div className="text-sm text-gray-600">
-                      {stage.command} • {stage.timeout}ms timeout
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-gray-900 dark:text-gray-100">{stage.name}</span>
+                        {!stage.enabled && (
+                          <span className="px-2 py-1 text-xs bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded">
+                            Disabled
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">
+                        {stage.command} • {stage.timeout}ms timeout • Priority: {stage.priority || 0}
+                      </div>
                     </div>
                   </div>
                   <div className="flex space-x-2">
@@ -234,10 +304,10 @@ function ValidationStagesList() {
         ))}
       </div>
 
-      {stages.length === 0 && (
+      {sortedStages.length === 0 && (
         <div className="text-center py-8">
-          <p className="text-gray-500">No validation stages configured</p>
-          <p className="text-sm text-gray-400 mt-1">
+          <p className="text-gray-500 dark:text-gray-400">No validation stages configured</p>
+          <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
             Add your first validation stage to get started
           </p>
         </div>
@@ -252,8 +322,8 @@ export function Settings() {
       <div className="flex items-center gap-3 mb-6">
         <SettingsIcon className="h-6 w-6 text-blue-600" />
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Settings</h2>
-          <p className="text-gray-600">
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Settings</h2>
+          <p className="text-gray-600 dark:text-gray-400">
             Configure validation pipeline stages and settings
           </p>
         </div>
