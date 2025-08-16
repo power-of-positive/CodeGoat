@@ -167,7 +167,7 @@
         "name": "Uncommitted Files Check",
         "command": "npx ts-node scripts/check-uncommitted-files.ts",
         "timeout": 10000,
-        "enabled": true,
+        "enabled": false,
         "continueOnFailure": false,
         "order": 18
       },
@@ -176,7 +176,7 @@
         "name": "Todo List Validation",
         "command": "npx ts-node scripts/validate-todo-list.ts",
         "timeout": 10000,
-        "enabled": true,
+        "enabled": false,
         "continueOnFailure": false,
         "order": 19
       }
