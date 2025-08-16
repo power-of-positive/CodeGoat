@@ -83,7 +83,7 @@ function ValidationStageForm({
             checked={formData.enabled}
             onChange={(e) => setFormData(prev => ({ ...prev, enabled: e.target.checked }))}
           />
-          <span className="text-gray-900 dark:text-gray-100">Enabled</span>
+          <span className="text-gray-900">Enabled</span>
         </label>
 
         <label className="flex items-center space-x-2">
@@ -92,7 +92,7 @@ function ValidationStageForm({
             checked={formData.continueOnFailure}
             onChange={(e) => setFormData(prev => ({ ...prev, continueOnFailure: e.target.checked }))}
           />
-          <span className="text-gray-900 dark:text-gray-100">Continue on Failure</span>
+          <span className="text-gray-900">Continue on Failure</span>
         </label>
       </div>
 
@@ -204,7 +204,7 @@ function ValidationStagesList() {
       <div className="flex items-center justify-center p-8">
         <div className="text-center">
           <AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-2" />
-          <p className="text-gray-600 dark:text-gray-400">Failed to load validation stages</p>
+          <p className="text-gray-600">Failed to load validation stages</p>
         </div>
       </div>
     );
@@ -213,7 +213,7 @@ function ValidationStagesList() {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Validation Stages</h3>
+        <h3 className="text-lg font-semibold text-gray-900">Validation Stages</h3>
         <Button onClick={() => setShowAddForm(true)}>
           <Plus className="w-4 h-4 mr-2" />
           Add Stage
@@ -269,14 +269,14 @@ function ValidationStagesList() {
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="font-medium text-gray-900 dark:text-gray-100">{stage.name}</span>
+                        <span className="font-medium text-gray-900">{stage.name}</span>
                         {!stage.enabled && (
-                          <span className="px-2 py-1 text-xs bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded">
+                          <span className="px-2 py-1 text-xs bg-gray-200 text-gray-600 rounded">
                             Disabled
                           </span>
                         )}
                       </div>
-                      <div className="text-sm text-gray-600 dark:text-gray-400">
+                      <div className="text-sm text-gray-600">
                         {stage.command} • {stage.timeout}ms timeout • Priority: {stage.priority || 0}
                       </div>
                     </div>
@@ -306,8 +306,8 @@ function ValidationStagesList() {
 
       {sortedStages.length === 0 && (
         <div className="text-center py-8">
-          <p className="text-gray-500 dark:text-gray-400">No validation stages configured</p>
-          <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
+          <p className="text-gray-500">No validation stages configured</p>
+          <p className="text-sm text-gray-400 mt-1">
             Add your first validation stage to get started
           </p>
         </div>
@@ -322,8 +322,8 @@ export function Settings() {
       <div className="flex items-center gap-3 mb-6">
         <SettingsIcon className="h-6 w-6 text-blue-600" />
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Settings</h2>
-          <p className="text-gray-600 dark:text-gray-400">
+          <h2 className="text-2xl font-bold text-gray-900">Settings</h2>
+          <p className="text-gray-600">
             Configure validation pipeline stages and settings
           </p>
         </div>

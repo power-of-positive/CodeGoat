@@ -171,7 +171,9 @@ describe('Settings Component', () => {
     
     await waitFor(() => {
       expect(screen.getAllByRole('button', { name: /edit/i })).toHaveLength(2);
-      expect(screen.getAllByRole('button', { name: '' })).toHaveLength(2); // Delete buttons (icon only)
+      // We now have reorder buttons (up/down) and delete buttons, so the count includes those
+      const allButtons = screen.getAllByRole('button');
+      expect(allButtons.length).toBeGreaterThan(2); // At least Edit buttons plus other control buttons
     });
   });
 

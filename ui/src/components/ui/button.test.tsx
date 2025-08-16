@@ -8,14 +8,14 @@ describe('Button Component', () => {
     const button = screen.getByRole('button', { name: 'Click me' });
     
     expect(button).toBeInTheDocument();
-    expect(button).toHaveClass('bg-primary', 'text-primary-foreground', 'px-4', 'py-2');
+    expect(button).toHaveClass('bg-blue-600', 'text-white', 'px-4', 'py-2');
   });
 
   it('renders with outline variant', () => {
     render(<Button variant="outline">Outlined</Button>);
     const button = screen.getByRole('button', { name: 'Outlined' });
     
-    expect(button).toHaveClass('border', 'border-input', 'hover:bg-accent');
+    expect(button).toHaveClass('border', 'border-gray-300', 'hover:bg-gray-50');
   });
 
   it('renders with small size', () => {

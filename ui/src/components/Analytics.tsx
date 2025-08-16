@@ -38,8 +38,8 @@ function AnalyticsHeader({ refetch }: { refetch: () => void }) {
       <div className="flex items-center gap-3">
         <BarChart3 className="h-6 w-6 text-blue-600" />
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Validation Analytics</h2>
-          <p className="text-gray-600 dark:text-gray-400">
+          <h2 className="text-2xl font-bold text-gray-900">Validation Analytics</h2>
+          <p className="text-gray-600">
             Track validation pipeline performance and success rates
           </p>
         </div>
@@ -61,19 +61,19 @@ function MetricsSummary({ metrics }: { metrics: ValidationMetrics }) {
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-gray-700 dark:text-gray-300">Total Runs</CardTitle>
+          <CardTitle className="text-sm font-medium text-gray-700">Total Runs</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">{totalRuns}</div>
+          <div className="text-2xl font-bold text-gray-900">{totalRuns}</div>
         </CardContent>
       </Card>
       
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-gray-700 dark:text-gray-300">Success Rate</CardTitle>
+          <CardTitle className="text-sm font-medium text-gray-700">Success Rate</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+          <div className="text-2xl font-bold text-green-600">
             {(successRate * 100).toFixed(1)}%
           </div>
         </CardContent>
@@ -81,10 +81,10 @@ function MetricsSummary({ metrics }: { metrics: ValidationMetrics }) {
       
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-gray-700 dark:text-gray-300">Avg Duration</CardTitle>
+          <CardTitle className="text-sm font-medium text-gray-700">Avg Duration</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+          <div className="text-2xl font-bold text-gray-900">
             {(averageDuration / 1000).toFixed(1)}s
           </div>
         </CardContent>
@@ -106,7 +106,7 @@ function RecentRuns({ runs }: { runs: ValidationRun[] }) {
     <Card>
       <CardHeader>
         <div className="flex justify-between items-center">
-          <CardTitle className="text-gray-900 dark:text-gray-100">Recent Validation Runs</CardTitle>
+          <CardTitle className="text-gray-900">Recent Validation Runs</CardTitle>
           {totalPages > 1 && (
             <div className="flex items-center gap-2">
               <Button
@@ -117,7 +117,7 @@ function RecentRuns({ runs }: { runs: ValidationRun[] }) {
               >
                 Previous
               </Button>
-              <span className="text-sm text-gray-600 dark:text-gray-400">
+              <span className="text-sm text-gray-600">
                 {currentPage + 1} of {totalPages}
               </span>
               <Button
@@ -134,7 +134,7 @@ function RecentRuns({ runs }: { runs: ValidationRun[] }) {
       </CardHeader>
       <CardContent>
         {runs.length === 0 ? (
-          <p className="text-gray-500 dark:text-gray-400">No validation runs found</p>
+          <p className="text-gray-500">No validation runs found</p>
         ) : (
           <div className="space-y-2">
             {currentRuns.map((run) => {
@@ -144,10 +144,10 @@ function RecentRuns({ runs }: { runs: ValidationRun[] }) {
               return (
                 <div key={run.id}>
                   <div
-                    className={`p-3 rounded border-l-4 cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-800 ${
+                    className={`p-3 rounded border-l-4 cursor-pointer transition-colors hover:bg-gray-50 ${
                       run.success 
-                        ? 'border-green-500 bg-green-50 dark:bg-green-900/20' 
-                        : 'border-red-500 bg-red-50 dark:bg-red-900/20'
+                        ? 'border-green-500 bg-green-50' 
+                        : 'border-red-500 bg-red-50'
                     }`}
                     onClick={() => setExpandedRun(expandedRun === run.id ? null : run.id)}
                   >
@@ -159,19 +159,19 @@ function RecentRuns({ runs }: { runs: ValidationRun[] }) {
                           <AlertCircle className="w-4 h-4 text-red-500" />
                         )}
                         <div>
-                          <span className="font-medium text-gray-900 dark:text-gray-100">
+                          <span className="font-medium text-gray-900">
                             {run.stages.length} stages
                           </span>
-                          <div className="text-xs text-gray-600 dark:text-gray-400">
+                          <div className="text-xs text-gray-600">
                             {successfulStages} passed • {failedStages} failed
                           </div>
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="text-sm text-gray-500 dark:text-gray-400">
+                        <div className="text-sm text-gray-500">
                           {new Date(run.timestamp).toLocaleString()}
                         </div>
-                        <div className="text-xs text-gray-600 dark:text-gray-400">
+                        <div className="text-xs text-gray-600">
                           {(run.duration ? run.duration / 1000 : 0).toFixed(1)}s
                         </div>
                       </div>
@@ -179,8 +179,8 @@ function RecentRuns({ runs }: { runs: ValidationRun[] }) {
                   </div>
                   
                   {expandedRun === run.id && (
-                    <div className="mt-2 ml-4 p-3 bg-gray-50 dark:bg-gray-800 rounded border">
-                      <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">Stage Details</h4>
+                    <div className="mt-2 ml-4 p-3 bg-gray-50 rounded border">
+                      <h4 className="font-medium text-gray-900 mb-2">Stage Details</h4>
                       <div className="space-y-2">
                         {run.stages.map((stage, index) => (
                           <div key={`${stage.id}-${index}`} className="flex justify-between items-center py-1">
@@ -190,15 +190,15 @@ function RecentRuns({ runs }: { runs: ValidationRun[] }) {
                               ) : (
                                 <div className="w-2 h-2 bg-red-500 rounded-full" />
                               )}
-                              <span className="text-sm text-gray-900 dark:text-gray-100">
+                              <span className="text-sm text-gray-900">
                                 {stage.name || stage.id}
                               </span>
                             </div>
                             <div className="flex items-center gap-2 text-xs">
-                              <span className={stage.success ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
+                              <span className={stage.success ? 'text-green-600' : 'text-red-600'}>
                                 {stage.success ? 'PASS' : 'FAIL'}
                               </span>
-                              <span className="text-gray-500 dark:text-gray-400">
+                              <span className="text-gray-500">
                                 {(stage.duration / 1000).toFixed(1)}s
                               </span>
                             </div>
@@ -242,10 +242,10 @@ export function Analytics() {
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
               Failed to load analytics
             </h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-4">
+            <p className="text-gray-600 mb-4">
               There was an error loading the validation analytics data.
             </p>
             <Button onClick={() => refetch()}>
