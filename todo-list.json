@@ -1,5 +1,137 @@
 [
   {
+    "content": "Fix lint stage to properly fail on explicit 'any' return types - ESLint should catch this",
+    "status": "completed",
+    "priority": "high",
+    "id": "1"
+  },
+  {
+    "content": "Fix stages showing as disabled when they are actually enabled in settings.json",
+    "status": "completed",
+    "priority": "high",
+    "id": "2"
+  },
+  {
+    "content": "Investigate where validation run count data is coming from - should reflect actual runs",
+    "status": "completed",
+    "priority": "high",
+    "id": "3"
+  },
+  {
+    "content": "Remove 'test-stage' phantom stage - all stages should come from settings.json only",
+    "status": "completed",
+    "priority": "medium",
+    "id": "4"
+  },
+  {
+    "content": "Implement proper run logging and analysis from log files instead of mock data",
+    "status": "completed",
+    "priority": "high",
+    "id": "5"
+  },
+  {
+    "content": "Create stage management page with reordering, enabling/disabling, and field editing",
+    "status": "pending",
+    "priority": "medium",
+    "id": "6"
+  },
+  {
+    "content": "Create SQLite database schema for task management system",
+    "status": "pending",
+    "priority": "medium",
+    "id": "7"
+  },
+  {
+    "content": "Build task management UI page with CRUD operations for todo-list.json tasks",
+    "status": "pending",
+    "priority": "medium",
+    "id": "8"
+  },
+  {
+    "content": "Implement task management API endpoints with full CRUD functionality",
+    "status": "pending",
+    "priority": "medium",
+    "id": "9"
+  },
+  {
+    "content": "Update validate-todo-list.ts script to use API for checking incomplete tasks",
+    "status": "pending",
+    "priority": "medium",
+    "id": "10"
+  },
+  {
+    "content": "Create comprehensive unit tests for task management system",
+    "status": "pending",
+    "priority": "low",
+    "id": "11"
+  },
+  {
+    "content": "Build integration tests for task management API endpoints",
+    "status": "pending",
+    "priority": "low",
+    "id": "12"
+  },
+  {
+    "content": "Implement Playwright E2E tests for task management UI",
+    "status": "pending",
+    "priority": "low",
+    "id": "13"
+  },
+  {
+    "content": "Add display of 'continue on failure' information for each validation stage",
+    "status": "completed",
+    "priority": "medium",
+    "id": "14"
+  },
+  {
+    "content": "Add stage statistics and history viewing functionality",
+    "status": "pending",
+    "priority": "medium",
+    "id": "15"
+  },
+  {
+    "content": "Add task completion statistics and analytics dashboard",
+    "status": "pending",
+    "priority": "medium",
+    "id": "16"
+  },
+  {
+    "content": "Add BDD scenario linking system for completed tasks",
+    "status": "pending",
+    "priority": "low",
+    "id": "17"
+  },
+  {
+    "content": "Create BDD scenario execution history tracking and viewing",
+    "status": "pending",
+    "priority": "low",
+    "id": "18"
+  },
+  {
+    "content": "Build test suite execution history dashboard with overall statistics",
+    "status": "pending",
+    "priority": "low",
+    "id": "19"
+  },
+  {
+    "content": "Fix font colors on the settings page",
+    "status": "completed",
+    "priority": "medium",
+    "id": "20"
+  },
+  {
+    "content": "Add ability to re-order stages in settings page",
+    "status": "completed",
+    "priority": "medium",
+    "id": "21"
+  },
+  {
+    "content": "Investigate validation run logs storage and fix analytics data display",
+    "status": "completed",
+    "priority": "high",
+    "id": "22"
+  },
+  {
     "content": "Add commit message validation in pre-commit check to ensure task ID from todo-list.json",
     "status": "completed",
     "priority": "high",
@@ -33,6 +165,54 @@
     "duration": "0s"
   },
   {
+    "content": "Fix edit and add stage button colors in settings page",
+    "status": "completed",
+    "priority": "high",
+    "id": "27"
+  },
+  {
+    "content": "Fix input field font colors in edit form (should be black for light theme)",
+    "status": "completed",
+    "priority": "high",
+    "id": "28"
+  },
+  {
+    "content": "Fix save and cancel button font colors in settings forms",
+    "status": "completed",
+    "priority": "high",
+    "id": "29"
+  },
+  {
+    "content": "Fix pagination button colors in recent validation runs section",
+    "status": "completed",
+    "priority": "medium",
+    "id": "30"
+  },
+  {
+    "content": "Switch entire app to consistent light theme",
+    "status": "completed",
+    "priority": "high",
+    "id": "31"
+  },
+  {
+    "content": "Enable all currently disabled validation stages in settings.json",
+    "status": "completed",
+    "priority": "high",
+    "id": "32"
+  },
+  {
+    "content": "Fix validation issues raised by newly enabled stages one by one",
+    "status": "completed",
+    "priority": "high",
+    "id": "33"
+  },
+  {
+    "content": "Investigate why settings.json edit permissions don't work - security validation concern",
+    "status": "completed",
+    "priority": "high",
+    "id": "34"
+  },
+  {
     "content": "Add line charts for success rate tracking over time in analytics",
     "status": "completed",
     "priority": "medium",
@@ -55,15 +235,80 @@
   },
   {
     "content": "Verify and fix refresh button functionality in analytics page",
-    "status": "in_progress",
+    "status": "completed",
     "priority": "medium",
-    "id": "38",
-    "startTime": "2025-08-16T23:46:34+02:00"
+    "id": "38"
+  },
+  {
+    "content": "Re-enable frontend coverage check and fix coverage threshold issues",
+    "status": "completed",
+    "priority": "high",
+    "id": "39"
+  },
+  {
+    "content": "Re-enable uncommitted files check validation stage",
+    "status": "completed",
+    "priority": "high",
+    "id": "40"
   },
   {
     "content": "Re-enable todo list validation stage",
     "status": "completed",
     "priority": "high",
     "id": "41"
+  },
+  {
+    "content": "Fix time series charts to display historical data by day instead of empty charts",
+    "status": "pending",
+    "priority": "high",
+    "id": "42"
+  },
+  {
+    "content": "Fix pagination dropdown - selecting larger numbers should actually show more items per page",
+    "status": "pending",
+    "priority": "high",
+    "id": "43"
+  },
+  {
+    "content": "Investigate why validation runs history is limited - should show all past validation runs",
+    "status": "pending",
+    "priority": "high",
+    "id": "44"
+  },
+  {
+    "content": "Increase frontend coverage threshold to 80% and fix any coverage gaps",
+    "status": "pending",
+    "priority": "high",
+    "id": "45"
+  },
+  {
+    "content": "Fix Playwright E2E validation stage to properly fail when tests fail",
+    "status": "pending",
+    "priority": "high",
+    "id": "46"
+  },
+  {
+    "content": "Investigate and fix failing Playwright tests that should be blocking pipeline",
+    "status": "pending",
+    "priority": "high",
+    "id": "47"
+  },
+  {
+    "content": "Implement file permission enforcement to prevent editing of protected files",
+    "status": "pending",
+    "priority": "high",
+    "id": "48"
+  },
+  {
+    "content": "Add validation run log viewing - store and display all command outputs and errors",
+    "status": "pending",
+    "priority": "high",
+    "id": "49"
+  },
+  {
+    "content": "Make validation runs clickable to view detailed logs and stage outputs",
+    "status": "pending",
+    "priority": "high",
+    "id": "50"
   }
 ]
