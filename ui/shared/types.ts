@@ -101,7 +101,7 @@ export type JSONValue =
   | JSONValue[] 
   | { [key: string]: JSONValue };
 
-export type ApiResponse<T = any> = {
+export type ApiResponse<T = unknown> = {
   data: T;
   success: boolean;
   message?: string;
