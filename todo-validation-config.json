@@ -1,7 +1,7 @@
 {
   "maxUnfinishedTasks": 10,
   "allowedInProgressTasks": 3, 
-  "failOnExcess": true,
+  "failOnExcess": false,
   "ignoreOldTasks": true,
   "oldTaskThresholdDays": 30
 }

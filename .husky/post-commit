@@ -1,0 +1,11 @@
+#!/usr/bin/env sh
+set -e  # Exit immediately if any command fails
+
+echo "🐐 Checking for task references in commit message..."
+
+# Run the task update script after successful commit
+# This will automatically mark tasks as completed if commit has "codegoat" prefix
+# and mark tasks as in_progress for regular task references
+npx ts-node scripts/update-todo-from-commit.ts HEAD
+
+echo "✅ Task status update complete!"

@@ -1,15 +1,8 @@
-#!/usr/bin/env ts-node
+#!/usr/bin/env node
 
 /**
- * Update todo list from successful commit
- * 
- * This script automatically updates todo-list.json when a commit with a task ID
- * is successfully made. It extracts the task ID from the commit message and:
- * - Marks the task as completed
- * - Adds endTime timestamp
- * - Calculates duration if startTime exists
- * 
- * Expected commit message format: "Task XX: description" or "Task ID-XX: description"
+ * Update todo-list.json based on commit messages
+ * Automatically marks tasks as completed and tracks timing when commits contain "codegoat" prefix
  */
 
 import * as fs from 'fs';
@@ -21,176 +14,184 @@ interface TodoItem {
   status: 'pending' | 'in_progress' | 'completed';
   priority: 'high' | 'medium' | 'low';
   id: string;
+  assignee_id?: string;
   startTime?: string;
   endTime?: string;
   duration?: string;
 }
 
-const TODO_LIST_PATH = path.join(process.cwd(), 'todo-list.json');
-
-function getLatestCommitMessage(): string {
-  try {
-    return execSync('git log -1 --pretty=%B', { encoding: 'utf-8' }).trim();
-  } catch (error) {
-    console.error('Failed to get latest commit message:', error);
-    return '';
-  }
+interface CommitInfo {
+  hash: string;
+  message: string;
+  timestamp: string;
+  author: string;
 }
 
-function extractTaskId(commitMessage: string): string | null {
-  // Match patterns like "Task 55:", "Task ID-55:", "task 55:", etc.
-  const patterns = [
-    /^Task\s+(\d+):/i,
-    /^Task\s+ID-(\d+):/i,
-    /^(\d+):/,  // Just number followed by colon
-  ];
-  
-  for (const pattern of patterns) {
-    const match = commitMessage.match(pattern);
-    if (match && match[1]) {
-      return match[1];
-    }
-  }
-  
-  return null;
-}
+// Pattern to match codegoat prefix and extract task ID
+const CODEGOAT_PATTERN = /codegoat[:\s]+(?:task[:\s#]+)?(\d+)(?:\s|$)/i;
+const TASK_ID_PATTERN = /(?:task|fix|feat|chore|docs|style|refactor|test|build|ci|perf|revert)(?:\s*#?|\s*:?\s*)(\d+)/i;
 
-function loadTodoList(): TodoItem[] {
+function loadTodoList(todoListPath: string): TodoItem[] {
   try {
-    if (!fs.existsSync(TODO_LIST_PATH)) {
-      console.log('No todo-list.json found, creating empty list');
-      return [];
-    }
-    
-    const content = fs.readFileSync(TODO_LIST_PATH, 'utf-8');
-    const todos = JSON.parse(content);
-    
-    if (!Array.isArray(todos)) {
-      console.error('Invalid todo list format: expected array');
-      return [];
-    }
-    
-    return todos;
+    const content = fs.readFileSync(todoListPath, 'utf-8');
+    const data = JSON.parse(content);
+    return Array.isArray(data) ? data : [];
   } catch (error) {
-    console.error('Failed to load todo list:', error);
+    console.error(`❌ Could not load todo list from ${todoListPath}`);
     return [];
   }
 }
 
-function saveTodoList(todos: TodoItem[]): boolean {
+function saveTodoList(todoListPath: string, todos: TodoItem[]): void {
   try {
-    const content = JSON.stringify(todos, null, 2);
-    fs.writeFileSync(TODO_LIST_PATH, content, 'utf-8');
-    return true;
+    fs.writeFileSync(todoListPath, JSON.stringify(todos, null, 2) + '\n', 'utf-8');
+    console.log(`✅ Updated todo-list.json`);
   } catch (error) {
-    console.error('Failed to save todo list:', error);
-    return false;
+    console.error(`❌ Failed to save todo list: ${(error as Error).message}`);
+    throw error;
   }
+}
+
+function getCommitInfo(commitRef: string = 'HEAD'): CommitInfo {
+  try {
+    const hash = execSync(`git rev-parse ${commitRef}`, { encoding: 'utf-8' }).trim();
+    const message = execSync(`git log -1 --pretty=%B ${commitRef}`, { encoding: 'utf-8' }).trim();
+    const timestamp = execSync(`git log -1 --pretty=%aI ${commitRef}`, { encoding: 'utf-8' }).trim();
+    const author = execSync(`git log -1 --pretty=%an ${commitRef}`, { encoding: 'utf-8' }).trim();
+    
+    return { hash, message, timestamp, author };
+  } catch (error) {
+    console.error(`❌ Failed to get commit info: ${(error as Error).message}`);
+    throw error;
+  }
+}
+
+function extractTaskId(message: string, pattern: RegExp): string | null {
+  const match = message.match(pattern);
+  return match ? match[1] : null;
 }
 
 function calculateDuration(startTime: string, endTime: string): string {
+  const start = new Date(startTime).getTime();
+  const end = new Date(endTime).getTime();
+  const durationMs = end - start;
+  
+  if (durationMs < 0) return 'Invalid duration';
+  
+  const seconds = Math.floor(durationMs / 1000);
+  const minutes = Math.floor(seconds / 60);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+  
+  if (days > 0) {
+    return `${days}d ${hours % 24}h ${minutes % 60}m`;
+  } else if (hours > 0) {
+    return `${hours}h ${minutes % 60}m`;
+  } else if (minutes > 0) {
+    return `${minutes}m ${seconds % 60}s`;
+  } else {
+    return `${seconds}s`;
+  }
+}
+
+function findTaskStartTime(taskId: string): string | null {
   try {
-    const start = new Date(startTime);
-    const end = new Date(endTime);
-    const diffMs = end.getTime() - start.getTime();
+    // Search git log for when task was first marked as in_progress
+    const logOutput = execSync(
+      `git log --grep="task.*${taskId}" --grep="in_progress.*${taskId}" --pretty="%aI" --reverse`,
+      { encoding: 'utf-8' }
+    ).trim();
     
-    const diffMinutes = Math.floor(diffMs / (1000 * 60));
-    const diffHours = Math.floor(diffMinutes / 60);
-    const remainingMinutes = diffMinutes % 60;
-    
-    if (diffHours > 0) {
-      return remainingMinutes > 0 ? `${diffHours}h ${remainingMinutes}m` : `${diffHours}h`;
-    } else {
-      return `${diffMinutes}m`;
-    }
-  } catch (error) {
-    console.error('Failed to calculate duration:', error);
-    return '';
+    const timestamps = logOutput.split('\n').filter(Boolean);
+    return timestamps.length > 0 ? timestamps[0] : null;
+  } catch {
+    return null;
   }
 }
 
-function updateTodoItem(todos: TodoItem[], taskId: string): boolean {
-  const todoIndex = todos.findIndex(todo => todo.id === taskId);
+function updateTaskFromCommit(commitRef: string = 'HEAD'): void {
+  const todoListPath = path.join(process.cwd(), 'todo-list.json');
+  const todos = loadTodoList(todoListPath);
   
-  if (todoIndex === -1) {
-    console.log(`Task ${taskId} not found in todo list`);
-    return false;
-  }
-  
-  const todo = todos[todoIndex];
-  
-  // Only update if task is not already completed
-  if (todo.status === 'completed') {
-    console.log(`Task ${taskId} is already completed`);
-    return false;
-  }
-  
-  const endTime = new Date().toISOString();
-  
-  // Update the todo item
-  todos[todoIndex] = {
-    ...todo,
-    status: 'completed',
-    endTime: endTime,
-    duration: todo.startTime ? calculateDuration(todo.startTime, endTime) : undefined
-  };
-  
-  console.log(`✅ Marked task ${taskId} as completed`);
-  console.log(`   Task: ${todo.content}`);
-  if (todo.startTime) {
-    console.log(`   Duration: ${todos[todoIndex].duration}`);
-  }
-  
-  return true;
-}
-
-function main(): void {
-  console.log('🔄 Checking for task completion from commit...');
-  
-  const commitMessage = getLatestCommitMessage();
-  if (!commitMessage) {
-    console.log('No commit message found');
-    return;
-  }
-  
-  console.log(`📝 Commit message: ${commitMessage.split('\\n')[0]}`);
-  
-  const taskId = extractTaskId(commitMessage);
-  if (!taskId) {
-    console.log('No task ID found in commit message');
-    console.log('ℹ️  To enable automatic todo updates, use format: "Task XX: description"');
-    return;
-  }
-  
-  console.log(`🎯 Found task ID: ${taskId}`);
-  
-  const todos = loadTodoList();
   if (todos.length === 0) {
-    console.log('No todos found to update');
+    console.log('⚠️  No todos found in todo-list.json');
     return;
   }
   
-  const updated = updateTodoItem(todos, taskId);
-  if (updated) {
-    const saved = saveTodoList(todos);
-    if (saved) {
-      console.log('💾 Todo list updated successfully');
-      
-      // Get updated stats
-      const completed = todos.filter(t => t.status === 'completed').length;
-      const total = todos.length;
-      const percentage = Math.round((completed / total) * 100);
-      
-      console.log(`📊 Progress: ${completed}/${total} tasks completed (${percentage}%)`);
-    } else {
-      console.error('❌ Failed to save todo list');
+  const commit = getCommitInfo(commitRef);
+  console.log(`🔍 Processing commit: ${commit.hash.substring(0, 7)}`);
+  console.log(`📝 Message: ${commit.message.split('\n')[0]}`);
+  
+  // Check if commit has codegoat prefix
+  const codegoatTaskId = extractTaskId(commit.message, CODEGOAT_PATTERN);
+  
+  if (codegoatTaskId) {
+    console.log(`🐐 Found codegoat task reference: ${codegoatTaskId}`);
+    
+    const task = todos.find(t => t.id === codegoatTaskId);
+    if (!task) {
+      console.error(`❌ Task ${codegoatTaskId} not found in todo-list.json`);
+      return;
+    }
+    
+    // Mark task as completed
+    task.status = 'completed';
+    task.endTime = commit.timestamp;
+    
+    // Try to find start time
+    if (!task.startTime) {
+      const startTime = findTaskStartTime(codegoatTaskId);
+      if (startTime) {
+        task.startTime = startTime;
+      } else {
+        // Use a reasonable default (1 hour before completion)
+        const endDate = new Date(commit.timestamp);
+        endDate.setHours(endDate.getHours() - 1);
+        task.startTime = endDate.toISOString();
+      }
+    }
+    
+    // Calculate duration
+    if (task.startTime && task.endTime) {
+      task.duration = calculateDuration(task.startTime, task.endTime);
+    }
+    
+    console.log(`✅ Marked task ${codegoatTaskId} as completed`);
+    console.log(`   Content: ${task.content.substring(0, 60)}...`);
+    console.log(`   Duration: ${task.duration || 'Unknown'}`);
+    
+    saveTodoList(todoListPath, todos);
+  } else {
+    // Check for regular task reference to update status to in_progress
+    const taskId = extractTaskId(commit.message, TASK_ID_PATTERN);
+    if (taskId) {
+      const task = todos.find(t => t.id === taskId);
+      if (task && task.status === 'pending') {
+        task.status = 'in_progress';
+        task.startTime = commit.timestamp;
+        console.log(`🔄 Marked task ${taskId} as in_progress`);
+        saveTodoList(todoListPath, todos);
+      }
     }
   }
 }
 
-// Run the script
+// Support running as a git hook or standalone
+function main(): void {
+  const args = process.argv.slice(2);
+  const commitRef = args[0] || 'HEAD';
+  
+  try {
+    updateTaskFromCommit(commitRef);
+  } catch (error) {
+    console.error(`❌ Error: ${(error as Error).message}`);
+    // Don't exit with error code to avoid blocking commits
+    process.exit(0);
+  }
+}
+
 if (require.main === module) {
   main();
 }
 
-export { extractTaskId, updateTodoItem, calculateDuration };
+export { updateTaskFromCommit, calculateDuration, extractTaskId };
