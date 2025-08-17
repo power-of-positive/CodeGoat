@@ -12,6 +12,7 @@ import { execSync } from "child_process";
 import * as process from "process";
 import { config } from "dotenv";
 import * as path from "path";
+import * as fs from "fs";
 import {
   performCodeReview,
   shouldBlockClaude,
@@ -50,6 +51,119 @@ if (process.env.OPENAI_API_KEY) {
   console.log("🔧 OPENAI_API_KEY is loaded");
 } else {
   console.log("🔧 OPENAI_API_KEY is NOT loaded");
+}
+
+// Todo list interfaces
+interface TodoItem {
+  content: string;
+  status: 'pending' | 'in_progress' | 'completed';
+  priority: 'high' | 'medium' | 'low';
+  id: string;
+  startTime?: string;
+  endTime?: string;
+  duration?: string;
+}
+
+/**
+ * Load todo list from JSON file
+ */
+function loadTodoList(): TodoItem[] {
+  const todoListPath = path.join(process.cwd(), 'todo-list.json');
+  try {
+    if (fs.existsSync(todoListPath)) {
+      const content = fs.readFileSync(todoListPath, 'utf-8');
+      const data = JSON.parse(content);
+      return Array.isArray(data) ? data : [];
+    }
+  } catch (error) {
+    console.error('❌ Failed to load todo list:', error);
+  }
+  return [];
+}
+
+/**
+ * Save todo list to JSON file
+ */
+function saveTodoList(todos: TodoItem[]): void {
+  const todoListPath = path.join(process.cwd(), 'todo-list.json');
+  try {
+    fs.writeFileSync(todoListPath, JSON.stringify(todos, null, 2));
+  } catch (error) {
+    console.error('❌ Failed to save todo list:', error);
+  }
+}
+
+/**
+ * Get the next highest priority pending task
+ */
+function getNextPendingTask(todos: TodoItem[]): TodoItem | null {
+  const priorityOrder = ['high', 'medium', 'low'] as const;
+  
+  for (const priority of priorityOrder) {
+    const pendingTask = todos.find(
+      todo => todo.priority === priority && todo.status === 'pending'
+    );
+    if (pendingTask) {
+      return pendingTask;
+    }
+  }
+  
+  return null;
+}
+
+/**
+ * Check todo list status and manage task assignment
+ */
+function checkTodoListStatus(): { shouldBlock: boolean; reason: string; nextTask?: TodoItem } {
+  console.error('📋 Checking todo list status...');
+  
+  const todos = loadTodoList();
+  if (todos.length === 0) {
+    console.error('✅ No todo list found - allowing completion');
+    return { shouldBlock: false, reason: '' };
+  }
+  
+  const inProgressTasks = todos.filter(todo => todo.status === 'in_progress');
+  const pendingTasks = todos.filter(todo => todo.status === 'pending');
+  const highPriorityPending = pendingTasks.filter(todo => todo.priority === 'high');
+  
+  console.error(`📊 Todo status: ${inProgressTasks.length} in-progress, ${pendingTasks.length} pending (${highPriorityPending.length} high priority)`);
+  
+  // If there are in-progress tasks, provide feedback about them
+  if (inProgressTasks.length > 0) {
+    console.error('🔄 Found in-progress tasks:');
+    inProgressTasks.forEach(task => {
+      console.error(`   • [${task.priority}] ${task.content} (ID: ${task.id})`);
+    });
+    
+    return {
+      shouldBlock: true,
+      reason: `${inProgressTasks.length} task(s) are currently in progress. Please complete them before stopping: ${inProgressTasks.map(t => `#${t.id}`).join(', ')}`
+    };
+  }
+  
+  // If no in-progress tasks but there are pending ones, auto-assign the next one
+  if (pendingTasks.length > 0) {
+    const nextTask = getNextPendingTask(todos);
+    if (nextTask) {
+      // Auto-assign the next task
+      nextTask.status = 'in_progress';
+      nextTask.startTime = new Date().toISOString();
+      saveTodoList(todos);
+      
+      console.error(`🎯 Auto-assigned next task: [${nextTask.priority}] ${nextTask.content} (ID: ${nextTask.id})`);
+      
+      return {
+        shouldBlock: true,
+        reason: `Auto-assigned next pending task (#${nextTask.id}): ${nextTask.content}. Please work on this task before stopping.`,
+        nextTask
+      };
+    }
+  }
+  
+  // All tasks completed
+  console.error('🎉 All tasks are completed!');
+  return { shouldBlock: false, reason: '' };
 }
 
 /**
@@ -179,6 +293,19 @@ async function main(): Promise<void> {
         decision: "block",
         reason:
           "Uncommitted files detected. Please commit or stash changes before completing.",
+      };
+      console.log(JSON.stringify(blockResult));
+      process.exit(2);
+    }
+
+    // Second check: Todo list validation and task management
+    const todoStatus = checkTodoListStatus();
+    if (todoStatus.shouldBlock) {
+      console.error("⚠️ Todo list check failed - blocking completion");
+      console.error("💡 Complete your assigned tasks before stopping");
+      const blockResult = {
+        decision: "block",
+        reason: todoStatus.reason,
       };
       console.log(JSON.stringify(blockResult));
       process.exit(2);
