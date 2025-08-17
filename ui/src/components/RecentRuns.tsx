@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { AlertCircle, ChevronDown, ChevronRight, FileText } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { AlertCircle, ChevronDown, ChevronRight, FileText, ExternalLink } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { ValidationRun, ValidationStageResult } from '../../shared/types';
@@ -241,6 +242,7 @@ function ValidationRunItem({
   isExpanded: boolean;
   onToggleExpand: () => void;
 }) {
+  const navigate = useNavigate();
   const successfulStages = run.stages.filter(stage => stage.success).length;
   const failedStages = run.stages.length - successfulStages;
   
@@ -270,13 +272,27 @@ function ValidationRunItem({
               </div>
             </div>
           </div>
-          <div className="text-right">
-            <div className="text-sm text-gray-500">
-              {new Date(run.timestamp).toLocaleString()}
+          <div className="flex items-center gap-3">
+            <div className="text-right">
+              <div className="text-sm text-gray-500">
+                {new Date(run.timestamp).toLocaleString()}
+              </div>
+              <div className="text-xs text-gray-600">
+                {(run.duration ? run.duration / 1000 : 0).toFixed(1)}s
+              </div>
             </div>
-            <div className="text-xs text-gray-600">
-              {(run.duration ? run.duration / 1000 : 0).toFixed(1)}s
-            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(`/validation-run/${run.id}`);
+              }}
+              className="flex items-center gap-2"
+            >
+              <ExternalLink className="w-3 h-3" />
+              View Details
+            </Button>
           </div>
         </div>
       </div>

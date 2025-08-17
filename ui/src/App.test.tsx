@@ -12,6 +12,10 @@ jest.mock('./components/Settings', () => ({
   Settings: () => <div>Settings Page</div>,
 }));
 
+jest.mock('./components/ValidationRunDetail', () => ({
+  ValidationRunDetail: () => <div>Validation Run Detail Page</div>,
+}));
+
 // Mock react-router-dom
 jest.mock('react-router-dom', () => ({
   BrowserRouter: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
@@ -19,6 +23,8 @@ jest.mock('react-router-dom', () => ({
   Route: ({ element }: { element: React.ReactNode }) => <div>{element}</div>,
   Navigate: () => <div>Navigate to analytics</div>,
   useLocation: () => ({ pathname: '/analytics' }),
+  useParams: () => ({ runId: 'test-run-123' }),
+  useNavigate: () => jest.fn(),
   Link: ({ children, to }: { children: React.ReactNode; to: string }) => <a href={to}>{children}</a>,
 }));
 
