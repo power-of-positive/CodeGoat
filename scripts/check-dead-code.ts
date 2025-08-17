@@ -59,7 +59,7 @@ function loadConfig(): DeadCodeConfig {
     try {
       const configData = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
       return { ...DEFAULT_CONFIG, ...configData };
-    } catch (error) {
+    } catch {
       console.warn('⚠️  Failed to load dead code config, using defaults');
       return DEFAULT_CONFIG;
     }
@@ -208,15 +208,16 @@ function runDeadCodeDetection(): void {
       console.log('\n✅ Dead code detection passed');
     }
     
-  } catch (error: any) {
+  } catch (error: unknown) {
     // ts-prune returns exit code 0 even when it finds unused exports
     // Only fail on actual execution errors
-    if (error.status && error.status !== 0) {
-      console.error('❌ Failed to run dead code detection:', error.message);
+    const execError = error as { status?: number; message?: string; stdout?: string };
+    if (execError.status && execError.status !== 0) {
+      console.error('❌ Failed to run dead code detection:', execError.message);
       process.exit(1);
     } else {
       // Handle case where ts-prune found issues but we still got the output
-      const output = error.stdout || '';
+      const output = execError.stdout || '';
       if (output.trim()) {
         const allExports = parseUnusedExports(output);
         const filteredExports = allExports.filter(exp => 
