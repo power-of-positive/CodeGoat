@@ -181,6 +181,38 @@ model ExecutionMetric {
   @@map("execution_metrics")
 }
 
+// Todo tasks (Simple task management from todo-list.json)
+model TodoTask {
+  id          String        @id
+  content     String
+  status      TodoStatus    @default(PENDING)
+  priority    TodoPriority  @default(MEDIUM)
+  startTime   DateTime?     @map("start_time")
+  endTime     DateTime?     @map("end_time")
+  duration    String?       // Human-readable duration like "1h 30m"
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+  
+  validationRuns ValidationRun[]
+  
+  @@map("todo_tasks")
+}
+
+// Validation runs (Associated with todo tasks)
+model ValidationRun {
+  id          String    @id @default(uuid())
+  todoTaskId  String?   @map("todo_task_id")
+  timestamp   DateTime  @default(now())
+  success     Boolean
+  duration    Int       // Duration in milliseconds
+  stages      String    // JSON array of ValidationStageResult stored as string
+  createdAt   DateTime  @default(now()) @map("created_at")
+  
+  todoTask    TodoTask? @relation(fields: [todoTaskId], references: [id], onDelete: SetNull)
+  
+  @@map("validation_runs")
+}
+
 // Enums
 enum TaskStatus {
   TODO        @map("todo")
@@ -223,4 +255,16 @@ enum ProcessStatus {
 enum LogStream {
   STDOUT @map("stdout")
   STDERR @map("stderr")
+}
+
+enum TodoStatus {
+  PENDING     @map("pending")
+  IN_PROGRESS @map("in_progress")
+  COMPLETED   @map("completed")
+}
+
+enum TodoPriority {
+  LOW    @map("low")
+  MEDIUM @map("medium")
+  HIGH   @map("high")
 }
