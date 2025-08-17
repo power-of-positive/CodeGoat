@@ -63,6 +63,7 @@
   },
   "dependencies": {
     "express": "^5.1.0",
+    "openai": "^5.12.2",
     "winston": "^3.17.0",
     "zod": "^4.0.17"
   },
