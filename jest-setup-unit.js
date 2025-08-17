@@ -4,7 +4,7 @@ require('events').EventEmitter.defaultMaxListeners = 50;
 
 // Suppress specific warnings that don't indicate actual test failures
 const originalEmit = process.emit;
-process.emit = function (name, data, ...args) {
+process.emit = function (name, data) {
   if (name === 'warning' && data.name === 'MaxListenersExceededWarning') {
     return false;
   }

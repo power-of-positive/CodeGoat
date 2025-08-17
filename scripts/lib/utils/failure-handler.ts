@@ -20,7 +20,7 @@ export interface FailureReport {
  * Create a structured failure handler
  */
 export function createFailureHandler(): {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
+   
   addFailure: (failure: CheckFailure) => void;
   getReport: () => FailureReport;
   hasFailures: () => boolean;

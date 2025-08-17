@@ -27,7 +27,7 @@ export function validateStagedFiles(
  * Check runner type definition
  */
 export interface CheckRunner {
-  // eslint-disable-next-line no-unused-vars
+   
   (projectRoot: string): {
     success: boolean;
     output: string;

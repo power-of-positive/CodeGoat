@@ -47,13 +47,8 @@ async function getFileContent(filePath) {
   }
 }
 
-async function reviewCode(filePath, content) {
-  if (!CONFIG.openaiApiKey) {
-    console.warn('No API key configured for AI code reviewer');
-    return { reviews: [], blocked: false };
-  }
-
-  const prompt = `You are an expert code reviewer. Review this ${path.extname(filePath)} file and provide feedback in JSON format.
+function createReviewPrompt(filePath, content) {
+  return `You are an expert code reviewer. Review this ${path.extname(filePath)} file and provide feedback in JSON format.
 
 File: ${filePath}
 Content:
@@ -84,67 +79,84 @@ Return a JSON object with this structure:
 }
 
 Focus on actionable feedback. Only flag real issues, not nitpicks.`;
+}
+
+async function callAIReviewAPI(prompt) {
+  const response = await fetch(`${CONFIG.apiEndpoint}/chat/completions`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${CONFIG.openaiApiKey}`,
+      'HTTP-Referer': 'https://github.com/codegoat',
+      'X-Title': 'CodeGoat AI Code Reviewer'
+    },
+    body: JSON.stringify({
+      model: CONFIG.model,
+      messages: [
+        {
+          role: 'system',
+          content: 'You are an expert code reviewer. Always respond with valid JSON only.'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      temperature: 0.1,
+      max_tokens: 2000
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+function parseReviewResponse(reviewText) {
+  if (!reviewText) {
+    throw new Error('No response from AI reviewer');
+  }
+
+  const jsonMatch = reviewText.match(/```(?:json)?\s*(\{[\s\S]*\})\s*```/) || reviewText.match(/(\{[\s\S]*\})/);
+  const jsonStr = jsonMatch ? jsonMatch[1] : reviewText;
+  
+  const reviewData = JSON.parse(jsonStr);
+  
+  if (!reviewData.reviews || !Array.isArray(reviewData.reviews)) {
+    throw new Error('Invalid review format: missing reviews array');
+  }
+
+  return reviewData;
+}
+
+function createErrorReview(filePath, error) {
+  return { 
+    reviews: [{
+      line: null,
+      severity: 'info',
+      category: 'system',
+      message: `AI review failed: ${error.message}`
+    }],
+    summary: 'Review failed due to technical issue'
+  };
+}
+
+async function reviewCode(filePath, content) {
+  if (!CONFIG.openaiApiKey) {
+    console.warn('No API key configured for AI code reviewer');
+    return { reviews: [], blocked: false };
+  }
 
   try {
-    const response = await fetch(`${CONFIG.apiEndpoint}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${CONFIG.openaiApiKey}`,
-        'HTTP-Referer': 'https://github.com/codegoat',
-        'X-Title': 'CodeGoat AI Code Reviewer'
-      },
-      body: JSON.stringify({
-        model: CONFIG.model,
-        messages: [
-          {
-            role: 'system',
-            content: 'You are an expert code reviewer. Always respond with valid JSON only.'
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        temperature: 0.1,
-        max_tokens: 2000
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`API request failed: ${response.status} ${response.statusText}`);
-    }
-
-    const data = await response.json();
+    const prompt = createReviewPrompt(filePath, content);
+    const data = await callAIReviewAPI(prompt);
     const reviewText = data.choices?.[0]?.message?.content;
-    
-    if (!reviewText) {
-      throw new Error('No response from AI reviewer');
-    }
-
-    // Extract JSON from response (sometimes AI wraps it in markdown)
-    const jsonMatch = reviewText.match(/```(?:json)?\s*(\{[\s\S]*\})\s*```/) || reviewText.match(/(\{[\s\S]*\})/);
-    const jsonStr = jsonMatch ? jsonMatch[1] : reviewText;
-    
-    const reviewData = JSON.parse(jsonStr);
-    
-    // Validate structure
-    if (!reviewData.reviews || !Array.isArray(reviewData.reviews)) {
-      throw new Error('Invalid review format: missing reviews array');
-    }
-
-    return reviewData;
+    return parseReviewResponse(reviewText);
   } catch (error) {
     console.warn(`AI review failed for ${filePath}:`, error.message);
-    return { 
-      reviews: [{
-        line: null,
-        severity: 'info',
-        category: 'system',
-        message: `AI review failed: ${error.message}`
-      }],
-      summary: 'Review failed due to technical issue'
-    };
+    return createErrorReview(filePath, error);
   }
 }
 

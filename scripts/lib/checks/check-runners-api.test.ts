@@ -55,7 +55,7 @@ describe("check-runners API E2E", () => {
         close: vi.fn((callback?: () => void) => {
           if (callback) callback();
         }),
-        // eslint-disable-next-line no-unused-vars
+         
         on: vi.fn((event: string, callback: (err?: Error) => void) => {
           if (event === "error") {
             setTimeout(() => callback(new Error("Port error")), 0);
