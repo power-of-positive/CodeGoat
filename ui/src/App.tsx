@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Analytics } from './components/Analytics';
 import { Settings } from './components/Settings';
 import { ValidationRunDetail } from './components/ValidationRunDetail';
+import { TaskBoard } from './components/TaskBoard';
 import { Layout } from './components/Layout';
 
 const queryClient = new QueryClient({
@@ -23,6 +24,7 @@ function App(): React.JSX.Element {
           <Routes>
             <Route path="/" element={<Navigate to="/analytics" replace />} />
             <Route path="/analytics" element={<Analytics />} />
+            <Route path="/tasks" element={<TaskBoard />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/validation-run/:runId" element={<ValidationRunDetail />} />
           </Routes>

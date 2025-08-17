@@ -16,6 +16,10 @@ jest.mock('./components/ValidationRunDetail', () => ({
   ValidationRunDetail: () => <div>Validation Run Detail Page</div>,
 }));
 
+jest.mock('./components/TaskBoard', () => ({
+  TaskBoard: () => <div>Task Board Page</div>,
+}));
+
 // Mock react-router-dom
 jest.mock('react-router-dom', () => ({
   BrowserRouter: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,

@@ -113,3 +113,14 @@ export interface APIError {
   details?: JSONValue;
 }
 
+// Task management types
+export interface Task {
+  id: string;
+  content: string;
+  status: 'pending' | 'in_progress' | 'completed';
+  priority: 'low' | 'medium' | 'high';
+  startTime?: string;
+  endTime?: string;
+  duration?: string;
+}
+

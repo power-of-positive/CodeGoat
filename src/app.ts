@@ -3,6 +3,7 @@ import path from 'path';
 import { WinstonLogger } from './logger-winston';
 import { createSettingsRoutes } from './routes/settings';
 import { createAnalyticsRoutes } from './routes/analytics';
+import { createTaskRoutes } from './routes/tasks';
 
 export function createApp() {
   const app = express();
@@ -111,6 +112,7 @@ export function createApp() {
   // Mount API routes
   app.use('/api/settings', createSettingsRoutes(logger));
   app.use('/api/analytics', createAnalyticsRoutes(logger));
+  app.use('/api/tasks', createTaskRoutes(logger));
 
   // Health check endpoint
   app.get('/health', (_req: Request, res: Response) => {

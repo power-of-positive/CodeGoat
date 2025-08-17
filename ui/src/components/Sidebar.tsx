@@ -5,7 +5,8 @@ import {
   Settings, 
   Menu, 
   X,
-  Activity
+  Activity,
+  CheckSquare
 } from 'lucide-react';
 import { Button } from './ui/button';
 
@@ -26,6 +27,12 @@ const navItems: NavItem[] = [
     icon: ChartColumn,
     label: 'Analytics',
     description: 'View validation metrics and performance data'
+  },
+  {
+    href: '/tasks',
+    icon: CheckSquare,
+    label: 'Tasks',
+    description: 'Manage tasks with kanban-style board'
   },
   {
     href: '/settings',

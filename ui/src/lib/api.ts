@@ -8,6 +8,7 @@ import {
   ValidationStageResult,
   UserSystemInfo,
   ThemeMode,
+  Task,
 } from '../../shared/types';
 
 // Internal API response types
@@ -186,4 +187,29 @@ export const configApi = {
 // Legacy GitHub auth API (no-op for simplified version)
 export const githubAuthApi = {
   checkGithubToken: async (): Promise<{ valid: boolean; data: null }> => ({ valid: false, data: null }),
+};
+
+// Task management API
+export const taskApi = {
+  getTasks: (): Promise<Task[]> => 
+    fetch('/todo-list.json')
+      .then(response => response.json())
+      .catch(() => []), // Return empty array if file doesn't exist
+  
+  createTask: (task: Omit<Task, 'id'>): Promise<Task> => 
+    request('/api/tasks', {
+      method: 'POST',
+      body: JSON.stringify(task),
+    }),
+  
+  updateTask: (id: string, updates: Partial<Task>): Promise<Task> => 
+    request(`/api/tasks/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    }),
+  
+  deleteTask: (id: string): Promise<void> => 
+    request(`/api/tasks/${id}`, {
+      method: 'DELETE',
+    }),
 };
