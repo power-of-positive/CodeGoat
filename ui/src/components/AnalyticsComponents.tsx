@@ -1,10 +1,32 @@
 import React, { useState } from 'react';
-import { BarChart3, Activity, ChevronDown, ChevronRight, FileText } from 'lucide-react';
+import { BarChart3, Activity, ChevronDown, ChevronRight, FileText, Loader2, CheckCircle } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { ValidationMetrics, ValidationStageResult } from '../../shared/types';
 
 export function AnalyticsHeader({ refetch }: { refetch: () => void }) {
+  const [isLoading, setIsLoading] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+
+  const handleRefresh = async () => {
+    setIsLoading(true);
+    setShowSuccess(false);
+    
+    try {
+      await refetch();
+      setShowSuccess(true);
+      
+      // Hide success notification after 2 seconds
+      setTimeout(() => {
+        setShowSuccess(false);
+      }, 2000);
+    } catch (error) {
+      console.error('Refresh failed:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="flex items-center justify-between mb-6">
       <div className="flex items-center gap-3">
@@ -16,10 +38,27 @@ export function AnalyticsHeader({ refetch }: { refetch: () => void }) {
           </p>
         </div>
       </div>
-      <Button onClick={() => refetch()} variant="outline" size="sm">
-        <Activity className="h-4 w-4 mr-2" />
-        Refresh
-      </Button>
+      <div className="flex items-center gap-2">
+        {showSuccess && (
+          <div className="flex items-center gap-1 text-green-600 text-sm font-medium">
+            <CheckCircle className="h-4 w-4" />
+            Updated
+          </div>
+        )}
+        <Button 
+          onClick={handleRefresh} 
+          variant="outline" 
+          size="sm"
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          ) : (
+            <Activity className="h-4 w-4 mr-2" />
+          )}
+          {isLoading ? 'Refreshing...' : 'Refresh'}
+        </Button>
+      </div>
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { AnalyticsHeader, MetricsSummary, StageDetail } from './AnalyticsComponents';
 import { ValidationMetrics, ValidationStageResult } from '../../shared/types';
@@ -15,12 +15,88 @@ describe('AnalyticsComponents', () => {
       expect(screen.getByRole('button', { name: /refresh/i })).toBeInTheDocument();
     });
 
-    it('should call refetch when refresh button is clicked', () => {
-      const mockRefetch = jest.fn();
+    it('should call refetch when refresh button is clicked', async () => {
+      const mockRefetch = jest.fn().mockResolvedValue(undefined);
       render(<AnalyticsHeader refetch={mockRefetch} />);
       
-      fireEvent.click(screen.getByRole('button', { name: /refresh/i }));
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /refresh/i }));
+      });
+      
       expect(mockRefetch).toHaveBeenCalledTimes(1);
+      
+      // Wait for loading state to complete
+      await waitFor(() => {
+        expect(screen.queryByText('Refreshing...')).not.toBeInTheDocument();
+      });
+    });
+
+    it('should show loading state and success notification', async () => {
+      let resolveRefetch: () => void;
+      const mockRefetch = jest.fn().mockImplementation(() => 
+        new Promise<void>((resolve) => {
+          resolveRefetch = resolve;
+        })
+      );
+      
+      render(<AnalyticsHeader refetch={mockRefetch} />);
+      
+      const refreshButton = screen.getByRole('button', { name: /refresh/i });
+      
+      // Click the button but don't resolve the promise yet
+      fireEvent.click(refreshButton);
+      
+      // Should show loading state immediately
+      expect(screen.getByText('Refreshing...')).toBeInTheDocument();
+      expect(refreshButton).toBeDisabled();
+      
+      // Now resolve the promise
+      await act(async () => {
+        resolveRefetch();
+      });
+      
+      // Wait for success notification
+      await waitFor(() => {
+        expect(screen.getByText('Updated')).toBeInTheDocument();
+      });
+      
+      expect(screen.getByText('Refresh')).toBeInTheDocument();
+      expect(refreshButton).not.toBeDisabled();
+    });
+
+    it('should handle refresh errors gracefully', async () => {
+      let rejectRefetch: (error: Error) => void;
+      const mockRefetch = jest.fn().mockImplementation(() => 
+        new Promise<void>((_, reject) => {
+          rejectRefetch = reject;
+        })
+      );
+      
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      
+      render(<AnalyticsHeader refetch={mockRefetch} />);
+      
+      const refreshButton = screen.getByRole('button', { name: /refresh/i });
+      
+      // Click the button but don't reject the promise yet
+      fireEvent.click(refreshButton);
+      
+      // Should show loading state
+      expect(screen.getByText('Refreshing...')).toBeInTheDocument();
+      
+      // Now reject the promise
+      await act(async () => {
+        rejectRefetch(new Error('Refresh failed'));
+      });
+      
+      // Wait for error handling
+      await waitFor(() => {
+        expect(screen.getByText('Refresh')).toBeInTheDocument();
+        expect(refreshButton).not.toBeDisabled();
+      });
+      
+      expect(consoleSpy).toHaveBeenCalledWith('Refresh failed:', expect.any(Error));
+      consoleSpy.mockRestore();
     });
   });
 
