@@ -7,6 +7,7 @@ import { LogCleaner } from './utils/log-cleaner';
 import { createSettingsRoutes } from './routes/settings';
 import { createAnalyticsRoutes } from './routes/analytics';
 import { createTaskRoutes } from './routes/tasks';
+import { createPermissionRoutes } from './routes/permissions';
 
 const app = express();
 
@@ -126,6 +127,7 @@ app.use('/ui', express.static(uiDistPath));
 app.use('/api/settings', createSettingsRoutes(logger));
 app.use('/api/analytics', createAnalyticsRoutes(logger));
 app.use('/api/tasks', createTaskRoutes(logger));
+app.use('/api/permissions', createPermissionRoutes(logger));
 
 // Health check endpoint
 app.get('/health', (_req: Request, res: Response) => {

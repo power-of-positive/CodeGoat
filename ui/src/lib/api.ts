@@ -9,6 +9,10 @@ import {
   UserSystemInfo,
   ThemeMode,
   Task,
+  PermissionRule,
+  PermissionConfig,
+  ActionType,
+  PermissionScope,
 } from '../../shared/types';
 
 // Internal API response types
@@ -212,4 +216,45 @@ export const taskApi = {
     request(`/api/tasks/${id}`, {
       method: 'DELETE',
     }),
+};
+
+// Permission management API
+export const permissionApi = {
+  getConfig: (): Promise<PermissionConfig> => 
+    request('/permissions/config'),
+  
+  updateConfig: (config: Partial<PermissionConfig>): Promise<PermissionConfig> => 
+    request('/permissions/config', {
+      method: 'PUT',
+      body: JSON.stringify(config),
+    }),
+  
+  getRules: (): Promise<PermissionRule[]> => 
+    request('/permissions/rules'),
+  
+  createRule: (rule: Omit<PermissionRule, 'id'>): Promise<PermissionRule> => 
+    request('/permissions/rules', {
+      method: 'POST',
+      body: JSON.stringify(rule),
+    }),
+  
+  updateRule: (id: string, updates: Partial<PermissionRule>): Promise<PermissionRule> => 
+    request(`/permissions/rules/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    }),
+  
+  deleteRule: (id: string): Promise<void> => 
+    request(`/permissions/rules/${id}`, {
+      method: 'DELETE',
+    }),
+  
+  testPermission: (context: { action: ActionType; target?: string; worktreeDir?: string }): Promise<{ allowed: boolean; reason: string; matchingRule?: PermissionRule }> => 
+    request('/permissions/test', {
+      method: 'POST',
+      body: JSON.stringify(context),
+    }),
+  
+  getDefaultConfigs: (): Promise<Record<string, PermissionConfig>> => 
+    request('/permissions/defaults'),
 };

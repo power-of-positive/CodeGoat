@@ -124,3 +124,59 @@ export interface Task {
   duration?: string;
 }
 
+// Permission system types
+export enum ActionType {
+  FILE_READ = 'file_read',
+  FILE_WRITE = 'file_write',
+  FILE_DELETE = 'file_delete',
+  DIRECTORY_CREATE = 'directory_create',
+  DIRECTORY_DELETE = 'directory_delete',
+  NETWORK_REQUEST = 'network_request',
+  NETWORK_LISTEN = 'network_listen',
+  PROCESS_SPAWN = 'process_spawn',
+  PROCESS_KILL = 'process_kill',
+  SYSTEM_COMMAND = 'system_command',
+  ENVIRONMENT_READ = 'environment_read',
+  ENVIRONMENT_WRITE = 'environment_write',
+  CLAUDE_EXECUTE = 'claude_execute',
+  CLAUDE_PROMPT = 'claude_prompt',
+}
+
+export enum PermissionScope {
+  GLOBAL = 'global',
+  WORKTREE = 'worktree',
+  SPECIFIC_PATH = 'specific_path',
+  PATTERN = 'pattern',
+}
+
+export interface PermissionRule {
+  id: string;
+  action: ActionType;
+  scope: PermissionScope;
+  target?: string;
+  allowed: boolean;
+  reason?: string;
+  priority: number;
+}
+
+export interface PermissionConfig {
+  rules: PermissionRule[];
+  defaultAllow: boolean;
+  enableLogging: boolean;
+  strictMode: boolean;
+}
+
+export interface PermissionContext {
+  action: ActionType;
+  target?: string;
+  worktreeDir?: string;
+  additionalData?: Record<string, unknown>;
+}
+
+export interface PermissionResult {
+  allowed: boolean;
+  reason: string;
+  matchingRule?: PermissionRule;
+  appliedDefault?: boolean;
+}
+
