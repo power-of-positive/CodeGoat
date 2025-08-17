@@ -12,7 +12,6 @@ import {
   PermissionRule,
   PermissionConfig,
   ActionType,
-  PermissionScope,
 } from '../../shared/types';
 
 // Internal API response types

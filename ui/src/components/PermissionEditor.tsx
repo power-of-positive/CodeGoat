@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   Plus, 
@@ -9,9 +9,7 @@ import {
   AlertCircle, 
   CheckCircle, 
   Settings,
-  Download,
-  Upload,
-  RotateCcw
+  Download
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
@@ -56,7 +54,7 @@ export function PermissionEditor() {
   const [testData, setTestData] = useState<PermissionTestData>({
     action: ActionType.FILE_READ
   });
-  const [testResult, setTestResult] = useState<any>(null);
+  const [testResult, setTestResult] = useState<{ allowed: boolean; reason: string } | null>(null);
 
   const queryClient = useQueryClient();
 
@@ -582,6 +580,7 @@ export function PermissionEditor() {
                       variant="outline"
                       size="sm"
                       onClick={() => handleEditRule(rule)}
+                      data-testid={`edit-rule-${rule.id}`}
                     >
                       <Edit className="h-4 w-4" />
                     </Button>
@@ -590,6 +589,7 @@ export function PermissionEditor() {
                       size="sm"
                       onClick={() => handleDeleteRule(rule.id)}
                       disabled={deleteRuleMutation.isPending}
+                      data-testid={`delete-rule-${rule.id}`}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>

@@ -325,4 +325,183 @@ describe('PermissionEditor', () => {
       });
     });
   });
+
+  it('handles rule editing', async () => {
+    renderWithQueryClient(<PermissionEditor />);
+    
+    await waitFor(() => {
+      const editButton = screen.getByTestId('edit-rule-1');
+      fireEvent.click(editButton);
+    });
+    
+    await waitFor(() => {
+      expect(screen.getByText('Edit Rule')).toBeInTheDocument();
+      expect(screen.getByLabelText('Action')).toHaveValue(ActionType.FILE_READ);
+    });
+  });
+
+  it('handles rule deletion with confirmation', async () => {
+    global.confirm = jest.fn(() => true);
+    mockPermissionApi.deleteRule.mockResolvedValue({});
+
+    renderWithQueryClient(<PermissionEditor />);
+    
+    await waitFor(() => {
+      const deleteButton = screen.getByTestId('delete-rule-1');
+      fireEvent.click(deleteButton);
+    });
+
+    expect(global.confirm).toHaveBeenCalledWith('Are you sure you want to delete this rule?');
+    expect(mockPermissionApi.deleteRule).toHaveBeenCalledWith('1');
+  });
+
+  it('cancels rule deletion when user declines', async () => {
+    global.confirm = jest.fn(() => false);
+    mockPermissionApi.deleteRule.mockResolvedValue({});
+
+    renderWithQueryClient(<PermissionEditor />);
+    
+    await waitFor(() => {
+      const deleteButton = screen.getByTestId('delete-rule-1');
+      fireEvent.click(deleteButton);
+    });
+
+    expect(global.confirm).toHaveBeenCalledWith('Are you sure you want to delete this rule?');
+    expect(mockPermissionApi.deleteRule).not.toHaveBeenCalled();
+  });
+
+  it('handles default config loading with confirmation', async () => {
+    global.confirm = jest.fn(() => true);
+    mockPermissionApi.updateConfig.mockResolvedValue({});
+
+    renderWithQueryClient(<PermissionEditor />);
+    
+    await waitFor(() => {
+      const restrictiveButton = screen.getByText('restrictive');
+      fireEvent.click(restrictiveButton);
+    });
+
+    expect(global.confirm).toHaveBeenCalledWith('Load restrictive configuration? This will replace current settings.');
+    expect(mockPermissionApi.updateConfig).toHaveBeenCalled();
+  });
+
+  it('cancels default config loading when user declines', async () => {
+    global.confirm = jest.fn(() => false);
+    mockPermissionApi.updateConfig.mockResolvedValue({});
+
+    renderWithQueryClient(<PermissionEditor />);
+    
+    await waitFor(() => {
+      const restrictiveButton = screen.getByText('restrictive');
+      fireEvent.click(restrictiveButton);
+    });
+
+    expect(global.confirm).toHaveBeenCalledWith('Load restrictive configuration? This will replace current settings.');
+    expect(mockPermissionApi.updateConfig).not.toHaveBeenCalled();
+  });
+
+  it('handles update rule form submission', async () => {
+    mockPermissionApi.updateRule.mockResolvedValue({
+      id: '1',
+      action: ActionType.FILE_WRITE,
+      scope: PermissionScope.GLOBAL,
+      allowed: false,
+      reason: 'Updated rule',
+      priority: 150
+    });
+
+    renderWithQueryClient(<PermissionEditor />);
+    
+    // Open edit form by clicking edit button
+    await waitFor(() => {
+      const editButton = screen.getByTestId('edit-rule-1');
+      fireEvent.click(editButton);
+    });
+    
+    // Modify the form
+    await waitFor(() => {
+      const actionSelect = screen.getByLabelText('Action');
+      fireEvent.change(actionSelect, { target: { value: ActionType.FILE_WRITE } });
+      
+      const priorityInput = screen.getByLabelText('Priority');
+      fireEvent.change(priorityInput, { target: { value: '150' } });
+      
+      const reasonTextarea = screen.getByLabelText('Reason (optional)');
+      fireEvent.change(reasonTextarea, { target: { value: 'Updated rule' } });
+    });
+    
+    // Submit form
+    await waitFor(() => {
+      const updateButton = screen.getByText('Update Rule');
+      fireEvent.click(updateButton);
+    });
+    
+    await waitFor(() => {
+      expect(mockPermissionApi.updateRule).toHaveBeenCalledWith('1', {
+        action: ActionType.FILE_WRITE,
+        scope: PermissionScope.WORKTREE,
+        allowed: true,
+        reason: 'Updated rule',
+        priority: 150
+      });
+    });
+  });
+
+  it('cancels rule form', async () => {
+    renderWithQueryClient(<PermissionEditor />);
+    
+    // Open create form
+    await waitFor(() => {
+      const addButton = screen.getByText('Add Rule');
+      fireEvent.click(addButton);
+    });
+    
+    // Cancel form
+    await waitFor(() => {
+      const cancelButton = screen.getByText('Cancel');
+      fireEvent.click(cancelButton);
+    });
+    
+    await waitFor(() => {
+      expect(screen.queryByText('Create New Rule')).not.toBeInTheDocument();
+    });
+  });
+
+  it('displays action icons correctly', async () => {
+    const rulesWithDifferentActions = [
+      {
+        id: '1',
+        action: ActionType.FILE_READ,
+        scope: PermissionScope.WORKTREE,
+        allowed: true,
+        priority: 100
+      },
+      {
+        id: '2',
+        action: ActionType.NETWORK_REQUEST,
+        scope: PermissionScope.GLOBAL,
+        allowed: false,
+        priority: 200
+      },
+      {
+        id: '3',
+        action: ActionType.CLAUDE_EXECUTE,
+        scope: PermissionScope.GLOBAL,
+        allowed: true,
+        priority: 300
+      }
+    ];
+
+    mockPermissionApi.getRules.mockResolvedValue(rulesWithDifferentActions);
+
+    renderWithQueryClient(<PermissionEditor />);
+    
+    await waitFor(() => {
+      expect(screen.getByText('Permission Rules (3)')).toBeInTheDocument();
+      // Check that different action types are displayed
+      expect(screen.getByText('file read')).toBeInTheDocument();
+      expect(screen.getByText('network request')).toBeInTheDocument();
+      expect(screen.getByText('claude execute')).toBeInTheDocument();
+    });
+  });
 });

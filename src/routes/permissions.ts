@@ -20,7 +20,7 @@ async function readPermissionsConfig(): Promise<PermissionConfig> {
   try {
     const data = await fs.readFile(PERMISSIONS_CONFIG_PATH, 'utf-8');
     return JSON.parse(data);
-  } catch (error) {
+  } catch {
     // Return default restrictive config if file doesn't exist
     return DefaultPermissions.restrictive();
   }
