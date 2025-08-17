@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { ValidationChart } from './ValidationChart';
 import { ValidationMetrics } from 'shared/types';
 import { settingsApi } from '../lib/api';
@@ -78,13 +78,17 @@ describe('ValidationChart', () => {
     (settingsApi.getValidationStages as jest.Mock).mockResolvedValue(mockStages);
   });
 
-  it('renders stage performance overview', () => {
-    render(<ValidationChart metrics={mockMetrics} />);
+  it('renders stage performance overview', async () => {
+    await act(async () => {
+      render(<ValidationChart metrics={mockMetrics} />);
+    });
     expect(screen.getByText('Stage Performance Overview')).toBeInTheDocument();
   });
 
-  it('displays stage metrics correctly', () => {
-    render(<ValidationChart metrics={mockMetrics} />);
+  it('displays stage metrics correctly', async () => {
+    await act(async () => {
+      render(<ValidationChart metrics={mockMetrics} />);
+    });
     
     expect(screen.getByText('Code Linting')).toBeInTheDocument();
     expect(screen.getByText('Unit Tests')).toBeInTheDocument();
@@ -94,21 +98,25 @@ describe('ValidationChart', () => {
     expect(screen.getByText('3.0s avg')).toBeInTheDocument();
   });
 
-  it('displays total runs with success/failure breakdown', () => {
-    render(<ValidationChart metrics={mockMetrics} />);
+  it('displays total runs with success/failure breakdown', async () => {
+    await act(async () => {
+      render(<ValidationChart metrics={mockMetrics} />);
+    });
     
     expect(screen.getByText(/10 total runs • 9 successes • 1 failures/)).toBeInTheDocument();
     expect(screen.getByText(/8 total runs • 6 successes • 2 failures/)).toBeInTheDocument();
   });
 
-  it('shows disabled stages with proper indicators', () => {
-    render(<ValidationChart metrics={mockMetrics} />);
+  it('shows disabled stages with proper indicators', async () => {
+    await act(async () => {
+      render(<ValidationChart metrics={mockMetrics} />);
+    });
     
     expect(screen.getByText('Disabled Stage')).toBeInTheDocument();
     expect(screen.getByText('Disabled')).toBeInTheDocument();
   });
 
-  it('shows no data indicator for enabled stages without data', () => {
+  it('shows no data indicator for enabled stages without data', async () => {
     const metricsWithNoDataStage: ValidationMetrics = {
       ...mockMetrics,
       stageMetrics: {
@@ -126,25 +134,34 @@ describe('ValidationChart', () => {
       },
     };
     
-    render(<ValidationChart metrics={metricsWithNoDataStage} />);
+    await act(async () => {
+      render(<ValidationChart metrics={metricsWithNoDataStage} />);
+    });
     
     expect(screen.getByText('No Data Stage')).toBeInTheDocument();
     expect(screen.getByText('No Data')).toBeInTheDocument();
   });
 
-  it('expands stage details when clicked', () => {
-    render(<ValidationChart metrics={mockMetrics} />);
+  it('expands stage details when clicked', async () => {
+    await act(async () => {
+      render(<ValidationChart metrics={mockMetrics} />);
+    });
     
     const lintStage = screen.getByText('Code Linting').closest('div');
-    fireEvent.click(lintStage!);
+    
+    await act(async () => {
+      fireEvent.click(lintStage!);
+    });
     
     expect(screen.getByText('Code Linting Details')).toBeInTheDocument();
     expect(screen.getByText('90.00%')).toBeInTheDocument();
     expect(screen.getByText('2.00s')).toBeInTheDocument();
   });
 
-  it('applies correct color classes based on success rate', () => {
-    render(<ValidationChart metrics={mockMetrics} />);
+  it('applies correct color classes based on success rate', async () => {
+    await act(async () => {
+      render(<ValidationChart metrics={mockMetrics} />);
+    });
     
     const lintSuccessRate = screen.getByText('90.0% success');
     const testSuccessRate = screen.getByText('75.0% success');
@@ -163,14 +180,19 @@ describe('ValidationChart', () => {
   });
 
   it('shows continue on failure details in expanded view', async () => {
-    render(<ValidationChart metrics={mockMetrics} />);
+    await act(async () => {
+      render(<ValidationChart metrics={mockMetrics} />);
+    });
     
     await waitFor(() => {
       expect(screen.getByText('Code Linting')).toBeInTheDocument();
     });
 
     const lintStage = screen.getByText('Code Linting').closest('div');
-    fireEvent.click(lintStage!);
+    
+    await act(async () => {
+      fireEvent.click(lintStage!);
+    });
     
     await waitFor(() => {
       expect(screen.getByText('Continue on Failure:')).toBeInTheDocument();

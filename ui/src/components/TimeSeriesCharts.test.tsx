@@ -73,4 +73,67 @@ describe('TimeSeriesCharts Component', () => {
     expect(screen.getAllByTestId('line-chart')).toHaveLength(1);
     expect(screen.getAllByTestId('responsive-container')).toHaveLength(2);
   });
+
+  it('handles runs with different timestamps properly', () => {
+    const multiDayRuns: ValidationRun[] = [
+      {
+        id: 'run-1',
+        timestamp: '2023-12-01T10:00:00Z',
+        stages: [{ id: 'lint', name: 'Code Linting', success: true, duration: 2000, attempt: 1 }],
+        success: true,
+        duration: 2000,
+      },
+      {
+        id: 'run-2', 
+        timestamp: '2023-12-02T10:00:00Z',
+        stages: [{ id: 'lint', name: 'Code Linting', success: false, duration: 3000, attempt: 1 }],
+        success: false,
+        duration: 3000,
+      },
+      {
+        id: 'run-3',
+        timestamp: '2023-12-03T10:00:00Z', 
+        stages: [{ id: 'lint', name: 'Code Linting', success: true, duration: 1500, attempt: 1 }],
+        success: true,
+        duration: 1500,
+      },
+    ];
+
+    render(<TimeSeriesCharts runs={multiDayRuns} />);
+    
+    expect(screen.getByText('Success Rate Over Time')).toBeInTheDocument();
+    expect(screen.getByText('Average Duration Over Time')).toBeInTheDocument();
+  });
+
+  it('handles undefined runs gracefully', () => {
+    render(<TimeSeriesCharts runs={undefined as any} />);
+    
+    expect(screen.getByText('No data available for success rate tracking')).toBeInTheDocument();
+    expect(screen.getByText('No data available for duration tracking')).toBeInTheDocument();
+  });
+
+  it('groups runs by day correctly', () => {
+    const sameDayRuns: ValidationRun[] = [
+      {
+        id: 'run-1',
+        timestamp: '2023-12-01T09:00:00Z',
+        stages: [{ id: 'lint', name: 'Code Linting', success: true, duration: 2000, attempt: 1 }],
+        success: true,
+        duration: 2000,
+      },
+      {
+        id: 'run-2',
+        timestamp: '2023-12-01T15:00:00Z',
+        stages: [{ id: 'lint', name: 'Code Linting', success: false, duration: 3000, attempt: 1 }],
+        success: false,
+        duration: 3000,
+      },
+    ];
+
+    render(<TimeSeriesCharts runs={sameDayRuns} />);
+    
+    // Should still render charts for same-day runs
+    expect(screen.getByText('Success Rate Over Time')).toBeInTheDocument();
+    expect(screen.getByText('Average Duration Over Time')).toBeInTheDocument();
+  });
 });
