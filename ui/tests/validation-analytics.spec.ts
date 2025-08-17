@@ -10,14 +10,14 @@ test.describe('Validation Analytics E2E Tests', () => {
     // Check that the main analytics heading is visible
     await expect(page.locator('h2')).toContainText('Validation Analytics');
     
-    // Check that the description is present
-    await expect(page.locator('p')).toContainText('Track validation pipeline performance and success rates');
+    // Check that the description is present using more specific selector
+    await expect(page.locator('p').first()).toContainText('Track validation pipeline performance and success rates');
   });
 
   test('should display metrics summary cards', async ({ page }) => {
-    // Check for the three main metric cards using more specific selectors
+    // Check for the three main metric cards using more specific selectors that target cards, not charts
     await expect(page.getByRole('heading', { name: 'Total Runs' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Success Rate' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Success Rate' }).first()).toBeVisible(); // Use first() to target the card, not chart
     await expect(page.getByRole('heading', { name: 'Avg Duration' })).toBeVisible();
   });
 
