@@ -20,10 +20,10 @@
     "test:coverage": "npm run test:coverage:backend && npm run test:coverage:frontend",
     "test:coverage:backend": "jest --config=jest.unit.config.js --coverage",
     "test:coverage:frontend": "cd ui && npm run test:coverage -- --watchAll=false --testTimeout=10000",
-    "lint": "eslint src/**/*.ts scripts/**/*.ts tests/**/*.ts __tests__/**/*.ts",
-    "lint:fix": "eslint src/**/*.ts scripts/**/*.ts tests/**/*.ts __tests__/**/*.ts --fix",
-    "format": "prettier --write src/**/*.ts scripts/**/*.ts tests/**/*.ts __tests__/**/*.ts",
-    "format:check": "prettier --check src/**/*.ts scripts/**/*.ts tests/**/*.ts __tests__/**/*.ts",
+    "lint": "eslint . --ext .ts,.tsx",
+    "lint:fix": "eslint . --ext .ts,.tsx --fix",
+    "format": "prettier --write \"**/*.{ts,tsx}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx}\"",
     "type-check": "tsc --noEmit --pretty && cd ui && tsc --noEmit --pretty && echo '✅ TypeScript type checking passed'",
     "typescript-check": "node scripts/check-typescript-preference.js",
     "logs:clean:optimized": "npx ts-node scripts/optimized-log-cleanup.ts",
@@ -48,6 +48,8 @@
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-eslint-comments": "^3.2.0",
     "eslint-plugin-prettier": "^5.5.4",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.20",
     "husky": "^9.1.7",
     "jest": "^30.0.5",
     "lint-staged": "^16.1.4",
@@ -65,19 +67,7 @@
     "zod": "^4.0.17"
   },
   "lint-staged": {
-    "src/**/*.ts": [
-      "eslint --fix",
-      "prettier --write"
-    ],
-    "scripts/**/*.ts": [
-      "eslint --fix",
-      "prettier --write"
-    ],
-    "tests/**/*.ts": [
-      "eslint --fix",
-      "prettier --write"
-    ],
-    "__tests__/**/*.ts": [
+    "**/*.{ts,tsx}": [
       "eslint --fix",
       "prettier --write"
     ]
