@@ -45,31 +45,23 @@ testProcess.on('close', (code) => {
   if (code === null) {
     // Process was killed due to timeout
     console.log('\n⏰ E2E tests timed out');
+    console.log('❌ E2E test timeout is considered a failure');
+    process.exit(1);
+  } else {
+    console.log(`\n🎭 E2E tests completed with exit code: ${code}`);
     
-    // Check if we have mostly successful results
-    const hasPassedTests = testResults.includes('passed');
+    // Count actual failures vs passes
     const failureCount = (testResults.match(/failed/g) || []).length;
     const passCount = (testResults.match(/passed/g) || []).length;
     
-    if (hasPassedTests && failureCount < 5) {
-      console.log(`✅ E2E tests had some passes (${passCount} passed, ${failureCount} failed), considering acceptable`);
+    if (code === 0) {
+      console.log(`✅ All E2E tests passed! (${passCount} passed, ${failureCount} failed)`);
       process.exit(0);
     } else {
-      console.log(`❌ Too many E2E test failures detected (${failureCount} failed)`);
-      process.exit(1);
+      console.log(`❌ E2E tests failed! (${passCount} passed, ${failureCount} failed)`);
+      console.log('🚨 E2E test failures should block the validation pipeline');
+      process.exit(code);
     }
-  } else {
-    console.log(`\n✅ E2E tests completed with exit code: ${code}`);
-    
-    // For E2E tests, be more lenient with exit codes
-    if (code <= 1) { // Allow exit code 1 for minor failures
-      const failureCount = (testResults.match(/failed/g) || []).length;
-      if (failureCount < 5) {
-        console.log('✅ Acceptable number of E2E test failures, continuing...');
-        process.exit(0);
-      }
-    }
-    process.exit(code);
   }
 });
 

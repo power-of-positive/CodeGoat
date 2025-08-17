@@ -277,21 +277,26 @@
   },
   {
     "content": "Increase frontend coverage threshold to 80% and fix any coverage gaps",
-    "status": "pending",
+    "status": "completed",
     "priority": "high",
-    "id": "45"
+    "id": "45",
+    "endTime": "2025-08-17T10:28:36+02:00",
+    "startTime": "2025-08-17T10:28:36+02:00",
+    "duration": "0s"
   },
   {
     "content": "Fix Playwright E2E validation stage to properly fail when tests fail",
-    "status": "pending",
+    "status": "in_progress",
     "priority": "high",
-    "id": "46"
+    "id": "46",
+    "startTime": "2025-08-17T10:14:51+02:00"
   },
   {
     "content": "Investigate and fix failing Playwright tests that should be blocking pipeline",
-    "status": "pending",
+    "status": "in_progress",
     "priority": "high",
-    "id": "47"
+    "id": "47",
+    "startTime": "2025-08-17T00:00:15+02:00"
   },
   {
     "content": "Implement file permission enforcement to prevent editing of protected files",
