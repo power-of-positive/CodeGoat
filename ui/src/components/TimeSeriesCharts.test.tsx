@@ -136,4 +136,72 @@ describe('TimeSeriesCharts Component', () => {
     expect(screen.getByText('Success Rate Over Time')).toBeInTheDocument();
     expect(screen.getByText('Average Duration Over Time')).toBeInTheDocument();
   });
+
+  it('handles runs with missing duration', () => {
+    const runsWithMissingDuration: ValidationRun[] = [
+      {
+        id: 'run-1',
+        timestamp: '2023-12-01T10:00:00Z',
+        stages: [{ id: 'lint', name: 'Code Linting', success: true, duration: 2000, attempt: 1 }],
+        success: true,
+        duration: undefined as any,
+      },
+      {
+        id: 'run-2',
+        timestamp: '2023-12-02T10:00:00Z',
+        stages: [{ id: 'lint', name: 'Code Linting', success: false, duration: 3000, attempt: 1 }],
+        success: false,
+        duration: 5000,
+      },
+    ];
+
+    render(<TimeSeriesCharts runs={runsWithMissingDuration} />);
+    
+    expect(screen.getByText('Success Rate Over Time')).toBeInTheDocument();
+    expect(screen.getByText('Average Duration Over Time')).toBeInTheDocument();
+  });
+
+  it('renders with single run', () => {
+    const singleRun: ValidationRun[] = [
+      {
+        id: 'run-1',
+        timestamp: '2023-12-01T10:00:00Z',
+        stages: [{ id: 'lint', name: 'Code Linting', success: true, duration: 2000, attempt: 1 }],
+        success: true,
+        duration: 2500,
+      },
+    ];
+
+    render(<TimeSeriesCharts runs={singleRun} />);
+    
+    expect(screen.getByText('Success Rate Over Time')).toBeInTheDocument();
+    expect(screen.getByText('Average Duration Over Time')).toBeInTheDocument();
+    expect(screen.getAllByTestId('area-chart')).toHaveLength(1);
+    expect(screen.getAllByTestId('line-chart')).toHaveLength(1);
+  });
+
+  it('handles runs with invalid timestamps', () => {
+    const runsWithInvalidTimestamp: ValidationRun[] = [
+      {
+        id: 'run-1',
+        timestamp: 'invalid-date',
+        stages: [{ id: 'lint', name: 'Code Linting', success: true, duration: 2000, attempt: 1 }],
+        success: true,
+        duration: 2000,
+      },
+      {
+        id: 'run-2',
+        timestamp: '2023-12-01T10:00:00Z',
+        stages: [{ id: 'lint', name: 'Code Linting', success: false, duration: 3000, attempt: 1 }],
+        success: false,
+        duration: 3000,
+      },
+    ];
+
+    render(<TimeSeriesCharts runs={runsWithInvalidTimestamp} />);
+    
+    // Should still render despite invalid timestamp
+    expect(screen.getByText('Success Rate Over Time')).toBeInTheDocument();
+    expect(screen.getByText('Average Duration Over Time')).toBeInTheDocument();
+  });
 });

@@ -309,4 +309,207 @@ describe('Settings Routes', () => {
       });
     });
   });
+
+  describe('PUT /settings/validation/stages/:id', () => {
+    it('should update validation stage', async () => {
+      const existingSettings = {
+        validation: {
+          stages: [
+            { id: 'lint', name: 'Lint', command: 'eslint .', enabled: true, order: 1 },
+            { id: 'test', name: 'Test', command: 'npm test', enabled: true, order: 2 },
+          ],
+          enableMetrics: true,
+          maxAttempts: 5,
+        },
+      };
+      const updatedStage = {
+        id: 'lint',
+        name: 'Updated Lint',
+        command: 'eslint . --fix',
+        enabled: false,
+        order: 3,
+      };
+
+      (fs.readFile as jest.Mock).mockResolvedValue(JSON.stringify(existingSettings));
+      (fs.writeFile as jest.Mock).mockResolvedValue(undefined);
+
+      const response = await request(app)
+        .put('/settings/validation/stages/lint')
+        .send(updatedStage)
+        .expect(200);
+
+      expect(response.body).toEqual({
+        message: 'Validation stage updated successfully',
+        stage: expect.objectContaining(updatedStage),
+      });
+    });
+
+    it('should handle updating non-existent stage', async () => {
+      const existingSettings = {
+        validation: {
+          stages: [{ id: 'lint', name: 'Lint' }],
+          enableMetrics: true,
+          maxAttempts: 5,
+        },
+      };
+
+      (fs.readFile as jest.Mock).mockResolvedValue(JSON.stringify(existingSettings));
+
+      await request(app)
+        .put('/settings/validation/stages/nonexistent')
+        .send({ name: 'Updated Stage' })
+        .expect(404)
+        .expect({
+          error: 'Validation stage not found',
+        });
+    });
+
+    it('should handle validation errors for stage updates', async () => {
+      const existingSettings = {
+        validation: {
+          stages: [{ id: 'lint', name: 'Lint', command: 'eslint .' }],
+          enableMetrics: true,
+          maxAttempts: 5,
+        },
+      };
+      const invalidUpdate = {
+        command: '', // Invalid empty command
+        order: -1, // Invalid negative order
+      };
+
+      (fs.readFile as jest.Mock).mockResolvedValue(JSON.stringify(existingSettings));
+
+      await request(app)
+        .put('/settings/validation/stages/lint')
+        .send(invalidUpdate)
+        .expect(400)
+        .expect(res => {
+          expect(res.body).toEqual({
+            error: 'Invalid stage configuration',
+            details: expect.any(Array),
+          });
+        });
+    });
+  });
+
+  describe('GET /settings/validation/stages', () => {
+    it('should get all validation stages', async () => {
+      const existingSettings = {
+        validation: {
+          stages: [
+            { id: 'lint', name: 'Lint', command: 'eslint .', enabled: true, order: 1 },
+            { id: 'test', name: 'Test', command: 'npm test', enabled: true, order: 2 },
+          ],
+          enableMetrics: true,
+          maxAttempts: 5,
+        },
+      };
+
+      (fs.readFile as jest.Mock).mockResolvedValue(JSON.stringify(existingSettings));
+
+      const response = await request(app).get('/settings/validation/stages').expect(200);
+
+      expect(response.body.stages).toEqual(existingSettings.validation.stages);
+    });
+
+    it('should return empty array when no stages exist', async () => {
+      const existingSettings = {
+        validation: {
+          stages: [],
+          enableMetrics: true,
+          maxAttempts: 5,
+        },
+      };
+
+      (fs.readFile as jest.Mock).mockResolvedValue(JSON.stringify(existingSettings));
+
+      const response = await request(app).get('/settings/validation/stages').expect(200);
+
+      expect(response.body.stages).toEqual([]);
+    });
+  });
+
+  describe('Error handling', () => {
+    it('should handle file write errors in settings update', async () => {
+      const newSettings = { fallback: { maxRetries: 5 } };
+
+      (fs.readFile as jest.Mock).mockResolvedValue(JSON.stringify({}));
+      (fs.writeFile as jest.Mock).mockRejectedValue(new Error('Write permission denied'));
+
+      await request(app)
+        .put('/settings')
+        .send(newSettings)
+        .expect(500)
+        .expect({
+          error: 'Failed to update settings',
+        });
+
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'Failed to update settings',
+        expect.any(Error)
+      );
+    });
+
+    it('should handle file write errors in fallback update', async () => {
+      const newFallbackSettings = { maxRetries: 5, retryDelay: 1000 };
+
+      (fs.readFile as jest.Mock).mockResolvedValue(JSON.stringify({}));
+      (fs.writeFile as jest.Mock).mockRejectedValue(new Error('Write permission denied'));
+
+      await request(app)
+        .put('/settings/fallback')
+        .send(newFallbackSettings)
+        .expect(500)
+        .expect({
+          error: 'Failed to update fallback settings',
+        });
+    });
+
+    it('should handle file write errors in stage addition', async () => {
+      const existingSettings = {
+        validation: { stages: [], enableMetrics: true, maxAttempts: 5 },
+      };
+      const newStage = {
+        id: 'custom-lint',
+        name: 'Custom Linting',
+        command: 'custom-linter',
+        timeout: 30000,
+        enabled: true,
+        continueOnFailure: false,
+        order: 1,
+      };
+
+      (fs.readFile as jest.Mock).mockResolvedValue(JSON.stringify(existingSettings));
+      (fs.writeFile as jest.Mock).mockRejectedValue(new Error('Write permission denied'));
+
+      await request(app)
+        .post('/settings/validation/stages')
+        .send(newStage)
+        .expect(500)
+        .expect({
+          error: 'Failed to add validation stage',
+        });
+
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'Failed to add validation stage',
+        expect.any(Error)
+      );
+    });
+
+    it('should handle file read errors in fallback retrieval', async () => {
+      (fs.readFile as jest.Mock).mockRejectedValue(new Error('Read permission denied'));
+
+      const response = await request(app).get('/settings/fallback').expect(200);
+      
+      // Should return default fallback settings even when file read fails
+      expect(response.body).toEqual({
+        maxRetries: 3,
+        retryDelay: 1000,
+        enableFallbacks: true,
+        fallbackOnContextLength: true,
+        fallbackOnRateLimit: true,
+        fallbackOnServerError: false,
+      });
+    });
+  });
 });
