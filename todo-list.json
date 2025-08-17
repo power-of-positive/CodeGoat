@@ -310,9 +310,12 @@
   },
   {
     "content": "Add validation run log viewing - store and display all command outputs and errors",
-    "status": "pending",
+    "status": "completed",
     "priority": "high",
-    "id": "49"
+    "id": "49",
+    "endTime": "2025-08-17T11:07:49+02:00",
+    "startTime": "2025-08-17T08:07:49.000Z",
+    "duration": "1h 0m"
   },
   {
     "content": "Make validation runs clickable to view detailed logs and stage outputs",
