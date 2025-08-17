@@ -101,9 +101,9 @@ export function StageDetail({ stage }: { stage: ValidationStageResult }) {
           </div>
           {hasLogs && (
             showLogs ? (
-              <ChevronDown className="w-4 h-4 text-gray-400" />
+              <ChevronDown className="w-4 h-4 text-gray-400" data-testid="chevron-down" />
             ) : (
-              <ChevronRight className="w-4 h-4 text-gray-400" />
+              <ChevronRight className="w-4 h-4 text-gray-400" data-testid="chevron-right" />
             )
           )}
         </div>

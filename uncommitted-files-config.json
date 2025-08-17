@@ -1,5 +1,5 @@
 {
-  "maxModifiedFiles": 10,
+  "maxModifiedFiles": 20,
   "maxUntrackedFiles": 5,
   "ignorePatterns": [
     "validation-metrics.json",

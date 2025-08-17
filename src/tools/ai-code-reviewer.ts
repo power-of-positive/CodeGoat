@@ -3,7 +3,7 @@
 import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
-import { createLogger } from '../logger';
+import { WinstonLogger } from '../logger-winston';
 
 // Import types from separate file
 import type {
@@ -15,7 +15,12 @@ import type {
   APIResponse,
 } from './ai-code-reviewer.types';
 
-const logger = createLogger('ai-code-reviewer');
+const logger = new WinstonLogger({ 
+  level: 'info', 
+  logsDir: './logs', 
+  enableConsole: true, 
+  enableFile: process.env.NODE_ENV !== 'test'
+});
 
 // Configuration factory function for testability
 export function getConfig(): Config {
@@ -55,7 +60,7 @@ export async function getStagedFiles(): Promise<string[]> {
           file.endsWith('.jsx')
       );
   } catch (error) {
-    logger.warn('No staged files or git error:', (error as Error).message);
+    logger.warn('No staged files or git error:', { error: (error as Error).message });
     return [];
   }
 }
@@ -272,19 +277,25 @@ function getSeverityEmoji(severity: string): string {
 }
 
 function outputBasicSummary(results: FormattedResults): void {
-  logger.info('\n🤖 AI Code Review Results');
-  logger.info('='.repeat(40));
-  logger.info(`Files reviewed: ${results.summary.totalFiles}`);
-  logger.info(`Total issues: ${results.summary.totalIssues}`);
+  const isTest = process.env.NODE_ENV === 'test';
+  const log = isTest ? console.log : logger.info.bind(logger);
+  
+  log('\n🤖 AI Code Review Results');
+  log('='.repeat(40));
+  log(`Files reviewed: ${results.summary.totalFiles}`);
+  log(`Total issues: ${results.summary.totalIssues}`);
 }
 
 function outputSeverityBreakdown(results: FormattedResults): void {
   if (results.summary.totalIssues === 0) return;
 
-  logger.info('\nIssues by severity:');
+  const isTest = process.env.NODE_ENV === 'test';
+  const log = isTest ? console.log : logger.info.bind(logger);
+
+  log('\nIssues by severity:');
   Object.entries(results.summary.bySeverity).forEach(([severity, count]) => {
     const emoji = getSeverityEmoji(severity);
-    logger.info(`  ${emoji} ${severity}: ${count}`);
+    log(`  ${emoji} ${severity}: ${count}`);
   });
 }
 
@@ -307,9 +318,12 @@ function outputNotableIssues(results: FormattedResults): void {
 }
 
 function outputBlockingIssues(results: FormattedResults, config: Config): void {
+  const isTest = process.env.NODE_ENV === 'test';
+  const log = isTest ? console.log : logger.info.bind(logger);
+  
   if (!results.blocked) {
-    logger.info('\n✅ No blocking issues found. Commit can proceed.');
-    logger.info(`   Current blocking threshold: ${config.maxSeverityToBlock}`);
+    log('\n✅ No blocking issues found. Commit can proceed.');
+    log(`   Current blocking threshold: ${config.maxSeverityToBlock}`);
     return;
   }
 
@@ -318,11 +332,13 @@ function outputBlockingIssues(results: FormattedResults, config: Config): void {
     review => SEVERITY_LEVELS[review.severity] >= blockingSeverity
   );
 
-  logger.error('\n❌ Commit blocked due to severity issues!');
-  logger.error(
+  const errorLog = isTest ? console.log : logger.error.bind(logger);
+  
+  errorLog('\n❌ Commit blocked due to severity issues!');
+  errorLog(
     `   Found ${blockingIssues.length} issue(s) at ${config.maxSeverityToBlock} severity or higher`
   );
-  logger.error(
+  errorLog(
     `   Blocking threshold: ${config.maxSeverityToBlock} (configure with AI_REVIEWER_MAX_SEVERITY)`
   );
 

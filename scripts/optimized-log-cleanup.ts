@@ -14,8 +14,8 @@ interface LogStats {
   totalFiles: number;
   totalSize: number;
   averageFileSize: number;
-  oldestFile?: Date;
-  newestFile?: Date;
+  oldestFile: Date | null;
+  newestFile: Date | null;
   sizeByLevel: Record<string, number>;
 }
 

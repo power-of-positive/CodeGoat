@@ -73,9 +73,25 @@ function shouldIgnoreFile(filePath: string, ignorePatterns: string[]): boolean {
 
 function getGitStatus(): { modified: string[], untracked: string[] } {
   try {
-    // Get modified files (staged and unstaged)
-    const modifiedOutput = execSync('git diff --name-only HEAD', { encoding: 'utf-8' }).trim();
-    const modified = modifiedOutput ? modifiedOutput.split('\n') : [];
+    // Check if we're in a pre-commit context (during git commit)
+    // In pre-commit hooks, we should only check for unstaged changes
+    const isPreCommit = process.env.HUSKY_GIT_PARAMS || process.env.GIT_PARAMS || 
+                       process.argv.includes('--pre-commit') ||
+                       process.env.HUSKY || // Husky sets this environment variable
+                       process.env.PRE_COMMIT || // Alternative detection
+                       process.env.npm_lifecycle_event === 'precommit';
+    
+    let modified: string[] = [];
+    
+    if (isPreCommit) {
+      // During pre-commit: only check unstaged changes (staged changes are expected)
+      const unstagedOutput = execSync('git diff --name-only', { encoding: 'utf-8' }).trim();
+      modified = unstagedOutput ? unstagedOutput.split('\n') : [];
+    } else {
+      // Normal mode: check all changes since last commit
+      const modifiedOutput = execSync('git diff --name-only HEAD', { encoding: 'utf-8' }).trim();
+      modified = modifiedOutput ? modifiedOutput.split('\n') : [];
+    }
 
     // Get untracked files
     const untrackedOutput = execSync('git ls-files --others --exclude-standard', { encoding: 'utf-8' }).trim();

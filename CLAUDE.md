@@ -1,3 +1,5 @@
+NEVER disable validation checks - fix errors properly!! I don't care if failures are related to your changes, fix everything!!
+
 # Claude Code Configuration
 
 This file configures Claude Code behavior for this project, including validation hooks and project-specific settings.
@@ -5,6 +7,7 @@ This file configures Claude Code behavior for this project, including validation
 ## Project Context
 
 CodeGoat is a configurable AI proxy server that provides:
+
 - Model fallback capabilities with retry logic
 - Request/response logging and analytics
 - Configurable validation pipeline for development workflow
@@ -18,7 +21,7 @@ Always run these commands after making changes:
 # Linting
 npm run lint
 
-# Type checking  
+# Type checking
 npm run type-check
 
 # TypeScript preference check
@@ -57,7 +60,8 @@ npx ts-node scripts/validate-task.ts
 ```
 
 The validation runner:
-1. Loads validation stages from `settings.json` 
+
+1. Loads validation stages from `settings.json`
 2. Executes enabled stages in order (lint → typecheck → test → e2e)
 3. Tracks timing and success metrics
 4. Saves analytics to `validation-metrics.json`
@@ -74,6 +78,7 @@ Default validation stages (can be customized via settings API):
 5. **E2E** (`cd ui && npm run test:e2e`) - End-to-end tests (disabled by default)
 
 Each stage can be:
+
 - Enabled/disabled individually
 - Configured with custom timeouts
 - Set to continue or stop on failure
@@ -82,12 +87,14 @@ Each stage can be:
 ### Metrics Collection
 
 When `enableMetrics: true` in validation settings:
+
 - Execution time per stage
 - Success/failure rates
 - Historical trends
 - Development workflow analytics
 
 Access metrics via:
+
 - `validation-metrics.json` - Raw data
 - `/api/settings/validation` - API endpoint
 - Future: Visualization dashboard
@@ -120,12 +127,14 @@ ui/                 # React frontend application
 ## Settings Management
 
 Runtime configuration via REST API:
+
 - `GET /api/settings` - View all settings
 - `PUT /api/settings/fallback` - Update fallback behavior
 - `POST /api/settings/validation/stages` - Add validation stage
 - `DELETE /api/settings/validation/stages/:id` - Remove stage
 
 Settings persist in `settings.json` and affect:
+
 - Proxy fallback behavior
 - Validation pipeline configuration
 - Retry logic and timeouts

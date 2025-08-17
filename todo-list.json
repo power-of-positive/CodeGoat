@@ -259,20 +259,20 @@
   },
   {
     "content": "Fix time series charts to display historical data by day instead of empty charts",
-    "status": "pending",
+    "status": "completed",
     "priority": "high",
     "id": "42"
   },
   {
     "content": "Fix pagination dropdown - selecting larger numbers should actually show more items per page",
-    "status": "in_progress",
+    "status": "completed",
     "priority": "high",
     "id": "43",
     "startTime": "2025-08-17T10:49:42+02:00"
   },
   {
     "content": "Investigate why validation runs history is limited - should show all past validation runs",
-    "status": "pending",
+    "status": "completed",
     "priority": "high",
     "id": "44"
   },
@@ -287,20 +287,20 @@
   },
   {
     "content": "Fix Playwright E2E validation stage to properly fail when tests fail",
-    "status": "in_progress",
+    "status": "completed",
     "priority": "high",
     "id": "46",
     "startTime": "2025-08-17T10:14:51+02:00"
   },
   {
     "content": "Investigate and fix failing Playwright tests that should be blocking pipeline",
-    "status": "in_progress",
+    "status": "completed",
     "priority": "high",
     "id": "47",
     "startTime": "2025-08-17T00:00:15+02:00"
   },
   {
-    "content": "Implement file permission enforcement to prevent editing of protected files",
+    "content": "Fix commit message format to enforce CODEGOAT-{id}: pattern and update task completion logic",
     "status": "completed",
     "priority": "high",
     "id": "48",
@@ -309,7 +309,7 @@
     "duration": "1h 0m"
   },
   {
-    "content": "Add validation run log viewing - store and display all command outputs and errors",
+    "content": "Fix todo list validation to block stopping when there are unfinished high priority tasks",
     "status": "completed",
     "priority": "high",
     "id": "49",
@@ -322,8 +322,93 @@
     "status": "completed",
     "priority": "high",
     "id": "50",
-    "endTime": "2025-08-17T13:16:05+02:00",
+    "endTime": "2025-08-17T15:09:16+02:00",
     "startTime": "2025-08-17T08:10:14.000Z",
-    "duration": "3h 5m"
+    "duration": "4h 59m"
+  },
+  {
+    "content": "Move validation metrics/runs/logs data into SQLite database and query via API",
+    "status": "pending",
+    "priority": "high",
+    "id": "51"
+  },
+  {
+    "content": "Create validation execution wrapper around Claude code",
+    "status": "pending",
+    "priority": "high",
+    "id": "52"
+  },
+  {
+    "content": "Add ability to open validation run details in a separate page",
+    "status": "pending",
+    "priority": "high",
+    "id": "53"
+  },
+  {
+    "content": "Create kanban-style task list page with CRUD operations for tasks",
+    "status": "pending",
+    "priority": "high",
+    "id": "54"
+  },
+  {
+    "content": "Implement task executor that runs shell commands and monitors processes (per claude-executor.md spec)",
+    "status": "pending",
+    "priority": "high",
+    "id": "55"
+  },
+  {
+    "content": "Add granularity selector for time series charts (x-axis) - view today's data or all time data",
+    "status": "pending",
+    "priority": "medium",
+    "id": "56"
+  },
+  {
+    "content": "Create permissions system for executor to forbid/prevent agent actions",
+    "status": "pending",
+    "priority": "high",
+    "id": "57"
+  },
+  {
+    "content": "Build UI page for editing executor permissions file",
+    "status": "pending",
+    "priority": "high",
+    "id": "58"
+  },
+  {
+    "content": "Fix TypeScript compilation errors blocking validation pipeline",
+    "status": "completed",
+    "priority": "high",
+    "id": "59"
+  },
+  {
+    "content": "Increase frontend test coverage to 80% by testing uncovered branches",
+    "status": "in_progress",
+    "priority": "high",
+    "id": "60",
+    "startTime": "2025-08-17T13:40:00+02:00"
+  },
+  {
+    "content": "Fix failing Playwright test for chevron visibility in log viewing",
+    "status": "completed",
+    "priority": "high",
+    "id": "61"
+  },
+  {
+    "content": "Increase test coverage to 80% across the entire project",
+    "status": "pending",
+    "priority": "high",
+    "id": "62"
+  },
+  {
+    "content": "Add ability to move around the order of validation stages via the settings page",
+    "status": "pending",
+    "priority": "medium",
+    "id": "63"
+  },
+  {
+    "content": "Commit all TypeScript fixes, frontend coverage improvements, and Playwright test fixes",
+    "status": "completed",
+    "priority": "high",
+    "id": "64"
   }
 ]

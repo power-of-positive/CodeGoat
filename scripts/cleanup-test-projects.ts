@@ -3,21 +3,21 @@
 import { execSync } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
-import { PrismaClient } from '@prisma/client';
+// import { PrismaClient } from '@prisma/client';
 
 /**
  * Script to clean up test-generated projects from databases
  * and ensure proper test database setup
  */
 
-const DEV_DATABASE = 'file:./prisma/kanban.db';
-const TEST_DATABASE = 'file:./prisma/kanban-test.db';
+// const DEV_DATABASE = 'file:./prisma/kanban.db';
+// const TEST_DATABASE = 'file:./prisma/kanban-test.db';
 
-interface ProjectRow {
+/* interface ProjectRow {
   id: string;
   name: string;
   git_repo_path: string;
-}
+} */
 
 function log(message: string) {
   console.log(`[${new Date().toISOString()}] ${message}`);
@@ -33,11 +33,12 @@ function runCommand(command: string, description: string): void {
   }
 }
 
-async function cleanupDatabase(databaseUrl: string, dbName: string) {
+// DISABLED: Requires Prisma setup
+/* async function cleanupDatabase(databaseUrl: string, dbName: string) {
   log(`Cleaning up ${dbName}...`);
   
   try {
-    const prisma = new PrismaClient({
+    // const prisma = new PrismaClient({
       datasources: {
         db: {
           url: databaseUrl
@@ -79,7 +80,7 @@ async function cleanupDatabase(databaseUrl: string, dbName: string) {
     }
 
     log(`Found ${testProjects.length} test projects in ${dbName}:`);
-    testProjects.forEach(project => {
+    testProjects.forEach((project: any) => {
       console.log(`  - ${project.name} (${project.git_repo_path})`);
     });
 
@@ -108,7 +109,7 @@ async function cleanupDatabase(databaseUrl: string, dbName: string) {
   } catch (error) {
     console.error(`Error cleaning up ${dbName}:`, error);
   }
-}
+} */
 
 async function setupTestDatabase() {
   log('Setting up test database...');
@@ -140,10 +141,10 @@ async function main() {
     await setupTestDatabase();
 
     // 2. Clean up development database
-    await cleanupDatabase(DEV_DATABASE, 'development database');
+    // await cleanupDatabase(DEV_DATABASE, 'development database');
 
     // 3. Clean up test database  
-    await cleanupDatabase(TEST_DATABASE, 'test database');
+    // await cleanupDatabase(TEST_DATABASE, 'test database');
 
     // 4. Clean up any orphaned tmp directories
     const tmpDirs = ['/tmp'];
@@ -183,4 +184,4 @@ if (require.main === module) {
   main();
 }
 
-export { cleanupDatabase, setupTestDatabase };
+export { /* cleanupDatabase, */ setupTestDatabase };

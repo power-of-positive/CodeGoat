@@ -181,7 +181,7 @@ function showDeadCodeGuidance(): void {
   console.log('   • Better tree-shaking optimization');
 }
 
-function handleUnusedExportsResults(filteredExports: Array<{ file: string; export: string }>, config: DeadCodeConfig): void {
+function handleUnusedExportsResults(filteredExports: UnusedExport[], config: DeadCodeConfig): void {
   const unusedCount = filteredExports.length;
   let shouldFail = false;
   

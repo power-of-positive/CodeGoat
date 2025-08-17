@@ -10,7 +10,8 @@
       "Update(ui/jest.config.ts)",
       "Update(../settings-precommit.json)",
       "Update(settings-precommit.json)",
-      "Update(eslint.shared.mjs)"
+      "Update(eslint.shared.mjs)",
+      "Update(settings-precommit.json)"
     ]
   },
   "hooks": {
