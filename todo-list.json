@@ -410,8 +410,14 @@
     "status": "completed",
     "priority": "high",
     "id": "64",
-    "endTime": "2025-08-17T16:42:40+02:00",
+    "endTime": "2025-08-17T16:47:15+02:00",
     "startTime": "2025-08-17T13:27:40.000Z",
-    "duration": "1h 15m"
+    "duration": "1h 19m"
+  },
+  {
+    "content": "Display disabled validation stages as grayed out and failed stages that continued as red in validation run details",
+    "status": "pending",
+    "priority": "medium",
+    "id": "65"
   }
 ]
