@@ -49,7 +49,7 @@ export function isUiComponentFile(file: string): boolean {
       ) {
         return true;
       }
-    } catch (error) {
+    } catch {
       // If we can't read the file, assume it's not a UI component
     }
   }
@@ -57,7 +57,7 @@ export function isUiComponentFile(file: string): boolean {
   return false;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
+ 
 export function hasPlaywrightTestForUiChange(_file: string): boolean {
   // For now, check if there are any Playwright tests at all
   const testsDir = path.join(process.cwd(), "tests");
@@ -67,7 +67,7 @@ export function hasPlaywrightTestForUiChange(_file: string): boolean {
         'find tests \\( -name "*.spec.ts" -o -name "*.spec.js" \\)',
       );
       return testFiles.trim().length > 0;
-    } catch (error) {
+    } catch {
       return false;
     }
   }

@@ -264,7 +264,9 @@ class ValidationRunner {
           id: stage.id,
           name: stage.name,
           success: stage.success,
-          duration: stage.duration
+          duration: stage.duration,
+          output: stage.output,
+          error: stage.error
         }))
       };
 
@@ -305,8 +307,21 @@ class ValidationRunner {
 
 // CLI execution
 async function main(): Promise<void> {
-  const sessionId = process.argv[2] || null;
-  const runner = new ValidationRunner({ sessionId });
+  const args = process.argv.slice(2);
+  
+  // Parse arguments: [sessionId] [--settings=path]
+  let sessionId: string | null = null;
+  let settingsPath: string | undefined = undefined;
+  
+  for (const arg of args) {
+    if (arg.startsWith('--settings=')) {
+      settingsPath = arg.split('=')[1];
+    } else if (!sessionId) {
+      sessionId = arg;
+    }
+  }
+  
+  const runner = new ValidationRunner({ sessionId, settingsPath });
   
   const success = await runner.runValidation();
   process.exit(success ? 0 : 1);

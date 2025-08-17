@@ -7,6 +7,7 @@ export default [
   sharedConfig.typescript,
   sharedConfig.tests,
   sharedConfig.scripts,
+  sharedConfig.scriptsTests,
   {
     // Backend-specific: Allow longer files and functions for API routes
     files: ['src/routes/kanban-*.ts'],

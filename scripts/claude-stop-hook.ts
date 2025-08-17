@@ -43,6 +43,10 @@ if (currentDir !== expectedDir) {
 const projectRoot = path.resolve(__dirname, "..");
 const envPath = path.join(projectRoot, ".env");
 config({ path: envPath });
+
+// Set environment variable to indicate we're in Claude stop hook context
+process.env.CLAUDE_STOP_HOOK = "true";
+
 console.log("🔧 Loaded environment from:", envPath);
 if (process.env.OPENAI_API_KEY) {
   console.log("🔧 OPENAI_API_KEY is loaded");
@@ -80,43 +84,52 @@ function hasUncommittedFiles(): boolean {
 
 
 /**
- * Handle precommit checks with timeout
+ * Handle validation checks with timeout (using settings.json with todo list validation)
  */
-async function handlePrecommitChecks(): Promise<void> {
-  console.error("🧪 Running E2E tests and quality checks first...");
+async function handleValidationChecks(): Promise<void> {
+  console.error("🧪 Running complete validation pipeline including todo list...");
 
   // Set a timeout to prevent infinite loops
-  const PRECOMMIT_TIMEOUT = 120000; // 2 minutes
+  const VALIDATION_TIMEOUT = 180000; // 3 minutes
   const timeoutPromise = new Promise<never>((_, reject) => {
     setTimeout(
-      () => reject(new Error("Precommit checks timed out after 2 minutes")),
-      PRECOMMIT_TIMEOUT,
+      () => reject(new Error("Validation checks timed out after 3 minutes")),
+      VALIDATION_TIMEOUT,
     );
   });
 
   try {
-    const precommitResult = await Promise.race([
-      runPrecommitChecks(),
-      timeoutPromise,
-    ]);
+    // Run the validation script with settings.json (includes todo list validation)
+    const sessionId = `claude-stop-${Date.now()}`;
+    const { spawn } = require("child_process");
+    
+    const validationPromise = new Promise<void>((resolve, reject) => {
+      const child = spawn("npx", ["ts-node", "scripts/validate-task.ts", sessionId, "--settings=settings.json"], {
+        stdio: ["inherit", "inherit", "inherit"],
+        cwd: process.cwd()
+      });
+      
+      child.on("exit", (code: number | null) => {
+        if (code === 0) {
+          resolve();
+        } else {
+          reject(new Error(`Validation failed with exit code ${code}`));
+        }
+      });
+      
+      child.on("error", (error: Error) => {
+        reject(error);
+      });
+    });
 
-    if (precommitResult.decision === "block") {
-      console.error("⚠️ Pre-commit checks failed - blocking completion");
-      const blockResult = {
-        decision: "block",
-        reason: precommitResult.reason || "Pre-commit checks failed",
-      };
-      console.log(JSON.stringify(blockResult));
-      process.exit(2);
-    }
-
-    console.error("✅ Pre-commit checks passed");
+    await Promise.race([validationPromise, timeoutPromise]);
+    console.error("✅ All validation checks passed including todo list");
   } catch (error) {
-    console.error("⚠️ Pre-commit checks error:", error);
+    console.error("⚠️ Validation checks failed:", error);
     const blockResult = {
       decision: "block",
       reason:
-        error instanceof Error ? error.message : "Pre-commit checks failed",
+        error instanceof Error ? error.message : "Validation checks failed",
     };
     console.log(JSON.stringify(blockResult));
     process.exit(2);
@@ -173,7 +186,7 @@ async function main(): Promise<void> {
       process.exit(2);
     }
 
-    await handlePrecommitChecks();
+    await handleValidationChecks();
     const allChanges = getChangedFiles();
 
     if (allChanges) {

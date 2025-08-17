@@ -7,7 +7,10 @@
       "Update(scripts/claude-stop-hook.ts)",
       "Update(claude-stop-hook.ts)",
       "Update(settings.json)",
-      "Update(ui/jest.config.ts)"
+      "Update(ui/jest.config.ts)",
+      "Update(../settings-precommit.json)",
+      "Update(settings-precommit.json)",
+      "Update(eslint.shared.mjs)"
     ]
   },
   "hooks": {

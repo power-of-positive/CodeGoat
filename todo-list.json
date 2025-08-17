@@ -319,8 +319,11 @@
   },
   {
     "content": "Make validation runs clickable to view detailed logs and stage outputs",
-    "status": "pending",
+    "status": "completed",
     "priority": "high",
-    "id": "50"
+    "id": "50",
+    "endTime": "2025-08-17T12:57:45+02:00",
+    "startTime": "2025-08-17T08:10:14.000Z",
+    "duration": "2h 47m"
   }
 ]

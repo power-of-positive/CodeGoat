@@ -20,11 +20,11 @@
     "test:coverage": "npm run test:coverage:backend && npm run test:coverage:frontend",
     "test:coverage:backend": "jest --config=jest.unit.config.js --coverage",
     "test:coverage:frontend": "cd ui && npm run test:coverage -- --watchAll=false --testTimeout=10000",
-    "lint": "eslint src/**/*.ts",
-    "lint:fix": "eslint src/**/*.ts --fix",
-    "format": "prettier --write src/**/*.ts",
-    "format:check": "prettier --check src/**/*.ts",
-    "type-check": "tsc --noEmit --pretty && echo '✅ TypeScript type checking passed'",
+    "lint": "eslint src/**/*.ts scripts/**/*.ts tests/**/*.ts __tests__/**/*.ts",
+    "lint:fix": "eslint src/**/*.ts scripts/**/*.ts tests/**/*.ts __tests__/**/*.ts --fix",
+    "format": "prettier --write src/**/*.ts scripts/**/*.ts tests/**/*.ts __tests__/**/*.ts",
+    "format:check": "prettier --check src/**/*.ts scripts/**/*.ts tests/**/*.ts __tests__/**/*.ts",
+    "type-check": "tsc --noEmit --pretty && cd ui && tsc --noEmit --pretty && echo '✅ TypeScript type checking passed'",
     "typescript-check": "node scripts/check-typescript-preference.js",
     "logs:clean:optimized": "npx ts-node scripts/optimized-log-cleanup.ts",
     "logs:stats": "npx ts-node scripts/log-stats.ts",
@@ -69,7 +69,15 @@
       "eslint --fix",
       "prettier --write"
     ],
+    "scripts/**/*.ts": [
+      "eslint --fix",
+      "prettier --write"
+    ],
     "tests/**/*.ts": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "__tests__/**/*.ts": [
       "eslint --fix",
       "prettier --write"
     ]

@@ -5,7 +5,7 @@ import { execSync } from "child_process";
 import * as path from "path";
 import * as fs from "fs";
 
-const defaultLogger = { log: console.log, error: console.error };
+type Logger = { log: (...args: unknown[]) => void; error: (...args: unknown[]) => void };
 
 /**
  * Find test files for given changed files
@@ -33,7 +33,7 @@ export function buildCoverageCommand(
   command: string,
   changedFiles: string[],
   scriptsDir: string,
-  logger: typeof defaultLogger,
+  logger: Logger,
 ): { command: string; shouldSkip: boolean } {
   let coverageCommand = `NODE_OPTIONS='--max-old-space-size=4096' ${command} run --coverage`;
 
@@ -60,7 +60,7 @@ export function executeCoverage(
   coverageCommand: string,
   scriptsDir: string,
   timeout: number,
-  logger: typeof defaultLogger,
+  logger: Logger,
 ): { failed: boolean; output: string; debug?: string } {
   try {
     const output = execSync(coverageCommand, {
@@ -133,7 +133,7 @@ function isExecErrorWithOutput(
 export function handleCoverageWithWarnings(
   execError: unknown,
   timeout: number,
-  logger: typeof defaultLogger,
+  logger: Logger,
 ): { failed: boolean; output: string; debug?: string } {
   if (!isExecErrorWithOutput(execError)) {
     throw execError;
@@ -165,12 +165,12 @@ export function handleCoverageWithWarnings(
 /**
  * Clean up any lingering vitest processes
  */
-function cleanupVitestProcesses(logger: typeof defaultLogger): void {
+function cleanupVitestProcesses(logger: Logger): void {
   try {
     // Kill any hanging vitest processes (only if they exist)
     execSync("pkill -f vitest || true", { stdio: "pipe" });
     logger.log("🧹 Cleaned up vitest processes");
-  } catch (error) {
+  } catch {
     // Ignore cleanup errors - they're not critical
     logger.log("ℹ️ No vitest processes to cleanup");
   }

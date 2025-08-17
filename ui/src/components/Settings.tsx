@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Settings as SettingsIcon, Plus, Trash2, Save, AlertCircle, GripVertical, ChevronUp, ChevronDown } from 'lucide-react';
+import { Settings as SettingsIcon, Plus, Trash2, Save, AlertCircle, ChevronUp, ChevronDown } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Input } from './ui/input';
@@ -109,33 +109,159 @@ function ValidationStageForm({
   );
 }
 
-function ValidationStagesList() {
+function LoadingStages() {
+  return (
+    <div className="animate-pulse space-y-4">
+      {[1, 2, 3].map((i) => (
+        <div key={i} className="h-16 bg-gray-200 rounded"></div>
+      ))}
+    </div>
+  );
+}
+
+function ErrorLoadingStages() {
+  return (
+    <div className="flex items-center justify-center p-8">
+      <div className="text-center">
+        <AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-2" />
+        <p className="text-gray-600">Failed to load validation stages</p>
+      </div>
+    </div>
+  );
+}
+
+function EmptyStagesList() {
+  return (
+    <div className="text-center py-8">
+      <p className="text-gray-500">No validation stages configured</p>
+      <p className="text-sm text-gray-400 mt-1">
+        Add your first validation stage to get started
+      </p>
+    </div>
+  );
+}
+
+function StageReorderControls({ 
+  stage, 
+  index, 
+  totalStages, 
+  onMove 
+}: { 
+  stage: ValidationStage; 
+  index: number; 
+  totalStages: number; 
+  onMove: (stageId: string, direction: 'up' | 'down') => void; 
+}) {
+  return (
+    <div className="flex flex-col">
+      <Button
+        size="sm"
+        variant="ghost"
+        onClick={() => onMove(stage.id, 'up')}
+        disabled={index === 0}
+        className="h-6 w-6 p-0"
+      >
+        <ChevronUp className="w-3 h-3" />
+      </Button>
+      <Button
+        size="sm"
+        variant="ghost"
+        onClick={() => onMove(stage.id, 'down')}
+        disabled={index === totalStages - 1}
+        className="h-6 w-6 p-0"
+      >
+        <ChevronDown className="w-3 h-3" />
+      </Button>
+    </div>
+  );
+}
+
+function StageListItem({ 
+  stage, 
+  index, 
+  totalStages, 
+  editingStage, 
+  onEdit, 
+  onDelete, 
+  onMove, 
+  onUpdate, 
+  onCancelEdit 
+}: { 
+  stage: ValidationStage; 
+  index: number; 
+  totalStages: number; 
+  editingStage: ValidationStage | null; 
+  onEdit: (stage: ValidationStage) => void; 
+  onDelete: (stageId: string) => void; 
+  onMove: (stageId: string, direction: 'up' | 'down') => void; 
+  onUpdate: (id: string, stage: Omit<ValidationStage, 'id'>) => void; 
+  onCancelEdit: () => void; 
+}) {
+  return (
+    <Card key={stage.id}>
+      <CardContent className="p-4">
+        {editingStage?.id === stage.id ? (
+          <ValidationStageForm
+            stage={stage}
+            onSave={(updatedStage) => onUpdate(stage.id, updatedStage)}
+            onCancel={onCancelEdit}
+          />
+        ) : (
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-3">
+              <StageReorderControls
+                stage={stage}
+                index={index}
+                totalStages={totalStages}
+                onMove={onMove}
+              />
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-medium text-gray-900">{stage.name}</span>
+                  {!stage.enabled && (
+                    <span className="px-2 py-1 text-xs bg-gray-200 text-gray-600 rounded">
+                      Disabled
+                    </span>
+                  )}
+                </div>
+                <div className="text-sm text-gray-600">
+                  {stage.command} • {stage.timeout}ms timeout • Priority: {stage.priority || 0}
+                </div>
+              </div>
+            </div>
+            <div className="flex space-x-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => onEdit(stage)}
+              >
+                Edit
+              </Button>
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={() => onDelete(stage.id)}
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function useValidationStagesMutations() {
   const queryClient = useQueryClient();
-  const [editingStage, setEditingStage] = useState<ValidationStage | null>(null);
-  const [showAddForm, setShowAddForm] = useState(false);
-
-  const { data: stages = [], isLoading, error } = useQuery({
-    queryKey: ['validation-stages'],
-    queryFn: settingsApi.getValidationStages,
-  });
-
-  // Sort stages by order/priority for display
-  const sortedStages = [...stages].sort((a, b) => {
-    const aOrder = a.priority || 0;
-    const bOrder = b.priority || 0;
-    return aOrder - bOrder;
-  });
 
   const addMutation = useMutation({
     mutationFn: settingsApi.addValidationStage,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['validation-stages'] });
-      setShowAddForm(false);
     },
     onError: (error) => {
       console.error('Failed to add validation stage:', error);
-      // Still close the form to prevent hanging in tests
-      setShowAddForm(false);
     },
   });
 
@@ -144,12 +270,9 @@ function ValidationStagesList() {
       settingsApi.updateValidationStage(id, stage),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['validation-stages'] });
-      setEditingStage(null);
     },
     onError: (error) => {
       console.error('Failed to update validation stage:', error);
-      // Still close the form to prevent hanging in tests
-      setEditingStage(null);
     },
   });
 
@@ -160,6 +283,10 @@ function ValidationStagesList() {
     },
   });
 
+  return { addMutation, updateMutation, deleteMutation };
+}
+
+function useStageReordering(sortedStages: ValidationStage[], updateMutation: { mutateAsync: (params: { id: string; stage: ValidationStage }) => Promise<ValidationStage> }) {
   const moveStage = async (stageId: string, direction: 'up' | 'down') => {
     const currentIndex = sortedStages.findIndex(s => s.id === stageId);
     if (currentIndex === -1) return;
@@ -191,23 +318,116 @@ function ValidationStagesList() {
     }
   };
 
-  if (isLoading) {
-    return <div className="animate-pulse space-y-4">
-      {[1, 2, 3].map((i) => (
-        <div key={i} className="h-16 bg-gray-200 rounded"></div>
+  return { moveStage };
+}
+
+function AddStageForm({ 
+  showAddForm, 
+  onAdd, 
+  onCancel 
+}: { 
+  showAddForm: boolean; 
+  onAdd: (stage: Omit<ValidationStage, 'id'>) => void; 
+  onCancel: () => void; 
+}) {
+  if (!showAddForm) return null;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Add New Validation Stage</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <ValidationStageForm
+          onSave={onAdd}
+          onCancel={onCancel}
+        />
+      </CardContent>
+    </Card>
+  );
+}
+
+function StagesList({ 
+  stages, 
+  editingStage, 
+  onEdit, 
+  onDelete, 
+  onMove, 
+  onUpdate, 
+  onCancelEdit 
+}: { 
+  stages: ValidationStage[]; 
+  editingStage: ValidationStage | null; 
+  onEdit: (stage: ValidationStage) => void; 
+  onDelete: (stageId: string) => void; 
+  onMove: (stageId: string, direction: 'up' | 'down') => void; 
+  onUpdate: (id: string, stage: Omit<ValidationStage, 'id'>) => void; 
+  onCancelEdit: () => void; 
+}) {
+  if (stages.length === 0) {
+    return <EmptyStagesList />;
+  }
+
+  return (
+    <div className="space-y-2">
+      {stages.map((stage, index) => (
+        <StageListItem
+          key={stage.id}
+          stage={stage}
+          index={index}
+          totalStages={stages.length}
+          editingStage={editingStage}
+          onEdit={onEdit}
+          onDelete={onDelete}
+          onMove={onMove}
+          onUpdate={onUpdate}
+          onCancelEdit={onCancelEdit}
+        />
       ))}
-    </div>;
+    </div>
+  );
+}
+
+function ValidationStagesList() {
+  const [editingStage, setEditingStage] = useState<ValidationStage | null>(null);
+  const [showAddForm, setShowAddForm] = useState(false);
+
+  const { data: stages = [], isLoading, error } = useQuery({
+    queryKey: ['validation-stages'],
+    queryFn: settingsApi.getValidationStages,
+  });
+
+  const { addMutation, updateMutation, deleteMutation } = useValidationStagesMutations();
+
+  // Sort stages by order/priority for display
+  const sortedStages = [...stages].sort((a, b) => {
+    const aOrder = a.priority || 0;
+    const bOrder = b.priority || 0;
+    return aOrder - bOrder;
+  });
+
+  const { moveStage } = useStageReordering(sortedStages, updateMutation);
+
+  const handleAddStage = (stage: Omit<ValidationStage, 'id'>) => {
+    addMutation.mutate(stage, {
+      onSuccess: () => setShowAddForm(false),
+      onError: () => setShowAddForm(false), // Still close form to prevent hanging in tests
+    });
+  };
+
+  const handleUpdateStage = (id: string, stage: Omit<ValidationStage, 'id'>) => {
+    updateMutation.mutate({ id, stage }, {
+      onSuccess: () => setEditingStage(null),
+      onError: () => setEditingStage(null), // Still close form to prevent hanging in tests
+    });
+  };
+
+  if (isLoading) {
+    return <LoadingStages />;
   }
 
   if (error) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <div className="text-center">
-          <AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-2" />
-          <p className="text-gray-600">Failed to load validation stages</p>
-        </div>
-      </div>
-    );
+    return <ErrorLoadingStages />;
   }
 
   return (
@@ -220,98 +440,21 @@ function ValidationStagesList() {
         </Button>
       </div>
 
-      {showAddForm && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Add New Validation Stage</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ValidationStageForm
-              onSave={(stage) => addMutation.mutate(stage)}
-              onCancel={() => setShowAddForm(false)}
-            />
-          </CardContent>
-        </Card>
-      )}
+      <AddStageForm
+        showAddForm={showAddForm}
+        onAdd={handleAddStage}
+        onCancel={() => setShowAddForm(false)}
+      />
 
-      <div className="space-y-2">
-        {sortedStages.map((stage, index) => (
-          <Card key={stage.id}>
-            <CardContent className="p-4">
-              {editingStage?.id === stage.id ? (
-                <ValidationStageForm
-                  stage={stage}
-                  onSave={(updatedStage) => updateMutation.mutate({ id: stage.id, stage: updatedStage })}
-                  onCancel={() => setEditingStage(null)}
-                />
-              ) : (
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-3">
-                    <div className="flex flex-col">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => moveStage(stage.id, 'up')}
-                        disabled={index === 0}
-                        className="h-6 w-6 p-0"
-                      >
-                        <ChevronUp className="w-3 h-3" />
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => moveStage(stage.id, 'down')}
-                        disabled={index === sortedStages.length - 1}
-                        className="h-6 w-6 p-0"
-                      >
-                        <ChevronDown className="w-3 h-3" />
-                      </Button>
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-gray-900">{stage.name}</span>
-                        {!stage.enabled && (
-                          <span className="px-2 py-1 text-xs bg-gray-200 text-gray-600 rounded">
-                            Disabled
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-sm text-gray-600">
-                        {stage.command} • {stage.timeout}ms timeout • Priority: {stage.priority || 0}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex space-x-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setEditingStage(stage)}
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => deleteMutation.mutate(stage.id)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {sortedStages.length === 0 && (
-        <div className="text-center py-8">
-          <p className="text-gray-500">No validation stages configured</p>
-          <p className="text-sm text-gray-400 mt-1">
-            Add your first validation stage to get started
-          </p>
-        </div>
-      )}
+      <StagesList
+        stages={sortedStages}
+        editingStage={editingStage}
+        onEdit={setEditingStage}
+        onDelete={(stageId) => deleteMutation.mutate(stageId)}
+        onMove={moveStage}
+        onUpdate={handleUpdateStage}
+        onCancelEdit={() => setEditingStage(null)}
+      />
     </div>
   );
 }

@@ -39,6 +39,7 @@ const colors = {
   red: '\x1b[31m',
   yellow: '\x1b[33m',
   blue: '\x1b[34m',
+  cyan: '\x1b[36m',
   reset: '\x1b[0m',
   bold: '\x1b[1m'
 };
@@ -253,7 +254,7 @@ function findAndParseTodoList(): { todos: TodoItem[]; filePath: string | null } 
  * Main execution function
  */
 function main(): number {
-  console.log(`${colors.bold}${colors.blue}🔍 Todo List Validation Hook${colors.reset}\n`);
+  console.log(`${colors.bold}${colors.blue}🔍 Todo List Validation${colors.reset}\n`);
   
   // Find and parse todo list
   const { todos, filePath } = findAndParseTodoList();
@@ -327,7 +328,7 @@ function main(): number {
     });
     
     if (shouldFail) {
-      console.error(`\n${colors.yellow}💡 Please complete high priority tasks before proceeding${colors.reset}`);
+      console.error(`\n${colors.yellow}💡 Please complete unfinished tasks before proceeding${colors.reset}`);
       return 1;
     } else {
       console.log(`\n${colors.yellow}💡 Consider completing tasks when convenient${colors.reset}`);

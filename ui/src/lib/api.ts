@@ -5,8 +5,48 @@ import {
   ValidationStage,
   ValidationRun,
   ValidationMetrics,
+  ValidationStageResult,
   UserSystemInfo,
+  ThemeMode,
 } from '../../shared/types';
+
+// Internal API response types
+interface SessionResponse {
+  sessions: Array<{
+    sessionId: string;
+    startTime: string;
+    finalSuccess: boolean;
+    totalDuration?: number;
+    attempts: Array<{
+      stages: ValidationStageResult[];
+    }>;
+  }>;
+}
+
+interface StageSuccessRate {
+  attempts: number;
+  successes: number;
+  rate: number;
+}
+
+interface AnalyticsResponse {
+  totalSessions: number;
+  successRate: number;
+  averageTimeToSuccess?: number;
+  stageSuccessRates?: Record<string, StageSuccessRate>;
+  averageStageTime?: Record<string, number>;
+}
+
+interface StageMetric {
+  id: string;
+  name: string;
+  enabled: boolean;
+  attempts: number;
+  successes: number;
+  successRate: number;
+  averageDuration: number;
+  totalRuns: number;
+}
 
 const API_BASE = '/api';
 
@@ -61,24 +101,24 @@ export const settingsApi = {
 // Analytics API
 export const analyticsApi = {
   getValidationRuns: (): Promise<ValidationRun[]> => 
-    request('/analytics/sessions?limit=1000').then((data: { sessions: any[] }) => 
+    request<SessionResponse>('/analytics/sessions?limit=1000').then((data) => 
       data.sessions.map(session => ({
         id: session.sessionId,
         timestamp: new Date(session.startTime).toISOString(),
         success: session.finalSuccess,
         duration: session.totalDuration || 0,
-        stages: session.attempts.flatMap((attempt: any) => attempt.stages)
+        stages: session.attempts.flatMap((attempt) => attempt.stages)
       }))
     ),
   getValidationMetrics: (): Promise<ValidationMetrics> => 
     Promise.all([
-      request('/analytics/'), 
+      request<AnalyticsResponse>('/analytics/'), 
       request('/settings/validation/stages').then((data: { stages: ValidationStage[] }) => data.stages)
-    ]).then(([analytics, stages]: [any, ValidationStage[]]) => {
+    ]).then(([analytics, stages]: [AnalyticsResponse, ValidationStage[]]) => {
       // Merge stage success rates with average times and all stages from settings
-      const stageMetrics: Record<string, any> = {};
-      const successRates = (analytics as any).stageSuccessRates || {};
-      const stageTimes = (analytics as any).averageStageTime || {};
+      const stageMetrics: Record<string, StageMetric> = {};
+      const successRates = analytics.stageSuccessRates || {};
+      const stageTimes = analytics.averageStageTime || {};
       
       // First, add all stages from settings with default values
       stages.forEach(stage => {
@@ -109,11 +149,11 @@ export const analyticsApi = {
       });
       
       return {
-        totalRuns: (analytics as any).totalSessions,
-        successfulRuns: Math.round((analytics as any).totalSessions * (analytics as any).successRate / 100),
-        failedRuns: (analytics as any).totalSessions - Math.round((analytics as any).totalSessions * (analytics as any).successRate / 100),
-        successRate: (analytics as any).successRate / 100, // Convert from percentage to decimal
-        averageDuration: (analytics as any).averageTimeToSuccess || 0,
+        totalRuns: analytics.totalSessions,
+        successfulRuns: Math.round(analytics.totalSessions * analytics.successRate / 100),
+        failedRuns: analytics.totalSessions - Math.round(analytics.totalSessions * analytics.successRate / 100),
+        successRate: analytics.successRate / 100, // Convert from percentage to decimal
+        averageDuration: analytics.averageTimeToSuccess || 0,
         stageMetrics
       };
     }),
@@ -130,7 +170,7 @@ export const configApi = {
       home_directory: '~',
       current_directory: '.',
       config: {
-        theme: 'light' as any,
+        theme: ThemeMode.LIGHT,
         enableMetrics: true,
         validationStages: [],
       },
@@ -145,5 +185,5 @@ export const configApi = {
 
 // Legacy GitHub auth API (no-op for simplified version)
 export const githubAuthApi = {
-  checkGithubToken: async () => ({ valid: false, data: null }),
+  checkGithubToken: async (): Promise<{ valid: boolean; data: null }> => ({ valid: false, data: null }),
 };

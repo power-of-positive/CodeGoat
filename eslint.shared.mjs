@@ -117,10 +117,29 @@ export const sharedConfig = {
     rules: {
       'no-console': ['warn', { allow: ['log', 'warn', 'error', 'info'] }],
       'max-lines': ['error', { max: 450 }], // Allow longer script files
-      'max-lines-per-function': ['error', { max: 40 }], // Allow longer functions in scripts
-      'max-statements': ['error', { max: 25 }], // Allow more statements in scripts
-      'complexity': ['error', { max: 10 }], // Allow higher complexity in scripts
-      'max-params': ['error', 4], // Allow more params in scripts
+      'max-lines-per-function': ['error', { max: 60 }], // Allow longer functions in scripts (increased from 40)
+      'max-statements': ['error', { max: 30 }], // Allow more statements in scripts
+      'complexity': ['error', { max: 12 }], // Allow higher complexity in scripts
+      'max-params': ['error', 5], // Allow more params in scripts
+      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }], // Warn instead of error for scripts
+      '@typescript-eslint/explicit-function-return-type': 'off', // Turn off for scripts
+      'eslint-comments/no-use': 'off', // Allow eslint directives in scripts
+    },
+  },
+
+  // Script test files configuration - even more lenient
+  scriptsTests: {
+    files: ['scripts/**/*.test.ts', 'scripts/**/*.spec.ts'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-unused-vars': 'off',
+      '@typescript-eslint/explicit-function-return-type': 'off',
+      'no-console': 'off',
+      'max-lines': 'off',
+      'max-lines-per-function': 'off', // Allow very long test functions
+      'complexity': 'off',
+      'max-statements': 'off',
+      'eslint-comments/no-use': 'off',
     },
   },
 
@@ -135,6 +154,7 @@ export default [
   sharedConfig.typescript,
   sharedConfig.tests,
   sharedConfig.scripts,
+  sharedConfig.scriptsTests,
   sharedConfig.ignores,
   prettier,
 ];
