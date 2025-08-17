@@ -25,7 +25,7 @@ interface CommitMessageConfig {
 
 const DEFAULT_CONFIG: CommitMessageConfig = {
   requireTaskId: true,
-  taskIdPattern: /(?:task|fix|feat|chore|docs|style|refactor|test|build|ci|perf|revert)(?:\s*#?|\s*:?\s*)(\d+)/i,
+  taskIdPattern: /^CODEGOAT-(\d+):/i,
   excludePatterns: [
     '^Merge ',
     '^Revert ',
@@ -90,11 +90,11 @@ function validateCommitMessage(): void {
   const taskId = extractTaskId(commitMessage, config.taskIdPattern);
   
   if (!taskId) {
-    console.error('❌ Commit message must reference a task ID');
+    console.error('❌ Commit message must follow CODEGOAT-{id}: format');
     console.error('💡 Example formats:');
-    console.error('   - feat: implement feature (task #123)');
-    console.error('   - fix: resolve issue - task 123');
-    console.error('   - chore: update dependencies [task-123]');
+    console.error('   - CODEGOAT-123: implement new feature');
+    console.error('   - CODEGOAT-456: fix pagination issue');
+    console.error('   - CODEGOAT-789: update dependencies');
     process.exit(1);
   }
   

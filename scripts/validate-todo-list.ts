@@ -20,10 +20,10 @@ interface ValidationConfig {
 }
 
 const DEFAULT_CONFIG: ValidationConfig = {
-  maxUnfinishedTasks: 5,
-  allowedInProgressTasks: 2,
-  failOnExcess: false, // Just warn during development
-  onlyFailOnHighPriority: true, // Only fail if high priority tasks are unfinished
+  maxUnfinishedTasks: 0, // No unfinished tasks allowed
+  allowedInProgressTasks: 1, // Allow one in-progress task
+  failOnExcess: true, // Actually fail to block stopping
+  onlyFailOnHighPriority: false, // Fail on any unfinished tasks
 };
 
 // Define possible todo list file paths (prioritize todo-list.json)
@@ -292,26 +292,27 @@ function main(): number {
   const config = loadValidationConfig();
   
   // Check for unfinished tasks
-  const unfinishedTasks = todos.filter(
-    todo => todo.status === 'pending' || todo.status === 'in_progress'
-  );
+  const pendingTasks = todos.filter(todo => todo.status === 'pending');
+  const inProgressTasks = todos.filter(todo => todo.status === 'in_progress');
+  const unfinishedTasks = [...pendingTasks, ...inProgressTasks];
   
   const highPriorityUnfinished = unfinishedTasks.filter(task => task.priority === 'high');
-  const inProgressTasks = todos.filter(todo => todo.status === 'in_progress');
   
   let shouldFail = false;
   let hasWarnings = false;
   
   // Check if we should fail based on configuration
-  if (config.onlyFailOnHighPriority && highPriorityUnfinished.length > 0) {
-    shouldFail = config.failOnExcess;
-    hasWarnings = true;
-  } else if (!config.onlyFailOnHighPriority && unfinishedTasks.length > config.maxUnfinishedTasks) {
-    shouldFail = config.failOnExcess;
-    hasWarnings = true;
-  } else if (inProgressTasks.length > config.allowedInProgressTasks) {
-    shouldFail = config.failOnExcess;
-    hasWarnings = true;
+  if (config.onlyFailOnHighPriority) {
+    if (highPriorityUnfinished.length > 0) {
+      shouldFail = config.failOnExcess;
+      hasWarnings = true;
+    }
+  } else {
+    // Fail if there are any pending tasks or too many in-progress tasks
+    if (pendingTasks.length > 0 || inProgressTasks.length > config.allowedInProgressTasks) {
+      shouldFail = config.failOnExcess;
+      hasWarnings = true;
+    }
   }
   
   if (hasWarnings && unfinishedTasks.length > 0) {

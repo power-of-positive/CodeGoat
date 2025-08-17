@@ -1,7 +1,6 @@
 {
-  "maxUnfinishedTasks": 10,
-  "allowedInProgressTasks": 3, 
-  "failOnExcess": false,
-  "ignoreOldTasks": true,
-  "oldTaskThresholdDays": 30
+  "maxUnfinishedTasks": 0,
+  "allowedInProgressTasks": 1, 
+  "failOnExcess": true,
+  "onlyFailOnHighPriority": false
 }

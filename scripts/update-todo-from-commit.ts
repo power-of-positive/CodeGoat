@@ -27,9 +27,9 @@ interface CommitInfo {
   author: string;
 }
 
-// Pattern to match codegoat prefix and extract task ID
-const CODEGOAT_PATTERN = /codegoat\s+task\s*#?\s*(\d+)/i;
-const TASK_ID_PATTERN = /(?:task|fix|feat|chore|docs|style|refactor|test|build|ci|perf|revert)(?:\s*#?|\s*:?\s*)(\d+)/i;
+// Pattern to match CODEGOAT-{id}: prefix and extract task ID
+const CODEGOAT_PATTERN = /^CODEGOAT-(\d+):/i;
+const TASK_ID_PATTERN = /^CODEGOAT-(\d+):/i;
 
 function loadTodoList(todoListPath: string): TodoItem[] {
   try {
@@ -122,11 +122,11 @@ function updateTaskFromCommit(commitRef: string = 'HEAD'): void {
   console.log(`🔍 Processing commit: ${commit.hash.substring(0, 7)}`);
   console.log(`📝 Message: ${commit.message.split('\n')[0]}`);
   
-  // Check if commit has codegoat prefix
+  // Check if commit has CODEGOAT prefix
   const codegoatTaskId = extractTaskId(commit.message, CODEGOAT_PATTERN);
   
   if (codegoatTaskId) {
-    console.log(`🐐 Found codegoat task reference: ${codegoatTaskId}`);
+    console.log(`🐐 Found CODEGOAT task reference: ${codegoatTaskId}`);
     
     const task = todos.find(t => t.id === codegoatTaskId);
     if (!task) {
@@ -162,17 +162,7 @@ function updateTaskFromCommit(commitRef: string = 'HEAD'): void {
     
     saveTodoList(todoListPath, todos);
   } else {
-    // Check for regular task reference to update status to in_progress
-    const taskId = extractTaskId(commit.message, TASK_ID_PATTERN);
-    if (taskId) {
-      const task = todos.find(t => t.id === taskId);
-      if (task && task.status === 'pending') {
-        task.status = 'in_progress';
-        task.startTime = commit.timestamp;
-        console.log(`🔄 Marked task ${taskId} as in_progress`);
-        saveTodoList(todoListPath, todos);
-      }
-    }
+    console.log(`ℹ️  No CODEGOAT prefix found, task remains unchanged`);
   }
 }
 
