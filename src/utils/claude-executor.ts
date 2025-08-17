@@ -1,9 +1,11 @@
 import { spawn, ChildProcess } from 'child_process';
 import { WinstonLogger } from '../logger-winston';
+import { PermissionManager, ActionType, PermissionContext } from './permissions';
 
 export interface ClaudeExecutorOptions {
   worktreeDir: string;
   claudeCommand: string;
+  permissionManager?: PermissionManager;
 }
 
 export interface ClaudeExecutorResult {
@@ -23,17 +25,30 @@ export class ClaudeCodeExecutor {
   private readonly worktreeDir: string;
   private readonly claudeCommand: string;
   private readonly logger?: WinstonLogger;
+  private readonly permissionManager?: PermissionManager;
 
   constructor(options: ClaudeExecutorOptions, logger?: WinstonLogger) {
     this.worktreeDir = options.worktreeDir;
     this.claudeCommand = options.claudeCommand;
     this.logger = logger;
+    this.permissionManager = options.permissionManager;
   }
 
   /**
    * Spawns Claude agent process with the given prompt and collects output
    */
   async spawn(prompt: string): Promise<ClaudeExecutorResult> {
+    // Check permissions before executing
+    if (this.permissionManager) {
+      const context: PermissionContext = {
+        action: ActionType.CLAUDE_EXECUTE,
+        worktreeDir: this.worktreeDir,
+        additionalData: { prompt, command: this.claudeCommand }
+      };
+      
+      this.permissionManager.requirePermission(context);
+    }
+
     this.logger?.info('Starting Claude executor', {
       worktreeDir: this.worktreeDir,
       command: this.claudeCommand
@@ -171,5 +186,38 @@ export class ClaudeCodeExecutor {
    */
   getClaudeCommand(): string {
     return this.claudeCommand;
+  }
+
+  /**
+   * Check if a specific action is permitted without executing it
+   */
+  checkPermission(action: ActionType, target?: string): boolean {
+    if (!this.permissionManager) {
+      return true; // No permission manager means everything is allowed
+    }
+
+    const context: PermissionContext = {
+      action,
+      // Don't pass target for CLAUDE_EXECUTE as it's not a file path
+      target: action === ActionType.CLAUDE_EXECUTE ? undefined : target,
+      worktreeDir: this.worktreeDir,
+    };
+
+    const result = this.permissionManager.checkPermission(context);
+    return result.allowed;
+  }
+
+  /**
+   * Get the permission manager instance
+   */
+  getPermissionManager(): PermissionManager | undefined {
+    return this.permissionManager;
+  }
+
+  /**
+   * Check if execution is permitted for this executor
+   */
+  isExecutionPermitted(): boolean {
+    return this.checkPermission(ActionType.CLAUDE_EXECUTE, this.claudeCommand);
   }
 }
