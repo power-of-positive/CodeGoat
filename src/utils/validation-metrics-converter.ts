@@ -39,7 +39,9 @@ export class ValidationMetricsConverter {
           name: (stage.name as string) || (stage.id as string) || 'Unknown Stage',
           success: Boolean(stage.success),
           duration: (stage.duration as number) || 0,
-          attempt: 1
+          attempt: 1,
+          output: (stage.output as string) || undefined,
+          error: (stage.error as string) || undefined
         }))
       }],
       finalSuccess: success,

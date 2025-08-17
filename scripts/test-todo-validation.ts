@@ -6,6 +6,12 @@
 
 import { execSync } from "child_process";
 
+interface ExecError {
+  status?: number;
+  stderr?: string;
+  message?: string;
+}
+
 // Test data - simulating high priority unfinished tasks
 const testTodos = [
   {
@@ -54,12 +60,13 @@ try {
   });
   console.log("❌ Hook should have blocked but didn't");
   console.log("Result:", result);
-} catch (error: any) {
-  if (error.status === 2) {
+} catch (error: unknown) {
+  const execError = error as ExecError;
+  if (execError.status === 2) {
     console.log("✅ Hook correctly blocked due to high priority tasks");
-    console.log("Error output:", error.stderr);
+    console.log("Error output:", execError.stderr);
   } else {
-    console.log("❌ Unexpected error:", error);
+    console.log("❌ Unexpected error:", execError);
   }
 }
 
@@ -77,8 +84,9 @@ try {
   });
   console.log("✅ Hook correctly allowed completion");
   console.log("Result:", JSON.parse(result.trim()));
-} catch (error: any) {
-  console.log("❌ Hook should have allowed but blocked:", error.stderr);
+} catch (error: unknown) {
+  const execError = error as ExecError;
+  console.log("❌ Hook should have allowed but blocked:", execError.stderr);
 }
 
 // Test 3: No todo list (should allow)
@@ -92,8 +100,9 @@ try {
   });
   console.log("✅ Hook correctly allowed completion when no todos provided");
   console.log("Result:", JSON.parse(result.trim()));
-} catch (error: any) {
-  console.log("❌ Hook should have allowed but blocked:", error.stderr);
+} catch (error: unknown) {
+  const execError = error as ExecError;
+  console.log("❌ Hook should have allowed but blocked:", execError.stderr);
 }
 
 console.log("\n🎉 Todo validation testing completed!");

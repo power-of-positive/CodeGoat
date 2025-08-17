@@ -62,7 +62,7 @@ export function runDuplicateCodeDetection(
     return createSuccessResult(
       `🔍 Duplicate code check completed (informational only)`,
     );
-  } catch (error) {
+  } catch {
     // Even errors should be treated as informational for now
     return createSuccessResult(
       `🔍 Duplicate code check completed with issues (informational only)`,

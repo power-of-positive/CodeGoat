@@ -4,6 +4,8 @@ export interface ValidationStageMetrics {
   success: boolean;
   duration: number;
   attempt: number;
+  output?: string;
+  error?: string;
 }
 
 export interface SessionMetrics {

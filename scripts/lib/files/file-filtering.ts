@@ -42,7 +42,7 @@ export function filterValidFiles(
       const sanitizedFile = sanitizeFilePath(file, projectRoot);
       if (fs.existsSync(path.join(projectRoot, sanitizedFile)))
         validFiles.push(sanitizedFile);
-    } catch (error) {
+    } catch {
       console.warn(`Skipping invalid file: ${file}`);
     }
   }
@@ -74,7 +74,7 @@ export function filterCoverageFiles(
             : sanitized,
         );
       }
-    } catch (error) {
+    } catch {
       console.warn(`Skipping file for coverage: ${file}`);
     }
   }

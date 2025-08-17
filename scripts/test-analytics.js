@@ -33,7 +33,7 @@ class AnalyticsDemo {
       await axios.get(`${this.baseUrl}/api/status`);
       await this.log('✅ Server is already running');
       return true;
-    } catch (error) {
+    } catch {
       await this.log('❌ Server is not running. Please start the server first:');
       console.log('   npm run dev');
       return false;

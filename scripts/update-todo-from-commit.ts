@@ -29,14 +29,13 @@ interface CommitInfo {
 
 // Pattern to match CODEGOAT-{id}: prefix and extract task ID
 const CODEGOAT_PATTERN = /^CODEGOAT-(\d+):/i;
-const TASK_ID_PATTERN = /^CODEGOAT-(\d+):/i;
 
 function loadTodoList(todoListPath: string): TodoItem[] {
   try {
     const content = fs.readFileSync(todoListPath, 'utf-8');
     const data = JSON.parse(content);
     return Array.isArray(data) ? data : [];
-  } catch (error) {
+  } catch {
     console.error(`❌ Could not load todo list from ${todoListPath}`);
     return [];
   }

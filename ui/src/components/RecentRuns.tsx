@@ -12,7 +12,7 @@ function StageDetail({ stage }: { stage: ValidationStageResult }) {
   const hasLogs = hasOutput || hasError;
 
   return (
-    <div className="border border-gray-200 rounded">
+    <div className="border border-gray-200 rounded" data-testid="stage-detail">
       <div 
         className="flex justify-between items-center py-2 px-3 cursor-pointer hover:bg-gray-50"
         onClick={() => hasLogs && setShowLogs(!showLogs)}
@@ -27,7 +27,7 @@ function StageDetail({ stage }: { stage: ValidationStageResult }) {
             {stage.name || stage.id}
           </span>
           {hasLogs && (
-            <FileText className="w-3 h-3 text-gray-400" />
+            <FileText className="w-3 h-3 text-gray-400" data-testid="file-icon" />
           )}
         </div>
         <div className="flex items-center gap-2">
@@ -41,20 +41,20 @@ function StageDetail({ stage }: { stage: ValidationStageResult }) {
           </div>
           {hasLogs && (
             showLogs ? (
-              <ChevronDown className="w-4 h-4 text-gray-400" />
+              <ChevronDown className="w-4 h-4 text-gray-400" data-testid="chevron-down" />
             ) : (
-              <ChevronRight className="w-4 h-4 text-gray-400" />
+              <ChevronRight className="w-4 h-4 text-gray-400" data-testid="chevron-right" />
             )
           )}
         </div>
       </div>
       
       {showLogs && hasLogs && (
-        <div className="border-t border-gray-200 p-3 bg-gray-50">
+        <div className="border-t border-gray-200 p-3 bg-gray-50" data-testid="stage-logs">
           {hasError && (
             <div className="mb-3">
               <div className="text-xs font-medium text-red-700 mb-1">Error Output:</div>
-              <pre className="text-xs bg-red-50 text-red-800 p-2 rounded border overflow-x-auto whitespace-pre-wrap">
+              <pre className="text-xs bg-red-50 text-red-800 p-2 rounded border overflow-x-auto whitespace-pre-wrap" data-testid="error-output">
                 {stage.error}
               </pre>
             </div>
@@ -65,7 +65,7 @@ function StageDetail({ stage }: { stage: ValidationStageResult }) {
               <div className="text-xs font-medium text-gray-700 mb-1">
                 {hasError ? 'Standard Output:' : 'Output:'}
               </div>
-              <pre className="text-xs bg-white text-gray-800 p-2 rounded border overflow-x-auto whitespace-pre-wrap">
+              <pre className="text-xs bg-white text-gray-800 p-2 rounded border overflow-x-auto whitespace-pre-wrap" data-testid="standard-output">
                 {stage.output}
               </pre>
             </div>
@@ -126,6 +126,7 @@ function RunsPerPageSelector({
         value={runsPerPage}
         onChange={(e) => setRunsPerPage(Number(e.target.value))}
         className="border border-gray-300 rounded px-2 py-1 text-sm text-gray-900 bg-white"
+        data-testid="runs-per-page-select"
       >
         <option value={5}>5</option>
         <option value={10}>10</option>
@@ -161,7 +162,7 @@ function PaginationControls({
   }
 
   return (
-    <div className="flex items-center justify-between">
+    <div className="flex items-center justify-between" data-testid="pagination-controls">
       <div className="flex items-center gap-1">
         {/* First and Previous buttons */}
         <Button
@@ -244,7 +245,7 @@ function ValidationRunItem({
   const failedStages = run.stages.length - successfulStages;
   
   return (
-    <div>
+    <div data-testid="validation-run-item">
       <div
         className={`p-3 rounded border-l-4 cursor-pointer transition-colors hover:bg-gray-50 ${
           run.success 
@@ -309,7 +310,7 @@ function ValidationRunsList({
   }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2" data-testid="validation-runs-list">
       {runs.map((run) => (
         <ValidationRunItem
           key={run.id}

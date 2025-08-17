@@ -48,8 +48,9 @@ async function cleanupDatabase(databaseUrl: string, dbName: string) {
     // Check if projects table exists
     try {
       await prisma.$queryRaw`SELECT 1 FROM projects LIMIT 1`;
-    } catch (error: any) {
-      if (error?.code === 'P2010' && error?.meta?.message?.includes('no such table: projects')) {
+    } catch (error: unknown) {
+      const prismaError = error as { code?: string; meta?: { message?: string } };
+      if (prismaError?.code === 'P2010' && prismaError?.meta?.message?.includes('no such table: projects')) {
         log(`Projects table does not exist in ${dbName}. Skipping cleanup.`);
         await prisma.$disconnect();
         return;

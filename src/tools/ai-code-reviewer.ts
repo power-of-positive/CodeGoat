@@ -3,6 +3,7 @@
 import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
+import { createLogger } from '../logger';
 
 // Import types from separate file
 import type {
@@ -13,6 +14,8 @@ import type {
   Config,
   APIResponse,
 } from './ai-code-reviewer.types';
+
+const logger = createLogger('ai-code-reviewer');
 
 // Configuration factory function for testability
 export function getConfig(): Config {
@@ -52,7 +55,7 @@ export async function getStagedFiles(): Promise<string[]> {
           file.endsWith('.jsx')
       );
   } catch (error) {
-    console.log('No staged files or git error:', (error as Error).message);
+    logger.warn('No staged files or git error:', (error as Error).message);
     return [];
   }
 }
@@ -213,7 +216,7 @@ export function shouldBlockCommit(allReviews: ReviewItem[], maxSeverity?: string
   );
 
   if (blockingReviews.length > 0) {
-    console.log(
+    logger.error(
       `\n🚫 Found ${blockingReviews.length} blocking issue(s) at ${config.maxSeverityToBlock} severity or higher`
     );
   }
@@ -269,19 +272,19 @@ function getSeverityEmoji(severity: string): string {
 }
 
 function outputBasicSummary(results: FormattedResults): void {
-  console.log('\n🤖 AI Code Review Results');
-  console.log('='.repeat(40));
-  console.log(`Files reviewed: ${results.summary.totalFiles}`);
-  console.log(`Total issues: ${results.summary.totalIssues}`);
+  logger.info('\n🤖 AI Code Review Results');
+  logger.info('='.repeat(40));
+  logger.info(`Files reviewed: ${results.summary.totalFiles}`);
+  logger.info(`Total issues: ${results.summary.totalIssues}`);
 }
 
 function outputSeverityBreakdown(results: FormattedResults): void {
   if (results.summary.totalIssues === 0) return;
 
-  console.log('\nIssues by severity:');
+  logger.info('\nIssues by severity:');
   Object.entries(results.summary.bySeverity).forEach(([severity, count]) => {
     const emoji = getSeverityEmoji(severity);
-    console.log(`  ${emoji} ${severity}: ${count}`);
+    logger.info(`  ${emoji} ${severity}: ${count}`);
   });
 }
 
@@ -292,21 +295,21 @@ function outputNotableIssues(results: FormattedResults): void {
 
   if (highSeverityIssues.length === 0) return;
 
-  console.log('\n📋 Notable Issues:');
+  logger.info('\n📋 Notable Issues:');
   highSeverityIssues.forEach(review => {
     const location = review.line ? `:${review.line}` : '';
-    console.log(`\n  ${review.file}${location}`);
-    console.log(`  ${review.severity.toUpperCase()}: ${review.message}`);
+    logger.info(`\n  ${review.file}${location}`);
+    logger.info(`  ${review.severity.toUpperCase()}: ${review.message}`);
     if (review.suggestion) {
-      console.log(`  💡 ${review.suggestion}`);
+      logger.info(`  💡 ${review.suggestion}`);
     }
   });
 }
 
 function outputBlockingIssues(results: FormattedResults, config: Config): void {
   if (!results.blocked) {
-    console.log('\n✅ No blocking issues found. Commit can proceed.');
-    console.log(`   Current blocking threshold: ${config.maxSeverityToBlock}`);
+    logger.info('\n✅ No blocking issues found. Commit can proceed.');
+    logger.info(`   Current blocking threshold: ${config.maxSeverityToBlock}`);
     return;
   }
 
@@ -315,11 +318,11 @@ function outputBlockingIssues(results: FormattedResults, config: Config): void {
     review => SEVERITY_LEVELS[review.severity] >= blockingSeverity
   );
 
-  console.log('\n❌ Commit blocked due to severity issues!');
-  console.log(
+  logger.error('\n❌ Commit blocked due to severity issues!');
+  logger.error(
     `   Found ${blockingIssues.length} issue(s) at ${config.maxSeverityToBlock} severity or higher`
   );
-  console.log(
+  logger.error(
     `   Blocking threshold: ${config.maxSeverityToBlock} (configure with AI_REVIEWER_MAX_SEVERITY)`
   );
 
@@ -332,11 +335,11 @@ function outputBlockingIssues(results: FormattedResults, config: Config): void {
     {} as Record<string, number>
   );
 
-  console.log('\n   Blocking issues by severity:');
+  logger.error('\n   Blocking issues by severity:');
   Object.entries(blockingBySeverity)
     .sort((a, b) => SEVERITY_LEVELS[b[0]] - SEVERITY_LEVELS[a[0]])
     .forEach(([severity, count]) => {
-      console.log(`     ${getSeverityEmoji(severity)} ${severity}: ${count} issue(s)`);
+      logger.error(`     ${getSeverityEmoji(severity)} ${severity}: ${count} issue(s)`);
     });
 }
 
@@ -350,7 +353,7 @@ export function outputResults(results: FormattedResults): void {
   outputSeverityBreakdown(results);
   outputNotableIssues(results);
   
-  console.log(`\n📊 Detailed results saved to: ${config.outputFile}`);
+  logger.info(`\n📊 Detailed results saved to: ${config.outputFile}`);
   
   outputBlockingIssues(results, config);
 }
@@ -359,27 +362,27 @@ export async function main(): Promise<void> {
   const config = getConfig();
 
   if (!config.enabled) {
-    console.log('AI code reviewer disabled (AI_REVIEWER_ENABLED=false)');
+    logger.info('AI code reviewer disabled (AI_REVIEWER_ENABLED=false)');
     process.exit(0);
   }
 
-  console.log('🤖 Running AI code review...');
+  logger.info('🤖 Running AI code review...');
 
   const stagedFiles = await getStagedFiles();
 
   if (stagedFiles.length === 0) {
-    console.log('No relevant files to review.');
+    logger.info('No relevant files to review.');
     process.exit(0);
   }
 
-  console.log(`Reviewing ${stagedFiles.length} files...`);
+  logger.info(`Reviewing ${stagedFiles.length} files...`);
 
   const results: FileReviewResult[] = [];
 
   for (const filePath of stagedFiles) {
     const content = await getFileContent(filePath);
     if (content) {
-      console.log(`  Reviewing ${filePath}...`);
+      logger.info(`  Reviewing ${filePath}...`);
       const review = await reviewCode(filePath, content);
       results.push({
         file: filePath,

@@ -25,7 +25,7 @@ export function getProjectMetrics(projectRoot: string): string {
       ).trim() || "0";
 
     return `Lines of Code: ${linesOfCode}\nTest Files: ${testFiles}\nTotal Files: ${totalFiles}`;
-  } catch (error) {
+  } catch {
     return "Lines of Code: 0\nTest Files: 0\nTotal Files: 0";
   }
 }

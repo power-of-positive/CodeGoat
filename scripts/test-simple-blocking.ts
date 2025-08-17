@@ -16,7 +16,7 @@ function parseResult(err: { stdout: string }): void {
     if (result.details?.exports) {
       console.log("- Export check passed");
     }
-  } catch (e) {
+  } catch {
     console.log("Could not parse structured output");
   }
 }

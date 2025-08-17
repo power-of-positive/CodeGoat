@@ -6,7 +6,6 @@
  */
 
 import fs from 'fs/promises';
-import path from 'path';
 import { glob } from 'glob';
 
 interface Colors {
@@ -151,12 +150,12 @@ class TypeScriptPreferenceChecker {
 
     // Patterns that indicate TypeScript usage
     const typeScriptPatterns = [
-      { pattern: /:\s*\w+(\[\]|\<.*\>)?\s*[=;,\)\}]/, feature: 'Type annotations' },
+      { pattern: /:\s*\w+(\[\]|<.*>)?\s*[=;,)}]/, feature: 'Type annotations' },
       { pattern: /interface\s+\w+/, feature: 'Interface declarations' },
       { pattern: /type\s+\w+\s*=/, feature: 'Type aliases' },
       { pattern: /enum\s+\w+/, feature: 'Enum declarations' },
       { pattern: /as\s+\w+/, feature: 'Type assertions' },
-      { pattern: /\<\w+.*\>/, feature: 'Generic types' },
+      { pattern: /<\w+.*>/, feature: 'Generic types' },
       { pattern: /implements\s+\w+/, feature: 'Interface implementation' },
       { pattern: /public\s+|private\s+|protected\s+/, feature: 'Access modifiers' },
       { pattern: /readonly\s+/, feature: 'Readonly modifier' },

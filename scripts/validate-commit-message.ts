@@ -42,7 +42,7 @@ function loadTodoList(todoListPath: string): TodoItem[] {
     const content = fs.readFileSync(todoListPath, 'utf-8');
     const data = JSON.parse(content);
     return Array.isArray(data) ? data : [];
-  } catch (error) {
+  } catch {
     console.warn(`⚠️  Could not load todo list from ${todoListPath}`);
     return [];
   }
@@ -67,7 +67,7 @@ function getCommitMessage(): string {
     
     // Fallback to getting the last commit message
     return execSync('git log -1 --pretty=%B', { encoding: 'utf-8' }).trim();
-  } catch (error) {
+  } catch {
     console.error('❌ Failed to get commit message');
     process.exit(1);
   }

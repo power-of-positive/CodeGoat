@@ -15,12 +15,10 @@ const testProcess = exec(testCommand, {
   killSignal: 'SIGKILL'
 });
 
-let hasOutput = false;
 let hasFailures = false;
 let testResults = '';
 
 testProcess.stdout.on('data', (data) => {
-  hasOutput = true;
   const output = data.toString();
   testResults += output;
   console.log(output);

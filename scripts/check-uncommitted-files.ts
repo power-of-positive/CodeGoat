@@ -49,7 +49,7 @@ function loadConfig(): UncommittedFilesConfig {
     try {
       const configData = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
       return { ...DEFAULT_CONFIG, ...configData };
-    } catch (error) {
+    } catch {
       console.warn('⚠️  Failed to load uncommitted files config, using defaults');
       return DEFAULT_CONFIG;
     }

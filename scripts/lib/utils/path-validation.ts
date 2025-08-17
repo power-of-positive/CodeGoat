@@ -106,7 +106,7 @@ export function validateDirectoryExists(dirPath: string): void {
     if (!fs.statSync(dirPath).isDirectory()) {
       throw new Error(`Path is not a directory: ${dirPath}`);
     }
-  } catch (error) {
+  } catch {
     throw new Error(`Unable to access directory: ${dirPath}`);
   }
 }

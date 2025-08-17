@@ -20,7 +20,7 @@ export function getStagedFiles(): string[] {
             file.endsWith(".js") ||
             file.endsWith(".jsx")),
       );
-  } catch (error) {
+  } catch {
     return [];
   }
 }
@@ -56,7 +56,7 @@ export function checkDuplicatesInStagedFiles(): {
       blocked: false,
       details: `Duplication check passed: ${percentage.toFixed(1)}%`,
     };
-  } catch (error) {
+  } catch {
     return {
       blocked: false,
       details: "Duplicate check failed - assuming no issues",
@@ -76,7 +76,7 @@ export function analyzeFileExports(file: string): {
       ) || [];
     const estimated = Math.floor(exportMatches.length * 0.3);
     return { count: exportMatches.length, estimated };
-  } catch (error) {
+  } catch {
     return { count: 0, estimated: 0 };
   }
 }

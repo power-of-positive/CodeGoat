@@ -19,6 +19,29 @@ import { Settings, ValidationStage } from '../src/types/settings.types';
 
 const execAsync = promisify(exec);
 
+interface ValidationError {
+  message?: string;
+  stdout?: string;
+  stderr?: string;
+}
+
+interface ValidationStageResult {
+  id: string;
+  name: string;
+  success: boolean;
+  duration: number;
+  output?: string;
+  error?: string;
+}
+
+interface ValidationMetrics {
+  timestamp: string;
+  stages: ValidationStageResult[];
+  totalTime: number;
+  totalDuration: number;
+  success: boolean;
+}
+
 // ANSI color codes for console output
 interface Colors {
   reset: string;
@@ -31,14 +54,6 @@ interface Colors {
   cyan: string;
 }
 
-interface ValidationStageResult {
-  id: string;
-  name: string;
-  success: boolean;
-  duration: number;
-  error?: string;
-  output?: string;
-}
 
 interface ValidationRunnerOptions {
   settingsPath?: string;
@@ -225,7 +240,8 @@ class ValidationRunner {
         duration,
         output: stdout || stderr
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const validationError = error as ValidationError;
       const duration = Date.now() - startTime;
       
       return {
@@ -233,8 +249,8 @@ class ValidationRunner {
         name: stage.name,
         success: false,
         duration,
-        error: error.message || 'Unknown error',
-        output: error.stdout || error.stderr
+        error: validationError.message || 'Unknown error',
+        output: validationError.stdout || validationError.stderr
       };
     }
   }
@@ -242,7 +258,7 @@ class ValidationRunner {
   private async saveMetrics(): Promise<void> {
     try {
       const metricsPath = path.join(process.cwd(), 'validation-metrics.json');
-      let existingMetrics: any[] = [];
+      let existingMetrics: ValidationMetrics[] = [];
 
       try {
         const content = await fs.readFile(metricsPath, 'utf-8');
@@ -255,6 +271,7 @@ class ValidationRunner {
         timestamp: new Date().toISOString(),
         startTime: this.startTime,
         totalTime: this.results.totalTime,
+        totalDuration: this.results.totalTime,
         totalStages: this.results.totalStages,
         passed: this.results.passed,
         failed: this.results.failed,

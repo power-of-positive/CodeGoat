@@ -12,8 +12,6 @@ import { execSync } from "child_process";
 import * as process from "process";
 import { config } from "dotenv";
 import * as path from "path";
-import * as fs from "fs";
-import { runPrecommitChecks } from "./lib";
 import {
   performCodeReview,
   shouldBlockClaude,

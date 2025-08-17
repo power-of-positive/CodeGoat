@@ -53,7 +53,7 @@ function loadValidationConfig(): ValidationConfig {
     try {
       const configData = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
       return { ...DEFAULT_CONFIG, ...configData };
-    } catch (error) {
+    } catch {
       console.warn(`${colors.yellow}⚠️  Failed to load validation config, using defaults${colors.reset}`);
       return DEFAULT_CONFIG;
     }
@@ -250,15 +250,7 @@ function findAndParseTodoList(): { todos: TodoItem[]; filePath: string | null } 
   return { todos: [], filePath: null };
 }
 
-/**
- * Main execution function
- */
-function main(): number {
-  console.log(`${colors.bold}${colors.blue}🔍 Todo List Validation${colors.reset}\n`);
-  
-  // Find and parse todo list
-  const { todos, filePath } = findAndParseTodoList();
-  
+function performBasicValidation(todos: TodoItem[], filePath: string | null): number {
   if (!filePath) {
     console.error(`${colors.red}❌ No todo list file found. Expected files:${colors.reset}`);
     TODO_LIST_FILES.forEach(file => {
@@ -272,7 +264,10 @@ function main(): number {
     return 1;
   }
   
-  // Validate format
+  return 0;
+}
+
+function validateFormat(todos: TodoItem[]): number {
   console.log(`${colors.blue}🔍 Validating todo list format...${colors.reset}`);
   const validation = validateTodoListFormat(todos);
   
@@ -285,31 +280,24 @@ function main(): number {
   }
   
   console.log(`${colors.green}✅ Todo list format is valid${colors.reset}`);
-  
-  // Display statistics
-  displayStatistics(todos);
-  
-  // Load configuration
-  const config = loadValidationConfig();
-  
-  // Check for unfinished tasks
+  return 0;
+}
+
+function checkTaskCompletion(todos: TodoItem[], config: ValidationConfig): number {
   const pendingTasks = todos.filter(todo => todo.status === 'pending');
   const inProgressTasks = todos.filter(todo => todo.status === 'in_progress');
   const unfinishedTasks = [...pendingTasks, ...inProgressTasks];
-  
   const highPriorityUnfinished = unfinishedTasks.filter(task => task.priority === 'high');
   
   let shouldFail = false;
   let hasWarnings = false;
   
-  // Check if we should fail based on configuration
   if (config.onlyFailOnHighPriority) {
     if (highPriorityUnfinished.length > 0) {
       shouldFail = config.failOnExcess;
       hasWarnings = true;
     }
   } else {
-    // Fail if there are any pending tasks or too many in-progress tasks
     if (pendingTasks.length > 0 || inProgressTasks.length > config.allowedInProgressTasks) {
       shouldFail = config.failOnExcess;
       hasWarnings = true;
@@ -343,6 +331,30 @@ function main(): number {
   
   console.log(`\n${colors.green}✅ Todo list validation passed${colors.reset}`);
   return 0;
+}
+
+/**
+ * Main execution function
+ */
+function main(): number {
+  console.log(`${colors.bold}${colors.blue}🔍 Todo List Validation${colors.reset}\n`);
+  
+  const { todos, filePath } = findAndParseTodoList();
+  
+  const basicValidationResult = performBasicValidation(todos, filePath);
+  if (basicValidationResult !== 0) {
+    return basicValidationResult;
+  }
+  
+  const formatValidationResult = validateFormat(todos);
+  if (formatValidationResult !== 0) {
+    return formatValidationResult;
+  }
+  
+  displayStatistics(todos);
+  const config = loadValidationConfig();
+  
+  return checkTaskCompletion(todos, config);
 }
 
 // Run the script

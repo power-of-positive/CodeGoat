@@ -56,7 +56,7 @@ function executeTypeScriptCheck(
     // Ensure cleanup even on error
     try {
       fs.unlinkSync(tempConfigPath);
-    } catch (cleanupError) {
+    } catch {
       // Ignore cleanup errors when command already failed
     }
 
