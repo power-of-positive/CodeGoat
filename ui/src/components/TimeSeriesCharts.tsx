@@ -29,8 +29,6 @@ function formatDate(timestamp: string): string {
   return new Date(timestamp).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
   });
 }
 
@@ -64,7 +62,7 @@ export function TimeSeriesCharts({ runs }: TimeSeriesChartsProps) {
         };
       })
       .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
-      .slice(-30); // Show last 30 days
+      .slice(-60); // Show last 60 days
 
     return dailyData;
   }, [runs]);

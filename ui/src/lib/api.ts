@@ -61,7 +61,7 @@ export const settingsApi = {
 // Analytics API
 export const analyticsApi = {
   getValidationRuns: (): Promise<ValidationRun[]> => 
-    request('/analytics/sessions').then((data: { sessions: any[] }) => 
+    request('/analytics/sessions?limit=1000').then((data: { sessions: any[] }) => 
       data.sessions.map(session => ({
         id: session.sessionId,
         timestamp: new Date(session.startTime).toISOString(),

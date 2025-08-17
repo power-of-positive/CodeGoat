@@ -138,7 +138,7 @@ describe('API Client', () => {
 
       const result = await analyticsApi.getValidationRuns();
       expect(result).toEqual(expectedRuns);
-      expect(fetch).toHaveBeenCalledWith('/api/analytics/sessions', {
+      expect(fetch).toHaveBeenCalledWith('/api/analytics/sessions?limit=1000', {
         headers: { 'Content-Type': 'application/json' },
       });
     });
