@@ -301,9 +301,12 @@
   },
   {
     "content": "Implement file permission enforcement to prevent editing of protected files",
-    "status": "pending",
+    "status": "completed",
     "priority": "high",
-    "id": "48"
+    "id": "48",
+    "endTime": "2025-08-17T11:02:26+02:00",
+    "startTime": "2025-08-17T08:02:26.000Z",
+    "duration": "1h 0m"
   },
   {
     "content": "Add validation run log viewing - store and display all command outputs and errors",

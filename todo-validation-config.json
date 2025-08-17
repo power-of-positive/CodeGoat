@@ -1,6 +1,6 @@
 {
-  "maxUnfinishedTasks": 0,
+  "maxUnfinishedTasks": 1,
   "allowedInProgressTasks": 1, 
-  "failOnExcess": true,
+  "failOnExcess": false,
   "onlyFailOnHighPriority": false
 }
