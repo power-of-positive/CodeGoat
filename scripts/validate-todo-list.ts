@@ -2,7 +2,6 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { spawn } from 'child_process';
 
 // Todo list item interface
 interface TodoItem {
@@ -100,11 +99,11 @@ async function fetchTasksFromAPI(): Promise<TodoItem[]> {
       throw new Error(`API request failed: ${response.status} ${response.statusText}`);
     }
 
-    const apiResponse = await response.json() as any;
+    const apiResponse = await response.json() as { success?: boolean; data?: TodoItem[] } | TodoItem[];
     
     // Handle wrapped API response format
     let tasks: TodoItem[];
-    if (apiResponse.success && Array.isArray(apiResponse.data)) {
+    if (typeof apiResponse === 'object' && 'success' in apiResponse && apiResponse.success && Array.isArray(apiResponse.data)) {
       tasks = apiResponse.data;
     } else if (Array.isArray(apiResponse)) {
       tasks = apiResponse;
@@ -296,7 +295,7 @@ async function findAndParseTodoList(): Promise<{ todos: TodoItem[]; source: stri
       if (todos.length > 0) {
         return { todos, source: 'API' };
       }
-    } catch (error) {
+    } catch {
       console.warn(`${colors.yellow}⚠️  API fetch failed, falling back to file-based parsing${colors.reset}`);
     }
   } else {
