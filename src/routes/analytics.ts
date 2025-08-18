@@ -128,6 +128,35 @@ function cleanupSessions(analyticsService: AnalyticsService, logger: ILogger) {
   };
 }
 
+function getStageHistory(analyticsService: AnalyticsService, logger: ILogger) {
+  return async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { stageId } = req.params;
+      const days = parseInt(req.query.days as string) || 30;
+      const history = await analyticsService.getStageHistory(stageId, days);
+
+      res.json({ stageId, history });
+    } catch (error) {
+      logger.error('Failed to get stage history', error as Error);
+      res.status(500).json({ error: 'Failed to get stage history' });
+    }
+  };
+}
+
+function getStageStatistics(analyticsService: AnalyticsService, logger: ILogger) {
+  return async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { stageId } = req.params;
+      const statistics = await analyticsService.getStageStatistics(stageId);
+
+      res.json({ stageId, statistics });
+    } catch (error) {
+      logger.error('Failed to get stage statistics', error as Error);
+      res.status(500).json({ error: 'Failed to get stage statistics' });
+    }
+  };
+}
+
 export function createAnalyticsRoutes(logger: ILogger): Router {
   const router = Router();
   const analyticsService = new AnalyticsService(logger);
@@ -139,6 +168,10 @@ export function createAnalyticsRoutes(logger: ILogger): Router {
   router.put('/sessions/:sessionId/end', endSession(analyticsService, logger));
   router.post('/sessions/:sessionId/attempts', recordAttempt(analyticsService, logger));
   router.delete('/cleanup', cleanupSessions(analyticsService, logger));
+  
+  // Stage-specific analytics
+  router.get('/stages/:stageId/history', getStageHistory(analyticsService, logger));
+  router.get('/stages/:stageId/statistics', getStageStatistics(analyticsService, logger));
 
   return router;
 }

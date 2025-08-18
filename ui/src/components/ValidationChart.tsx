@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+import { Button } from './ui/button';
+import { BarChart3 } from 'lucide-react';
 import { ValidationMetrics, ValidationStage } from 'shared/types';
 import { settingsApi } from '../lib/api';
+import { StageHistoryView } from './StageHistoryView';
 
 interface StageMetrics {
   enabled: boolean;
@@ -19,6 +22,7 @@ interface StageItemProps {
   stageConfig: ValidationStage | undefined;
   selectedStage: string | null;
   onStageClick: (stageName: string) => void;
+  onViewHistory: (stageId: string, stageName: string) => void;
 }
 
 function StageHeader({ stageMetrics, stageName, isDisabled, stageConfig }: {
@@ -92,16 +96,29 @@ function StageProgressBar({ stageMetrics }: { stageMetrics: StageMetrics }) {
   );
 }
 
-function StageDetails({ stageMetrics, stageName, stageConfig }: {
+function StageDetails({ stageMetrics, stageName, stageConfig, onViewHistory }: {
   stageMetrics: StageMetrics;
   stageName: string;
   stageConfig: ValidationStage | undefined;
+  onViewHistory: (stageId: string, stageName: string) => void;
 }) {
   return (
     <div className="mt-3 p-3 bg-gray-50 rounded border">
-      <h4 className="font-medium text-gray-900 mb-2">
-        {stageMetrics.name || stageName} Details
-      </h4>
+      <div className="flex items-center justify-between mb-2">
+        <h4 className="font-medium text-gray-900">
+          {stageMetrics.name || stageName} Details
+        </h4>
+        {stageMetrics.totalRuns > 0 && (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => onViewHistory(stageName, stageMetrics.name || stageName)}
+          >
+            <BarChart3 className="h-3 w-3 mr-1" />
+            View History
+          </Button>
+        )}
+      </div>
       <div className="grid grid-cols-2 gap-4 text-sm">
         <div>
           <span className="text-gray-600">Success Rate:</span>
@@ -150,7 +167,7 @@ function StageDetails({ stageMetrics, stageName, stageConfig }: {
   );
 }
 
-function StageItem({ stageName, stageMetrics, stageConfig, selectedStage, onStageClick }: StageItemProps) {
+function StageItem({ stageName, stageMetrics, stageConfig, selectedStage, onStageClick, onViewHistory }: StageItemProps) {
   const isDisabled = !stageMetrics.enabled;
   const hasData = stageMetrics.totalRuns > 0;
   
@@ -176,6 +193,7 @@ function StageItem({ stageName, stageMetrics, stageConfig, selectedStage, onStag
           stageMetrics={stageMetrics} 
           stageName={stageName} 
           stageConfig={stageConfig} 
+          onViewHistory={onViewHistory}
         />
       )}
     </div>
@@ -189,6 +207,7 @@ interface ValidationChartProps {
 export function ValidationChart({ metrics }: ValidationChartProps) {
   const [selectedStage, setSelectedStage] = useState<string | null>(null);
   const [stages, setStages] = useState<ValidationStage[]>([]);
+  const [viewingStageHistory, setViewingStageHistory] = useState<{ id: string; name: string } | null>(null);
   const stageEntries = Object.entries(metrics.stageMetrics);
 
   useEffect(() => {
@@ -203,6 +222,16 @@ export function ValidationChart({ metrics }: ValidationChartProps) {
     acc[stage.id] = stage;
     return acc;
   }, {} as Record<string, ValidationStage>);
+
+  if (viewingStageHistory) {
+    return (
+      <StageHistoryView
+        stageId={viewingStageHistory.id}
+        stageName={viewingStageHistory.name}
+        onBack={() => setViewingStageHistory(null)}
+      />
+    );
+  }
 
   return (
     <Card>
@@ -219,6 +248,7 @@ export function ValidationChart({ metrics }: ValidationChartProps) {
               stageConfig={stageConfigMap[stageName]}
               selectedStage={selectedStage}
               onStageClick={(name) => setSelectedStage(selectedStage === name ? null : name)}
+              onViewHistory={(stageId, name) => setViewingStageHistory({ id: stageId, name })}
             />
           ))}
         </div>

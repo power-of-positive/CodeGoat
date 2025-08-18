@@ -506,7 +506,7 @@ describe('Analytics Routes', () => {
       expect(routes).toBeDefined();
       
       // The router should have the expected stack of routes
-      expect(routes.stack).toHaveLength(7); // 7 routes defined
+      expect(routes.stack).toHaveLength(9); // 9 routes defined (added 2 new stage routes)
     });
 
     it('should validate that AnalyticsService is properly mocked', () => {

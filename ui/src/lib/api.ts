@@ -161,6 +161,62 @@ export const analyticsApi = {
         stageMetrics
       };
     }),
+  getStageHistory: (stageId: string, days: number = 30): Promise<{
+    stageId: string;
+    history: {
+      dailyMetrics: Array<{
+        date: string;
+        attempts: number;
+        successes: number;
+        failures: number;
+        successRate: number;
+        averageDuration: number;
+        totalDuration: number;
+      }>;
+      trends: {
+        successRateTrend: number;
+        durationTrend: number;
+        totalAttempts: number;
+        totalSuccesses: number;
+      };
+    };
+  }> => 
+    request(`/analytics/stages/${stageId}/history?days=${days}`),
+  getStageStatistics: (stageId: string): Promise<{
+    stageId: string;
+    statistics: {
+      overview: {
+        totalAttempts: number;
+        totalSuccesses: number;
+        totalFailures: number;
+        successRate: number;
+        averageDuration: number;
+        medianDuration: number;
+        minDuration: number;
+        maxDuration: number;
+        standardDeviation: number;
+      };
+      recentRuns: Array<{
+        timestamp: string;
+        success: boolean;
+        duration: number;
+        sessionId?: string;
+        output?: string;
+        error?: string;
+      }>;
+      performanceMetrics: {
+        durationsPercentiles: {
+          p50: number;
+          p90: number;
+          p95: number;
+          p99: number;
+        };
+        successRateByTimeOfDay: Record<string, { attempts: number; successes: number; rate: number }>;
+        failureReasons: Record<string, number>;
+      };
+    };
+  }> => 
+    request(`/analytics/stages/${stageId}/statistics`),
 };
 
 // Legacy config API for compatibility (minimal implementation)
