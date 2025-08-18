@@ -6,6 +6,7 @@ import { Settings } from './components/Settings';
 import { ValidationRunDetail } from './components/ValidationRunDetail';
 import { TaskBoard } from './components/TaskBoard';
 import { TaskDetail } from './components/TaskDetail';
+import { TaskAnalytics } from './components/TaskAnalytics';
 import { PermissionEditor } from './components/PermissionEditor';
 import { Layout } from './components/Layout';
 
@@ -28,6 +29,7 @@ function App(): React.JSX.Element {
             <Route path="/analytics" element={<Analytics />} />
             <Route path="/tasks" element={<TaskBoard />} />
             <Route path="/tasks/:taskId" element={<TaskDetail />} />
+            <Route path="/task-analytics" element={<TaskAnalytics />} />
             <Route path="/permissions" element={<PermissionEditor />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/validation-run/:runId" element={<ValidationRunDetail />} />

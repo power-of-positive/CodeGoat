@@ -7,7 +7,8 @@ import {
   X,
   Activity,
   CheckSquare,
-  Shield
+  Shield,
+  BarChart3
 } from 'lucide-react';
 import { Button } from './ui/button';
 
@@ -34,6 +35,12 @@ const navItems: NavItem[] = [
     icon: CheckSquare,
     label: 'Tasks',
     description: 'Manage tasks with kanban-style board'
+  },
+  {
+    href: '/task-analytics',
+    icon: BarChart3,
+    label: 'Task Analytics',
+    description: 'View task completion statistics and trends'
   },
   {
     href: '/permissions',

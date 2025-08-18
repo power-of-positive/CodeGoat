@@ -272,6 +272,25 @@ export const taskApi = {
     request(`/tasks/${id}`, {
       method: 'DELETE',
     }),
+
+  getTaskAnalytics: (): Promise<{
+    overview: {
+      totalTasks: number;
+      completedTasks: number;
+      inProgressTasks: number;
+      pendingTasks: number;
+      completionRate: string;
+      averageCompletionTimeMinutes: number;
+    };
+    priorityBreakdown: {
+      high: { total: number; completed: number; completionRate: string };
+      medium: { total: number; completed: number; completionRate: string };
+      low: { total: number; completed: number; completionRate: string };
+    };
+    recentCompletions: Task[];
+    dailyCompletions: { date: string; completed: number }[];
+  }> => 
+    request('/tasks/analytics'),
 };
 
 // Permission management API

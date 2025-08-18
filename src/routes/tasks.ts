@@ -271,5 +271,130 @@ export function createTaskRoutes(logger: WinstonLogger) {
     }
   });
 
+  // GET /api/tasks/analytics - Get task completion statistics
+  router.get('/analytics', async (req, res) => {
+    try {
+      const db = getDatabaseService();
+      
+      // Get overall statistics
+      const totalTasks = await db.todoTask.count();
+      const completedTasks = await db.todoTask.count({
+        where: { status: TodoStatus.COMPLETED }
+      });
+      const inProgressTasks = await db.todoTask.count({
+        where: { status: TodoStatus.IN_PROGRESS }
+      });
+      const pendingTasks = await db.todoTask.count({
+        where: { status: TodoStatus.PENDING }
+      });
+      
+      // Get completion rate by priority
+      const priorityStats = await Promise.all([
+        db.todoTask.count({ where: { priority: TodoPriority.HIGH } }),
+        db.todoTask.count({ where: { priority: TodoPriority.HIGH, status: TodoStatus.COMPLETED } }),
+        db.todoTask.count({ where: { priority: TodoPriority.MEDIUM } }),
+        db.todoTask.count({ where: { priority: TodoPriority.MEDIUM, status: TodoStatus.COMPLETED } }),
+        db.todoTask.count({ where: { priority: TodoPriority.LOW } }),
+        db.todoTask.count({ where: { priority: TodoPriority.LOW, status: TodoStatus.COMPLETED } }),
+      ]);
+      
+      // Get average completion time for completed tasks with valid durations
+      const completedTasksWithDuration = await db.todoTask.findMany({
+        where: { 
+          status: TodoStatus.COMPLETED,
+          startTime: { not: null },
+          endTime: { not: null }
+        }
+      });
+      
+      const completionTimes = completedTasksWithDuration
+        .filter(task => task.startTime && task.endTime)
+        .map(task => {
+          const start = task.startTime!.getTime();
+          const end = task.endTime!.getTime();
+          return (end - start) / (1000 * 60); // Convert to minutes
+        });
+      
+      const averageCompletionTime = completionTimes.length > 0 
+        ? completionTimes.reduce((sum, time) => sum + time, 0) / completionTimes.length
+        : 0;
+      
+      // Get recent completions (last 30 days)
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      const recentCompletions = await db.todoTask.findMany({
+        where: {
+          status: TodoStatus.COMPLETED,
+          endTime: {
+            gte: thirtyDaysAgo
+          }
+        },
+        orderBy: { endTime: 'desc' },
+        take: 10
+      });
+      
+      // Get daily completion statistics for last 30 days
+      const dailyStats = [];
+      for (let i = 29; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        const startOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+        const endOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1);
+        
+        const completedOnDay = await db.todoTask.count({
+          where: {
+            status: TodoStatus.COMPLETED,
+            endTime: {
+              gte: startOfDay,
+              lt: endOfDay
+            }
+          }
+        });
+        
+        dailyStats.push({
+          date: startOfDay.toISOString().split('T')[0],
+          completed: completedOnDay
+        });
+      }
+      
+      res.json({
+        success: true,
+        data: {
+          overview: {
+            totalTasks,
+            completedTasks,
+            inProgressTasks,
+            pendingTasks,
+            completionRate: totalTasks > 0 ? (completedTasks / totalTasks * 100).toFixed(1) : '0',
+            averageCompletionTimeMinutes: Math.round(averageCompletionTime)
+          },
+          priorityBreakdown: {
+            high: {
+              total: priorityStats[0],
+              completed: priorityStats[1],
+              completionRate: priorityStats[0] > 0 ? (priorityStats[1] / priorityStats[0] * 100).toFixed(1) : '0'
+            },
+            medium: {
+              total: priorityStats[2],
+              completed: priorityStats[3],
+              completionRate: priorityStats[2] > 0 ? (priorityStats[3] / priorityStats[2] * 100).toFixed(1) : '0'
+            },
+            low: {
+              total: priorityStats[4],
+              completed: priorityStats[5],
+              completionRate: priorityStats[4] > 0 ? (priorityStats[5] / priorityStats[4] * 100).toFixed(1) : '0'
+            }
+          },
+          recentCompletions: recentCompletions.map(dbTaskToApiTask),
+          dailyCompletions: dailyStats
+        }
+      });
+    } catch (error) {
+      logger.error('Error fetching task analytics:', error as Error);
+      res.status(500).json({ success: false, message: 'Failed to fetch task analytics' });
+    }
+  });
+
   return router;
 }
