@@ -124,6 +124,27 @@ export interface BDDScenario {
   executedAt?: string;
   executionDuration?: number;
   errorMessage?: string;
+  executionHistory?: BDDScenarioExecution[];
+}
+
+export interface BDDScenarioExecution {
+  id: string;
+  scenarioId: string;
+  status: 'pending' | 'passed' | 'failed' | 'skipped';
+  executedAt: string;
+  executionDuration?: number;
+  errorMessage?: string;
+  stepResults?: BDDStepResult[];
+  environment?: string;
+  executedBy?: string;
+  gherkinSnapshot?: string;
+}
+
+export interface BDDStepResult {
+  step: string;
+  status: 'passed' | 'failed' | 'skipped';
+  duration?: number;
+  error?: string;
 }
 
 // Task management types

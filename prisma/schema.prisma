@@ -230,8 +230,28 @@ model BDDScenario {
   updatedAt         DateTime         @updatedAt @map("updated_at")
   
   todoTask          TodoTask         @relation(fields: [todoTaskId], references: [id], onDelete: Cascade)
+  executionHistory  BDDScenarioExecution[]
   
   @@map("bdd_scenarios")
+}
+
+// BDD Scenario Execution History
+model BDDScenarioExecution {
+  id                String           @id @default(uuid())
+  scenarioId        String           @map("scenario_id")
+  status            BDDScenarioStatus
+  executedAt        DateTime         @default(now()) @map("executed_at")
+  executionDuration Int?             @map("execution_duration") // Duration in milliseconds
+  errorMessage      String?          @map("error_message")
+  stepResults       String?          @map("step_results") // JSON array of step execution results
+  environment       String?          // Test environment (dev, staging, prod)
+  executedBy        String?          @map("executed_by") // User or system that executed the test
+  gherkinSnapshot   String?          @map("gherkin_snapshot") // Snapshot of gherkin at time of execution
+  createdAt         DateTime         @default(now()) @map("created_at")
+  
+  scenario          BDDScenario      @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  
+  @@map("bdd_scenario_executions")
 }
 
 // Enums

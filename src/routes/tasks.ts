@@ -109,6 +109,131 @@ export function createTaskRoutes(logger: WinstonLogger) {
     }
   });
 
+  // GET /api/tasks/analytics - Get task completion statistics
+  router.get('/analytics', async (req, res) => {
+    try {
+      const db = getDatabaseService();
+      
+      // Get overall statistics
+      const totalTasks = await db.todoTask.count();
+      const completedTasks = await db.todoTask.count({
+        where: { status: TodoStatus.COMPLETED }
+      });
+      const inProgressTasks = await db.todoTask.count({
+        where: { status: TodoStatus.IN_PROGRESS }
+      });
+      const pendingTasks = await db.todoTask.count({
+        where: { status: TodoStatus.PENDING }
+      });
+      
+      // Get completion rate by priority
+      const priorityStats = await Promise.all([
+        db.todoTask.count({ where: { priority: TodoPriority.HIGH } }),
+        db.todoTask.count({ where: { priority: TodoPriority.HIGH, status: TodoStatus.COMPLETED } }),
+        db.todoTask.count({ where: { priority: TodoPriority.MEDIUM } }),
+        db.todoTask.count({ where: { priority: TodoPriority.MEDIUM, status: TodoStatus.COMPLETED } }),
+        db.todoTask.count({ where: { priority: TodoPriority.LOW } }),
+        db.todoTask.count({ where: { priority: TodoPriority.LOW, status: TodoStatus.COMPLETED } }),
+      ]);
+      
+      // Get average completion time for completed tasks with valid durations
+      const completedTasksWithDuration = await db.todoTask.findMany({
+        where: { 
+          status: TodoStatus.COMPLETED,
+          startTime: { not: null },
+          endTime: { not: null }
+        }
+      });
+      
+      const completionTimes = completedTasksWithDuration
+        .filter(task => task.startTime && task.endTime)
+        .map(task => {
+          const start = task.startTime!.getTime();
+          const end = task.endTime!.getTime();
+          return (end - start) / (1000 * 60); // Convert to minutes
+        });
+      
+      const averageCompletionTime = completionTimes.length > 0 
+        ? completionTimes.reduce((sum, time) => sum + time, 0) / completionTimes.length
+        : 0;
+      
+      // Get recent completions (last 30 days)
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      const recentCompletions = await db.todoTask.findMany({
+        where: {
+          status: TodoStatus.COMPLETED,
+          endTime: {
+            gte: thirtyDaysAgo
+          }
+        },
+        orderBy: { endTime: 'desc' },
+        take: 10
+      });
+      
+      // Get daily completion statistics for last 30 days
+      const dailyStats = [];
+      for (let i = 29; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        const startOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+        const endOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1);
+        
+        const completedOnDay = await db.todoTask.count({
+          where: {
+            status: TodoStatus.COMPLETED,
+            endTime: {
+              gte: startOfDay,
+              lt: endOfDay
+            }
+          }
+        });
+        
+        dailyStats.push({
+          date: startOfDay.toISOString().split('T')[0],
+          completed: completedOnDay
+        });
+      }
+      
+      res.json({
+        success: true,
+        data: {
+          overview: {
+            totalTasks,
+            completedTasks,
+            inProgressTasks,
+            pendingTasks,
+            completionRate: totalTasks > 0 ? (completedTasks / totalTasks * 100).toFixed(1) : '0',
+            averageCompletionTimeMinutes: Math.round(averageCompletionTime)
+          },
+          priorityBreakdown: {
+            high: {
+              total: priorityStats[0],
+              completed: priorityStats[1],
+              completionRate: priorityStats[0] > 0 ? (priorityStats[1] / priorityStats[0] * 100).toFixed(1) : '0'
+            },
+            medium: {
+              total: priorityStats[2],
+              completed: priorityStats[3],
+              completionRate: priorityStats[2] > 0 ? (priorityStats[3] / priorityStats[2] * 100).toFixed(1) : '0'
+            },
+            low: {
+              total: priorityStats[4],
+              completed: priorityStats[5],
+              completionRate: priorityStats[4] > 0 ? (priorityStats[5] / priorityStats[4] * 100).toFixed(1) : '0'
+            }
+          },
+          recentCompletions: recentCompletions.map(dbTaskToApiTask),
+          dailyCompletions: dailyStats
+        }
+      });
+    } catch (error) {
+      logger.error('Error fetching task analytics:', error as Error);
+      res.status(500).json({ success: false, message: 'Failed to fetch task analytics' });
+    }
+  });
+
   // GET /api/tasks/:id - Get single task
   router.get('/:id', async (req, res) => {
     try {
@@ -304,131 +429,6 @@ export function createTaskRoutes(logger: WinstonLogger) {
     }
   });
 
-  // GET /api/tasks/analytics - Get task completion statistics
-  router.get('/analytics', async (req, res) => {
-    try {
-      const db = getDatabaseService();
-      
-      // Get overall statistics
-      const totalTasks = await db.todoTask.count();
-      const completedTasks = await db.todoTask.count({
-        where: { status: TodoStatus.COMPLETED }
-      });
-      const inProgressTasks = await db.todoTask.count({
-        where: { status: TodoStatus.IN_PROGRESS }
-      });
-      const pendingTasks = await db.todoTask.count({
-        where: { status: TodoStatus.PENDING }
-      });
-      
-      // Get completion rate by priority
-      const priorityStats = await Promise.all([
-        db.todoTask.count({ where: { priority: TodoPriority.HIGH } }),
-        db.todoTask.count({ where: { priority: TodoPriority.HIGH, status: TodoStatus.COMPLETED } }),
-        db.todoTask.count({ where: { priority: TodoPriority.MEDIUM } }),
-        db.todoTask.count({ where: { priority: TodoPriority.MEDIUM, status: TodoStatus.COMPLETED } }),
-        db.todoTask.count({ where: { priority: TodoPriority.LOW } }),
-        db.todoTask.count({ where: { priority: TodoPriority.LOW, status: TodoStatus.COMPLETED } }),
-      ]);
-      
-      // Get average completion time for completed tasks with valid durations
-      const completedTasksWithDuration = await db.todoTask.findMany({
-        where: { 
-          status: TodoStatus.COMPLETED,
-          startTime: { not: null },
-          endTime: { not: null }
-        }
-      });
-      
-      const completionTimes = completedTasksWithDuration
-        .filter(task => task.startTime && task.endTime)
-        .map(task => {
-          const start = task.startTime!.getTime();
-          const end = task.endTime!.getTime();
-          return (end - start) / (1000 * 60); // Convert to minutes
-        });
-      
-      const averageCompletionTime = completionTimes.length > 0 
-        ? completionTimes.reduce((sum, time) => sum + time, 0) / completionTimes.length
-        : 0;
-      
-      // Get recent completions (last 30 days)
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      
-      const recentCompletions = await db.todoTask.findMany({
-        where: {
-          status: TodoStatus.COMPLETED,
-          endTime: {
-            gte: thirtyDaysAgo
-          }
-        },
-        orderBy: { endTime: 'desc' },
-        take: 10
-      });
-      
-      // Get daily completion statistics for last 30 days
-      const dailyStats = [];
-      for (let i = 29; i >= 0; i--) {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
-        const startOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-        const endOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1);
-        
-        const completedOnDay = await db.todoTask.count({
-          where: {
-            status: TodoStatus.COMPLETED,
-            endTime: {
-              gte: startOfDay,
-              lt: endOfDay
-            }
-          }
-        });
-        
-        dailyStats.push({
-          date: startOfDay.toISOString().split('T')[0],
-          completed: completedOnDay
-        });
-      }
-      
-      res.json({
-        success: true,
-        data: {
-          overview: {
-            totalTasks,
-            completedTasks,
-            inProgressTasks,
-            pendingTasks,
-            completionRate: totalTasks > 0 ? (completedTasks / totalTasks * 100).toFixed(1) : '0',
-            averageCompletionTimeMinutes: Math.round(averageCompletionTime)
-          },
-          priorityBreakdown: {
-            high: {
-              total: priorityStats[0],
-              completed: priorityStats[1],
-              completionRate: priorityStats[0] > 0 ? (priorityStats[1] / priorityStats[0] * 100).toFixed(1) : '0'
-            },
-            medium: {
-              total: priorityStats[2],
-              completed: priorityStats[3],
-              completionRate: priorityStats[2] > 0 ? (priorityStats[3] / priorityStats[2] * 100).toFixed(1) : '0'
-            },
-            low: {
-              total: priorityStats[4],
-              completed: priorityStats[5],
-              completionRate: priorityStats[4] > 0 ? (priorityStats[5] / priorityStats[4] * 100).toFixed(1) : '0'
-            }
-          },
-          recentCompletions: recentCompletions.map(dbTaskToApiTask),
-          dailyCompletions: dailyStats
-        }
-      });
-    } catch (error) {
-      logger.error('Error fetching task analytics:', error as Error);
-      res.status(500).json({ success: false, message: 'Failed to fetch task analytics' });
-    }
-  });
-
   // BDD Scenario endpoints
   
   // POST /api/tasks/:id/scenarios - Create new scenario for task
@@ -614,6 +614,231 @@ export function createTaskRoutes(logger: WinstonLogger) {
     } catch (error) {
       logger.error('Error deleting BDD scenario:', error as Error);
       res.status(500).json({ success: false, message: 'Failed to delete BDD scenario' });
+    }
+  });
+
+  // BDD Scenario Execution History endpoints
+  
+  // GET /api/tasks/:id/scenarios/:scenarioId/executions - Get execution history for a scenario
+  router.get('/:id/scenarios/:scenarioId/executions', async (req, res) => {
+    try {
+      const db = getDatabaseService();
+      const { limit = '50', offset = '0' } = req.query;
+      
+      // Verify scenario exists and belongs to task
+      const existingScenario = await db.bDDScenario.findFirst({
+        where: {
+          id: req.params.scenarioId,
+          todoTaskId: req.params.id
+        }
+      });
+      
+      if (!existingScenario) {
+        return res.status(404).json({ success: false, message: 'Scenario not found' });
+      }
+      
+      const executions = await db.bDDScenarioExecution.findMany({
+        where: { scenarioId: req.params.scenarioId },
+        orderBy: { executedAt: 'desc' },
+        take: parseInt(limit as string),
+        skip: parseInt(offset as string)
+      });
+      
+      const executionsResponse = executions.map(execution => ({
+        id: execution.id,
+        scenarioId: execution.scenarioId,
+        status: reverseBddStatusMapping[execution.status],
+        executedAt: execution.executedAt.toISOString(),
+        executionDuration: execution.executionDuration,
+        errorMessage: execution.errorMessage,
+        stepResults: execution.stepResults ? JSON.parse(execution.stepResults) : undefined,
+        environment: execution.environment,
+        executedBy: execution.executedBy,
+        gherkinSnapshot: execution.gherkinSnapshot,
+      }));
+      
+      res.json({ success: true, data: executionsResponse });
+    } catch (error) {
+      logger.error('Error fetching execution history:', error as Error);
+      res.status(500).json({ success: false, message: 'Failed to fetch execution history' });
+    }
+  });
+  
+  // POST /api/tasks/:id/scenarios/:scenarioId/executions - Create new execution record
+  router.post('/:id/scenarios/:scenarioId/executions', async (req, res) => {
+    try {
+      const { 
+        status, 
+        executionDuration, 
+        errorMessage, 
+        stepResults, 
+        environment = 'dev',
+        executedBy = 'system'
+      } = req.body;
+      
+      if (!status) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Status is required' 
+        });
+      }
+      
+      const db = getDatabaseService();
+      
+      // Verify scenario exists and belongs to task
+      const existingScenario = await db.bDDScenario.findFirst({
+        where: {
+          id: req.params.scenarioId,
+          todoTaskId: req.params.id
+        }
+      });
+      
+      if (!existingScenario) {
+        return res.status(404).json({ success: false, message: 'Scenario not found' });
+      }
+      
+      const dbStatus = bddStatusMapping[status] || BDDScenarioStatus.PENDING;
+      
+      const execution = await db.bDDScenarioExecution.create({
+        data: {
+          scenarioId: req.params.scenarioId,
+          status: dbStatus,
+          executionDuration,
+          errorMessage,
+          stepResults: stepResults ? JSON.stringify(stepResults) : undefined,
+          environment,
+          executedBy,
+          gherkinSnapshot: existingScenario.gherkinContent, // Save current gherkin
+        }
+      });
+      
+      // Update the scenario's current status and execution details
+      await db.bDDScenario.update({
+        where: { id: req.params.scenarioId },
+        data: {
+          status: dbStatus,
+          executedAt: execution.executedAt,
+          executionDuration,
+          errorMessage,
+        }
+      });
+      
+      logger.info('BDD execution recorded:', { 
+        taskId: req.params.id, 
+        scenarioId: req.params.scenarioId,
+        executionId: execution.id,
+        status: status
+      });
+      
+      res.status(201).json({
+        success: true,
+        data: {
+          id: execution.id,
+          scenarioId: execution.scenarioId,
+          status: reverseBddStatusMapping[execution.status],
+          executedAt: execution.executedAt.toISOString(),
+          executionDuration: execution.executionDuration,
+          errorMessage: execution.errorMessage,
+          stepResults: execution.stepResults ? JSON.parse(execution.stepResults) : undefined,
+          environment: execution.environment,
+          executedBy: execution.executedBy,
+          gherkinSnapshot: execution.gherkinSnapshot,
+        }
+      });
+    } catch (error) {
+      logger.error('Error creating execution record:', error as Error);
+      res.status(500).json({ success: false, message: 'Failed to create execution record' });
+    }
+  });
+
+  // GET /api/tasks/:id/scenarios/:scenarioId/analytics - Get execution analytics for a scenario
+  router.get('/:id/scenarios/:scenarioId/analytics', async (req, res) => {
+    try {
+      const db = getDatabaseService();
+      const { days = '30' } = req.query;
+      
+      // Verify scenario exists and belongs to task
+      const existingScenario = await db.bDDScenario.findFirst({
+        where: {
+          id: req.params.scenarioId,
+          todoTaskId: req.params.id
+        }
+      });
+      
+      if (!existingScenario) {
+        return res.status(404).json({ success: false, message: 'Scenario not found' });
+      }
+      
+      const daysAgo = new Date();
+      daysAgo.setDate(daysAgo.getDate() - parseInt(days as string));
+      
+      const executions = await db.bDDScenarioExecution.findMany({
+        where: { 
+          scenarioId: req.params.scenarioId,
+          executedAt: { gte: daysAgo }
+        },
+        orderBy: { executedAt: 'desc' }
+      });
+      
+      const totalExecutions = executions.length;
+      const passedExecutions = executions.filter(e => e.status === BDDScenarioStatus.PASSED).length;
+      const failedExecutions = executions.filter(e => e.status === BDDScenarioStatus.FAILED).length;
+      const skippedExecutions = executions.filter(e => e.status === BDDScenarioStatus.SKIPPED).length;
+      
+      const successRate = totalExecutions > 0 ? (passedExecutions / totalExecutions) * 100 : 0;
+      
+      const executionsWithDuration = executions.filter(e => e.executionDuration);
+      const averageDuration = executionsWithDuration.length > 0 
+        ? executionsWithDuration.reduce((sum, e) => sum + (e.executionDuration || 0), 0) / executionsWithDuration.length
+        : 0;
+      
+      // Group executions by day for trend analysis
+      interface DailyStats {
+        date: string;
+        total: number;
+        passed: number;
+        failed: number;
+        skipped: number;
+      }
+      
+      const dailyStats = executions.reduce((acc, execution) => {
+        const date = execution.executedAt.toISOString().split('T')[0];
+        if (!acc[date]) {
+          acc[date] = { date, total: 0, passed: 0, failed: 0, skipped: 0 };
+        }
+        acc[date].total++;
+        if (execution.status === BDDScenarioStatus.PASSED) acc[date].passed++;
+        if (execution.status === BDDScenarioStatus.FAILED) acc[date].failed++;
+        if (execution.status === BDDScenarioStatus.SKIPPED) acc[date].skipped++;
+        return acc;
+      }, {} as Record<string, DailyStats>);
+      
+      res.json({
+        success: true,
+        data: {
+          summary: {
+            totalExecutions,
+            passedExecutions,
+            failedExecutions,
+            skippedExecutions,
+            successRate: Math.round(successRate * 100) / 100,
+            averageDuration: Math.round(averageDuration)
+          },
+          trends: Object.values(dailyStats).sort((a, b) => a.date.localeCompare(b.date)),
+          recentExecutions: executions.slice(0, 10).map(execution => ({
+            id: execution.id,
+            status: reverseBddStatusMapping[execution.status],
+            executedAt: execution.executedAt.toISOString(),
+            executionDuration: execution.executionDuration,
+            errorMessage: execution.errorMessage,
+            environment: execution.environment,
+            executedBy: execution.executedBy,
+          }))
+        }
+      });
+    } catch (error) {
+      logger.error('Error fetching execution analytics:', error as Error);
+      res.status(500).json({ success: false, message: 'Failed to fetch execution analytics' });
     }
   });
 

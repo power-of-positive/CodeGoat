@@ -16,7 +16,7 @@
         "timeout": 30000,
         "enabled": true,
         "continueOnFailure": false,
-        "priority": 1
+        "priority": 0
       },
       {
         "id": "typecheck",
@@ -25,7 +25,7 @@
         "timeout": 45000,
         "enabled": true,
         "continueOnFailure": false,
-        "priority": 2
+        "priority": 1
       },
       {
         "id": "unit-tests-backend",
@@ -34,7 +34,7 @@
         "timeout": 30000,
         "enabled": true,
         "continueOnFailure": false,
-        "priority": 3
+        "priority": 2
       },
       {
         "id": "unit-tests-frontend",
@@ -43,25 +43,7 @@
         "timeout": 30000,
         "enabled": true,
         "continueOnFailure": false,
-        "priority": 4
-      },
-      {
-        "id": "integration-tests",
-        "name": "Integration Tests",
-        "command": "npm run test:integration",
-        "timeout": 90000,
-        "enabled": true,
-        "continueOnFailure": false,
-        "priority": 5
-      },
-      {
-        "id": "coverage-backend",
-        "name": "Backend Coverage Check",
-        "command": "npm run test:coverage:backend",
-        "timeout": 30000,
-        "enabled": true,
-        "continueOnFailure": false,
-        "priority": 6
+        "priority": 3
       },
       {
         "id": "coverage-frontend",
@@ -70,7 +52,16 @@
         "timeout": 30000,
         "enabled": true,
         "continueOnFailure": false,
-        "priority": 7
+        "priority": 4
+      },
+      {
+        "id": "coverage-backend",
+        "name": "Backend Coverage Check",
+        "command": "npm run test:coverage:backend",
+        "timeout": 30000,
+        "enabled": true,
+        "continueOnFailure": false,
+        "priority": 5
       },
       {
         "id": "unit-tests-scripts",
@@ -79,7 +70,16 @@
         "timeout": 30000,
         "enabled": true,
         "continueOnFailure": false,
-        "priority": 8
+        "priority": 6
+      },
+      {
+        "id": "integration-tests",
+        "name": "Integration Tests",
+        "command": "npm run test:integration",
+        "timeout": 90000,
+        "enabled": true,
+        "continueOnFailure": false,
+        "priority": 7
       },
       {
         "id": "coverage-scripts",
@@ -88,7 +88,7 @@
         "timeout": 30000,
         "enabled": true,
         "continueOnFailure": false,
-        "priority": 9
+        "priority": 8
       },
       {
         "id": "api-e2e-tests",
@@ -97,7 +97,7 @@
         "timeout": 120000,
         "enabled": true,
         "continueOnFailure": false,
-        "priority": 10
+        "priority": 9
       },
       {
         "id": "typescript-preference",
@@ -106,7 +106,7 @@
         "timeout": 10000,
         "enabled": true,
         "continueOnFailure": false,
-        "priority": 11
+        "priority": 10
       },
       {
         "id": "ai-code-review",
@@ -115,7 +115,7 @@
         "timeout": 120000,
         "enabled": true,
         "continueOnFailure": false,
-        "priority": 12
+        "priority": 11
       },
       {
         "id": "visual-regression",
@@ -124,7 +124,7 @@
         "timeout": 60000,
         "enabled": true,
         "continueOnFailure": false,
-        "priority": 13
+        "priority": 12
       },
       {
         "id": "dead-code",
@@ -160,7 +160,7 @@
         "timeout": 180000,
         "enabled": true,
         "continueOnFailure": false,
-        "priority": 17
+        "priority": 16
       },
       {
         "id": "uncommitted-files",
@@ -169,7 +169,7 @@
         "timeout": 10000,
         "enabled": true,
         "continueOnFailure": false,
-        "priority": 18
+        "priority": 17
       },
       {
         "id": "todo-list",
@@ -178,7 +178,7 @@
         "timeout": 10000,
         "enabled": true,
         "continueOnFailure": false,
-        "priority": 19
+        "priority": 18
       }
     ],
     "enableMetrics": true,

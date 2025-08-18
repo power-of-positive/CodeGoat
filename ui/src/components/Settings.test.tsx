@@ -346,14 +346,17 @@ describe('Settings Component', () => {
     
     await user.click(unitTestsUpButton);
     
-    // Should call updateValidationStage to swap priorities
-    expect(settingsApi.updateValidationStage).toHaveBeenCalledTimes(2);
-    expect(settingsApi.updateValidationStage).toHaveBeenCalledWith('test', 
-      expect.objectContaining({ priority: 1 })
-    );
-    expect(settingsApi.updateValidationStage).toHaveBeenCalledWith('lint', 
-      expect.objectContaining({ priority: 2 })
-    );
+    // Should call updateValidationStage sequentially (3 calls: temp priority, target priority, final priority)
+    expect(settingsApi.updateValidationStage).toHaveBeenCalledTimes(3);
+    
+    // The implementation uses sequential updates to avoid conflicts
+    // Final call should set the correct priority for the moved stage
+    const calls = (settingsApi.updateValidationStage as jest.Mock).mock.calls;
+    const finalTestCall = calls.find((call: any) => call[0] === 'test' && call[1].priority === 1);
+    const finalLintCall = calls.find((call: any) => call[0] === 'lint' && call[1].priority === 2);
+    
+    expect(finalTestCall).toBeTruthy();
+    expect(finalLintCall).toBeTruthy();
   });
 
   it('can move stage down in order', async () => {
@@ -375,14 +378,17 @@ describe('Settings Component', () => {
     
     await user.click(codeLintingDownButton);
     
-    // Should call updateValidationStage to swap priorities
-    expect(settingsApi.updateValidationStage).toHaveBeenCalledTimes(2);
-    expect(settingsApi.updateValidationStage).toHaveBeenCalledWith('lint', 
-      expect.objectContaining({ priority: 2 })
-    );
-    expect(settingsApi.updateValidationStage).toHaveBeenCalledWith('test', 
-      expect.objectContaining({ priority: 1 })
-    );
+    // Should call updateValidationStage sequentially (3 calls: temp priority, target priority, final priority)
+    expect(settingsApi.updateValidationStage).toHaveBeenCalledTimes(3);
+    
+    // The implementation uses sequential updates to avoid conflicts
+    // Final call should set the correct priority for the moved stage
+    const calls = (settingsApi.updateValidationStage as jest.Mock).mock.calls;
+    const finalLintCall = calls.find((call: any) => call[0] === 'lint' && call[1].priority === 2);
+    const finalTestCall = calls.find((call: any) => call[0] === 'test' && call[1].priority === 1);
+    
+    expect(finalLintCall).toBeTruthy();
+    expect(finalTestCall).toBeTruthy();
   });
 
   it('disables up button for first stage', async () => {
@@ -448,14 +454,24 @@ describe('Settings Component', () => {
     const firstCard = cards[0] as HTMLElement;
     const secondCard = cards[1] as HTMLElement;
     
+    // Create mock DataTransfer object
+    const mockDataTransfer = {
+      effectAllowed: 'move',
+      dropEffect: 'move',
+      setData: jest.fn(),
+      getData: jest.fn(() => '0'),
+    };
+    
     // Simulate drag and drop from first to second position
-    fireEvent.dragStart(firstCard, { dataTransfer: { effectAllowed: 'move', setData: jest.fn() } });
-    fireEvent.dragOver(secondCard, { dataTransfer: { dropEffect: 'move' } });
-    fireEvent.drop(secondCard, { dataTransfer: { getData: jest.fn(() => '0') } });
+    fireEvent.dragStart(firstCard, { dataTransfer: mockDataTransfer });
+    fireEvent.dragOver(secondCard, { dataTransfer: mockDataTransfer, preventDefault: jest.fn() });
+    fireEvent.drop(secondCard, { dataTransfer: mockDataTransfer, preventDefault: jest.fn() });
     fireEvent.dragEnd(firstCard);
     
-    // Should call updateValidationStage to reorder all stages
-    expect(settingsApi.updateValidationStage).toHaveBeenCalled();
+    // Should call updateValidationStage to reorder all stages (multiple calls due to sequential updates)
+    await waitFor(() => {
+      expect(settingsApi.updateValidationStage).toHaveBeenCalled();
+    }, { timeout: 1000 });
   });
 
   it('prevents dragging when a stage is being edited', async () => {

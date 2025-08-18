@@ -10,6 +10,7 @@ import {
   ThemeMode,
   Task,
   BDDScenario,
+  BDDScenarioExecution,
   PermissionRule,
   PermissionConfig,
   ActionType,
@@ -310,6 +311,51 @@ export const taskApi = {
     request(`/tasks/${taskId}/scenarios/${scenarioId}`, {
       method: 'DELETE',
     }),
+
+  // BDD Scenario execution history
+  getScenarioExecutions: (taskId: string, scenarioId: string, params?: { limit?: number; offset?: number }): Promise<BDDScenarioExecution[]> =>
+    request(`/tasks/${taskId}/scenarios/${scenarioId}/executions?${new URLSearchParams(params as Record<string, string>).toString()}`),
+
+  createScenarioExecution: (taskId: string, scenarioId: string, execution: {
+    status: 'pending' | 'passed' | 'failed' | 'skipped';
+    executionDuration?: number;
+    errorMessage?: string;
+    stepResults?: Array<{ step: string; status: 'passed' | 'failed' | 'skipped'; duration?: number; error?: string }>;
+    environment?: string;
+    executedBy?: string;
+  }): Promise<BDDScenarioExecution> =>
+    request(`/tasks/${taskId}/scenarios/${scenarioId}/executions`, {
+      method: 'POST',
+      body: JSON.stringify(execution),
+    }),
+
+  getScenarioAnalytics: (taskId: string, scenarioId: string, days?: number): Promise<{
+    summary: {
+      totalExecutions: number;
+      passedExecutions: number;
+      failedExecutions: number;
+      skippedExecutions: number;
+      successRate: number;
+      averageDuration: number;
+    };
+    trends: Array<{
+      date: string;
+      total: number;
+      passed: number;
+      failed: number;
+      skipped: number;
+    }>;
+    recentExecutions: Array<{
+      id: string;
+      status: string;
+      executedAt: string;
+      executionDuration?: number;
+      errorMessage?: string;
+      environment?: string;
+      executedBy?: string;
+    }>;
+  }> =>
+    request(`/tasks/${taskId}/scenarios/${scenarioId}/analytics${days ? `?days=${days}` : ''}`),
 };
 
 // Permission management API

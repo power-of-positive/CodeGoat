@@ -329,24 +329,33 @@ function useStageReordering(sortedStages: ValidationStage[], updateMutation: { m
     const currentStage = sortedStages[currentIndex];
     const targetStage = sortedStages[targetIndex];
 
-    // Swap priorities
+    // Use temporary priorities to avoid conflicts
+    const tempPriority = sortedStages.length + 1000;
     const currentPriority = currentStage.priority || 0;
     const targetPriority = targetStage.priority || 0;
 
     try {
-      // Update both stages with swapped priorities
-      await Promise.all([
-        updateMutation.mutateAsync({ 
-          id: currentStage.id, 
-          stage: { ...currentStage, priority: targetPriority } 
-        }),
-        updateMutation.mutateAsync({ 
-          id: targetStage.id, 
-          stage: { ...targetStage, priority: currentPriority } 
-        })
-      ]);
+      // Update sequentially with temporary priority to avoid conflicts
+      // First, move current stage to a temporary priority
+      await updateMutation.mutateAsync({ 
+        id: currentStage.id, 
+        stage: { ...currentStage, priority: tempPriority } 
+      });
+      
+      // Then move target stage to current stage's priority
+      await updateMutation.mutateAsync({ 
+        id: targetStage.id, 
+        stage: { ...targetStage, priority: currentPriority } 
+      });
+      
+      // Finally, move current stage to target stage's priority
+      await updateMutation.mutateAsync({ 
+        id: currentStage.id, 
+        stage: { ...currentStage, priority: targetPriority } 
+      });
     } catch (error) {
       console.error('Failed to reorder stages:', error);
+      throw error;
     }
   };
 
@@ -362,17 +371,31 @@ function useStageReordering(sortedStages: ValidationStage[], updateMutation: { m
       const [draggedStage] = reorderedStages.splice(fromIndex, 1);
       reorderedStages.splice(toIndex, 0, draggedStage);
 
-      // Update priorities based on new order
-      const updatePromises = reorderedStages.map((stage, index) => 
-        updateMutation.mutateAsync({
+      // Update priorities sequentially to avoid race conditions
+      // Start with a high temporary priority to avoid conflicts
+      const tempPriorityBase = sortedStages.length + 1000;
+      
+      // First, assign temporary priorities to all stages to avoid conflicts
+      for (let i = 0; i < reorderedStages.length; i++) {
+        const stage = reorderedStages[i];
+        await updateMutation.mutateAsync({
           id: stage.id,
-          stage: { ...stage, priority: index }
-        })
-      );
-
-      await Promise.all(updatePromises);
+          stage: { ...stage, priority: tempPriorityBase + i }
+        });
+      }
+      
+      // Then assign final priorities
+      for (let i = 0; i < reorderedStages.length; i++) {
+        const stage = reorderedStages[i];
+        await updateMutation.mutateAsync({
+          id: stage.id,
+          stage: { ...stage, priority: i }
+        });
+      }
     } catch (error) {
       console.error('Failed to reorder stages by drag:', error);
+      // Re-throw to ensure UI shows error state
+      throw error;
     }
   };
 

@@ -41,7 +41,7 @@
         "name": "Frontend Unit Tests",
         "command": "cd ui && npm test -- --watchAll=false --testTimeout=30000",
         "timeout": 60000,
-        "enabled": false,
+        "enabled": true,
         "continueOnFailure": true,
         "order": 4
       },
@@ -68,7 +68,7 @@
         "name": "Frontend Coverage Check",
         "command": "cd ui && npm run test:coverage -- --maxWorkers=1",
         "timeout": 60000,
-        "enabled": false,
+        "enabled": true,
         "continueOnFailure": true,
         "order": 7
       },
@@ -149,7 +149,7 @@
         "name": "Playwright E2E Tests",
         "command": "cd ui && npm run test:e2e",
         "timeout": 180000,
-        "enabled": false,
+        "enabled": true,
         "continueOnFailure": false,
         "order": 16
       },

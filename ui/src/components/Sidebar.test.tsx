@@ -41,8 +41,9 @@ describe('Sidebar Component', () => {
   it('handles navigation clicks', () => {
     renderWithRouter(<Sidebar />);
     
-    const analyticsLink = screen.getByRole('link', { name: /analytics/i });
-    const settingsLink = screen.getByRole('link', { name: /settings/i });
+    const links = screen.getAllByRole('link');
+    const analyticsLink = links.find(link => link.getAttribute('href') === '/analytics');
+    const settingsLink = links.find(link => link.getAttribute('href') === '/settings');
     
     expect(analyticsLink).toHaveAttribute('href', '/analytics');
     expect(settingsLink).toHaveAttribute('href', '/settings');
@@ -94,8 +95,10 @@ describe('Sidebar Component', () => {
 
     renderWithRouter(<Sidebar />);
     
-    const analyticsLink = screen.getByRole('link', { name: /analytics/i });
-    fireEvent.click(analyticsLink);
+    const links = screen.getAllByRole('link');
+    const analyticsLink = links.find(link => link.getAttribute('href') === '/analytics');
+    expect(analyticsLink).toBeTruthy();
+    fireEvent.click(analyticsLink!);
     
     // Should still work on mobile
     expect(analyticsLink).toHaveAttribute('href', '/analytics');

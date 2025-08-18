@@ -337,6 +337,7 @@ export function TaskDetail() {
       <Card>
         <CardContent className="p-6">
           <BDDScenarioManager
+            taskId={taskId!}
             scenarios={task.bddScenarios || []}
             onAddScenario={handleAddScenario}
             onUpdateScenario={handleUpdateScenario}

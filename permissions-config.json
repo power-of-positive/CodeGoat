@@ -1,0 +1,131 @@
+{
+  "defaultAllow": true,
+  "enableLogging": true,
+  "strictMode": false,
+  "rules": [
+    {
+      "id": "1537d200-c49d-44e8-a0fb-a9767df53a66",
+      "action": "file_write",
+      "scope": "pattern",
+      "target": "settings-precommit.json",
+      "allowed": false,
+      "reason": "Imported from .claude/settings.json deny list: Update(settings-precommit.json)",
+      "priority": 910
+    },
+    {
+      "id": "c3c42760-06cb-4879-886e-1f4b41b7ba14",
+      "action": "file_write",
+      "scope": "pattern",
+      "target": "eslint.shared.mjs",
+      "allowed": false,
+      "reason": "Imported from .claude/settings.json deny list: Update(eslint.shared.mjs)",
+      "priority": 909
+    },
+    {
+      "id": "13cb3e9e-78cc-4f86-8c90-aca652d0eee2",
+      "action": "file_write",
+      "scope": "pattern",
+      "target": "settings-precommit.json",
+      "allowed": false,
+      "reason": "Imported from .claude/settings.json deny list: Update(settings-precommit.json)",
+      "priority": 908
+    },
+    {
+      "id": "6c07bfec-25bc-4263-a78d-7621890c8af0",
+      "action": "file_write",
+      "scope": "specific_path",
+      "target": "../settings-precommit.json",
+      "allowed": false,
+      "reason": "Imported from .claude/settings.json deny list: Update(../settings-precommit.json)",
+      "priority": 907
+    },
+    {
+      "id": "0a89f010-d7a8-4df5-94c9-fb495e112c3b",
+      "action": "file_write",
+      "scope": "specific_path",
+      "target": "ui/jest.config.ts",
+      "allowed": false,
+      "reason": "Imported from .claude/settings.json deny list: Update(ui/jest.config.ts)",
+      "priority": 906
+    },
+    {
+      "id": "3c367071-a5f6-442e-b8c1-7ba0eacaf68f",
+      "action": "file_write",
+      "scope": "pattern",
+      "target": "settings.json",
+      "allowed": false,
+      "reason": "Imported from .claude/settings.json deny list: Update(settings.json)",
+      "priority": 905
+    },
+    {
+      "id": "1fc5f77a-0d5e-44fe-ac1a-a21b8bc08a2d",
+      "action": "file_write",
+      "scope": "pattern",
+      "target": "claude-stop-hook.ts",
+      "allowed": false,
+      "reason": "Imported from .claude/settings.json deny list: Update(claude-stop-hook.ts)",
+      "priority": 904
+    },
+    {
+      "id": "6a9f480e-b774-4213-8882-1c346ebbee5c",
+      "action": "file_write",
+      "scope": "specific_path",
+      "target": "scripts/claude-stop-hook.ts",
+      "allowed": false,
+      "reason": "Imported from .claude/settings.json deny list: Update(scripts/claude-stop-hook.ts)",
+      "priority": 903
+    },
+    {
+      "id": "dbd2f20b-b229-46b3-bced-c0d7079d532e",
+      "action": "file_write",
+      "scope": "pattern",
+      "target": "tsconfig.json",
+      "allowed": false,
+      "reason": "Imported from .claude/settings.json deny list: Update(tsconfig.json)",
+      "priority": 902
+    },
+    {
+      "id": "10827272-9e54-4059-b9e1-1d2dcbda7fc3",
+      "action": "file_write",
+      "scope": "pattern",
+      "target": "settings.json",
+      "allowed": false,
+      "reason": "Imported from .claude/settings.json deny list: Update(settings.json)",
+      "priority": 901
+    },
+    {
+      "id": "a2b2f051-9ddf-4137-9a25-896dfb03ec75",
+      "action": "file_write",
+      "scope": "specific_path",
+      "target": ".claude/settings.json",
+      "allowed": false,
+      "reason": "Imported from .claude/settings.json deny list: Update(.claude/settings.json)",
+      "priority": 900
+    },
+    {
+      "id": "allow-worktree-operations",
+      "action": "file_write",
+      "scope": "worktree",
+      "allowed": true,
+      "reason": "File operations allowed in worktree",
+      "priority": 200
+    },
+    {
+      "id": "deny-outside-worktree",
+      "action": "file_write",
+      "scope": "global",
+      "allowed": false,
+      "reason": "File operations outside worktree are forbidden",
+      "priority": 150
+    },
+    {
+      "id": "allow-safe-commands",
+      "action": "system_command",
+      "scope": "pattern",
+      "target": "git *",
+      "allowed": true,
+      "reason": "Git commands are allowed",
+      "priority": 120
+    }
+  ]
+}

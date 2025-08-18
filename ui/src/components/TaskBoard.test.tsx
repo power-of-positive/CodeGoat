@@ -1,6 +1,7 @@
 import React from 'react';
 import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { BrowserRouter } from 'react-router-dom';
 import '@testing-library/jest-dom';
 import { TaskBoard } from './TaskBoard';
 import { taskApi } from '../lib/api';
@@ -53,9 +54,11 @@ const createTestQueryClient = () =>
 const renderWithProviders = (component: React.ReactElement) => {
   const queryClient = createTestQueryClient();
   return render(
-    <QueryClientProvider client={queryClient}>
-      {component}
-    </QueryClientProvider>
+    <BrowserRouter>
+      <QueryClientProvider client={queryClient}>
+        {component}
+      </QueryClientProvider>
+    </BrowserRouter>
   );
 };
 

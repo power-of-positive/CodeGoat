@@ -8,14 +8,17 @@ import {
   Clock, 
   AlertTriangle,
   Code,
-  FileText
+  FileText,
+  History
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { BDDScenario } from '../../shared/types';
+import BDDExecutionHistory from './BDDExecutionHistory';
 
 interface BDDScenarioManagerProps {
+  taskId: string;
   scenarios: BDDScenario[];
   onAddScenario: (scenario: Omit<BDDScenario, 'id'>) => void;
   onUpdateScenario: (id: string, scenario: Partial<BDDScenario>) => void;
@@ -191,17 +194,20 @@ function BDDScenarioForm({ scenario, onSave, onCancel }: BDDScenarioFormProps) {
 }
 
 function BDDScenarioCard({ 
+  taskId,
   scenario, 
   onEdit, 
   onDelete, 
   readonly 
 }: { 
+  taskId: string;
   scenario: BDDScenario;
   onEdit: () => void;
   onDelete: () => void;
   readonly?: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const statusConfig = scenarioStatusConfig[scenario.status];
   const StatusIcon = statusConfig.icon;
 
@@ -257,15 +263,27 @@ function BDDScenarioCard({
           )}
         </div>
 
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={() => setExpanded(!expanded)}
-          className="text-xs"
-        >
-          <Code className="w-3 h-3 mr-1" />
-          {expanded ? 'Hide' : 'Show'} Gherkin Content
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => setExpanded(!expanded)}
+            className="text-xs"
+          >
+            <Code className="w-3 h-3 mr-1" />
+            {expanded ? 'Hide' : 'Show'} Gherkin Content
+          </Button>
+          
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => setShowHistory(!showHistory)}
+            className="text-xs"
+          >
+            <History className="w-3 h-3 mr-1" />
+            {showHistory ? 'Hide' : 'Show'} Execution History
+          </Button>
+        </div>
 
         {expanded && (
           <div className="mt-2 p-3 bg-gray-50 rounded-md">
@@ -274,12 +292,22 @@ function BDDScenarioCard({
             </pre>
           </div>
         )}
+
+        {showHistory && (
+          <div className="mt-4 border-t pt-4">
+            <BDDExecutionHistory 
+              taskId={taskId} 
+              scenarioId={scenario.id} 
+            />
+          </div>
+        )}
       </CardContent>
     </Card>
   );
 }
 
 export function BDDScenarioManager({ 
+  taskId,
   scenarios, 
   onAddScenario, 
   onUpdateScenario, 
@@ -369,6 +397,7 @@ export function BDDScenarioManager({
           {scenarios.map((scenario) => (
             <BDDScenarioCard
               key={scenario.id}
+              taskId={taskId}
               scenario={scenario}
               onEdit={() => setEditingScenario(scenario)}
               onDelete={() => onDeleteScenario(scenario.id)}

@@ -52,6 +52,11 @@ const mockHandlers = {
   onDeleteScenario: jest.fn(),
 };
 
+const defaultProps = {
+  taskId: 'test-task-123',
+  ...mockHandlers,
+};
+
 describe('BDDScenarioManager', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -60,10 +65,8 @@ describe('BDDScenarioManager', () => {
   it('renders empty state when no scenarios exist', () => {
     render(
       <BDDScenarioManager
+        {...defaultProps}
         scenarios={[]}
-        onAddScenario={mockHandlers.onAddScenario}
-        onUpdateScenario={mockHandlers.onUpdateScenario}
-        onDeleteScenario={mockHandlers.onDeleteScenario}
       />
     );
 
@@ -75,10 +78,8 @@ describe('BDDScenarioManager', () => {
   it('renders scenarios when they exist', () => {
     render(
       <BDDScenarioManager
+        {...defaultProps}
         scenarios={mockScenarios}
-        onAddScenario={mockHandlers.onAddScenario}
-        onUpdateScenario={mockHandlers.onUpdateScenario}
-        onDeleteScenario={mockHandlers.onDeleteScenario}
       />
     );
 
@@ -90,10 +91,8 @@ describe('BDDScenarioManager', () => {
   it('displays scenario status badges correctly', () => {
     render(
       <BDDScenarioManager
+        {...defaultProps}
         scenarios={mockScenarios}
-        onAddScenario={mockHandlers.onAddScenario}
-        onUpdateScenario={mockHandlers.onUpdateScenario}
-        onDeleteScenario={mockHandlers.onDeleteScenario}
       />
     );
 
@@ -104,10 +103,8 @@ describe('BDDScenarioManager', () => {
   it('shows scenario statistics', () => {
     render(
       <BDDScenarioManager
+        {...defaultProps}
         scenarios={mockScenarios}
-        onAddScenario={mockHandlers.onAddScenario}
-        onUpdateScenario={mockHandlers.onUpdateScenario}
-        onDeleteScenario={mockHandlers.onDeleteScenario}
       />
     );
 
@@ -118,10 +115,8 @@ describe('BDDScenarioManager', () => {
   it('opens form when "Add Scenario" button is clicked', () => {
     render(
       <BDDScenarioManager
+        {...defaultProps}
         scenarios={[]}
-        onAddScenario={mockHandlers.onAddScenario}
-        onUpdateScenario={mockHandlers.onUpdateScenario}
-        onDeleteScenario={mockHandlers.onDeleteScenario}
       />
     );
 
@@ -136,10 +131,8 @@ describe('BDDScenarioManager', () => {
   it('can expand and collapse gherkin content', () => {
     render(
       <BDDScenarioManager
+        {...defaultProps}
         scenarios={mockScenarios}
-        onAddScenario={mockHandlers.onAddScenario}
-        onUpdateScenario={mockHandlers.onUpdateScenario}
-        onDeleteScenario={mockHandlers.onDeleteScenario}
       />
     );
 
@@ -155,10 +148,8 @@ describe('BDDScenarioManager', () => {
   it('calls onAddScenario when form is submitted', async () => {
     render(
       <BDDScenarioManager
+        {...defaultProps}
         scenarios={[]}
-        onAddScenario={mockHandlers.onAddScenario}
-        onUpdateScenario={mockHandlers.onUpdateScenario}
-        onDeleteScenario={mockHandlers.onDeleteScenario}
       />
     );
 
@@ -206,10 +197,8 @@ describe('BDDScenarioManager', () => {
   it('calls onDeleteScenario when delete button is clicked', () => {
     render(
       <BDDScenarioManager
+        {...defaultProps}
         scenarios={mockScenarios}
-        onAddScenario={mockHandlers.onAddScenario}
-        onUpdateScenario={mockHandlers.onUpdateScenario}
-        onDeleteScenario={mockHandlers.onDeleteScenario}
       />
     );
 
@@ -231,10 +220,8 @@ describe('BDDScenarioManager', () => {
   it('disables actions when readonly is true', () => {
     render(
       <BDDScenarioManager
+        {...defaultProps}
         scenarios={mockScenarios}
-        onAddScenario={mockHandlers.onAddScenario}
-        onUpdateScenario={mockHandlers.onUpdateScenario}
-        onDeleteScenario={mockHandlers.onDeleteScenario}
         readonly={true}
       />
     );
@@ -258,10 +245,8 @@ describe('BDDScenarioManager', () => {
   it('shows execution details for completed scenarios', () => {
     render(
       <BDDScenarioManager
+        {...defaultProps}
         scenarios={mockScenarios}
-        onAddScenario={mockHandlers.onAddScenario}
-        onUpdateScenario={mockHandlers.onUpdateScenario}
-        onDeleteScenario={mockHandlers.onDeleteScenario}
       />
     );
 
@@ -272,10 +257,8 @@ describe('BDDScenarioManager', () => {
   it('provides Gherkin template in form placeholder', () => {
     render(
       <BDDScenarioManager
+        {...defaultProps}
         scenarios={[]}
-        onAddScenario={mockHandlers.onAddScenario}
-        onUpdateScenario={mockHandlers.onUpdateScenario}
-        onDeleteScenario={mockHandlers.onDeleteScenario}
       />
     );
 
