@@ -167,3 +167,154 @@ export const errorResponseSchema = {
   },
   additionalProperties: false
 };
+
+// Task Management Schemas
+export const taskSchema = {
+  type: 'object',
+  required: ['id', 'content', 'status', 'priority'],
+  properties: {
+    id: {
+      type: 'string',
+      minLength: 1
+    },
+    content: {
+      type: 'string',
+      minLength: 1
+    },
+    status: {
+      type: 'string',
+      enum: ['pending', 'in_progress', 'completed']
+    },
+    priority: {
+      type: 'string', 
+      enum: ['low', 'medium', 'high']
+    },
+    startTime: {
+      oneOf: [
+        { type: 'string' },
+        { type: 'null' }
+      ]
+    },
+    endTime: {
+      oneOf: [
+        { type: 'string' },
+        { type: 'null' }
+      ]
+    },
+    duration: {
+      oneOf: [
+        { type: 'string' },
+        { type: 'null' }
+      ]
+    }
+  },
+  additionalProperties: true
+};
+
+export const tasksListResponseSchema = {
+  type: 'array',
+  items: taskSchema
+};
+
+export const taskDetailResponseSchema = {
+  type: 'object',
+  allOf: [
+    taskSchema,
+    {
+      properties: {
+        validationRuns: {
+          type: 'array',
+          items: {
+            type: 'object',
+            required: ['id', 'success', 'duration', 'timestamp'],
+            properties: {
+              id: { type: 'string' },
+              success: { type: 'boolean' },
+              duration: { type: 'number' },
+              timestamp: { type: 'string' },
+              stages: { type: 'string' }
+            }
+          }
+        }
+      }
+    }
+  ]
+};
+
+// Permissions Management Schemas
+export const permissionRuleSchema = {
+  type: 'object',
+  required: ['action'],
+  properties: {
+    action: {
+      type: 'string',
+      enum: ['allow', 'block']
+    }
+  },
+  additionalProperties: true
+};
+
+export const commandRuleSchema = {
+  allOf: [
+    permissionRuleSchema,
+    {
+      required: ['pattern'],
+      properties: {
+        pattern: {
+          type: 'string',
+          minLength: 1
+        }
+      }
+    }
+  ]
+};
+
+export const fileRuleSchema = {
+  allOf: [
+    permissionRuleSchema,
+    {
+      required: ['path'],
+      properties: {
+        path: {
+          type: 'string',
+          minLength: 1
+        }
+      }
+    }
+  ]
+};
+
+export const apiRuleSchema = {
+  allOf: [
+    permissionRuleSchema,
+    {
+      required: ['endpoint'],
+      properties: {
+        endpoint: {
+          type: 'string',
+          minLength: 1
+        }
+      }
+    }
+  ]
+};
+
+export const permissionsResponseSchema = {
+  type: 'object',
+  required: ['commands', 'files', 'apis'],
+  properties: {
+    commands: {
+      type: 'array',
+      items: commandRuleSchema
+    },
+    files: {
+      type: 'array',
+      items: fileRuleSchema
+    },
+    apis: {
+      type: 'array',
+      items: apiRuleSchema
+    }
+  },
+  additionalProperties: false
+};

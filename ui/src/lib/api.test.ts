@@ -275,24 +275,26 @@ describe('API Client', () => {
   });
 
   describe('taskApi', () => {
-    it('should get tasks from todo-list.json', async () => {
+    it('should get tasks from API', async () => {
       const mockTasks = [{ id: '1', content: 'Task 1', status: 'pending', priority: 'high' }];
+      const mockResponse = { success: true, data: mockTasks };
       
       (fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
         ok: true,
-        json: async () => mockTasks,
+        json: async () => mockResponse,
       } as Response);
 
       const result = await taskApi.getTasks();
       expect(result).toEqual(mockTasks);
-      expect(fetch).toHaveBeenCalledWith('/todo-list.json');
+      expect(fetch).toHaveBeenCalledWith('/api/tasks', expect.objectContaining({
+        headers: { 'Content-Type': 'application/json' }
+      }));
     });
 
     it('should handle getTasks error gracefully', async () => {
       (fetch as jest.MockedFunction<typeof fetch>).mockRejectedValueOnce(new Error('Network error'));
 
-      const result = await taskApi.getTasks();
-      expect(result).toEqual([]);
+      await expect(taskApi.getTasks()).rejects.toThrow('Network error');
     });
 
     it('should create task', async () => {
@@ -306,7 +308,7 @@ describe('API Client', () => {
 
       const result = await taskApi.createTask(task);
       expect(result).toEqual(responseTask);
-      expect(fetch).toHaveBeenCalledWith('/api/api/tasks', expect.objectContaining({
+      expect(fetch).toHaveBeenCalledWith('/api/tasks', expect.objectContaining({
         method: 'POST',
         body: JSON.stringify(task)
       }));
@@ -323,7 +325,7 @@ describe('API Client', () => {
 
       const result = await taskApi.updateTask('task-123', updates);
       expect(result).toEqual(responseTask);
-      expect(fetch).toHaveBeenCalledWith('/api/api/tasks/task-123', expect.objectContaining({
+      expect(fetch).toHaveBeenCalledWith('/api/tasks/task-123', expect.objectContaining({
         method: 'PUT',
         body: JSON.stringify(updates)
       }));
@@ -336,7 +338,7 @@ describe('API Client', () => {
       } as Response);
 
       await taskApi.deleteTask('task-123');
-      expect(fetch).toHaveBeenCalledWith('/api/api/tasks/task-123', expect.objectContaining({
+      expect(fetch).toHaveBeenCalledWith('/api/tasks/task-123', expect.objectContaining({
         method: 'DELETE'
       }));
     });

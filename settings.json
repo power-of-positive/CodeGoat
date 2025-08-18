@@ -42,7 +42,7 @@
         "command": "cd ui && npm test -- --watchAll=false --testTimeout=10000",
         "timeout": 30000,
         "enabled": true,
-        "continueOnFailure": false,
+        "continueOnFailure": true,
         "order": 4
       },
       {

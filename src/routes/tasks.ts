@@ -1,8 +1,8 @@
 import express from 'express';
-import fs from 'fs/promises';
-import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { WinstonLogger } from '../logger-winston';
+import { getDatabaseService } from '../services/database';
+import { TodoStatus, TodoPriority, TodoTask } from '@prisma/client';
 
 interface Task {
   id: string;
@@ -14,27 +14,44 @@ interface Task {
   duration?: string;
 }
 
-const TODO_LIST_PATH = path.join(process.cwd(), 'todo-list.json');
+// Status mapping between API and Prisma enum
+const statusMapping: Record<string, TodoStatus> = {
+  'pending': TodoStatus.PENDING,
+  'in_progress': TodoStatus.IN_PROGRESS,
+  'completed': TodoStatus.COMPLETED,
+};
 
-// Helper function to read tasks from todo-list.json
-async function readTasks(): Promise<Task[]> {
-  try {
-    const data = await fs.readFile(TODO_LIST_PATH, 'utf-8');
-    return JSON.parse(data);
-  } catch (error) {
-    console.error('Error reading todo-list.json:', error);
-    return [];
-  }
-}
+// Priority mapping between API and Prisma enum
+const priorityMapping: Record<string, TodoPriority> = {
+  'low': TodoPriority.LOW,
+  'medium': TodoPriority.MEDIUM,
+  'high': TodoPriority.HIGH,
+};
 
-// Helper function to write tasks to todo-list.json
-async function writeTasks(tasks: Task[]): Promise<void> {
-  try {
-    await fs.writeFile(TODO_LIST_PATH, JSON.stringify(tasks, null, 2));
-  } catch (error) {
-    console.error('Error writing todo-list.json:', error);
-    throw new Error('Failed to save tasks');
-  }
+// Reverse mappings for API responses
+const reverseStatusMapping: Record<TodoStatus, string> = {
+  [TodoStatus.PENDING]: 'pending',
+  [TodoStatus.IN_PROGRESS]: 'in_progress',
+  [TodoStatus.COMPLETED]: 'completed',
+};
+
+const reversePriorityMapping: Record<TodoPriority, string> = {
+  [TodoPriority.LOW]: 'low',
+  [TodoPriority.MEDIUM]: 'medium',
+  [TodoPriority.HIGH]: 'high',
+};
+
+// Helper function to convert database task to API format
+function dbTaskToApiTask(dbTask: TodoTask): Task {
+  return {
+    id: dbTask.id,
+    content: dbTask.content,
+    status: reverseStatusMapping[dbTask.status] as Task['status'],
+    priority: reversePriorityMapping[dbTask.priority] as Task['priority'],
+    startTime: dbTask.startTime?.toISOString(),
+    endTime: dbTask.endTime?.toISOString(),
+    duration: dbTask.duration || undefined,
+  };
 }
 
 // Helper function to calculate duration
@@ -61,7 +78,15 @@ export function createTaskRoutes(logger: WinstonLogger) {
   // GET /api/tasks - Get all tasks
   router.get('/', async (req, res) => {
     try {
-      const tasks = await readTasks();
+      const db = getDatabaseService();
+      const dbTasks = await db.todoTask.findMany({
+        orderBy: [
+          { priority: 'desc' },
+          { createdAt: 'desc' }
+        ]
+      });
+      
+      const tasks = dbTasks.map(dbTaskToApiTask);
       res.json({ success: true, data: tasks });
     } catch (error) {
       logger.error('Error fetching tasks:', error as Error);
@@ -72,14 +97,29 @@ export function createTaskRoutes(logger: WinstonLogger) {
   // GET /api/tasks/:id - Get single task
   router.get('/:id', async (req, res) => {
     try {
-      const tasks = await readTasks();
-      const task = tasks.find(t => t.id === req.params.id);
+      const db = getDatabaseService();
+      const dbTask = await db.todoTask.findUnique({
+        where: { id: req.params.id },
+        include: {
+          validationRuns: {
+            orderBy: { createdAt: 'desc' },
+            take: 10
+          }
+        }
+      });
       
-      if (!task) {
+      if (!dbTask) {
         return res.status(404).json({ success: false, message: 'Task not found' });
       }
       
-      res.json({ success: true, data: task });
+      const task = dbTaskToApiTask(dbTask);
+      res.json({ 
+        success: true, 
+        data: {
+          ...task,
+          validationRuns: dbTask.validationRuns
+        }
+      });
     } catch (error) {
       logger.error('Error fetching task:', error as Error);
       res.status(500).json({ success: false, message: 'Failed to fetch task' });
@@ -95,22 +135,39 @@ export function createTaskRoutes(logger: WinstonLogger) {
         return res.status(400).json({ success: false, message: 'Task content is required' });
       }
       
-      const tasks = await readTasks();
-      const newTask: Task = {
+      const db = getDatabaseService();
+      const dbStatus = statusMapping[status] || TodoStatus.PENDING;
+      const dbPriority = priorityMapping[priority] || TodoPriority.MEDIUM;
+      
+      const taskData: {
+        id: string;
+        content: string;
+        status: TodoStatus;
+        priority: TodoPriority;
+        startTime?: Date;
+        endTime?: Date;
+        duration?: string;
+      } = {
         id: uuidv4(),
         content: content.trim(),
-        status,
-        priority,
-        ...(status === 'in_progress' && { startTime: new Date().toISOString() }),
-        ...(status === 'completed' && { 
-          startTime: new Date().toISOString(),
-          endTime: new Date().toISOString(),
-          duration: '0m'
-        })
+        status: dbStatus,
+        priority: dbPriority,
       };
       
-      tasks.push(newTask);
-      await writeTasks(tasks);
+      // Handle timing based on initial status
+      if (status === 'in_progress') {
+        taskData.startTime = new Date();
+      } else if (status === 'completed') {
+        taskData.startTime = new Date();
+        taskData.endTime = new Date();
+        taskData.duration = '0m';
+      }
+      
+      const dbTask = await db.todoTask.create({
+        data: taskData
+      });
+      
+      const newTask = dbTaskToApiTask(dbTask);
       
       logger.info('Task created:', { taskId: newTask.id, content: newTask.content });
       res.status(201).json({ success: true, data: newTask });
@@ -123,38 +180,64 @@ export function createTaskRoutes(logger: WinstonLogger) {
   // PUT /api/tasks/:id - Update task
   router.put('/:id', async (req, res) => {
     try {
-      const tasks = await readTasks();
-      const taskIndex = tasks.findIndex(t => t.id === req.params.id);
+      const db = getDatabaseService();
+      const existingTask = await db.todoTask.findUnique({
+        where: { id: req.params.id }
+      });
       
-      if (taskIndex === -1) {
+      if (!existingTask) {
         return res.status(404).json({ success: false, message: 'Task not found' });
       }
       
-      const existingTask = tasks[taskIndex];
       const updates = req.body;
+      const updateData: {
+        content?: string;
+        status?: TodoStatus;
+        priority?: TodoPriority;
+        startTime?: Date;
+        endTime?: Date;
+        duration?: string;
+      } = {};
+      
+      // Handle content updates
+      if (updates.content !== undefined) {
+        updateData.content = updates.content;
+      }
+      
+      // Handle priority updates
+      if (updates.priority !== undefined) {
+        updateData.priority = priorityMapping[updates.priority] || existingTask.priority;
+      }
       
       // Handle status changes and timing
-      if (updates.status && updates.status !== existingTask.status) {
-        if (updates.status === 'in_progress' && existingTask.status === 'pending') {
-          updates.startTime = new Date().toISOString();
-        } else if (updates.status === 'completed' && existingTask.status === 'in_progress') {
-          updates.endTime = new Date().toISOString();
-          updates.duration = calculateDuration(existingTask.startTime, updates.endTime);
+      if (updates.status && updates.status !== reverseStatusMapping[existingTask.status]) {
+        updateData.status = statusMapping[updates.status];
+        
+        if (updates.status === 'in_progress' && existingTask.status === TodoStatus.PENDING) {
+          updateData.startTime = new Date();
+        } else if (updates.status === 'completed' && existingTask.status === TodoStatus.IN_PROGRESS) {
+          const endTime = new Date();
+          updateData.endTime = endTime;
+          if (existingTask.startTime) {
+            updateData.duration = calculateDuration(
+              existingTask.startTime.toISOString(), 
+              endTime.toISOString()
+            );
+          }
         } else if (updates.status === 'completed' && !existingTask.startTime) {
           // If completing a task that was never started
-          updates.startTime = new Date().toISOString();
-          updates.endTime = new Date().toISOString();
-          updates.duration = '0m';
+          updateData.startTime = new Date();
+          updateData.endTime = new Date();
+          updateData.duration = '0m';
         }
       }
       
-      const updatedTask = {
-        ...existingTask,
-        ...updates
-      };
+      const updatedDbTask = await db.todoTask.update({
+        where: { id: req.params.id },
+        data: updateData
+      });
       
-      tasks[taskIndex] = updatedTask;
-      await writeTasks(tasks);
+      const updatedTask = dbTaskToApiTask(updatedDbTask);
       
       logger.info('Task updated:', { taskId: updatedTask.id, status: updatedTask.status });
       res.json({ success: true, data: updatedTask });
@@ -167,18 +250,20 @@ export function createTaskRoutes(logger: WinstonLogger) {
   // DELETE /api/tasks/:id - Delete task
   router.delete('/:id', async (req, res) => {
     try {
-      const tasks = await readTasks();
-      const taskIndex = tasks.findIndex(t => t.id === req.params.id);
+      const db = getDatabaseService();
+      const existingTask = await db.todoTask.findUnique({
+        where: { id: req.params.id }
+      });
       
-      if (taskIndex === -1) {
+      if (!existingTask) {
         return res.status(404).json({ success: false, message: 'Task not found' });
       }
       
-      const deletedTask = tasks[taskIndex];
-      tasks.splice(taskIndex, 1);
-      await writeTasks(tasks);
+      await db.todoTask.delete({
+        where: { id: req.params.id }
+      });
       
-      logger.info('Task deleted:', { taskId: deletedTask.id, content: deletedTask.content });
+      logger.info('Task deleted:', { taskId: existingTask.id, content: existingTask.content });
       res.json({ success: true, message: 'Task deleted successfully' });
     } catch (error) {
       logger.error('Error deleting task:', error as Error);

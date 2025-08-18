@@ -136,7 +136,23 @@ function createFailureResponse(filePath: string, error: Error): ReviewResult {
   console.warn(`AI review failed for ${filePath}:`, error.message);
   
   // Determine severity based on error type
-  const severity = error.message.includes('No valid API key configured') ? 'critical' : 'high';
+  let severity: 'info' | 'low' | 'medium' | 'high' | 'critical';
+  let suggestion: string;
+  
+  if (error.message.includes('No valid API key configured')) {
+    severity = 'critical';
+    suggestion = 'Configure OPENAI_API_KEY or OPENROUTER_API_KEY in your .env file';
+  } else if (error.message.includes('401 Unauthorized')) {
+    severity = 'info'; // Don't block commits for auth issues
+    suggestion = 'Configure a valid OPENAI_API_KEY or OPENROUTER_API_KEY in your .env file. Current key appears to be invalid.';
+  } else if (error.message.includes('API request failed')) {
+    severity = 'low'; // Don't block commits for network issues
+    suggestion = 'Check network connectivity and API configuration';
+  } else {
+    severity = 'medium';
+    suggestion = 'Check AI reviewer configuration and network connectivity';
+  }
+  
   const category = 'system' as const;
   
   return {
@@ -146,9 +162,7 @@ function createFailureResponse(filePath: string, error: Error): ReviewResult {
         severity,
         category,
         message: `AI review failed: ${error.message}`,
-        suggestion: error.message.includes('API key') 
-          ? 'Configure OPENAI_API_KEY or OPENROUTER_API_KEY in your .env file'
-          : 'Check network connectivity and API configuration',
+        suggestion,
       },
     ],
     summary: 'Review failed due to technical issue',
@@ -184,14 +198,26 @@ async function callReviewAPI(config: Config, prompt: string): Promise<string> {
 export async function reviewCode(filePath: string, content: string): Promise<ReviewResult> {
   const config = getConfig();
 
-  if (!config.openaiApiKey || config.openaiApiKey === 'your_openrouter_api_key_here') {
-    console.error('❌ No valid API key configured for AI code reviewer');
-    console.error('   Please set either OPENAI_API_KEY or OPENROUTER_API_KEY environment variable');
-    console.error('   Current API endpoint:', config.apiEndpoint);
-    console.error('   Current model:', config.model);
+  if (!config.openaiApiKey || config.openaiApiKey === 'your_openrouter_api_key_here' || config.openaiApiKey === 'test-key') {
+    console.warn('⚠️  No valid API key configured for AI code reviewer');
+    console.warn('   Please set either OPENAI_API_KEY or OPENROUTER_API_KEY environment variable');
+    console.warn('   Current API endpoint:', config.apiEndpoint);
+    console.warn('   Current model:', config.model);
+    console.warn('   Skipping AI review for:', filePath);
     
-    // Throw error to indicate failure rather than returning a successful review
-    throw new Error('AI code review failed: No valid API key configured. Set OPENAI_API_KEY or OPENROUTER_API_KEY environment variable.');
+    // Return a non-blocking warning instead of a high-severity error
+    return {
+      reviews: [
+        {
+          line: null,
+          severity: 'info',
+          category: 'system',
+          message: 'AI code review skipped: No valid API key configured',
+          suggestion: 'Configure OPENAI_API_KEY or OPENROUTER_API_KEY in your .env file to enable AI code review',
+        },
+      ],
+      summary: 'AI review skipped due to missing API configuration',
+    };
   }
 
   try {

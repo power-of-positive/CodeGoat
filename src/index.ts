@@ -8,6 +8,7 @@ import { createSettingsRoutes } from './routes/settings';
 import { createAnalyticsRoutes } from './routes/analytics';
 import { createTaskRoutes } from './routes/tasks';
 import { createPermissionRoutes } from './routes/permissions';
+import { createDatabaseService } from './services/database';
 
 const app = express();
 
@@ -20,6 +21,9 @@ const logger = new WinstonLogger({
   maxFiles: '10',
   maxSize: '10485760', // 10MB
 });
+
+// Initialize database service
+createDatabaseService(logger);
 
 // Initialize optimized log cleaner for better performance
 const logCleaner = new LogCleaner(

@@ -16,6 +16,7 @@ import path from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { Settings, ValidationStage } from '../src/types/settings.types';
+import { PrismaClient } from '@prisma/client';
 
 const execAsync = promisify(exec);
 
@@ -86,11 +87,13 @@ class ValidationRunner {
   private sessionId: string | null;
   private startTime: number;
   private results: ValidationResults;
+  private db: PrismaClient;
 
   constructor(options: ValidationRunnerOptions = {}) {
     this.settingsPath = options.settingsPath || path.join(process.cwd(), 'settings.json');
     this.sessionId = options.sessionId || null;
     this.startTime = Date.now();
+    this.db = new PrismaClient();
     this.results = {
       totalStages: 0,
       passed: 0,
@@ -138,6 +141,25 @@ class ValidationRunner {
         };
       }
       throw error;
+    }
+  }
+
+  private async findCurrentTask(): Promise<string | null> {
+    try {
+      // Look for a task that's currently in progress
+      const inProgressTask = await this.db.todoTask.findFirst({
+        where: {
+          status: 'IN_PROGRESS'
+        },
+        orderBy: {
+          updatedAt: 'desc'
+        }
+      });
+      
+      return inProgressTask?.id || null;
+    } catch (error) {
+      console.warn(`${colors.yellow}⚠️  Could not find current task: ${(error as Error).message}${colors.reset}`);
+      return null;
     }
   }
 
@@ -257,6 +279,31 @@ class ValidationRunner {
 
   private async saveMetrics(): Promise<void> {
     try {
+      // Find the current task to associate with this validation run
+      const currentTaskId = await this.findCurrentTask();
+      
+      // Save to database
+      try {
+        await this.db.validationRun.create({
+          data: {
+            todoTaskId: currentTaskId,
+            timestamp: new Date(),
+            success: this.results.success,
+            duration: this.results.totalTime,
+            stages: JSON.stringify(this.results.stages)
+          }
+        });
+        
+        if (currentTaskId) {
+          console.log(`${colors.cyan}📊 Validation run saved to database and associated with task ${currentTaskId}${colors.reset}`);
+        } else {
+          console.log(`${colors.cyan}📊 Validation run saved to database (no associated task)${colors.reset}`);
+        }
+      } catch (dbError) {
+        console.warn(`${colors.yellow}⚠️  Could not save to database: ${(dbError as Error).message}${colors.reset}`);
+      }
+      
+      // Also save to file for backward compatibility
       const metricsPath = path.join(process.cwd(), 'validation-metrics.json');
       let existingMetrics: ValidationMetrics[] = [];
 
@@ -320,6 +367,14 @@ class ValidationRunner {
       console.log(`${colors.red}Please fix the issues above before proceeding.${colors.reset}`);
     }
   }
+
+  async cleanup(): Promise<void> {
+    try {
+      await this.db.$disconnect();
+    } catch {
+      // Ignore cleanup errors
+    }
+  }
 }
 
 // CLI execution
@@ -340,8 +395,14 @@ async function main(): Promise<void> {
   
   const runner = new ValidationRunner({ sessionId, settingsPath });
   
-  const success = await runner.runValidation();
-  process.exit(success ? 0 : 1);
+  try {
+    const success = await runner.runValidation();
+    await runner.cleanup();
+    process.exit(success ? 0 : 1);
+  } catch (error) {
+    await runner.cleanup();
+    throw error;
+  }
 }
 
 if (require.main === module) {

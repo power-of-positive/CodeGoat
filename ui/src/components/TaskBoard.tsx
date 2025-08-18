@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import { 
   Plus, 
   Edit, 
@@ -8,7 +9,8 @@ import {
   AlertCircle, 
   CheckCircle, 
   Play,
-  MoreVertical
+  MoreVertical,
+  ExternalLink
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
@@ -189,6 +191,14 @@ function TaskCard({ task, onEdit, onDelete, onStatusChange }: TaskCardProps) {
             {showActions && (
               <div className="absolute right-0 top-7 bg-white border border-gray-200 rounded-md shadow-lg z-10 min-w-32">
                 <div className="p-1">
+                  <Link
+                    to={`/tasks/${task.id}`}
+                    onClick={() => setShowActions(false)}
+                    className="flex items-center gap-2 w-full px-2 py-1 text-sm hover:bg-gray-100 rounded"
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                    View Details
+                  </Link>
                   <button
                     onClick={() => {
                       onEdit(task);
@@ -215,9 +225,14 @@ function TaskCard({ task, onEdit, onDelete, onStatusChange }: TaskCardProps) {
           </div>
         </div>
         
-        <p className="text-sm text-gray-900 mb-3 line-clamp-3">
-          {task.content}
-        </p>
+        <Link 
+          to={`/tasks/${task.id}`}
+          className="block mb-3 hover:bg-gray-50 -mx-1 px-1 py-1 rounded"
+        >
+          <p className="text-sm text-gray-900 line-clamp-3">
+            {task.content}
+          </p>
+        </Link>
         
         {(task.duration || task.startTime) && (
           <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">

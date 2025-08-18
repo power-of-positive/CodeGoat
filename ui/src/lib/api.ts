@@ -195,24 +195,25 @@ export const githubAuthApi = {
 // Task management API
 export const taskApi = {
   getTasks: (): Promise<Task[]> => 
-    fetch('/todo-list.json')
-      .then(response => response.json())
-      .catch(() => []), // Return empty array if file doesn't exist
+    request<Task[]>('/tasks'),
+  
+  getTask: (id: string): Promise<Task & { validationRuns?: unknown[] }> => 
+    request(`/tasks/${id}`),
   
   createTask: (task: Omit<Task, 'id'>): Promise<Task> => 
-    request('/api/tasks', {
+    request('/tasks', {
       method: 'POST',
       body: JSON.stringify(task),
     }),
   
   updateTask: (id: string, updates: Partial<Task>): Promise<Task> => 
-    request(`/api/tasks/${id}`, {
+    request(`/tasks/${id}`, {
       method: 'PUT',
       body: JSON.stringify(updates),
     }),
   
   deleteTask: (id: string): Promise<void> => 
-    request(`/api/tasks/${id}`, {
+    request(`/tasks/${id}`, {
       method: 'DELETE',
     }),
 };

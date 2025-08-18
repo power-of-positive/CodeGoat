@@ -373,16 +373,30 @@ describe('AI Code Reviewer', () => {
       global.fetch = originalFetch;
     });
 
-    it('should throw error when no API key is configured', async () => {
+    it('should return non-blocking warning when no API key is configured', async () => {
       delete process.env.OPENAI_API_KEY;
       delete process.env.OPENROUTER_API_KEY;
 
-      await expect(reviewCode('test.ts', 'const x = 1;')).rejects.toThrow(
-        'AI code review failed: No valid API key configured. Set OPENAI_API_KEY or OPENROUTER_API_KEY environment variable.'
-      );
+      const result = await reviewCode('test.ts', 'const x = 1;');
+      
+      expect(result).toEqual({
+        reviews: [
+          {
+            line: null,
+            severity: 'info',
+            category: 'system',
+            message: 'AI code review skipped: No valid API key configured',
+            suggestion: 'Configure OPENAI_API_KEY or OPENROUTER_API_KEY in your .env file to enable AI code review',
+          },
+        ],
+        summary: 'AI review skipped due to missing API configuration',
+      });
     });
 
     it('should make API call and parse response', async () => {
+      // Ensure we have a valid API key for this test
+      process.env.OPENAI_API_KEY = 'test-key-valid';
+      
       const mockResponse = {
         reviews: [
           {
@@ -416,7 +430,7 @@ describe('AI Code Reviewer', () => {
         expect.objectContaining({
           method: 'POST',
           headers: expect.objectContaining({
-            Authorization: 'Bearer test-key',
+            Authorization: 'Bearer test-key-valid',
             'Content-Type': 'application/json',
           }),
         })
@@ -424,6 +438,9 @@ describe('AI Code Reviewer', () => {
     });
 
     it('should handle API errors gracefully', async () => {
+      // Set valid API key to ensure we actually call the API
+      process.env.OPENAI_API_KEY = 'test-key-valid';
+      
       global.fetch = jest.fn().mockRejectedValue(new Error('Network error'));
 
       const result = await reviewCode('test.ts', 'const x = 1;');
@@ -432,10 +449,10 @@ describe('AI Code Reviewer', () => {
         reviews: [
           {
             line: null,
-            severity: 'high',
+            severity: 'medium',
             category: 'system',
             message: 'AI review failed: Network error',
-            suggestion: 'Check network connectivity and API configuration',
+            suggestion: 'Check AI reviewer configuration and network connectivity',
           },
         ],
         summary: 'Review failed due to technical issue',
@@ -443,6 +460,9 @@ describe('AI Code Reviewer', () => {
     });
 
     it('should handle invalid JSON response', async () => {
+      // Set valid API key to ensure we actually call the API
+      process.env.OPENAI_API_KEY = 'test-key-valid';
+      
       global.fetch = jest.fn().mockResolvedValue({
         ok: true,
         json: jest.fn().mockResolvedValue({
@@ -462,10 +482,10 @@ describe('AI Code Reviewer', () => {
         reviews: [
           {
             line: null,
-            severity: 'high',
+            severity: 'medium',
             category: 'system',
             message: expect.stringContaining('AI review failed:'),
-            suggestion: 'Check network connectivity and API configuration',
+            suggestion: 'Check AI reviewer configuration and network connectivity',
           },
         ],
         summary: 'Review failed due to technical issue',
@@ -587,9 +607,22 @@ describe('AI Code Reviewer', () => {
       expect(exitCode).toBe(0);
     });
 
+    it('should process files and exit successfully when no API key (non-blocking)', async () => {
+      process.env.AI_REVIEWER_ENABLED = 'true';
+      delete process.env.OPENAI_API_KEY;
+      delete process.env.OPENROUTER_API_KEY;
+
+      mockExecSync.mockReturnValue('test.ts\n');
+      mockFs.readFileSync.mockReturnValue('const x = 1;');
+
+      await main();
+
+      expect(exitCode).toBe(0); // Should not block when API key is missing
+    });
+
     it('should process files and exit with error code when blocking', async () => {
       process.env.AI_REVIEWER_ENABLED = 'true';
-      process.env.OPENAI_API_KEY = 'test-key';
+      process.env.OPENAI_API_KEY = 'test-key-valid';
 
       mockExecSync.mockReturnValue('test.ts\n');
       mockFs.readFileSync.mockReturnValue('const x = 1;');
@@ -624,7 +657,7 @@ describe('AI Code Reviewer', () => {
 
     it('should process files and exit successfully when no blocking issues', async () => {
       process.env.AI_REVIEWER_ENABLED = 'true';
-      process.env.OPENAI_API_KEY = 'test-key';
+      process.env.OPENAI_API_KEY = 'test-key-valid';
 
       mockExecSync.mockReturnValue('test.ts\n');
       mockFs.readFileSync.mockReturnValue('const x = 1;');
