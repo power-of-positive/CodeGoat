@@ -90,9 +90,9 @@ export function ValidationRunDetail() {
   const { runId } = useParams<{ runId: string }>();
   const navigate = useNavigate();
 
-  const { data: runs, isLoading, error } = useQuery({
+  const { data: runs, isLoading, error } = useQuery<ValidationRun[]>({
     queryKey: ['validation-runs'],
-    queryFn: analyticsApi.getValidationRuns,
+    queryFn: () => analyticsApi.getValidationRuns(),
   });
 
   if (isLoading) {
@@ -122,7 +122,7 @@ export function ValidationRunDetail() {
     );
   }
 
-  const run = runs?.find((r: ValidationRun) => r.id === runId);
+  const run = runs?.find((r) => r.id === runId);
 
   if (!run) {
     return (

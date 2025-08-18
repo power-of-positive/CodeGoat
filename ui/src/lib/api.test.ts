@@ -298,7 +298,13 @@ describe('API Client', () => {
     });
 
     it('should create task', async () => {
-      const task = { content: 'New task', status: 'pending' as const, priority: 'medium' as const };
+      const task = { 
+        content: 'New task', 
+        status: 'pending' as const, 
+        priority: 'medium' as const,
+        taskType: 'task' as const,
+        executorId: 'claude_code'
+      };
       const responseTask = { ...task, id: 'task-123' };
       
       (fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({

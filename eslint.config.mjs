@@ -67,6 +67,24 @@ export default [
     },
   },
 
+  // Examples - fully allow console usage
+  {
+    files: ['examples/**/*.ts', 'examples/**/*.js'],
+    rules: {
+      'no-console': 'off',
+      '@typescript-eslint/explicit-function-return-type': 'off',
+      'max-lines-per-function': 'off',
+    },
+  },
+
+  // AI Code Reviewer - allow console in test mode
+  {
+    files: ['src/tools/ai-code-reviewer.ts'],
+    rules: {
+      'no-console': ['warn', { allow: ['warn', 'error', 'log'] }],
+    },
+  },
+
   // React/UI specific configuration
   {
     files: ['ui/**/*.{ts,tsx}'],

@@ -1,4 +1,4 @@
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
 import { Analytics } from './Analytics';
@@ -234,11 +234,16 @@ describe('Analytics Component', () => {
     });
 
     const refreshButton = screen.getByText('Refresh');
-    fireEvent.click(refreshButton);
     
-    // Should call refetch functions
-    expect(analyticsApi.getValidationMetrics).toHaveBeenCalled();
-    expect(analyticsApi.getValidationRuns).toHaveBeenCalled();
+    await act(async () => {
+      fireEvent.click(refreshButton);
+    });
+    
+    // Wait for async operations to complete
+    await waitFor(() => {
+      expect(analyticsApi.getValidationMetrics).toHaveBeenCalled();
+      expect(analyticsApi.getValidationRuns).toHaveBeenCalled();
+    });
   });
 
   it('shows expanded run details when run is clicked', async () => {

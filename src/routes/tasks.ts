@@ -2,13 +2,15 @@ import express from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { WinstonLogger } from '../logger-winston';
 import { getDatabaseService } from '../services/database';
-import { TodoStatus, TodoPriority, TodoTask, BDDScenarioStatus } from '@prisma/client';
+import { TodoStatus, TodoPriority, TodoTask, BDDScenarioStatus, TaskType } from '@prisma/client';
 
 interface Task {
   id: string;
   content: string;
   status: 'pending' | 'in_progress' | 'completed';
   priority: 'low' | 'medium' | 'high';
+  taskType: 'story' | 'task';
+  executorId?: string;
   startTime?: string;
   endTime?: string;
   duration?: string;
@@ -28,6 +30,12 @@ const priorityMapping: Record<string, TodoPriority> = {
   'high': TodoPriority.HIGH,
 };
 
+// TaskType mapping between API and Prisma enum
+const taskTypeMapping: Record<string, TaskType> = {
+  'story': TaskType.STORY,
+  'task': TaskType.TASK,
+};
+
 // Reverse mappings for API responses
 const reverseStatusMapping: Record<TodoStatus, string> = {
   [TodoStatus.PENDING]: 'pending',
@@ -39,6 +47,11 @@ const reversePriorityMapping: Record<TodoPriority, string> = {
   [TodoPriority.LOW]: 'low',
   [TodoPriority.MEDIUM]: 'medium',
   [TodoPriority.HIGH]: 'high',
+};
+
+const reverseTaskTypeMapping: Record<TaskType, string> = {
+  [TaskType.STORY]: 'story',
+  [TaskType.TASK]: 'task',
 };
 
 // BDD Scenario status mapping
@@ -63,6 +76,8 @@ function dbTaskToApiTask(dbTask: TodoTask): Task {
     content: dbTask.content,
     status: reverseStatusMapping[dbTask.status] as Task['status'],
     priority: reversePriorityMapping[dbTask.priority] as Task['priority'],
+    taskType: reverseTaskTypeMapping[dbTask.taskType] as Task['taskType'],
+    executorId: dbTask.executorId || undefined,
     startTime: dbTask.startTime?.toISOString(),
     endTime: dbTask.endTime?.toISOString(),
     duration: dbTask.duration || undefined,
@@ -287,7 +302,7 @@ export function createTaskRoutes(logger: WinstonLogger) {
   // POST /api/tasks - Create new task
   router.post('/', async (req, res) => {
     try {
-      const { content, status = 'pending', priority = 'medium' } = req.body;
+      const { content, status = 'pending', priority = 'medium', taskType = 'task', executorId } = req.body;
       
       if (!content || !content.trim()) {
         return res.status(400).json({ success: false, message: 'Task content is required' });
@@ -296,12 +311,15 @@ export function createTaskRoutes(logger: WinstonLogger) {
       const db = getDatabaseService();
       const dbStatus = statusMapping[status] || TodoStatus.PENDING;
       const dbPriority = priorityMapping[priority] || TodoPriority.MEDIUM;
+      const dbTaskType = taskTypeMapping[taskType] || TaskType.TASK;
       
       const taskData: {
         id: string;
         content: string;
         status: TodoStatus;
         priority: TodoPriority;
+        taskType: TaskType;
+        executorId?: string;
         startTime?: Date;
         endTime?: Date;
         duration?: string;
@@ -310,6 +328,8 @@ export function createTaskRoutes(logger: WinstonLogger) {
         content: content.trim(),
         status: dbStatus,
         priority: dbPriority,
+        taskType: dbTaskType,
+        executorId: executorId || undefined,
       };
       
       // Handle timing based on initial status
@@ -352,6 +372,8 @@ export function createTaskRoutes(logger: WinstonLogger) {
         content?: string;
         status?: TodoStatus;
         priority?: TodoPriority;
+        taskType?: TaskType;
+        executorId?: string;
         startTime?: Date;
         endTime?: Date;
         duration?: string;
@@ -367,8 +389,70 @@ export function createTaskRoutes(logger: WinstonLogger) {
         updateData.priority = priorityMapping[updates.priority] || existingTask.priority;
       }
       
+      // Handle taskType updates
+      if (updates.taskType !== undefined) {
+        updateData.taskType = taskTypeMapping[updates.taskType] || existingTask.taskType;
+      }
+      
+      // Handle executorId updates
+      if (updates.executorId !== undefined) {
+        updateData.executorId = updates.executorId;
+      }
+      
       // Handle status changes and timing
       if (updates.status && updates.status !== reverseStatusMapping[existingTask.status]) {
+        // Validate story completion requirements
+        if (updates.status === 'completed' && existingTask.taskType === TaskType.STORY) {
+          // Check if story has BDD scenarios
+          const bddScenarios = await db.bDDScenario.findMany({
+            where: { todoTaskId: req.params.id }
+          });
+          
+          if (bddScenarios.length === 0) {
+            return res.status(400).json({ 
+              success: false, 
+              message: 'Story cannot be completed without at least one BDD scenario. Please add BDD scenarios first.',
+              code: 'STORY_MISSING_BDD_SCENARIOS'
+            });
+          }
+          
+          // Check if scenarios have linked tests
+          const scenariosWithoutTests = bddScenarios.filter(scenario => 
+            !scenario.playwrightTestFile || !scenario.playwrightTestName
+          );
+          
+          if (scenariosWithoutTests.length > 0) {
+            return res.status(400).json({
+              success: false,
+              message: `Story cannot be completed with ${scenariosWithoutTests.length} BDD scenario(s) that are not linked to E2E tests. Please link all scenarios to Playwright tests.`,
+              code: 'STORY_SCENARIOS_NOT_LINKED',
+              details: {
+                unlinkedScenarios: scenariosWithoutTests.map(s => ({ id: s.id, title: s.title }))
+              }
+            });
+          }
+          
+          // Check if all linked tests have passed
+          const failedOrPendingScenarios = bddScenarios.filter(scenario => 
+            scenario.status !== BDDScenarioStatus.PASSED
+          );
+          
+          if (failedOrPendingScenarios.length > 0) {
+            return res.status(400).json({
+              success: false,
+              message: `Story cannot be completed with ${failedOrPendingScenarios.length} BDD scenario(s) that have not passed. All scenarios must pass their tests.`,
+              code: 'STORY_SCENARIOS_NOT_PASSED',
+              details: {
+                nonPassedScenarios: failedOrPendingScenarios.map(s => ({ 
+                  id: s.id, 
+                  title: s.title, 
+                  status: reverseBddStatusMapping[s.status] 
+                }))
+              }
+            });
+          }
+        }
+        
         updateData.status = statusMapping[updates.status];
         
         if (updates.status === 'in_progress' && existingTask.status === TodoStatus.PENDING) {

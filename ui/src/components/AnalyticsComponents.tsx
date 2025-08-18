@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { BarChart3, Activity, ChevronDown, ChevronRight, FileText, Loader2, CheckCircle } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
@@ -7,18 +7,34 @@ import { ValidationMetrics, ValidationStageResult } from '../../shared/types';
 export function AnalyticsHeader({ refetch }: { refetch: () => void }) {
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleRefresh = async () => {
     setIsLoading(true);
     setShowSuccess(false);
+    
+    // Clear any existing timeout
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
     
     try {
       await refetch();
       setShowSuccess(true);
       
       // Hide success notification after 2 seconds
-      setTimeout(() => {
+      timeoutRef.current = setTimeout(() => {
         setShowSuccess(false);
+        timeoutRef.current = null;
       }, 2000);
     } catch (error) {
       console.error('Refresh failed:', error);
@@ -32,7 +48,7 @@ export function AnalyticsHeader({ refetch }: { refetch: () => void }) {
       <div className="flex items-center gap-3">
         <BarChart3 className="h-6 w-6 text-blue-600" />
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Validation Analytics</h2>
+          <h1 className="text-2xl font-bold text-gray-900">Validation Analytics</h1>
           <p className="text-gray-600">
             Track validation pipeline performance and success rates
           </p>

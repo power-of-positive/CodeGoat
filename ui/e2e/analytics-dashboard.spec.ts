@@ -3,6 +3,8 @@ import { test, expect } from '@playwright/test';
 test.describe('Analytics Dashboard', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/analytics');
+    // Wait for the page to fully load
+    await page.waitForLoadState('networkidle');
   });
 
   test.describe('Analytics Navigation and Layout', () => {
@@ -41,13 +43,13 @@ test.describe('Analytics Dashboard', () => {
 
   test.describe('Analytics Functionality', () => {
     test('should display recent validation runs', async ({ page }) => {
-      // Check for recent runs section
-      await expect(page.getByText('Recent Validation Runs')).toBeVisible();
+      // Check for recent runs section - use heading role for better targeting
+      await expect(page.getByRole('heading', { name: 'Recent Validation Runs' })).toBeVisible();
     });
 
     test('should display validation chart', async ({ page }) => {
       // Check for chart section
-      await expect(page.getByText('Stage Performance Overview')).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Stage Performance Overview' })).toBeVisible();
     });
 
     test('should have refresh functionality', async ({ page }) => {

@@ -14,9 +14,10 @@ import {
   createErrorResult,
 } from "./llm-reviewer-helpers";
 import { processFiles } from "./llm-reviewer-processor";
-import { loadProjectEnv } from "../utils/env-config";
+import { loadProjectEnvSync } from "../utils/env-config";
 
-loadProjectEnv(3);
+// Load environment variables synchronously
+loadProjectEnvSync(3);
 export type { LLMReviewOutput } from "./llm-reviewer-types";
 
 /**
@@ -29,6 +30,8 @@ export class LLMReviewer {
    * Initialize LLM reviewer with core engine
    */
   constructor() {
+    // Ensure environment is loaded before creating core
+    loadProjectEnvSync(3);
     this.core = new LLMReviewerCore();
   }
 

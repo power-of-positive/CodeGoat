@@ -1,4 +1,7 @@
 // Minimal Jest setup for unit tests
+// Set NODE_ENV to test for all unit tests
+process.env.NODE_ENV = 'test';
+
 // Increase EventEmitter listener limit to prevent warnings
 require('events').EventEmitter.defaultMaxListeners = 50;
 

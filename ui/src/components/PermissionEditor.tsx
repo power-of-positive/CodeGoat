@@ -16,7 +16,7 @@ import { Button } from './ui/button';
 import { Card } from './ui/card';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { Select, Option } from './ui/select';
+import { SimpleSelect as Select, Option } from './ui/select';
 import { Textarea } from './ui/textarea';
 import { Badge } from './ui/badge';
 import { permissionApi } from '../lib/api';
@@ -245,8 +245,9 @@ export function PermissionEditor() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
+    <div className="p-6">
+      <div className="space-y-6">
+        {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Shield className="h-8 w-8 text-blue-600" />
@@ -640,6 +641,7 @@ export function PermissionEditor() {
           </div>
         )}
       </Card>
+      </div>
     </div>
   );
 }

@@ -29,6 +29,14 @@ export const CardTitle: React.FC<CardProps> = ({ children, className = '' }) => 
   );
 };
 
+export const CardDescription: React.FC<CardProps> = ({ children, className = '' }) => {
+  return (
+    <p className={`text-sm text-muted-foreground ${className}`}>
+      {children}
+    </p>
+  );
+};
+
 export const CardContent: React.FC<CardProps> = ({ children, className = '' }) => {
   return (
     <div className={`p-6 pt-0 ${className}`}>

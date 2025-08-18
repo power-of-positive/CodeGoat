@@ -8,7 +8,8 @@ import {
   Activity,
   CheckSquare,
   Shield,
-  BarChart3
+  BarChart3,
+  TestTube
 } from 'lucide-react';
 import { Button } from './ui/button';
 
@@ -41,6 +42,12 @@ const navItems: NavItem[] = [
     icon: BarChart3,
     label: 'Task Analytics',
     description: 'View task completion statistics and trends'
+  },
+  {
+    href: '/bdd-tests',
+    icon: TestTube,
+    label: 'BDD Tests',
+    description: 'View BDD scenarios and E2E test execution status'
   },
   {
     href: '/permissions',

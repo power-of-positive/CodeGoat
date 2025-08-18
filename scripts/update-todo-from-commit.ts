@@ -34,6 +34,28 @@ const CODEGOAT_PATTERN = /^CODEGOAT-(\d+):/i;
 const API_BASE_URL = 'http://localhost:3001/api';
 const TASKS_ENDPOINT = `${API_BASE_URL}/tasks`;
 
+/**
+ * Load tasks from database via API
+ */
+async function loadTasksFromDatabase(): Promise<TodoItem[]> {
+  try {
+    const response = await fetch(TASKS_ENDPOINT, {
+      signal: AbortSignal.timeout(5000) // 5 second timeout
+    });
+
+    if (!response.ok) {
+      console.warn(`⚠️ Failed to load tasks from database: ${response.status} ${response.statusText}`);
+      return [];
+    }
+
+    const tasks = await response.json();
+    return Array.isArray(tasks) ? tasks : [];
+  } catch (error) {
+    console.warn(`⚠️ Error loading tasks from database:`, (error as Error).message);
+    return [];
+  }
+}
+
 function loadTodoList(todoListPath: string): TodoItem[] {
   try {
     const content = fs.readFileSync(todoListPath, 'utf-8');
@@ -153,12 +175,88 @@ async function isApiServerAvailable(): Promise<boolean> {
   }
 }
 
+/**
+ * Process task completion based on commit message
+ */
+async function processTaskCompletion(
+  todos: TodoItem[], 
+  commit: CommitInfo, 
+  taskId: string, 
+  apiAvailable: boolean
+): Promise<void> {
+  const task = todos.find(t => t.id === taskId);
+  if (!task) {
+    console.error(`❌ Task ${taskId} not found`);
+    return;
+  }
+  
+  // Prepare task updates
+  const updates: Partial<TodoItem> = {
+    status: 'completed',
+    endTime: commit.timestamp,
+  };
+  
+  // Try to find start time
+  if (!task.startTime) {
+    const startTime = findTaskStartTime(taskId);
+    if (startTime) {
+      updates.startTime = startTime;
+    } else {
+      // Use a reasonable default (1 hour before completion)
+      const endDate = new Date(commit.timestamp);
+      endDate.setHours(endDate.getHours() - 1);
+      updates.startTime = endDate.toISOString();
+    }
+  }
+  
+  // Calculate duration
+  if (updates.startTime && updates.endTime) {
+    updates.duration = calculateDuration(updates.startTime, updates.endTime);
+  }
+  
+  console.log(`✅ Marking task ${taskId} as completed`);
+  console.log(`   Content: ${task.content.substring(0, 60)}...`);
+  console.log(`   Duration: ${updates.duration || 'Unknown'}`);
+  
+  // Update via API if available, otherwise update local file
+  if (apiAvailable) {
+    console.log(`🔄 Updating task ${taskId} in database...`);
+    const dbUpdateSuccess = await updateTaskInDatabase(taskId, updates);
+    
+    if (dbUpdateSuccess) {
+      console.log(`✅ Task ${taskId} completed successfully in database`);
+    } else {
+      console.warn(`⚠️  Failed to update task ${taskId} in database, falling back to local file`);
+      // Fallback to local file update
+      Object.assign(task, updates);
+      const todoListPath = path.join(process.cwd(), 'todo-list.json');
+      saveTodoList(todoListPath, todos);
+    }
+  } else {
+    console.log(`📝 Updating task ${taskId} in local todo-list.json...`);
+    Object.assign(task, updates);
+    const todoListPath = path.join(process.cwd(), 'todo-list.json');
+    saveTodoList(todoListPath, todos);
+  }
+}
+
 async function updateTaskFromCommit(commitRef: string = 'HEAD'): Promise<void> {
-  const todoListPath = path.join(process.cwd(), 'todo-list.json');
-  const todos = loadTodoList(todoListPath);
+  // First check if API is available
+  const apiAvailable = await isApiServerAvailable();
+  let todos: TodoItem[] = [];
+
+  if (apiAvailable) {
+    console.log('🔄 Loading tasks from database...');
+    todos = await loadTasksFromDatabase();
+    console.log(`📋 Loaded ${todos.length} tasks from database`);
+  } else {
+    console.warn('⚠️  API server not available, falling back to local todo-list.json');
+    const todoListPath = path.join(process.cwd(), 'todo-list.json');
+    todos = loadTodoList(todoListPath);
+  }
   
   if (todos.length === 0) {
-    console.log('⚠️  No todos found in todo-list.json');
+    console.log('⚠️  No todos found');
     return;
   }
   
@@ -171,62 +269,7 @@ async function updateTaskFromCommit(commitRef: string = 'HEAD'): Promise<void> {
   
   if (codegoatTaskId) {
     console.log(`🐐 Found CODEGOAT task reference: ${codegoatTaskId}`);
-    
-    const task = todos.find(t => t.id === codegoatTaskId);
-    if (!task) {
-      console.error(`❌ Task ${codegoatTaskId} not found in todo-list.json`);
-      return;
-    }
-    
-    // Mark task as completed
-    task.status = 'completed';
-    task.endTime = commit.timestamp;
-    
-    // Try to find start time
-    if (!task.startTime) {
-      const startTime = findTaskStartTime(codegoatTaskId);
-      if (startTime) {
-        task.startTime = startTime;
-      } else {
-        // Use a reasonable default (1 hour before completion)
-        const endDate = new Date(commit.timestamp);
-        endDate.setHours(endDate.getHours() - 1);
-        task.startTime = endDate.toISOString();
-      }
-    }
-    
-    // Calculate duration
-    if (task.startTime && task.endTime) {
-      task.duration = calculateDuration(task.startTime, task.endTime);
-    }
-    
-    console.log(`✅ Marked task ${codegoatTaskId} as completed`);
-    console.log(`   Content: ${task.content.substring(0, 60)}...`);
-    console.log(`   Duration: ${task.duration || 'Unknown'}`);
-    
-    // Save to file first
-    saveTodoList(todoListPath, todos);
-    
-    // Try to sync with database
-    console.log(`🔄 Syncing task ${codegoatTaskId} with database...`);
-    const apiAvailable = await isApiServerAvailable();
-    
-    if (apiAvailable) {
-      const dbUpdateSuccess = await updateTaskInDatabase(codegoatTaskId, {
-        status: task.status,
-        endTime: task.endTime,
-        startTime: task.startTime,
-        duration: task.duration
-      });
-      
-      if (dbUpdateSuccess) {
-        console.log(`✅ Task ${codegoatTaskId} synchronized with database`);
-      } else {
-        console.warn(`⚠️  Task ${codegoatTaskId} updated in todo-list.json but failed to sync with database`);
-      }
-    } else {
-      console.warn(`⚠️  API server not available - task ${codegoatTaskId} updated in todo-list.json only`);
-    }
+    await processTaskCompletion(todos, commit, codegoatTaskId, apiAvailable);
   } else {
     console.log(`ℹ️  No CODEGOAT prefix found, task remains unchanged`);
   }

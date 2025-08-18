@@ -125,6 +125,59 @@ export interface BDDScenario {
   executionDuration?: number;
   errorMessage?: string;
   executionHistory?: BDDScenarioExecution[];
+  playwrightTestFile?: string; // Link to the associated E2E test file
+  playwrightTestName?: string; // Specific test name within the file
+  cucumberSteps?: string[]; // Associated cucumber step definitions
+}
+
+// E2E Test Result types
+export interface E2ETestResult {
+  id: string;
+  testFile: string;
+  testName: string;
+  status: 'passed' | 'failed' | 'skipped' | 'timedout';
+  executedAt: string;
+  duration?: number;
+  error?: string;
+  screenshot?: string; // Path to failure screenshot
+  video?: string; // Path to test video recording
+  trace?: string; // Playwright trace file
+  retries?: number;
+  workerIndex?: number;
+  project?: string; // Browser/config name
+}
+
+export interface E2ETestSuite {
+  id: string;
+  suiteName: string;
+  file: string;
+  executedAt: string;
+  totalTests: number;
+  passedTests: number;
+  failedTests: number;
+  skippedTests: number;
+  duration?: number;
+  tests: E2ETestResult[];
+}
+
+export interface E2ETestHistory {
+  testFile: string;
+  testName: string;
+  history: Array<{
+    date: string;
+    runs: number;
+    passed: number;
+    failed: number;
+    skipped: number;
+    averageDuration: number;
+    successRate: number;
+  }>;
+  trends: {
+    successRateTrend: number;
+    durationTrend: number;
+    totalRuns: number;
+    recentFailures: E2ETestResult[];
+  };
 }
 
 export interface BDDScenarioExecution {
@@ -153,10 +206,12 @@ export interface Task {
   content: string;
   status: 'pending' | 'in_progress' | 'completed';
   priority: 'low' | 'medium' | 'high';
+  taskType: 'story' | 'task'; // story = user story requiring BDD tests, task = technical improvement
   startTime?: string;
   endTime?: string;
   duration?: string;
   bddScenarios?: BDDScenario[];
+  executorId?: string; // ID of the agent/executor that worked on this task
 }
 
 // Permission system types

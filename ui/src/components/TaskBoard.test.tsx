@@ -23,12 +23,16 @@ const mockTasks: Task[] = [
     content: 'Test pending task',
     status: 'pending',
     priority: 'high',
+    taskType: 'task',
+    executorId: 'claude_code',
   },
   {
     id: '2', 
     content: 'Test in progress task',
     status: 'in_progress',
     priority: 'medium',
+    taskType: 'story',
+    executorId: 'claude_code',
     startTime: '2024-01-15T10:00:00.000Z',
   },
   {
@@ -36,6 +40,8 @@ const mockTasks: Task[] = [
     content: 'Test completed task',
     status: 'completed',
     priority: 'low',
+    taskType: 'task',
+    executorId: 'claude_code',
     startTime: '2024-01-15T09:00:00.000Z',
     endTime: '2024-01-15T11:00:00.000Z',
     duration: '2h 0m',
@@ -231,7 +237,9 @@ describe('TaskBoard', () => {
       expect(taskApi.createTask).toHaveBeenCalledWith({
         content: 'New test task',
         priority: 'medium', // default value
-        status: 'pending'
+        status: 'pending',
+        taskType: 'task', // default value
+        executorId: 'claude_code' // default value
       });
     });
   });

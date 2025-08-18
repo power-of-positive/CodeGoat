@@ -1,23 +1,24 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { AlertCircle } from 'lucide-react';
 import { Button } from './ui/button';
+import { SimpleSelect as Select, Option } from './ui/select';
 import { analyticsApi } from '../lib/api';
 import { ValidationChart } from './ValidationChart';
 import { TimeSeriesCharts } from './TimeSeriesCharts';
 import { AnalyticsHeader, MetricsSummary } from './AnalyticsComponents';
 import { RecentRuns } from './RecentRuns';
 
-function useAnalyticsData() {
+function useAnalyticsData(agentFilter?: string) {
   const metricsQuery = useQuery({
-    queryKey: ['validation-metrics'],
-    queryFn: analyticsApi.getValidationMetrics,
+    queryKey: ['validation-metrics', agentFilter],
+    queryFn: () => analyticsApi.getValidationMetrics(agentFilter),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   const runsQuery = useQuery({
-    queryKey: ['validation-runs'],
-    queryFn: analyticsApi.getValidationRuns,
+    queryKey: ['validation-runs', agentFilter],
+    queryFn: () => analyticsApi.getValidationRuns(agentFilter),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
@@ -35,7 +36,14 @@ function useAnalyticsData() {
 
 
 export function Analytics() {
-  const { metrics, runs, isLoading, error, refetch } = useAnalyticsData();
+  const [selectedAgent, setSelectedAgent] = useState<string>('');
+  const { metrics, runs, isLoading, error, refetch } = useAnalyticsData(selectedAgent || undefined);
+
+  // Extract unique agent IDs from runs for filter options
+  // For now, we'll use common agent IDs until the backend provides them
+  const agentIds = React.useMemo(() => {
+    return ['claude_code', 'claude_3_5_sonnet', 'gpt_4', 'local_agent'];
+  }, []);
 
   if (isLoading) {
     return (
@@ -76,6 +84,27 @@ export function Analytics() {
   return (
     <div className="p-6">
       <AnalyticsHeader refetch={refetch} />
+      
+      {/* Agent Filter */}
+      <div className="mb-6">
+        <div className="flex items-center gap-4">
+          <label className="text-sm font-medium text-gray-700">
+            Filter by Agent:
+          </label>
+          <Select
+            value={selectedAgent}
+            onChange={(e) => setSelectedAgent(e.target.value)}
+            className="w-48"
+          >
+            <Option value="">All Agents</Option>
+            {agentIds.map((agentId) => (
+              <Option key={agentId} value={agentId}>
+                {agentId}
+              </Option>
+            ))}
+          </Select>
+        </div>
+      </div>
       
       {metrics && <MetricsSummary metrics={metrics} />}
       

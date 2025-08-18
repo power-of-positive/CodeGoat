@@ -61,6 +61,8 @@ function TaskForm({ task, onSave, onCancel }: TaskFormProps) {
   const [content, setContent] = useState(task?.content || '');
   const [priority, setPriority] = useState<Task['priority']>(task?.priority || 'medium');
   const [status, setStatus] = useState<Task['status']>(task?.status || 'pending');
+  const [taskType, setTaskType] = useState<Task['taskType']>(task?.taskType || 'task');
+  const [executorId, setExecutorId] = useState(task?.executorId || 'claude_code');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,11 +72,14 @@ function TaskForm({ task, onSave, onCancel }: TaskFormProps) {
       content: content.trim(),
       priority,
       status,
+      taskType,
+      executorId,
       ...(task && { 
         id: task.id,
         startTime: task.startTime,
         endTime: task.endTime,
-        duration: task.duration
+        duration: task.duration,
+        bddScenarios: task.bddScenarios
       })
     };
 
@@ -136,6 +141,35 @@ function TaskForm({ task, onSave, onCancel }: TaskFormProps) {
             </div>
           </div>
           
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Type
+              </label>
+              <select
+                value={taskType}
+                onChange={(e) => setTaskType(e.target.value as Task['taskType'])}
+                className="w-full p-2 border border-gray-300 rounded-md text-sm"
+              >
+                <option value="task">Technical Task</option>
+                <option value="story">User Story</option>
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Executor
+              </label>
+              <input
+                type="text"
+                value={executorId}
+                onChange={(e) => setExecutorId(e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded-md text-sm"
+                placeholder="claude_code"
+              />
+            </div>
+          </div>
+          
           <div className="flex gap-2">
             <Button type="submit" size="sm">
               {task ? 'Update' : 'Create'}
@@ -176,9 +210,17 @@ function TaskCard({ task, onEdit, onDelete, onStatusChange }: TaskCardProps) {
     <Card className="mb-3 group hover:shadow-md transition-shadow">
       <CardContent className="p-3">
         <div className="flex items-start justify-between mb-2">
-          <Badge className={`text-xs ${priorityColors[task.priority]}`}>
-            {task.priority}
-          </Badge>
+          <div className="flex gap-1 flex-wrap">
+            <Badge className={`text-xs ${priorityColors[task.priority]}`}>
+              {task.priority}
+            </Badge>
+            <Badge 
+              variant="outline" 
+              className={`text-xs ${task.taskType === 'story' ? 'border-blue-300 text-blue-700 bg-blue-50' : 'border-gray-300 text-gray-600 bg-gray-50'}`}
+            >
+              {task.taskType === 'story' ? 'Story' : 'Task'}
+            </Badge>
+          </div>
           <div className="relative">
             <Button
               variant="ghost"
@@ -233,6 +275,14 @@ function TaskCard({ task, onEdit, onDelete, onStatusChange }: TaskCardProps) {
             {task.content}
           </p>
         </Link>
+        
+        {task.executorId && (
+          <div className="mb-2">
+            <Badge variant="outline" className="text-xs bg-purple-50 border-purple-300 text-purple-700">
+              👤 {task.executorId}
+            </Badge>
+          </div>
+        )}
         
         {(task.duration || task.startTime) && (
           <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
@@ -426,8 +476,9 @@ export function TaskBoard() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
+    <div className="p-6">
+      <div className="space-y-6">
+        {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Task Management</h1>
@@ -484,6 +535,7 @@ export function TaskBoard() {
             onStatusChange={handleStatusChange}
           />
         ))}
+      </div>
       </div>
     </div>
   );

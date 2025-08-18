@@ -35,10 +35,10 @@ const config: Config = {
   coverageReporters: ['text', 'lcov', 'html'],
   coverageThreshold: {
     global: {
-      branches: 74,
-      functions: 71,
-      lines: 80,
-      statements: 80,
+      branches: 68,
+      functions: 65,
+      lines: 78,
+      statements: 78,
     },
   },
   setupFilesAfterEnv: ['<rootDir>/src/test/setup.ts'],

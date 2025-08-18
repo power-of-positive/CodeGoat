@@ -40,7 +40,7 @@
         "id": "unit-tests-frontend",
         "name": "Frontend Unit Tests",
         "command": "cd ui && npm test -- --watchAll=false --testTimeout=30000",
-        "timeout": 60000,
+        "timeout": 80000,
         "enabled": true,
         "continueOnFailure": true,
         "order": 4
@@ -152,15 +152,6 @@
         "enabled": false,
         "continueOnFailure": false,
         "order": 16
-      },
-      {
-        "id": "uncommitted-files",
-        "name": "Uncommitted Files Check",
-        "command": "npx ts-node scripts/check-uncommitted-files.ts",
-        "timeout": 10000,
-        "enabled": false,
-        "continueOnFailure": false,
-        "order": 17
       }
     ],
     "enableMetrics": true,

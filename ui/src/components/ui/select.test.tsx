@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react';
-import { Select, Option } from './select';
+import { SimpleSelect as Select, Option } from './select';
 
 describe('Select', () => {
   it('renders select element with options', () => {

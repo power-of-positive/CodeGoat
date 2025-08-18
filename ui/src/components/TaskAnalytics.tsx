@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import { 
   BarChart, 
   Bar, 
@@ -23,7 +24,8 @@ import {
   TrendingUp,
   Calendar,
   Users,
-  Award
+  Award,
+  ExternalLink
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
@@ -96,13 +98,24 @@ function TaskRow({ task }: TaskRowProps) {
   };
 
   return (
-    <div className="flex items-center justify-between p-4 border-b border-gray-100 last:border-b-0">
+    <div className="flex items-center justify-between p-4 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-colors">
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-gray-900 truncate">{task.content}</p>
+        <Link 
+          to={`/tasks/${task.id}`}
+          className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline truncate flex items-center gap-1"
+        >
+          {task.content}
+          <ExternalLink className="h-3 w-3 flex-shrink-0" />
+        </Link>
         <div className="flex items-center gap-2 mt-1">
           <Badge className={`text-xs ${priorityColors[task.priority]}`}>
             {task.priority}
           </Badge>
+          {task.executorId && (
+            <Badge variant="outline" className="text-xs bg-purple-50 border-purple-300 text-purple-700">
+              👤 {task.executorId}
+            </Badge>
+          )}
           {task.duration && (
             <span className="text-xs text-gray-500">Duration: {task.duration}</span>
           )}

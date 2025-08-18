@@ -14,12 +14,18 @@ export class LLMReviewerCore {
 
   constructor() {
     const apiKey = process.env.OPENAI_API_KEY;
+    console.log("🔍 LLMReviewerCore: Checking for OPENAI_API_KEY...");
+    console.log(`🔍 API Key found: ${apiKey ? "Yes (length: " + apiKey.length + ")" : "No"}`);
+    
     if (!apiKey) {
+      console.error("❌ OPENAI_API_KEY environment variable is not set!");
+      console.error("Available env vars:", Object.keys(process.env).filter(k => k.includes("API") || k.includes("OPENAI")));
       throw new Error("OPENAI_API_KEY environment variable is required");
     }
 
     this.openai = new OpenAI({ apiKey });
     this.model = process.env.LLM_REVIEWER_MODEL || "gpt-4o-mini";
+    console.log(`✅ LLMReviewerCore initialized with model: ${this.model}`);
   }
 
   /**

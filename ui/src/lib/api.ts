@@ -14,6 +14,9 @@ import {
   PermissionRule,
   PermissionConfig,
   ActionType,
+  E2ETestResult,
+  E2ETestSuite,
+  E2ETestHistory,
 } from '../../shared/types';
 
 // Internal API response types
@@ -106,8 +109,11 @@ export const settingsApi = {
 
 // Analytics API
 export const analyticsApi = {
-  getValidationRuns: (): Promise<ValidationRun[]> => 
-    request<SessionResponse>('/analytics/sessions?limit=1000').then((data) => 
+  getValidationRuns: (agentFilter?: string): Promise<ValidationRun[]> => {
+    const url = agentFilter 
+      ? `/analytics/sessions?limit=1000&agent=${encodeURIComponent(agentFilter)}`
+      : '/analytics/sessions?limit=1000';
+    return request<SessionResponse>(url).then((data) => 
       data.sessions.map(session => ({
         id: session.sessionId,
         timestamp: new Date(session.startTime).toISOString(),
@@ -115,10 +121,14 @@ export const analyticsApi = {
         duration: session.totalDuration || 0,
         stages: session.attempts.flatMap((attempt) => attempt.stages)
       }))
-    ),
-  getValidationMetrics: (): Promise<ValidationMetrics> => 
-    Promise.all([
-      request<AnalyticsResponse>('/analytics/'), 
+    );
+  },
+  getValidationMetrics: (agentFilter?: string): Promise<ValidationMetrics> => {
+    const analyticsUrl = agentFilter 
+      ? `/analytics/?agent=${encodeURIComponent(agentFilter)}`
+      : '/analytics/';
+    return Promise.all([
+      request<AnalyticsResponse>(analyticsUrl), 
       request('/settings/validation/stages').then((data: { stages: ValidationStage[] }) => data.stages)
     ]).then(([analytics, stages]: [AnalyticsResponse, ValidationStage[]]) => {
       // Merge stage success rates with average times and all stages from settings
@@ -162,7 +172,8 @@ export const analyticsApi = {
         averageDuration: analytics.averageTimeToSuccess || 0,
         stageMetrics
       };
-    }),
+    });
+  },
   getStageHistory: (stageId: string, days: number = 30): Promise<{
     stageId: string;
     history: {
@@ -402,4 +413,104 @@ export const permissionApi = {
     request('/permissions/import-claude-settings', {
       method: 'POST',
     }),
+};
+
+// E2E Testing API
+export const e2eTestingApi = {
+  // Get all E2E test suites with results
+  getTestSuites: (params?: { limit?: number; offset?: number; status?: string; dateFrom?: string; dateTo?: string }): Promise<E2ETestSuite[]> =>
+    request(`/e2e/suites?${new URLSearchParams(params as Record<string, string>).toString()}`),
+  
+  // Get specific test suite results
+  getTestSuite: (suiteId: string): Promise<E2ETestSuite> =>
+    request(`/e2e/suites/${suiteId}`),
+  
+  // Get test history and analytics
+  getTestHistory: (testFile: string, testName?: string, days?: number): Promise<E2ETestHistory> =>
+    request(`/e2e/history?testFile=${encodeURIComponent(testFile)}${testName ? `&testName=${encodeURIComponent(testName)}` : ''}${days ? `&days=${days}` : ''}`),
+  
+  // Get overall E2E test analytics
+  getAnalytics: (params?: { days?: number; groupBy?: 'file' | 'test' | 'day' }): Promise<{
+    overview: {
+      totalSuites: number;
+      totalTests: number;
+      successRate: number;
+      averageDuration: number;
+      recentRuns: number;
+    };
+    trends: Array<{
+      date: string;
+      totalRuns: number;
+      passed: number;
+      failed: number;
+      skipped: number;
+      successRate: number;
+      averageDuration: number;
+    }>;
+    topFailingTests: Array<{
+      testFile: string;
+      testName: string;
+      failureRate: number;
+      recentFailures: number;
+      lastFailure?: string;
+    }>;
+    performanceTrends: Array<{
+      testFile: string;
+      testName: string;
+      averageDuration: number;
+      trend: number; // positive = getting slower, negative = getting faster
+    }>;
+  }> =>
+    request(`/e2e/analytics?${new URLSearchParams(params as Record<string, string>).toString()}`),
+  
+  // Link BDD scenario to E2E test
+  linkScenarioToTest: (taskId: string, scenarioId: string, testData: {
+    playwrightTestFile: string;
+    playwrightTestName: string;
+    cucumberSteps?: string[];
+  }): Promise<BDDScenario> =>
+    request(`/tasks/${taskId}/scenarios/${scenarioId}/link-test`, {
+      method: 'POST',
+      body: JSON.stringify(testData),
+    }),
+  
+  // Get BDD scenario test results
+  getScenarioTestResults: (taskId: string, scenarioId: string, params?: { limit?: number; offset?: number }): Promise<{
+    scenario: BDDScenario;
+    testResults: E2ETestResult[];
+    analytics: {
+      totalRuns: number;
+      passedRuns: number;
+      failedRuns: number;
+      successRate: number;
+      averageDuration: number;
+    };
+  }> =>
+    request(`/tasks/${taskId}/scenarios/${scenarioId}/test-results?${new URLSearchParams(params as Record<string, string>).toString()}`),
+  
+  // Trigger E2E test run for specific test or suite
+  triggerTestRun: (params: {
+    testFile?: string;
+    testName?: string;
+    browser?: string;
+    headless?: boolean;
+    timeout?: number;
+  }): Promise<{ runId: string; status: 'started' | 'queued' }> =>
+    request('/e2e/run', {
+      method: 'POST',
+      body: JSON.stringify(params),
+    }),
+  
+  // Get test run status
+  getRunStatus: (runId: string): Promise<{
+    runId: string;
+    status: 'running' | 'completed' | 'failed' | 'cancelled';
+    progress?: {
+      totalTests: number;
+      completedTests: number;
+      currentTest?: string;
+    };
+    results?: E2ETestSuite;
+  }> =>
+    request(`/e2e/runs/${runId}`),
 };
