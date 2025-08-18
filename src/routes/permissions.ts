@@ -245,5 +245,131 @@ export function createPermissionRoutes(logger: WinstonLogger) {
     }
   });
 
+  // POST /permissions/import-claude-settings - Import permissions from .claude/settings.json
+  router.post('/import-claude-settings', async (req, res) => {
+    try {
+      const claudeSettingsPath = path.join(process.cwd(), '.claude/settings.json');
+      
+      let claudeSettings;
+      try {
+        const data = await fs.readFile(claudeSettingsPath, 'utf-8');
+        claudeSettings = JSON.parse(data);
+      } catch {
+        return res.status(404).json({ 
+          success: false, 
+          message: '.claude/settings.json not found or invalid JSON' 
+        });
+      }
+      
+      if (!claudeSettings.permissions?.deny || !Array.isArray(claudeSettings.permissions.deny)) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'No permissions.deny array found in .claude/settings.json' 
+        });
+      }
+      
+      // Convert .claude/settings deny list to permission rules
+      const currentConfig = await readPermissionsConfig();
+      const importedRules: PermissionRule[] = [];
+      
+      claudeSettings.permissions.deny.forEach((denyPattern: string, index: number) => {
+        // Parse the deny pattern to extract action and target
+        const match = denyPattern.match(/^(\w+)\((.+)\)$/);
+        if (match) {
+          const [, action, target] = match;
+          
+          let actionType: ActionType;
+          let scope: PermissionScope;
+          
+          // Map Claude settings actions to our ActionType enum
+          switch (action.toLowerCase()) {
+            case 'update':
+            case 'edit':
+            case 'write':
+              actionType = ActionType.FILE_WRITE;
+              break;
+            case 'read':
+              actionType = ActionType.FILE_READ;
+              break;
+            case 'delete':
+            case 'remove':
+              actionType = ActionType.FILE_DELETE;
+              break;
+            case 'execute':
+            case 'run':
+              actionType = ActionType.SYSTEM_COMMAND;
+              break;
+            default:
+              actionType = ActionType.FILE_WRITE; // Default fallback
+          }
+          
+          // Determine scope based on target pattern
+          if (target.includes('*') || target.includes('?')) {
+            scope = PermissionScope.PATTERN;
+          } else if (target.startsWith('/') || target.includes('/')) {
+            scope = PermissionScope.SPECIFIC_PATH;
+          } else {
+            scope = PermissionScope.PATTERN;
+          }
+          
+          const rule: PermissionRule = {
+            id: uuidv4(),
+            action: actionType,
+            scope,
+            target,
+            allowed: false, // Claude settings deny list = not allowed
+            reason: `Imported from .claude/settings.json deny list: ${denyPattern}`,
+            priority: 900 + index // High priority for imported rules
+          };
+          
+          importedRules.push(rule);
+        } else {
+          // Handle patterns that don't match the expected format
+          const rule: PermissionRule = {
+            id: uuidv4(),
+            action: ActionType.FILE_WRITE,
+            scope: PermissionScope.PATTERN,
+            target: denyPattern,
+            allowed: false,
+            reason: `Imported from .claude/settings.json deny list: ${denyPattern}`,
+            priority: 900 + index
+          };
+          
+          importedRules.push(rule);
+        }
+      });
+      
+      // Remove existing imported rules (those with reason containing "Imported from .claude/settings.json")
+      currentConfig.rules = currentConfig.rules.filter(rule => 
+        !rule.reason?.includes('Imported from .claude/settings.json')
+      );
+      
+      // Add new imported rules
+      currentConfig.rules.push(...importedRules);
+      
+      // Sort by priority
+      currentConfig.rules.sort((a, b) => b.priority - a.priority);
+      
+      await writePermissionsConfig(currentConfig);
+      
+      logger.info('Imported permissions from .claude/settings.json:', { 
+        importedCount: importedRules.length,
+        totalRules: currentConfig.rules.length 
+      });
+      
+      res.json({ 
+        success: true, 
+        data: {
+          importedRules: importedRules.length,
+          totalRules: currentConfig.rules.length,
+          config: currentConfig
+        }
+      });
+    } catch (error) {
+      logger.error('Error importing Claude settings permissions:', error as Error);
+      res.status(500).json({ success: false, message: 'Failed to import Claude settings permissions' });
+    }
+  });
+
   return router;
 }

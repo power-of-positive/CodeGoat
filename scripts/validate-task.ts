@@ -181,7 +181,7 @@ class ValidationRunner {
       // Filter and sort enabled stages
       const enabledStages = stages
         .filter((stage: ValidationStage) => stage.enabled)
-        .sort((a: ValidationStage, b: ValidationStage) => (a.order || 0) - (b.order || 0));
+        .sort((a: ValidationStage, b: ValidationStage) => (a.priority || 0) - (b.priority || 0));
 
       if (enabledStages.length === 0) {
         console.log(`${colors.yellow}⚠️  No validation stages configured or enabled${colors.reset}`);

@@ -99,7 +99,7 @@ export class SettingsLoader {
           timeout: 30000,
           enabled: true,
           continueOnFailure: false,
-          order: 1,
+          priority: 1,
         },
         {
           id: 'typecheck',
@@ -108,7 +108,7 @@ export class SettingsLoader {
           timeout: 30000,
           enabled: true,
           continueOnFailure: false,
-          order: 2,
+          priority: 2,
         },
         {
           id: 'test',
@@ -117,7 +117,7 @@ export class SettingsLoader {
           timeout: 60000,
           enabled: true,
           continueOnFailure: true,
-          order: 3,
+          priority: 3,
         },
       ];
     }

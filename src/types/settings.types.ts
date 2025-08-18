@@ -18,7 +18,7 @@ export const validationStageSchema = z.object({
   timeout: z.number().int().min(1000).max(300000).default(30000), // ms
   enabled: z.boolean().default(true),
   continueOnFailure: z.boolean().default(false),
-  order: z.number().int().min(0).default(0),
+  priority: z.number().int().min(0).default(0),
 });
 
 export const loggingSettingsSchema = z.object({

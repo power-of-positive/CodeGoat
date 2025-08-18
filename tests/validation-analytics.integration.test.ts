@@ -57,7 +57,7 @@ describe('Validation Analytics Integration Tests', () => {
         timeout: 30000,
         enabled: true,
         continueOnFailure: false,
-        order: 1
+        priority: 1
       };
 
       // Add stage through settings

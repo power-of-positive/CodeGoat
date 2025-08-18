@@ -9,7 +9,8 @@ import {
   AlertCircle, 
   CheckCircle, 
   Settings,
-  Download
+  Download,
+  Upload
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
@@ -121,6 +122,20 @@ export function PermissionEditor() {
     },
   });
 
+  // Import Claude settings mutation
+  const importClaudeSettingsMutation = useMutation({
+    mutationFn: permissionApi.importClaudeSettings,
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['permission-rules'] });
+      queryClient.invalidateQueries({ queryKey: ['permission-config'] });
+      alert(`Successfully imported ${result.importedRules} permission rules from .claude/settings.json`);
+    },
+    onError: (error: Error) => {
+      const errorMessage = error?.message || 'Failed to import Claude settings';
+      alert(`Import failed: ${errorMessage}`);
+    },
+  });
+
   const resetForm = () => {
     setFormData({
       action: ActionType.FILE_READ,
@@ -176,6 +191,12 @@ export function PermissionEditor() {
 
   const handleConfigUpdate = (updates: Partial<PermissionConfig>) => {
     updateConfigMutation.mutate(updates);
+  };
+
+  const handleImportClaudeSettings = () => {
+    if (confirm('Import permission rules from .claude/settings.json? This will convert deny patterns to permission rules.')) {
+      importClaudeSettingsMutation.mutate();
+    }
   };
 
   const getActionIcon = (action: ActionType) => {
@@ -303,7 +324,7 @@ export function PermissionEditor() {
           <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
             Load Default Configuration:
           </h3>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             {Object.keys(defaultConfigs).map((configName) => (
               <Button
                 key={configName}
@@ -317,6 +338,26 @@ export function PermissionEditor() {
               </Button>
             ))}
           </div>
+        </div>
+
+        {/* Claude Settings Import */}
+        <div className="mt-6">
+          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+            Import from Claude Settings:
+          </h3>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleImportClaudeSettings}
+            disabled={importClaudeSettingsMutation.isPending}
+            className="flex items-center gap-1"
+          >
+            <Upload className="h-3 w-3" />
+            {importClaudeSettingsMutation.isPending ? 'Importing...' : 'Import .claude/settings.json'}
+          </Button>
+          <p className="text-xs text-gray-500 mt-1">
+            Import deny patterns from .claude/settings.json as permission rules
+          </p>
         </div>
       </Card>
 

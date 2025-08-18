@@ -313,4 +313,9 @@ export const permissionApi = {
   
   getDefaultConfigs: (): Promise<Record<string, PermissionConfig>> => 
     request('/permissions/defaults'),
+
+  importClaudeSettings: (): Promise<{ importedRules: number; totalRules: number; config: PermissionConfig }> =>
+    request('/permissions/import-claude-settings', {
+      method: 'POST',
+    }),
 };

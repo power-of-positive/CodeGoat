@@ -27,7 +27,7 @@ function createLintStage(): ValidationStage {
     timeout: 30000,
     enabled: true,
     continueOnFailure: false,
-    order: 1,
+    priority: 1,
   };
 }
 
@@ -39,7 +39,7 @@ function createTypeCheckStage(): ValidationStage {
     timeout: 30000,
     enabled: true,
     continueOnFailure: false,
-    order: 2,
+    priority: 2,
   };
 }
 
@@ -51,7 +51,7 @@ function createTestStage(): ValidationStage {
     timeout: 60000,
     enabled: true,
     continueOnFailure: true,
-    order: 3,
+    priority: 3,
   };
 }
 
@@ -63,7 +63,7 @@ function createTypeScriptPreferenceStage(): ValidationStage {
     timeout: 10000,
     enabled: true,
     continueOnFailure: true,
-    order: 4,
+    priority: 4,
   };
 }
 
@@ -75,7 +75,7 @@ function createE2EStage(): ValidationStage {
     timeout: 120000,
     enabled: false,
     continueOnFailure: true,
-    order: 5,
+    priority: 5,
   };
 }
 

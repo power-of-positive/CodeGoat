@@ -30,6 +30,10 @@ interface CommitInfo {
 // Pattern to match CODEGOAT-{id}: prefix and extract task ID
 const CODEGOAT_PATTERN = /^CODEGOAT-(\d+):/i;
 
+// API configuration
+const API_BASE_URL = 'http://localhost:3001/api';
+const TASKS_ENDPOINT = `${API_BASE_URL}/tasks`;
+
 function loadTodoList(todoListPath: string): TodoItem[] {
   try {
     const content = fs.readFileSync(todoListPath, 'utf-8');
@@ -108,7 +112,48 @@ function findTaskStartTime(taskId: string): string | null {
   }
 }
 
-function updateTaskFromCommit(commitRef: string = 'HEAD'): void {
+/**
+ * Update task status in database via API
+ */
+async function updateTaskInDatabase(taskId: string, updates: Partial<TodoItem>): Promise<boolean> {
+  try {
+    const response = await fetch(`${TASKS_ENDPOINT}/${taskId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(updates),
+      signal: AbortSignal.timeout(5000) // 5 second timeout
+    });
+
+    if (!response.ok) {
+      console.warn(`⚠️ Failed to update task ${taskId} in database: ${response.status} ${response.statusText}`);
+      return false;
+    }
+
+    console.log(`✅ Updated task ${taskId} in database`);
+    return true;
+  } catch (error) {
+    console.warn(`⚠️ Error updating task ${taskId} in database:`, (error as Error).message);
+    return false;
+  }
+}
+
+/**
+ * Check if API server is available
+ */
+async function isApiServerAvailable(): Promise<boolean> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/health`, {
+      signal: AbortSignal.timeout(2000) // 2 second timeout
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
+async function updateTaskFromCommit(commitRef: string = 'HEAD'): Promise<void> {
   const todoListPath = path.join(process.cwd(), 'todo-list.json');
   const todos = loadTodoList(todoListPath);
   
@@ -159,19 +204,41 @@ function updateTaskFromCommit(commitRef: string = 'HEAD'): void {
     console.log(`   Content: ${task.content.substring(0, 60)}...`);
     console.log(`   Duration: ${task.duration || 'Unknown'}`);
     
+    // Save to file first
     saveTodoList(todoListPath, todos);
+    
+    // Try to sync with database
+    console.log(`🔄 Syncing task ${codegoatTaskId} with database...`);
+    const apiAvailable = await isApiServerAvailable();
+    
+    if (apiAvailable) {
+      const dbUpdateSuccess = await updateTaskInDatabase(codegoatTaskId, {
+        status: task.status,
+        endTime: task.endTime,
+        startTime: task.startTime,
+        duration: task.duration
+      });
+      
+      if (dbUpdateSuccess) {
+        console.log(`✅ Task ${codegoatTaskId} synchronized with database`);
+      } else {
+        console.warn(`⚠️  Task ${codegoatTaskId} updated in todo-list.json but failed to sync with database`);
+      }
+    } else {
+      console.warn(`⚠️  API server not available - task ${codegoatTaskId} updated in todo-list.json only`);
+    }
   } else {
     console.log(`ℹ️  No CODEGOAT prefix found, task remains unchanged`);
   }
 }
 
 // Support running as a git hook or standalone
-function main(): void {
+async function main(): Promise<void> {
   const args = process.argv.slice(2);
   const commitRef = args[0] || 'HEAD';
   
   try {
-    updateTaskFromCommit(commitRef);
+    await updateTaskFromCommit(commitRef);
   } catch (error) {
     console.error(`❌ Error: ${(error as Error).message}`);
     // Don't exit with error code to avoid blocking commits
@@ -180,7 +247,7 @@ function main(): void {
 }
 
 if (require.main === module) {
-  main();
+  main().catch(console.error);
 }
 
 export { updateTaskFromCommit, calculateDuration, extractTaskId };

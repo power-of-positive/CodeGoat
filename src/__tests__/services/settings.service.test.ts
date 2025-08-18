@@ -18,7 +18,7 @@ jest.mock('../../constants/settings.constants', () => ({
           timeout: 30000,
           enabled: true,
           continueOnFailure: false,
-          order: 1,
+          priority: 1,
         },
         {
           id: 'typecheck',
@@ -27,7 +27,7 @@ jest.mock('../../constants/settings.constants', () => ({
           timeout: 30000,
           enabled: true,
           continueOnFailure: false,
-          order: 2,
+          priority: 2,
         },
         {
           id: 'test',
@@ -36,7 +36,7 @@ jest.mock('../../constants/settings.constants', () => ({
           timeout: 60000,
           enabled: true,
           continueOnFailure: true,
-          order: 3,
+          priority: 3,
         },
         {
           id: 'typescript-preference',
@@ -45,7 +45,7 @@ jest.mock('../../constants/settings.constants', () => ({
           timeout: 10000,
           enabled: true,
           continueOnFailure: true,
-          order: 4,
+          priority: 4,
         },
       ],
       enableMetrics: true,
@@ -226,7 +226,7 @@ describe('SettingsService', () => {
         timeout: 30000,
         enabled: true,
         continueOnFailure: false,
-        order: 1,
+        priority: 1,
       };
 
       const result = await settingsService.addValidationStage(newStage);
@@ -255,7 +255,7 @@ describe('SettingsService', () => {
         timeout: 30000,
         enabled: true,
         continueOnFailure: false,
-        order: 1,
+        priority: 1,
       };
 
       await expect(settingsService.addValidationStage(duplicateStage)).rejects.toThrow(
@@ -267,8 +267,8 @@ describe('SettingsService', () => {
       const currentSettings = {
         validation: {
           stages: [
-            { id: 'test', order: 3 },
-            { id: 'lint', order: 1 },
+            { id: 'test', priority: 3 },
+            { id: 'lint', priority: 1 },
           ],
           enableMetrics: true,
           maxAttempts: 5,
@@ -285,7 +285,7 @@ describe('SettingsService', () => {
         timeout: 30000,
         enabled: true,
         continueOnFailure: false,
-        order: 2,
+        priority: 2,
       };
 
       await settingsService.addValidationStage(newStage);
@@ -338,10 +338,10 @@ describe('SettingsService', () => {
       const currentSettings = {
         validation: {
           stages: [
-            { id: 'test', enabled: true, order: 3 },
-            { id: 'lint', enabled: true, order: 1 },
-            { id: 'disabled', enabled: false, order: 2 },
-            { id: 'typecheck', enabled: true, order: 2 },
+            { id: 'test', enabled: true, priority: 3 },
+            { id: 'lint', enabled: true, priority: 1 },
+            { id: 'disabled', enabled: false, priority: 2 },
+            { id: 'typecheck', enabled: true, priority: 2 },
           ],
         },
       };
@@ -413,7 +413,7 @@ describe('SettingsService', () => {
             timeout: 30000,
             enabled: true,
             continueOnFailure: false,
-            order: 1,
+            priority: 1,
           },
         ],
         enableMetrics: false,
@@ -452,7 +452,7 @@ describe('SettingsService', () => {
         timeout: 30000,
         enabled: true,
         continueOnFailure: false,
-        order: 1,
+        priority: 1,
       };
 
       const result = await settingsService.addValidationStage(newStage);
@@ -473,7 +473,7 @@ describe('SettingsService', () => {
               timeout: 30000,
               enabled: true,
               continueOnFailure: false,
-              order: 1,
+              priority: 1,
             },
           ],
           enableMetrics: true,
@@ -669,7 +669,7 @@ describe('SettingsService', () => {
         timeout: 30000,
         enabled: true,
         continueOnFailure: false,
-        order: 1,
+        priority: 1,
       };
 
       const result = settingsService.validateValidationStage(validStage);

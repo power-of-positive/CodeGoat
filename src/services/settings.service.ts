@@ -183,7 +183,7 @@ export class SettingsService {
     }
 
     currentSettings.validation.stages.push(validated);
-    currentSettings.validation.stages.sort((a, b) => a.order - b.order);
+    currentSettings.validation.stages.sort((a, b) => a.priority - b.priority);
 
     await this.saveSettings(currentSettings);
     this.logger.info('Validation stage added', { stageId: validated.id });
@@ -217,7 +217,7 @@ export class SettingsService {
 
     const validated = validationStageSchema.parse(updatedStage);
     currentSettings.validation.stages[stageIndex] = validated;
-    currentSettings.validation.stages.sort((a, b) => a.order - b.order);
+    currentSettings.validation.stages.sort((a, b) => a.priority - b.priority);
 
     await this.saveSettings(currentSettings);
     this.logger.info('Validation stage updated', { stageId: id });
@@ -267,7 +267,7 @@ export class SettingsService {
 
     return settings.validation.stages
       .filter(stage => stage.enabled)
-      .sort((a, b) => a.order - b.order);
+      .sort((a, b) => a.priority - b.priority);
   }
 
   /**

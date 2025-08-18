@@ -16,7 +16,7 @@
         "timeout": 30000,
         "enabled": true,
         "continueOnFailure": false,
-        "order": 1
+        "priority": 1
       },
       {
         "id": "typecheck",
@@ -25,7 +25,7 @@
         "timeout": 45000,
         "enabled": true,
         "continueOnFailure": false,
-        "order": 2
+        "priority": 2
       },
       {
         "id": "unit-tests-backend",
@@ -34,7 +34,7 @@
         "timeout": 30000,
         "enabled": true,
         "continueOnFailure": false,
-        "order": 3
+        "priority": 3
       },
       {
         "id": "unit-tests-frontend",
@@ -42,8 +42,8 @@
         "command": "cd ui && npm test -- --watchAll=false --testTimeout=10000",
         "timeout": 30000,
         "enabled": true,
-        "continueOnFailure": true,
-        "order": 4
+        "continueOnFailure": false,
+        "priority": 4
       },
       {
         "id": "integration-tests",
@@ -52,7 +52,7 @@
         "timeout": 90000,
         "enabled": true,
         "continueOnFailure": false,
-        "order": 5
+        "priority": 5
       },
       {
         "id": "coverage-backend",
@@ -61,7 +61,7 @@
         "timeout": 30000,
         "enabled": true,
         "continueOnFailure": false,
-        "order": 6
+        "priority": 6
       },
       {
         "id": "coverage-frontend",
@@ -70,7 +70,7 @@
         "timeout": 30000,
         "enabled": true,
         "continueOnFailure": false,
-        "order": 7
+        "priority": 7
       },
       {
         "id": "unit-tests-scripts",
@@ -79,7 +79,7 @@
         "timeout": 30000,
         "enabled": true,
         "continueOnFailure": false,
-        "order": 8
+        "priority": 8
       },
       {
         "id": "coverage-scripts",
@@ -88,7 +88,7 @@
         "timeout": 30000,
         "enabled": true,
         "continueOnFailure": false,
-        "order": 9
+        "priority": 9
       },
       {
         "id": "api-e2e-tests",
@@ -97,7 +97,7 @@
         "timeout": 120000,
         "enabled": true,
         "continueOnFailure": false,
-        "order": 10
+        "priority": 10
       },
       {
         "id": "typescript-preference",
@@ -106,7 +106,7 @@
         "timeout": 10000,
         "enabled": true,
         "continueOnFailure": false,
-        "order": 11
+        "priority": 11
       },
       {
         "id": "ai-code-review",
@@ -115,7 +115,7 @@
         "timeout": 120000,
         "enabled": true,
         "continueOnFailure": false,
-        "order": 12
+        "priority": 12
       },
       {
         "id": "visual-regression",
@@ -124,7 +124,7 @@
         "timeout": 60000,
         "enabled": true,
         "continueOnFailure": false,
-        "order": 13
+        "priority": 13
       },
       {
         "id": "dead-code",
@@ -133,7 +133,7 @@
         "timeout": 45000,
         "enabled": true,
         "continueOnFailure": false,
-        "order": 14
+        "priority": 14
       },
       {
         "id": "duplication-check",
@@ -142,7 +142,7 @@
         "timeout": 45000,
         "enabled": true,
         "continueOnFailure": false,
-        "order": 15
+        "priority": 15
       },
       {
         "id": "vulnerability-check",
@@ -151,7 +151,7 @@
         "timeout": 30000,
         "enabled": true,
         "continueOnFailure": false,
-        "order": 16
+        "priority": 16
       },
       {
         "id": "playwright-e2e",
@@ -160,7 +160,7 @@
         "timeout": 180000,
         "enabled": true,
         "continueOnFailure": false,
-        "order": 17
+        "priority": 17
       },
       {
         "id": "uncommitted-files",
@@ -169,7 +169,7 @@
         "timeout": 10000,
         "enabled": true,
         "continueOnFailure": false,
-        "order": 18
+        "priority": 18
       },
       {
         "id": "todo-list",
@@ -178,7 +178,7 @@
         "timeout": 10000,
         "enabled": true,
         "continueOnFailure": false,
-        "order": 19
+        "priority": 19
       }
     ],
     "enableMetrics": true,

@@ -64,6 +64,51 @@ interface TodoItem {
   duration?: string;
 }
 
+// API configuration
+const API_BASE_URL = 'http://localhost:3001/api';
+const TASKS_ENDPOINT = `${API_BASE_URL}/tasks`;
+
+/**
+ * Check if API server is available
+ */
+async function isApiServerAvailable(): Promise<boolean> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/health`, {
+      signal: AbortSignal.timeout(2000) // 2 second timeout
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Update task status in database via API
+ */
+async function updateTaskInDatabase(taskId: string, updates: Partial<TodoItem>): Promise<boolean> {
+  try {
+    const response = await fetch(`${TASKS_ENDPOINT}/${taskId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(updates),
+      signal: AbortSignal.timeout(5000) // 5 second timeout
+    });
+
+    if (!response.ok) {
+      console.error(`⚠️ Failed to update task ${taskId} in database: ${response.status} ${response.statusText}`);
+      return false;
+    }
+
+    console.error(`✅ Updated task ${taskId} in database`);
+    return true;
+  } catch (error) {
+    console.error(`⚠️ Error updating task ${taskId} in database:`, (error as Error).message);
+    return false;
+  }
+}
+
 /**
  * Load todo list from JSON file
  */
@@ -114,7 +159,7 @@ function getNextPendingTask(todos: TodoItem[]): TodoItem | null {
 /**
  * Check todo list status and manage task assignment
  */
-function checkTodoListStatus(): { shouldBlock: boolean; reason: string; nextTask?: TodoItem } {
+async function checkTodoListStatus(): Promise<{ shouldBlock: boolean; reason: string; nextTask?: TodoItem }> {
   console.error('📋 Checking todo list status...');
   
   const todos = loadTodoList();
@@ -152,6 +197,25 @@ function checkTodoListStatus(): { shouldBlock: boolean; reason: string; nextTask
       saveTodoList(todos);
       
       console.error(`🎯 Auto-assigned next task: [${nextTask.priority}] ${nextTask.content} (ID: ${nextTask.id})`);
+      
+      // Try to sync with database
+      console.error(`🔄 Syncing task assignment with database...`);
+      const apiAvailable = await isApiServerAvailable();
+      
+      if (apiAvailable) {
+        const dbUpdateSuccess = await updateTaskInDatabase(nextTask.id, {
+          status: nextTask.status,
+          startTime: nextTask.startTime
+        });
+        
+        if (dbUpdateSuccess) {
+          console.error(`✅ Task assignment synchronized with database`);
+        } else {
+          console.error(`⚠️  Task assigned in todo-list.json but failed to sync with database`);
+        }
+      } else {
+        console.error(`⚠️  API server not available - task assigned in todo-list.json only`);
+      }
       
       return {
         shouldBlock: true,
@@ -299,7 +363,7 @@ async function main(): Promise<void> {
     }
 
     // Second check: Todo list validation and task management
-    const todoStatus = checkTodoListStatus();
+    const todoStatus = await checkTodoListStatus();
     if (todoStatus.shouldBlock) {
       console.error("⚠️ Todo list check failed - blocking completion");
       console.error("💡 Complete your assigned tasks before stopping");
