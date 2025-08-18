@@ -217,7 +217,7 @@ describe('Settings Routes', () => {
         timeout: 30000,
         enabled: true,
         continueOnFailure: false,
-        order: 1,
+        priority: 0,
       };
 
       (fs.readFile as jest.Mock).mockResolvedValue(JSON.stringify(existingSettings));
@@ -252,7 +252,7 @@ describe('Settings Routes', () => {
         timeout: 30000,
         enabled: true,
         continueOnFailure: false,
-        order: 1,
+        priority: 0,
       };
 
       (fs.readFile as jest.Mock).mockResolvedValue(JSON.stringify(existingSettings));
@@ -315,8 +315,8 @@ describe('Settings Routes', () => {
       const existingSettings = {
         validation: {
           stages: [
-            { id: 'lint', name: 'Lint', command: 'eslint .', enabled: true, order: 1 },
-            { id: 'test', name: 'Test', command: 'npm test', enabled: true, order: 2 },
+            { id: 'lint', name: 'Lint', command: 'eslint .', enabled: true, priority: 0 },
+            { id: 'test', name: 'Test', command: 'npm test', enabled: true, priority: 0 },
           ],
           enableMetrics: true,
           maxAttempts: 5,
@@ -327,7 +327,7 @@ describe('Settings Routes', () => {
         name: 'Updated Lint',
         command: 'eslint . --fix',
         enabled: false,
-        order: 3,
+        priority: 3,
       };
 
       (fs.readFile as jest.Mock).mockResolvedValue(JSON.stringify(existingSettings));
@@ -374,7 +374,7 @@ describe('Settings Routes', () => {
       };
       const invalidUpdate = {
         command: '', // Invalid empty command
-        order: -1, // Invalid negative order
+        priority: -1, // Invalid negative priority
       };
 
       (fs.readFile as jest.Mock).mockResolvedValue(JSON.stringify(existingSettings));
@@ -397,8 +397,8 @@ describe('Settings Routes', () => {
       const existingSettings = {
         validation: {
           stages: [
-            { id: 'lint', name: 'Lint', command: 'eslint .', enabled: true, order: 1 },
-            { id: 'test', name: 'Test', command: 'npm test', enabled: true, order: 2 },
+            { id: 'lint', name: 'Lint', command: 'eslint .', enabled: true, priority: 0 },
+            { id: 'test', name: 'Test', command: 'npm test', enabled: true, priority: 0 },
           ],
           enableMetrics: true,
           maxAttempts: 5,
@@ -476,7 +476,7 @@ describe('Settings Routes', () => {
         timeout: 30000,
         enabled: true,
         continueOnFailure: false,
-        order: 1,
+        priority: 0,
       };
 
       (fs.readFile as jest.Mock).mockResolvedValue(JSON.stringify(existingSettings));
