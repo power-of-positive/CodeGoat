@@ -302,4 +302,179 @@ describe('Settings Component', () => {
     await user.click(continueCheckbox);
     expect(continueCheckbox).not.toBeChecked();
   });
+
+  it('displays reorder controls for validation stages', async () => {
+    renderWithProviders(<Settings />);
+    
+    await waitFor(() => {
+      expect(screen.getByText('Code Linting')).toBeInTheDocument();
+      expect(screen.getByText('Unit Tests')).toBeInTheDocument();
+    });
+    
+    // Should have up/down buttons for reordering
+    const upButtons = screen.getAllByRole('button', { name: '' }).filter(btn => 
+      btn.querySelector('svg')?.getAttribute('class')?.includes('lucide-chevron-up')
+    );
+    const downButtons = screen.getAllByRole('button', { name: '' }).filter(btn => 
+      btn.querySelector('svg')?.getAttribute('class')?.includes('lucide-chevron-down')
+    );
+    
+    expect(upButtons).toHaveLength(2); // One for each stage
+    expect(downButtons).toHaveLength(2); // One for each stage
+  });
+
+  it('can move stage up in order', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<Settings />);
+    
+    await waitFor(() => {
+      expect(screen.getByText('Unit Tests')).toBeInTheDocument();
+    });
+    
+    // Find the "Unit Tests" stage card and its up button
+    const stageCards = screen.getAllByText(/Code Linting|Unit Tests/);
+    expect(stageCards).toHaveLength(2);
+    
+    // Get all up buttons (chevron up icons)
+    const upButtons = screen.getAllByRole('button', { name: '' }).filter(btn => 
+      btn.querySelector('svg')?.getAttribute('class')?.includes('lucide-chevron-up')
+    );
+    
+    // The second stage (Unit Tests) should have an enabled up button
+    const unitTestsUpButton = upButtons[1];
+    expect(unitTestsUpButton).not.toBeDisabled();
+    
+    await user.click(unitTestsUpButton);
+    
+    // Should call updateValidationStage to swap priorities
+    expect(settingsApi.updateValidationStage).toHaveBeenCalledTimes(2);
+    expect(settingsApi.updateValidationStage).toHaveBeenCalledWith('test', 
+      expect.objectContaining({ priority: 1 })
+    );
+    expect(settingsApi.updateValidationStage).toHaveBeenCalledWith('lint', 
+      expect.objectContaining({ priority: 2 })
+    );
+  });
+
+  it('can move stage down in order', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<Settings />);
+    
+    await waitFor(() => {
+      expect(screen.getByText('Code Linting')).toBeInTheDocument();
+    });
+    
+    // Get all down buttons (chevron down icons)
+    const downButtons = screen.getAllByRole('button', { name: '' }).filter(btn => 
+      btn.querySelector('svg')?.getAttribute('class')?.includes('lucide-chevron-down')
+    );
+    
+    // The first stage (Code Linting) should have an enabled down button
+    const codeLintingDownButton = downButtons[0];
+    expect(codeLintingDownButton).not.toBeDisabled();
+    
+    await user.click(codeLintingDownButton);
+    
+    // Should call updateValidationStage to swap priorities
+    expect(settingsApi.updateValidationStage).toHaveBeenCalledTimes(2);
+    expect(settingsApi.updateValidationStage).toHaveBeenCalledWith('lint', 
+      expect.objectContaining({ priority: 2 })
+    );
+    expect(settingsApi.updateValidationStage).toHaveBeenCalledWith('test', 
+      expect.objectContaining({ priority: 1 })
+    );
+  });
+
+  it('disables up button for first stage', async () => {
+    renderWithProviders(<Settings />);
+    
+    await waitFor(() => {
+      expect(screen.getByText('Code Linting')).toBeInTheDocument();
+    });
+    
+    // Get all up buttons
+    const upButtons = screen.getAllByRole('button', { name: '' }).filter(btn => 
+      btn.querySelector('svg')?.getAttribute('class')?.includes('lucide-chevron-up')
+    );
+    
+    // The first stage's up button should be disabled
+    expect(upButtons[0]).toBeDisabled();
+  });
+
+  it('disables down button for last stage', async () => {
+    renderWithProviders(<Settings />);
+    
+    await waitFor(() => {
+      expect(screen.getByText('Unit Tests')).toBeInTheDocument();
+    });
+    
+    // Get all down buttons
+    const downButtons = screen.getAllByRole('button', { name: '' }).filter(btn => 
+      btn.querySelector('svg')?.getAttribute('class')?.includes('lucide-chevron-down')
+    );
+    
+    // The last stage's down button should be disabled
+    expect(downButtons[1]).toBeDisabled();
+  });
+
+  it('displays drag handles for reordering stages', async () => {
+    renderWithProviders(<Settings />);
+    
+    await waitFor(() => {
+      expect(screen.getByText('Code Linting')).toBeInTheDocument();
+      expect(screen.getByText('Unit Tests')).toBeInTheDocument();
+    });
+    
+    // Should have drag handles (grip vertical icons)
+    const dragHandles = screen.getAllByRole('button', { name: '' }).filter(btn => 
+      btn.querySelector('svg')?.getAttribute('class')?.includes('lucide-grip-vertical')
+    );
+    
+    // Note: drag handles are not buttons, they're just visual indicators
+    // But the cards should be draggable
+    const cards = document.querySelectorAll('[draggable="true"]');
+    expect(cards).toHaveLength(2); // Both stages should be draggable
+  });
+
+  it('allows drag and drop reordering of stages', async () => {
+    renderWithProviders(<Settings />);
+    
+    await waitFor(() => {
+      expect(screen.getByText('Code Linting')).toBeInTheDocument();
+      expect(screen.getByText('Unit Tests')).toBeInTheDocument();
+    });
+    
+    const cards = document.querySelectorAll('[draggable="true"]');
+    const firstCard = cards[0] as HTMLElement;
+    const secondCard = cards[1] as HTMLElement;
+    
+    // Simulate drag and drop from first to second position
+    fireEvent.dragStart(firstCard, { dataTransfer: { effectAllowed: 'move', setData: jest.fn() } });
+    fireEvent.dragOver(secondCard, { dataTransfer: { dropEffect: 'move' } });
+    fireEvent.drop(secondCard, { dataTransfer: { getData: jest.fn(() => '0') } });
+    fireEvent.dragEnd(firstCard);
+    
+    // Should call updateValidationStage to reorder all stages
+    expect(settingsApi.updateValidationStage).toHaveBeenCalled();
+  });
+
+  it('prevents dragging when a stage is being edited', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<Settings />);
+    
+    await waitFor(() => {
+      expect(screen.getAllByRole('button', { name: /edit/i })).toHaveLength(2);
+    });
+    
+    // Start editing a stage
+    await user.click(screen.getAllByRole('button', { name: /edit/i })[0]);
+    
+    await waitFor(() => {
+      expect(screen.getByDisplayValue('Code Linting')).toBeInTheDocument();
+    });
+    
+    // The card being edited should not be draggable
+    const cards = document.querySelectorAll('[draggable="true"]');
+    expect(cards).toHaveLength(1); // Only the non-edited stage should be draggable
+  });
 });

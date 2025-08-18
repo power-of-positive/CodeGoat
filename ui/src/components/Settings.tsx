@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Settings as SettingsIcon, Plus, Trash2, Save, AlertCircle, ChevronUp, ChevronDown } from 'lucide-react';
+import { Settings as SettingsIcon, Plus, Trash2, Save, AlertCircle, ChevronUp, ChevronDown, GripVertical } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Input } from './ui/input';
@@ -185,7 +185,13 @@ function StageListItem({
   onDelete, 
   onMove, 
   onUpdate, 
-  onCancelEdit 
+  onCancelEdit,
+  onDragStart,
+  onDragEnd,
+  onDragOver,
+  onDrop,
+  isDragging,
+  dragOverIndex
 }: { 
   stage: ValidationStage; 
   index: number; 
@@ -196,59 +202,85 @@ function StageListItem({
   onMove: (stageId: string, direction: 'up' | 'down') => void; 
   onUpdate: (id: string, stage: Omit<ValidationStage, 'id'>) => void; 
   onCancelEdit: () => void; 
+  onDragStart: (e: React.DragEvent, stageIndex: number) => void;
+  onDragEnd: () => void;
+  onDragOver: (e: React.DragEvent, targetIndex: number) => void;
+  onDrop: (e: React.DragEvent, targetIndex: number) => void;
+  isDragging: boolean;
+  dragOverIndex: number | null;
 }) {
+  const isBeingDragged = isDragging && index === dragOverIndex;
+  const cardClasses = `transition-all duration-200 ${
+    isBeingDragged ? 'opacity-50 scale-95' : ''
+  } ${dragOverIndex === index ? 'border-blue-400 border-2' : ''}`;
+
   return (
-    <Card key={stage.id}>
-      <CardContent className="p-4">
-        {editingStage?.id === stage.id ? (
-          <ValidationStageForm
-            stage={stage}
-            onSave={(updatedStage) => onUpdate(stage.id, updatedStage)}
-            onCancel={onCancelEdit}
-          />
-        ) : (
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-3">
-              <StageReorderControls
-                stage={stage}
-                index={index}
-                totalStages={totalStages}
-                onMove={onMove}
-              />
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-medium text-gray-900">{stage.name}</span>
-                  {!stage.enabled && (
-                    <span className="px-2 py-1 text-xs bg-gray-200 text-gray-600 rounded">
-                      Disabled
-                    </span>
-                  )}
+    <div
+      key={stage.id}
+      className={`${cardClasses}`}
+      draggable={editingStage?.id !== stage.id}
+      onDragStart={(e) => onDragStart(e, index)}
+      onDragEnd={onDragEnd}
+      onDragOver={(e) => onDragOver(e, index)}
+      onDrop={(e) => onDrop(e, index)}
+    >
+      <Card>
+        <CardContent className="p-4">
+          {editingStage?.id === stage.id ? (
+            <ValidationStageForm
+              stage={stage}
+              onSave={(updatedStage) => onUpdate(stage.id, updatedStage)}
+              onCancel={onCancelEdit}
+            />
+          ) : (
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1">
+                  <div className="cursor-grab active:cursor-grabbing p-1 hover:bg-gray-100 rounded">
+                    <GripVertical className="w-4 h-4 text-gray-400" />
+                  </div>
+                  <StageReorderControls
+                    stage={stage}
+                    index={index}
+                    totalStages={totalStages}
+                    onMove={onMove}
+                  />
                 </div>
-                <div className="text-sm text-gray-600">
-                  {stage.command} • {stage.timeout}ms timeout • Priority: {stage.priority || 0}
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-gray-900">{stage.name}</span>
+                    {!stage.enabled && (
+                      <span className="px-2 py-1 text-xs bg-gray-200 text-gray-600 rounded">
+                        Disabled
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    {stage.command} • {stage.timeout}ms timeout • Priority: {stage.priority || 0}
+                  </div>
                 </div>
               </div>
+              <div className="flex space-x-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onEdit(stage)}
+                >
+                  Edit
+                </Button>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={() => onDelete(stage.id)}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
-            <div className="flex space-x-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => onEdit(stage)}
-              >
-                Edit
-              </Button>
-              <Button
-                size="sm"
-                variant="destructive"
-                onClick={() => onDelete(stage.id)}
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 
@@ -318,7 +350,33 @@ function useStageReordering(sortedStages: ValidationStage[], updateMutation: { m
     }
   };
 
-  return { moveStage };
+  const reorderByDrag = async (fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0 || 
+        fromIndex >= sortedStages.length || toIndex >= sortedStages.length) {
+      return;
+    }
+
+    try {
+      // Create a new array with reordered items
+      const reorderedStages = [...sortedStages];
+      const [draggedStage] = reorderedStages.splice(fromIndex, 1);
+      reorderedStages.splice(toIndex, 0, draggedStage);
+
+      // Update priorities based on new order
+      const updatePromises = reorderedStages.map((stage, index) => 
+        updateMutation.mutateAsync({
+          id: stage.id,
+          stage: { ...stage, priority: index }
+        })
+      );
+
+      await Promise.all(updatePromises);
+    } catch (error) {
+      console.error('Failed to reorder stages by drag:', error);
+    }
+  };
+
+  return { moveStage, reorderByDrag };
 }
 
 function AddStageForm({ 
@@ -354,7 +412,8 @@ function StagesList({
   onDelete, 
   onMove, 
   onUpdate, 
-  onCancelEdit 
+  onCancelEdit,
+  onReorderByDrag
 }: { 
   stages: ValidationStage[]; 
   editingStage: ValidationStage | null; 
@@ -363,10 +422,42 @@ function StagesList({
   onMove: (stageId: string, direction: 'up' | 'down') => void; 
   onUpdate: (id: string, stage: Omit<ValidationStage, 'id'>) => void; 
   onCancelEdit: () => void; 
+  onReorderByDrag: (fromIndex: number, toIndex: number) => void;
 }) {
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+
   if (stages.length === 0) {
     return <EmptyStagesList />;
   }
+
+  const handleDragStart = (e: React.DragEvent, stageIndex: number) => {
+    setDraggedIndex(stageIndex);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', stageIndex.toString());
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
+
+  const handleDragOver = (e: React.DragEvent, targetIndex: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverIndex(targetIndex);
+  };
+
+  const handleDrop = (e: React.DragEvent, targetIndex: number) => {
+    e.preventDefault();
+    
+    if (draggedIndex !== null && draggedIndex !== targetIndex) {
+      onReorderByDrag(draggedIndex, targetIndex);
+    }
+    
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
 
   return (
     <div className="space-y-2">
@@ -382,6 +473,12 @@ function StagesList({
           onMove={onMove}
           onUpdate={onUpdate}
           onCancelEdit={onCancelEdit}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
+          isDragging={draggedIndex !== null}
+          dragOverIndex={dragOverIndex}
         />
       ))}
     </div>
@@ -406,7 +503,7 @@ function ValidationStagesList() {
     return aOrder - bOrder;
   });
 
-  const { moveStage } = useStageReordering(sortedStages, updateMutation);
+  const { moveStage, reorderByDrag } = useStageReordering(sortedStages, updateMutation);
 
   const handleAddStage = (stage: Omit<ValidationStage, 'id'>) => {
     addMutation.mutate(stage, {
@@ -454,6 +551,7 @@ function ValidationStagesList() {
         onMove={moveStage}
         onUpdate={handleUpdateStage}
         onCancelEdit={() => setEditingStage(null)}
+        onReorderByDrag={reorderByDrag}
       />
     </div>
   );
