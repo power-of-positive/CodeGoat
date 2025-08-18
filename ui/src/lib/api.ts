@@ -9,6 +9,7 @@ import {
   UserSystemInfo,
   ThemeMode,
   Task,
+  BDDScenario,
   PermissionRule,
   PermissionConfig,
   ActionType,
@@ -291,6 +292,24 @@ export const taskApi = {
     dailyCompletions: { date: string; completed: number }[];
   }> => 
     request('/tasks/analytics'),
+
+  // BDD Scenario management
+  addScenarioToTask: (taskId: string, scenario: Omit<BDDScenario, 'id'>): Promise<BDDScenario> =>
+    request(`/tasks/${taskId}/scenarios`, {
+      method: 'POST',
+      body: JSON.stringify(scenario),
+    }),
+
+  updateTaskScenario: (taskId: string, scenarioId: string, updates: Partial<BDDScenario>): Promise<BDDScenario> =>
+    request(`/tasks/${taskId}/scenarios/${scenarioId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    }),
+
+  deleteTaskScenario: (taskId: string, scenarioId: string): Promise<void> =>
+    request(`/tasks/${taskId}/scenarios/${scenarioId}`, {
+      method: 'DELETE',
+    }),
 };
 
 // Permission management API

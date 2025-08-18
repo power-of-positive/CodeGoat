@@ -1,6 +1,6 @@
 import React from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   ArrowLeft, 
   Clock, 
@@ -16,6 +16,8 @@ import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
 import { taskApi } from '../lib/api';
+import { BDDScenarioManager } from './BDDScenarioManager';
+import { BDDScenario } from '../../shared/types';
 
 // Priority colors
 const priorityColors = {
@@ -151,12 +153,50 @@ function ValidationRunCard({ run }: { run: ValidationRunData }) {
 export function TaskDetail() {
   const { taskId } = useParams<{ taskId: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   
   const { data: taskResponse, isLoading, error } = useQuery({
     queryKey: ['task', taskId],
     queryFn: () => taskApi.getTask(taskId!),
     enabled: !!taskId,
   });
+
+  // BDD Scenarios mutations
+  const createScenarioMutation = useMutation({
+    mutationFn: (scenario: Omit<BDDScenario, 'id'>) => 
+      taskApi.addScenarioToTask(taskId!, scenario),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['task', taskId] });
+    },
+  });
+
+  const updateScenarioMutation = useMutation({
+    mutationFn: ({ id, scenario }: { id: string; scenario: Partial<BDDScenario> }) =>
+      taskApi.updateTaskScenario(taskId!, id, scenario),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['task', taskId] });
+    },
+  });
+
+  const deleteScenarioMutation = useMutation({
+    mutationFn: (scenarioId: string) => 
+      taskApi.deleteTaskScenario(taskId!, scenarioId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['task', taskId] });
+    },
+  });
+
+  const handleAddScenario = (scenario: Omit<BDDScenario, 'id'>) => {
+    createScenarioMutation.mutate(scenario);
+  };
+
+  const handleUpdateScenario = (id: string, scenario: Partial<BDDScenario>) => {
+    updateScenarioMutation.mutate({ id, scenario });
+  };
+
+  const handleDeleteScenario = (id: string) => {
+    deleteScenarioMutation.mutate(id);
+  };
 
   if (isLoading) {
     return (
@@ -290,6 +330,19 @@ export function TaskDetail() {
               ))}
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      {/* BDD Scenarios */}
+      <Card>
+        <CardContent className="p-6">
+          <BDDScenarioManager
+            scenarios={task.bddScenarios || []}
+            onAddScenario={handleAddScenario}
+            onUpdateScenario={handleUpdateScenario}
+            onDeleteScenario={handleDeleteScenario}
+            readonly={task.status === 'completed'}
+          />
         </CardContent>
       </Card>
     </div>

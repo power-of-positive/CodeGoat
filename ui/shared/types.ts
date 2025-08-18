@@ -113,6 +113,19 @@ export interface APIError {
   details?: JSONValue;
 }
 
+// BDD Scenario types
+export interface BDDScenario {
+  id: string;
+  title: string;
+  feature: string;
+  description: string;
+  gherkinContent: string;
+  status: 'pending' | 'passed' | 'failed' | 'skipped';
+  executedAt?: string;
+  executionDuration?: number;
+  errorMessage?: string;
+}
+
 // Task management types
 export interface Task {
   id: string;
@@ -122,6 +135,7 @@ export interface Task {
   startTime?: string;
   endTime?: string;
   duration?: string;
+  bddScenarios?: BDDScenario[];
 }
 
 // Permission system types

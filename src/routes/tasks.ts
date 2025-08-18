@@ -2,7 +2,7 @@ import express from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { WinstonLogger } from '../logger-winston';
 import { getDatabaseService } from '../services/database';
-import { TodoStatus, TodoPriority, TodoTask } from '@prisma/client';
+import { TodoStatus, TodoPriority, TodoTask, BDDScenarioStatus } from '@prisma/client';
 
 interface Task {
   id: string;
@@ -39,6 +39,21 @@ const reversePriorityMapping: Record<TodoPriority, string> = {
   [TodoPriority.LOW]: 'low',
   [TodoPriority.MEDIUM]: 'medium',
   [TodoPriority.HIGH]: 'high',
+};
+
+// BDD Scenario status mapping
+const bddStatusMapping: Record<string, BDDScenarioStatus> = {
+  'pending': BDDScenarioStatus.PENDING,
+  'passed': BDDScenarioStatus.PASSED,
+  'failed': BDDScenarioStatus.FAILED,
+  'skipped': BDDScenarioStatus.SKIPPED,
+};
+
+const reverseBddStatusMapping: Record<BDDScenarioStatus, string> = {
+  [BDDScenarioStatus.PENDING]: 'pending',
+  [BDDScenarioStatus.PASSED]: 'passed',
+  [BDDScenarioStatus.FAILED]: 'failed',
+  [BDDScenarioStatus.SKIPPED]: 'skipped',
 };
 
 // Helper function to convert database task to API format
@@ -104,6 +119,9 @@ export function createTaskRoutes(logger: WinstonLogger) {
           validationRuns: {
             orderBy: { createdAt: 'desc' },
             take: 10
+          },
+          bddScenarios: {
+            orderBy: { createdAt: 'asc' }
           }
         }
       });
@@ -113,11 +131,26 @@ export function createTaskRoutes(logger: WinstonLogger) {
       }
       
       const task = dbTaskToApiTask(dbTask);
+      
+      // Convert BDD scenarios to API format
+      const bddScenarios = dbTask.bddScenarios.map(scenario => ({
+        id: scenario.id,
+        title: scenario.title,
+        feature: scenario.feature,
+        description: scenario.description,
+        gherkinContent: scenario.gherkinContent,
+        status: reverseBddStatusMapping[scenario.status],
+        executedAt: scenario.executedAt?.toISOString(),
+        executionDuration: scenario.executionDuration,
+        errorMessage: scenario.errorMessage,
+      }));
+      
       res.json({ 
         success: true, 
         data: {
           ...task,
-          validationRuns: dbTask.validationRuns
+          validationRuns: dbTask.validationRuns,
+          bddScenarios: bddScenarios
         }
       });
     } catch (error) {
@@ -393,6 +426,194 @@ export function createTaskRoutes(logger: WinstonLogger) {
     } catch (error) {
       logger.error('Error fetching task analytics:', error as Error);
       res.status(500).json({ success: false, message: 'Failed to fetch task analytics' });
+    }
+  });
+
+  // BDD Scenario endpoints
+  
+  // POST /api/tasks/:id/scenarios - Create new scenario for task
+  router.post('/:id/scenarios', async (req, res) => {
+    try {
+      const { title, feature, description, gherkinContent, status = 'pending' } = req.body;
+      
+      if (!title || !title.trim() || !feature || !feature.trim() || !gherkinContent || !gherkinContent.trim()) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Title, feature, and gherkin content are required' 
+        });
+      }
+      
+      const db = getDatabaseService();
+      
+      // Verify task exists
+      const existingTask = await db.todoTask.findUnique({
+        where: { id: req.params.id }
+      });
+      
+      if (!existingTask) {
+        return res.status(404).json({ success: false, message: 'Task not found' });
+      }
+      
+      const dbStatus = bddStatusMapping[status] || BDDScenarioStatus.PENDING;
+      
+      const scenario = await db.bDDScenario.create({
+        data: {
+          todoTaskId: req.params.id,
+          title: title.trim(),
+          feature: feature.trim(),
+          description: description?.trim() || '',
+          gherkinContent: gherkinContent.trim(),
+          status: dbStatus,
+        }
+      });
+      
+      logger.info('BDD scenario created:', { taskId: req.params.id, scenarioId: scenario.id });
+      
+      res.status(201).json({
+        success: true,
+        data: {
+          id: scenario.id,
+          title: scenario.title,
+          feature: scenario.feature,
+          description: scenario.description,
+          gherkinContent: scenario.gherkinContent,
+          status: reverseBddStatusMapping[scenario.status],
+          executedAt: scenario.executedAt?.toISOString(),
+          executionDuration: scenario.executionDuration,
+          errorMessage: scenario.errorMessage,
+        }
+      });
+    } catch (error) {
+      logger.error('Error creating BDD scenario:', error as Error);
+      res.status(500).json({ success: false, message: 'Failed to create BDD scenario' });
+    }
+  });
+  
+  // PUT /api/tasks/:id/scenarios/:scenarioId - Update scenario
+  router.put('/:id/scenarios/:scenarioId', async (req, res) => {
+    try {
+      const db = getDatabaseService();
+      
+      // Verify task exists
+      const existingTask = await db.todoTask.findUnique({
+        where: { id: req.params.id }
+      });
+      
+      if (!existingTask) {
+        return res.status(404).json({ success: false, message: 'Task not found' });
+      }
+      
+      // Verify scenario exists and belongs to task
+      const existingScenario = await db.bDDScenario.findFirst({
+        where: {
+          id: req.params.scenarioId,
+          todoTaskId: req.params.id
+        }
+      });
+      
+      if (!existingScenario) {
+        return res.status(404).json({ success: false, message: 'Scenario not found' });
+      }
+      
+      const updates = req.body;
+      const updateData: {
+        title?: string;
+        feature?: string;
+        description?: string;
+        gherkinContent?: string;
+        status?: BDDScenarioStatus;
+        executedAt?: Date;
+        executionDuration?: number;
+        errorMessage?: string;
+      } = {};
+      
+      if (updates.title !== undefined) {
+        updateData.title = updates.title.trim();
+      }
+      
+      if (updates.feature !== undefined) {
+        updateData.feature = updates.feature.trim();
+      }
+      
+      if (updates.description !== undefined) {
+        updateData.description = updates.description?.trim() || '';
+      }
+      
+      if (updates.gherkinContent !== undefined) {
+        updateData.gherkinContent = updates.gherkinContent.trim();
+      }
+      
+      if (updates.status !== undefined) {
+        updateData.status = bddStatusMapping[updates.status] || existingScenario.status;
+        
+        // If status is being set to passed or failed, record execution time
+        if ((updates.status === 'passed' || updates.status === 'failed') && 
+            existingScenario.status === BDDScenarioStatus.PENDING) {
+          updateData.executedAt = new Date();
+        }
+      }
+      
+      if (updates.executionDuration !== undefined) {
+        updateData.executionDuration = updates.executionDuration;
+      }
+      
+      if (updates.errorMessage !== undefined) {
+        updateData.errorMessage = updates.errorMessage;
+      }
+      
+      const updatedScenario = await db.bDDScenario.update({
+        where: { id: req.params.scenarioId },
+        data: updateData
+      });
+      
+      logger.info('BDD scenario updated:', { taskId: req.params.id, scenarioId: req.params.scenarioId });
+      
+      res.json({
+        success: true,
+        data: {
+          id: updatedScenario.id,
+          title: updatedScenario.title,
+          feature: updatedScenario.feature,
+          description: updatedScenario.description,
+          gherkinContent: updatedScenario.gherkinContent,
+          status: reverseBddStatusMapping[updatedScenario.status],
+          executedAt: updatedScenario.executedAt?.toISOString(),
+          executionDuration: updatedScenario.executionDuration,
+          errorMessage: updatedScenario.errorMessage,
+        }
+      });
+    } catch (error) {
+      logger.error('Error updating BDD scenario:', error as Error);
+      res.status(500).json({ success: false, message: 'Failed to update BDD scenario' });
+    }
+  });
+  
+  // DELETE /api/tasks/:id/scenarios/:scenarioId - Delete scenario
+  router.delete('/:id/scenarios/:scenarioId', async (req, res) => {
+    try {
+      const db = getDatabaseService();
+      
+      // Verify scenario exists and belongs to task
+      const existingScenario = await db.bDDScenario.findFirst({
+        where: {
+          id: req.params.scenarioId,
+          todoTaskId: req.params.id
+        }
+      });
+      
+      if (!existingScenario) {
+        return res.status(404).json({ success: false, message: 'Scenario not found' });
+      }
+      
+      await db.bDDScenario.delete({
+        where: { id: req.params.scenarioId }
+      });
+      
+      logger.info('BDD scenario deleted:', { taskId: req.params.id, scenarioId: req.params.scenarioId });
+      res.json({ success: true, message: 'BDD scenario deleted successfully' });
+    } catch (error) {
+      logger.error('Error deleting BDD scenario:', error as Error);
+      res.status(500).json({ success: false, message: 'Failed to delete BDD scenario' });
     }
   });
 

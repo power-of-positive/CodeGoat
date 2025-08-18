@@ -194,6 +194,7 @@ model TodoTask {
   updatedAt   DateTime      @updatedAt @map("updated_at")
   
   validationRuns ValidationRun[]
+  bddScenarios   BDDScenario[]
   
   @@map("todo_tasks")
 }
@@ -211,6 +212,26 @@ model ValidationRun {
   todoTask    TodoTask? @relation(fields: [todoTaskId], references: [id], onDelete: SetNull)
   
   @@map("validation_runs")
+}
+
+// BDD Scenarios (Associated with todo tasks)
+model BDDScenario {
+  id                String           @id @default(uuid())
+  todoTaskId        String           @map("todo_task_id")
+  title             String
+  feature           String
+  description       String
+  gherkinContent    String           @map("gherkin_content")
+  status            BDDScenarioStatus @default(PENDING)
+  executedAt        DateTime?        @map("executed_at")
+  executionDuration Int?             @map("execution_duration") // Duration in milliseconds
+  errorMessage      String?          @map("error_message")
+  createdAt         DateTime         @default(now()) @map("created_at")
+  updatedAt         DateTime         @updatedAt @map("updated_at")
+  
+  todoTask          TodoTask         @relation(fields: [todoTaskId], references: [id], onDelete: Cascade)
+  
+  @@map("bdd_scenarios")
 }
 
 // Enums
@@ -267,4 +288,11 @@ enum TodoPriority {
   LOW    @map("low")
   MEDIUM @map("medium")
   HIGH   @map("high")
+}
+
+enum BDDScenarioStatus {
+  PENDING @map("pending")
+  PASSED  @map("passed")
+  FAILED  @map("failed")
+  SKIPPED @map("skipped")
 }
