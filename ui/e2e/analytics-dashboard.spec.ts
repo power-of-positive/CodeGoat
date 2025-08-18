@@ -18,10 +18,10 @@ test.describe('Analytics Dashboard', () => {
       // Check for main analytics sections
       await expect(page.getByText('Track validation pipeline performance and success rates')).toBeVisible();
       
-      // Check for metric cards
-      await expect(page.getByText('Total Runs')).toBeVisible();
-      await expect(page.getByText('Success Rate')).toBeVisible();
-      await expect(page.getByText('Avg Duration')).toBeVisible();
+      // Check for metric cards with exact matching to avoid conflicts
+      await expect(page.getByRole('heading', { name: 'Total Runs', exact: true })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Success Rate', exact: true })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Avg Duration', exact: true })).toBeVisible();
     });
 
     test('should have responsive layout', async ({ page }) => {
@@ -70,7 +70,7 @@ test.describe('Analytics Dashboard', () => {
       await expect(page).toHaveURL('/settings');
       
       // Should see settings heading
-      await expect(page.getByRole('heading', { name: 'Validation Settings' })).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
     });
 
     test('should redirect root to analytics', async ({ page }) => {

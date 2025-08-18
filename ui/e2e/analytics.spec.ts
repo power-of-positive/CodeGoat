@@ -12,15 +12,15 @@ test.describe('Analytics Page', () => {
     await page.click('a:has-text("Analytics")');
     
     // Wait for analytics content to load
-    await page.waitForSelector('h2:has-text("Development Analytics")', { timeout: 10000 });
+    await page.waitForSelector('h2:has-text("Validation Analytics")', { timeout: 10000 });
   });
 
   test('should display analytics page header', async ({ page }) => {
     // Check for main heading
-    await expect(page.locator('h2:has-text("Development Analytics")')).toBeVisible();
+    await expect(page.locator('h2:has-text("Validation Analytics")')).toBeVisible();
     
     // Check for description text
-    await expect(page.locator('p:has-text("Track validation success rates")')).toBeVisible();
+    await expect(page.locator('p:has-text("Track validation pipeline performance and success rates")')).toBeVisible();
     
     // Check for refresh button
     await expect(page.locator('button:has-text("Refresh")')).toBeVisible();
@@ -30,19 +30,18 @@ test.describe('Analytics Page', () => {
     // Wait for content to load
     await page.waitForSelector('.grid', { timeout: 10000 });
     
-    // Check for summary cards with more specific selectors
-    await expect(page.locator('p:has-text("Total Sessions")').first()).toBeVisible();
-    await expect(page.locator('p:has-text("Success Rate")').first()).toBeVisible();
-    await expect(page.locator('p:has-text("Avg Time to Success")').first()).toBeVisible();
-    await expect(page.locator('p:has-text("Avg Attempts")').first()).toBeVisible();
+    // Check for summary cards with exact matching to avoid conflicts
+    await expect(page.getByRole('heading', { name: 'Total Runs', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Success Rate', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Avg Duration', exact: true })).toBeVisible();
   });
 
   test('should display analytics sections', async ({ page }) => {
-    // Check for stage success rates section
-    await expect(page.locator('h3:has-text("Validation Stage Success Rates")')).toBeVisible();
+    // Check for stage performance section
+    await expect(page.locator('h3:has-text("Stage Performance Overview")')).toBeVisible();
     
-    // Check for recent sessions section
-    await expect(page.locator('h3:has-text("Recent Sessions")')).toBeVisible();
+    // Check for recent validation runs section
+    await expect(page.locator('h3:has-text("Recent Validation Runs")')).toBeVisible();
   });
 
   test('should handle empty state gracefully', async ({ page }) => {
@@ -63,8 +62,8 @@ test.describe('Analytics Page', () => {
     }
     
     // Page should be functional even with no data - at least check that sections exist
-    await expect(page.locator('h3:has-text("Validation Stage Success Rates")')).toBeVisible();
-    await expect(page.locator('h3:has-text("Recent Sessions")')).toBeVisible();
+    await expect(page.locator('h3:has-text("Stage Performance Overview")')).toBeVisible();
+    await expect(page.locator('h3:has-text("Recent Validation Runs")')).toBeVisible();
   });
 
   test('should allow refreshing analytics data', async ({ page }) => {
@@ -72,22 +71,22 @@ test.describe('Analytics Page', () => {
     await page.click('button:has-text("Refresh")');
     
     // Page should still be functional after refresh
-    await expect(page.locator('h2:has-text("Development Analytics")')).toBeVisible();
+    await expect(page.locator('h2:has-text("Validation Analytics")')).toBeVisible();
   });
 
-  test('should display analytics icon in tab', async ({ page }) => {
-    // Navigate back to dashboard first
-    await page.click('a:has-text("Dashboard")');
+  test('should display analytics navigation item', async ({ page }) => {
+    // Check that analytics navigation item exists and is visible
+    const analyticsNav = page.locator('a:has-text("Analytics")');
+    await expect(analyticsNav).toBeVisible();
     
-    // Check that analytics tab has the correct icon
-    const analyticsTab = page.locator('a:has-text("Analytics")');
-    await expect(analyticsTab).toBeVisible();
+    // Verify analytics navigation has icon
+    await expect(analyticsNav.locator('svg')).toBeVisible();
     
-    // Click analytics tab again
-    await analyticsTab.click();
+    // Click analytics nav to ensure it works
+    await analyticsNav.click();
     
     // Verify we're on analytics page
-    await expect(page.locator('h2:has-text("Development Analytics")')).toBeVisible();
+    await expect(page.locator('h2:has-text("Validation Analytics")')).toBeVisible();
   });
 
   test('should handle API errors gracefully', async ({ page }) => {
@@ -105,9 +104,9 @@ test.describe('Analytics Page', () => {
     await page.click('a:has-text("Analytics")');
     
     // Wait for error message to appear
-    await expect(page.locator('text=Failed to load analytics data')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('text=Failed to load analytics')).toBeVisible({ timeout: 10000 });
     
-    // Should show retry button
-    await expect(page.locator('button:has-text("Retry")')).toBeVisible();
+    // Should show try again button
+    await expect(page.locator('button:has-text("Try Again")')).toBeVisible();
   });
 });
