@@ -405,7 +405,7 @@ async function main(): Promise<void> {
   try {
     const success = await runner.runValidation();
     await runner.cleanup();
-    process.exit(success ? 0 : 1);
+    process.exit(success ? 0 : 2);
   } catch (error) {
     await runner.cleanup();
     throw error;
@@ -415,7 +415,7 @@ async function main(): Promise<void> {
 if (require.main === module) {
   main().catch((error: Error) => {
     console.error(`${colors.red}Fatal error: ${error.message}${colors.reset}`);
-    process.exit(1);
+    process.exit(2);
   });
 }
 

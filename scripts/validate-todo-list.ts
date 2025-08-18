@@ -8,7 +8,7 @@ interface TodoItem {
   content: string;
   status: 'pending' | 'in_progress' | 'completed';
   priority: 'high' | 'medium' | 'low';
-  id: string;
+  id: string; // CODEGOAT-001, CODEGOAT-055, etc.
 }
 
 // Configuration interface
@@ -23,7 +23,7 @@ const DEFAULT_CONFIG: ValidationConfig = {
   maxUnfinishedTasks: 0, // No unfinished tasks allowed
   allowedInProgressTasks: 1, // Allow one in-progress task
   failOnExcess: true, // Actually fail to block stopping
-  onlyFailOnHighPriority: false, // Fail on any unfinished tasks
+  onlyFailOnHighPriority: false, // Fail on any unfinished tasks (blocks Claude Code until ALL tasks done)
 };
 
 // Define possible todo list file paths (prioritize todo-list.json)
@@ -267,6 +267,58 @@ function getNextTodoItem(todos: TodoItem[]): TodoItem | null {
 }
 
 /**
+ * Auto-assign the next pending task to in_progress via API
+ */
+async function autoAssignNextPendingTask(todos: TodoItem[]): Promise<{ success: boolean; assignedTask?: TodoItem; error?: string }> {
+  try {
+    // Check if there's already a task in progress
+    const inProgressTasks = todos.filter(task => task.status === 'in_progress');
+    if (inProgressTasks.length > 0) {
+      console.log(`${colors.blue}ℹ️  Task already in progress: ${inProgressTasks[0].content}${colors.reset}`);
+      return { success: true, assignedTask: inProgressTasks[0] };
+    }
+    
+    // Find the next pending task by priority
+    const nextTask = getNextTodoItem(todos.filter(task => task.status === 'pending'));
+    if (!nextTask) {
+      console.log(`${colors.green}✅ No pending tasks to assign${colors.reset}`);
+      return { success: true };
+    }
+    
+    console.log(`${colors.yellow}🔄 Auto-assigning pending task [${nextTask.id}] to in_progress: ${nextTask.content}${colors.reset}`);
+    
+    // Update the task status via API
+    const response = await fetch(`${TASKS_ENDPOINT}/${nextTask.id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        status: 'in_progress'
+      }),
+      signal: AbortSignal.timeout(5000)
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to update task status: ${response.status} ${response.statusText}`);
+    }
+
+    const result = await response.json() as { success: boolean; data: TodoItem };
+    if (!result.success) {
+      throw new Error('API returned success: false');
+    }
+
+    console.log(`${colors.green}✅ Successfully assigned task [${result.data.id}] to in_progress: ${result.data.content}${colors.reset}`);
+    return { success: true, assignedTask: result.data };
+    
+  } catch (error) {
+    const errorMessage = `Failed to auto-assign pending task: ${error}`;
+    console.error(`${colors.red}❌ ${errorMessage}${colors.reset}`);
+    return { success: false, error: errorMessage };
+  }
+}
+
+/**
  * Display project statistics
  */
 function displayStatistics(todos: TodoItem[]): void {
@@ -357,41 +409,81 @@ function validateFormat(todos: TodoItem[]): number {
   return 0;
 }
 
-function checkTaskCompletion(todos: TodoItem[], config: ValidationConfig): number {
+async function checkTaskCompletionAndAutoAssign(todos: TodoItem[], config: ValidationConfig): Promise<number> {
   const pendingTasks = todos.filter(todo => todo.status === 'pending');
   const inProgressTasks = todos.filter(todo => todo.status === 'in_progress');
-  const unfinishedTasks = [...pendingTasks, ...inProgressTasks];
-  const highPriorityUnfinished = unfinishedTasks.filter(task => task.priority === 'high');
   
-  let shouldFail = false;
-  let hasWarnings = false;
+  console.log(`\n${colors.bold}${colors.blue}🔍 Task Completion Check & Auto-Assignment${colors.reset}`);
+  console.log(`${colors.cyan}📊 Current status: ${pendingTasks.length} pending, ${inProgressTasks.length} in-progress${colors.reset}`);
   
-  if (config.onlyFailOnHighPriority) {
-    if (highPriorityUnfinished.length > 0) {
-      shouldFail = config.failOnExcess;
-      hasWarnings = true;
+  // Auto-assign next pending task if none in progress
+  if (await isServerRunning()) {
+    const assignmentResult = await autoAssignNextPendingTask(todos);
+    if (!assignmentResult.success) {
+      console.error(`${colors.red}❌ Failed to auto-assign pending task: ${assignmentResult.error}${colors.reset}`);
+      return 2; // Block Claude Code from stopping
     }
-  } else {
-    if (pendingTasks.length > 0 || inProgressTasks.length > config.allowedInProgressTasks) {
-      shouldFail = config.failOnExcess;
-      hasWarnings = true;
+    
+    // If a task was assigned, update our local state for validation logic
+    if (assignmentResult.assignedTask) {
+      const taskIndex = todos.findIndex(t => t.id === assignmentResult.assignedTask!.id);
+      if (taskIndex >= 0) {
+        todos[taskIndex].status = 'in_progress';
+        inProgressTasks.push(todos[taskIndex]);
+        const pendingIndex = pendingTasks.findIndex(t => t.id === assignmentResult.assignedTask!.id);
+        if (pendingIndex >= 0) {
+          pendingTasks.splice(pendingIndex, 1);
+        }
+      }
     }
   }
   
-  if (hasWarnings && unfinishedTasks.length > 0) {
-    const messageType = shouldFail ? 'failed' : 'completed with warnings';
-    const icon = shouldFail ? '❌' : '⚠️ ';
+  // Recalculate after potential auto-assignment
+  const updatedPendingTasks = todos.filter(todo => todo.status === 'pending');
+  const updatedInProgressTasks = todos.filter(todo => todo.status === 'in_progress');
+  const updatedUnfinishedTasks = [...updatedPendingTasks, ...updatedInProgressTasks];
+  
+  let shouldFail = false;
+  let hasUnfinishedTasks = false;
+  
+  if (config.onlyFailOnHighPriority) {
+    const updatedHighPriorityUnfinished = updatedUnfinishedTasks.filter(task => task.priority === 'high');
+    if (updatedHighPriorityUnfinished.length > 0) {
+      shouldFail = config.failOnExcess;
+      hasUnfinishedTasks = true;
+    }
+  } else {
+    // IMPORTANT: Always block if there are ANY unfinished tasks (pending or in-progress)
+    // This is the core Claude Code stop prevention logic
+    if (updatedPendingTasks.length > 0 || updatedInProgressTasks.length > 0) {
+      shouldFail = true; // Always block Claude Code when there are unfinished tasks
+      hasUnfinishedTasks = true;
+    }
+  }
+  
+  if (hasUnfinishedTasks) {
+    const messageType = shouldFail ? 'BLOCKED' : 'completed with warnings';
+    const icon = shouldFail ? '🚫' : '⚠️ ';
     const color = shouldFail ? colors.red : colors.yellow;
     
-    console.log(`\n${color}${icon} Validation ${messageType}: ${unfinishedTasks.length} unfinished task(s) detected${colors.reset}`);
+    console.log(`\n${color}${colors.bold}${icon} Claude Code Stop ${messageType.toUpperCase()}: ${updatedUnfinishedTasks.length} unfinished task(s) detected${colors.reset}`);
     console.log(`${color}📋 Unfinished tasks:${colors.reset}`);
-    unfinishedTasks.forEach(task => {
-      console.log(`${color}   • [${task.priority}] ${task.content} (${task.status})${colors.reset}`);
+    updatedUnfinishedTasks.forEach(task => {
+      console.log(`${color}   • [${task.id}] [${task.priority.toUpperCase()}] ${task.content} (${task.status.replace('_', ' ').toUpperCase()})${colors.reset}`);
     });
     
     if (shouldFail) {
-      console.error(`\n${colors.yellow}💡 Please complete unfinished tasks before proceeding${colors.reset}`);
-      return 1;
+      console.error(`\n${colors.red}${colors.bold}🛑 CLAUDE CODE STOP BLOCKED${colors.reset}`);
+      console.error(`${colors.red}Claude Code cannot complete until all tasks are finished.${colors.reset}`);
+      
+      if (updatedInProgressTasks.length > 0) {
+        const currentTask = updatedInProgressTasks[0];
+        console.error(`${colors.yellow}💡 Continue working on [${currentTask.id}]: ${currentTask.content}${colors.reset}`);
+      } else if (updatedPendingTasks.length > 0) {
+        console.error(`${colors.yellow}💡 Next task has been auto-assigned. Continue working.${colors.reset}`);
+      }
+      
+      return 2; // Exit code 2 blocks Claude Code from stopping
     } else {
       console.log(`\n${colors.yellow}💡 Consider completing tasks when convenient${colors.reset}`);
       console.log(`\n${colors.green}✅ Todo list validation passed with warnings${colors.reset}`);
@@ -399,11 +491,11 @@ function checkTaskCompletion(todos: TodoItem[], config: ValidationConfig): numbe
     }
   }
   
-  if (unfinishedTasks.length === 0) {
-    console.log(`\n${colors.bold}${colors.green}🎉 All tasks are completed!${colors.reset}`);
+  if (updatedUnfinishedTasks.length === 0) {
+    console.log(`\n${colors.bold}${colors.green}🎉 ALL TASKS COMPLETED! Claude Code is free to stop.${colors.reset}`);
   }
   
-  console.log(`\n${colors.green}✅ Todo list validation passed${colors.reset}`);
+  console.log(`\n${colors.green}✅ Todo list validation passed - no blocking issues${colors.reset}`);
   return 0;
 }
 
@@ -430,7 +522,7 @@ async function main(): Promise<number> {
   displayStatistics(todos);
   const config = loadValidationConfig();
   
-  return checkTaskCompletion(todos, config);
+  return await checkTaskCompletionAndAutoAssign(todos, config);
 }
 
 // Run the script

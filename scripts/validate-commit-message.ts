@@ -9,25 +9,31 @@ import * as fs from 'fs';
 import { execSync } from 'child_process';
 
 interface Task {
-  id: string;
+  id: string; // CODEGOAT-001, CODEGOAT-055, etc.
   content: string;
   status: 'pending' | 'in_progress' | 'completed';
   priority: 'high' | 'medium' | 'low';
-  assignee_id?: string;
-  created_at?: string;
-  updated_at?: string;
+  taskType: 'story' | 'task';
+  executorId?: string;
+  startTime?: string;
+  endTime?: string;
+  duration?: string;
 }
 
 interface CommitMessageConfig {
   requireTaskId: boolean;
-  taskIdPattern: RegExp;
+  taskIdPatterns: RegExp[]; // Multiple patterns for different formats
   excludePatterns: string[];
   apiBaseUrl: string;
 }
 
 const DEFAULT_CONFIG: CommitMessageConfig = {
   requireTaskId: true,
-  taskIdPattern: /^CODEGOAT-(\d+):/i,
+  taskIdPatterns: [
+    /\bCODEGOAT-(\d{3})\b/gi,      // Primary: CODEGOAT-001, CODEGOAT-042, etc.
+    /\bTASK-(\d{3,})\b/gi,         // Legacy: TASK-001, TASK-042, etc.
+    /\bKANBAN-(\d+)\b/gi,          // Legacy: KANBAN-001, etc.
+  ],
   excludePatterns: [
     '^Merge ',
     '^Revert ',
@@ -54,7 +60,8 @@ async function loadTasksFromAPI(apiBaseUrl: string): Promise<Task[]> {
       return [];
     }
 
-    const tasks = await response.json();
+    const result = await response.json() as { data?: Task[]; success?: boolean } | Task[];
+    const tasks = result.data || result; // Handle {success: true, data: []} or direct array
     return Array.isArray(tasks) ? tasks : [];
   } catch (error) {
     console.warn(`⚠️  Error loading tasks from API:`, (error as Error).message);
@@ -65,7 +72,7 @@ async function loadTasksFromAPI(apiBaseUrl: string): Promise<Task[]> {
 /**
  * Create a new task via API
  */
-async function createTask(apiBaseUrl: string, task: Omit<Task, 'id' | 'created_at' | 'updated_at'>): Promise<Task | null> {
+async function createTask(apiBaseUrl: string, task: Omit<Task, 'id' | 'startTime' | 'endTime' | 'duration'>): Promise<Task | null> {
   try {
     const response = await fetch(`${apiBaseUrl}/api/tasks`, {
       method: 'POST',
@@ -78,7 +85,8 @@ async function createTask(apiBaseUrl: string, task: Omit<Task, 'id' | 'created_a
       return null;
     }
 
-    return await response.json() as Task;
+    const result = await response.json() as { data?: Task[]; success?: boolean } | Task[];
+    return result.data || result; // Handle {success: true, data: task} or direct task
   } catch (error) {
     console.warn(`⚠️  Error creating task:`, (error as Error).message);
     return null;
@@ -91,7 +99,7 @@ async function createTask(apiBaseUrl: string, task: Omit<Task, 'id' | 'created_a
 async function updateTaskStatus(apiBaseUrl: string, taskId: string, status: Task['status']): Promise<boolean> {
   try {
     const response = await fetch(`${apiBaseUrl}/api/tasks/${taskId}`, {
-      method: 'PATCH',
+      method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status })
     });
@@ -101,16 +109,25 @@ async function updateTaskStatus(apiBaseUrl: string, taskId: string, status: Task
       return false;
     }
 
-    return true;
+    const result = await response.json() as { data?: Task[]; success?: boolean } | Task[];
+    return result.success !== false; // Handle {success: true} or assume success
   } catch (error) {
     console.warn(`⚠️  Error updating task ${taskId}:`, (error as Error).message);
     return false;
   }
 }
 
-function extractTaskId(message: string, pattern: RegExp): string | null {
-  const match = message.match(pattern);
-  return match ? match[1] : null;
+/**
+ * Extract task ID from commit message
+ */
+function extractTaskId(message: string, patterns: RegExp[]): string | null {
+  for (const pattern of patterns) {
+    const match = message.match(pattern);
+    if (match) {
+      return match[0]; // Return full match like "CODEGOAT-042"
+    }
+  }
+  return null;
 }
 
 function isExcludedMessage(message: string, excludePatterns: string[]): boolean {
@@ -169,44 +186,65 @@ async function handleTaskOperations(
     // Task doesn't exist, create it as in_progress
     console.log(`📝 Task ${taskId} not found, creating new task...`);
     
-    // Extract task content from commit message (everything after the colon)
-    const contentMatch = commitMessage.match(/^CODEGOAT-\d+:\s*(.+)/i);
-    const content = contentMatch ? contentMatch[1].split('\n')[0].trim() : `Task ${taskId}`;
+    // Extract task content from commit message 
+    let content = `Task ${taskId}`;
+    
+    // Try different patterns to extract content
+    const patterns = [
+      /^CODEGOAT-\d+:\s*(.+)/i,      // "CODEGOAT-42: fix bug"
+      /^TASK-\d+:\s*(.+)/i,          // "TASK-001: implement feature" (legacy)
+      /^[A-Z]+-\d+:\s*(.+)/i,        // Generic "PREFIX-123: description"
+    ];
+    
+    for (const pattern of patterns) {
+      const contentMatch = commitMessage.match(pattern);
+      if (contentMatch) {
+        content = contentMatch[1].split('\n')[0].trim();
+        break;
+      }
+    }
+    
+    // If no pattern matched, use the first line of the commit message
+    if (content === `Task ${taskId}`) {
+      const firstLine = commitMessage.split('\n')[0].trim();
+      content = firstLine || content;
+    }
     
     const newTask = await createTask(config.apiBaseUrl, {
       content,
       status: 'in_progress',
       priority: 'medium',
-      assignee_id: 'claude'
+      taskType: 'task',
+      executorId: 'claude-code'
     });
     
     if (newTask) {
-      console.log(`✅ Created new task: ${newTask.content}`);
+      console.log(`✅ Created new task [${newTask.id}]: ${newTask.content}`);
       console.log(`   Status: ${newTask.status}, Priority: ${newTask.priority}`);
     } else {
       console.warn('⚠️  Failed to create task, but allowing commit to proceed');
     }
   } else {
-    console.log(`✅ Found existing task: ${task.content.substring(0, 60)}...`);
+    console.log(`✅ Found existing task [${task.id}]: ${task.content.substring(0, 60)}...`);
     console.log(`   Current status: ${task.status}, Priority: ${task.priority}`);
     
     // Check if this commit indicates task completion
     const isCompletionCommit = isTaskCompletionCommit(commitMessage);
     
     if (isCompletionCommit && task.status !== 'completed') {
-      console.log(`🎉 Commit indicates task completion, marking task ${taskId} as completed...`);
-      const updated = await updateTaskStatus(config.apiBaseUrl, taskId, 'completed');
+      console.log(`🎉 Commit indicates task completion, marking task [${task.id}] as completed...`);
+      const updated = await updateTaskStatus(config.apiBaseUrl, task.id, 'completed');
       if (updated) {
-        console.log(`✅ Task ${taskId} marked as completed`);
+        console.log(`✅ Task [${task.id}] marked as completed`);
       } else {
         console.warn('⚠️  Failed to update task status to completed, but allowing commit to proceed');
       }
     } else if (task.status === 'pending') {
       // If task is pending and not a completion commit, mark it as in_progress
-      console.log(`🔄 Marking task ${taskId} as in_progress...`);
-      const updated = await updateTaskStatus(config.apiBaseUrl, taskId, 'in_progress');
+      console.log(`🔄 Marking task [${task.id}] as in_progress...`);
+      const updated = await updateTaskStatus(config.apiBaseUrl, task.id, 'in_progress');
       if (updated) {
-        console.log(`✅ Task ${taskId} marked as in_progress`);
+        console.log(`✅ Task [${task.id}] marked as in_progress`);
       } else {
         console.warn('⚠️  Failed to update task status, but allowing commit to proceed');
       }
@@ -228,17 +266,17 @@ async function validateCommitMessage(): Promise<void> {
   }
   
   // Extract task ID
-  const taskId = extractTaskId(commitMessage, config.taskIdPattern);
+  const taskId = extractTaskId(commitMessage, config.taskIdPatterns);
   
   if (!taskId) {
-    console.error('❌ Commit message must follow CODEGOAT-{id}: format');
-    console.error('💡 Example formats:');
-    console.error('   - CODEGOAT-123: implement new feature');
-    console.error('   - CODEGOAT-456: fix pagination issue');
-    console.error('   - CODEGOAT-789: update dependencies');
+    console.error('❌ Commit message must contain a valid task reference');
+    console.error('💡 Supported formats:');
+    console.error('   - CODEGOAT-001: implement new feature (recommended)');
+    console.error('   - CODEGOAT-123: fix pagination issue');
+    console.error('   - TASK-456: update dependencies (legacy)');
     process.exit(1);
   }
-  
+    
   console.log(`📋 Found task reference: ${taskId}`);
   
   // Load tasks from database
@@ -247,6 +285,8 @@ async function validateCommitMessage(): Promise<void> {
     console.log('⚠️  Could not load tasks from database, skipping validation');
     process.exit(0);
   }
+  
+  console.log(`📊 Loaded ${tasks.length} tasks from database`);
   
   await handleTaskOperations(config, taskId, commitMessage, tasks);
   console.log('✅ Commit message validation passed');

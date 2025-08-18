@@ -183,7 +183,7 @@ model ExecutionMetric {
 
 // Todo tasks (Simple task management from todo-list.json)
 model TodoTask {
-  id          String        @id
+  id          String        @id // CODEGOAT-001, CODEGOAT-055, etc. (generated automatically)
   content     String
   status      TodoStatus    @default(PENDING)
   priority    TodoPriority  @default(MEDIUM)

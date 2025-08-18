@@ -1,11 +1,10 @@
 import express from 'express';
-import { v4 as uuidv4 } from 'uuid';
 import { WinstonLogger } from '../logger-winston';
 import { getDatabaseService } from '../services/database';
 import { TodoStatus, TodoPriority, TodoTask, BDDScenarioStatus, TaskType } from '@prisma/client';
 
 interface Task {
-  id: string;
+  id: string; // CODEGOAT-001, CODEGOAT-055, etc.
   content: string;
   status: 'pending' | 'in_progress' | 'completed';
   priority: 'low' | 'medium' | 'high';
@@ -68,6 +67,33 @@ const reverseBddStatusMapping: Record<BDDScenarioStatus, string> = {
   [BDDScenarioStatus.FAILED]: 'failed',
   [BDDScenarioStatus.SKIPPED]: 'skipped',
 };
+
+/**
+ * Generate the next CODEGOAT-XXX ID
+ */
+async function generateNextTaskId(): Promise<string> {
+  const db = getDatabaseService();
+  
+  // Find the highest existing CODEGOAT ID
+  const tasks = await db.todoTask.findMany({
+    where: {
+      id: { startsWith: 'CODEGOAT-' }
+    },
+    orderBy: { id: 'desc' },
+    take: 1
+  });
+  
+  let nextNumber = 1;
+  if (tasks.length > 0) {
+    const lastId = tasks[0].id; // e.g., "CODEGOAT-042"
+    const numberMatch = lastId.match(/CODEGOAT-(\d+)/);
+    if (numberMatch) {
+      nextNumber = parseInt(numberMatch[1], 10) + 1;
+    }
+  }
+  
+  return `CODEGOAT-${nextNumber.toString().padStart(3, '0')}`;
+}
 
 // Helper function to convert database task to API format
 function dbTaskToApiTask(dbTask: TodoTask): Task {
@@ -313,6 +339,8 @@ export function createTaskRoutes(logger: WinstonLogger) {
       const dbPriority = priorityMapping[priority] || TodoPriority.MEDIUM;
       const dbTaskType = taskTypeMapping[taskType] || TaskType.TASK;
       
+      const taskId = await generateNextTaskId();
+      
       const taskData: {
         id: string;
         content: string;
@@ -324,7 +352,7 @@ export function createTaskRoutes(logger: WinstonLogger) {
         endTime?: Date;
         duration?: string;
       } = {
-        id: uuidv4(),
+        id: taskId,
         content: content.trim(),
         status: dbStatus,
         priority: dbPriority,

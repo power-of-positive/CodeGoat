@@ -113,6 +113,8 @@ async function handleValidationChecks(): Promise<void> {
       child.on("exit", (code: number | null) => {
         if (code === 0) {
           resolve();
+        } else if (code === 2) {
+          reject(new Error(`Validation blocked with exit code 2 (blocking decision)`));
         } else {
           reject(new Error(`Validation failed with exit code ${code}`));
         }
@@ -133,7 +135,7 @@ async function handleValidationChecks(): Promise<void> {
         error instanceof Error ? error.message : "Validation checks failed",
     };
     console.log(JSON.stringify(blockResult));
-    process.exit(1); // Exit with code 1 to indicate validation failure
+    process.exit(2); // Exit with code 2 to indicate block decision
   }
 }
 
@@ -187,7 +189,7 @@ async function main(): Promise<void> {
           "Uncommitted files detected. Please commit or stash changes before completing.",
       };
       console.log(JSON.stringify(blockResult));
-      process.exit(1); // Exit with code 1 to indicate block decision
+      process.exit(2); // Exit with code 2 to indicate block decision
     }
 
     const allChanges = getChangedFiles();
@@ -211,7 +213,7 @@ async function main(): Promise<void> {
     console.log(
       '{"decision": "block", "reason": "Stop hook execution failed"}',
     );
-    process.exit(1); // Exit with code 1 to indicate block decision
+    process.exit(2); // Exit with code 2 to indicate block decision
   }
 }
 
