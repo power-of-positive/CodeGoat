@@ -2,6 +2,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import { spawn } from 'child_process';
 
 // Todo list item interface
 interface TodoItem {
@@ -33,6 +34,10 @@ const TODO_LIST_FILES = [
   path.join(process.cwd(), 'TODO-Kanban-Implementation.md')
 ];
 
+// API configuration
+const API_BASE_URL = 'http://localhost:3000/api';
+const TASKS_ENDPOINT = `${API_BASE_URL}/tasks`;
+
 // Colors for console output
 const colors = {
   green: '\x1b[32m',
@@ -59,6 +64,60 @@ function loadValidationConfig(): ValidationConfig {
     }
   }
   return DEFAULT_CONFIG;
+}
+
+/**
+ * Check if the server is running
+ */
+async function isServerRunning(): Promise<boolean> {
+  try {
+    const response = await fetch(`${API_BASE_URL}/tasks`, { 
+      method: 'HEAD',
+      signal: AbortSignal.timeout(2000) // 2 second timeout
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Fetch tasks from the API
+ */
+async function fetchTasksFromAPI(): Promise<TodoItem[]> {
+  try {
+    console.log(`${colors.blue}🌐 Fetching tasks from API...${colors.reset}`);
+    
+    const response = await fetch(TASKS_ENDPOINT, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      signal: AbortSignal.timeout(5000) // 5 second timeout
+    });
+
+    if (!response.ok) {
+      throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+    }
+
+    const apiResponse = await response.json() as any;
+    
+    // Handle wrapped API response format
+    let tasks: TodoItem[];
+    if (apiResponse.success && Array.isArray(apiResponse.data)) {
+      tasks = apiResponse.data;
+    } else if (Array.isArray(apiResponse)) {
+      tasks = apiResponse;
+    } else {
+      throw new Error('Invalid API response: expected array of tasks or {success: true, data: []}');
+    }
+
+    console.log(`${colors.green}✅ Successfully fetched ${tasks.length} tasks from API${colors.reset}`);
+    return tasks;
+  } catch (error) {
+    console.error(`${colors.red}❌ Failed to fetch tasks from API: ${error}${colors.reset}`);
+    throw error;
+  }
 }
 
 /**
@@ -152,8 +211,8 @@ function validateTodoListFormat(todos: TodoItem[]): { valid: boolean; errors: st
   // Validate each todo item
   todos.forEach((todo, index) => {
     // Check required fields
-    if (!todo.id || (!todo.id.match(/^(kanban|todo)-\d+$/) && !todo.id.match(/^\d+$/))) {
-      errors.push(`Todo item ${index + 1}: Invalid ID format (expected: kanban-XXX, todo-XXX, or numeric)`);
+    if (!todo.id || todo.id.trim().length === 0) {
+      errors.push(`Todo item ${index + 1}: Missing or empty ID`);
     }
     
     if (!todo.content || todo.content.trim().length === 0) {
@@ -227,9 +286,24 @@ function displayStatistics(todos: TodoItem[]): void {
 }
 
 /**
- * Find and parse todo list from available sources
+ * Find and parse todo list from available sources (API first, then files)
  */
-function findAndParseTodoList(): { todos: TodoItem[]; filePath: string | null } {
+async function findAndParseTodoList(): Promise<{ todos: TodoItem[]; source: string }> {
+  // First try to fetch from API
+  if (await isServerRunning()) {
+    try {
+      const todos = await fetchTasksFromAPI();
+      if (todos.length > 0) {
+        return { todos, source: 'API' };
+      }
+    } catch (error) {
+      console.warn(`${colors.yellow}⚠️  API fetch failed, falling back to file-based parsing${colors.reset}`);
+    }
+  } else {
+    console.log(`${colors.yellow}⚠️  Server not running, using file-based parsing${colors.reset}`);
+  }
+
+  // Fall back to file-based parsing
   for (const filePath of TODO_LIST_FILES) {
     if (fs.existsSync(filePath)) {
       console.log(`${colors.blue}📖 Found todo list: ${path.basename(filePath)}${colors.reset}`);
@@ -242,25 +316,26 @@ function findAndParseTodoList(): { todos: TodoItem[]; filePath: string | null } 
       }
       
       if (todos.length > 0) {
-        return { todos, filePath };
+        return { todos, source: path.basename(filePath) };
       }
     }
   }
   
-  return { todos: [], filePath: null };
+  return { todos: [], source: 'none' };
 }
 
-function performBasicValidation(todos: TodoItem[], filePath: string | null): number {
-  if (!filePath) {
-    console.error(`${colors.red}❌ No todo list file found. Expected files:${colors.reset}`);
+function performBasicValidation(todos: TodoItem[], source: string): number {
+  if (source === 'none') {
+    console.error(`${colors.red}❌ No todo list source found. Tried:${colors.reset}`);
+    console.error(`${colors.red}   • API: ${TASKS_ENDPOINT}${colors.reset}`);
     TODO_LIST_FILES.forEach(file => {
-      console.error(`${colors.red}   • ${path.basename(file)}${colors.reset}`);
+      console.error(`${colors.red}   • File: ${path.basename(file)}${colors.reset}`);
     });
     return 1;
   }
   
   if (todos.length === 0) {
-    console.error(`${colors.red}❌ No valid todo items found in ${path.basename(filePath)}${colors.reset}`);
+    console.error(`${colors.red}❌ No valid todo items found from ${source}${colors.reset}`);
     return 1;
   }
   
@@ -336,12 +411,14 @@ function checkTaskCompletion(todos: TodoItem[], config: ValidationConfig): numbe
 /**
  * Main execution function
  */
-function main(): number {
+async function main(): Promise<number> {
   console.log(`${colors.bold}${colors.blue}🔍 Todo List Validation${colors.reset}\n`);
   
-  const { todos, filePath } = findAndParseTodoList();
+  const { todos, source } = await findAndParseTodoList();
   
-  const basicValidationResult = performBasicValidation(todos, filePath);
+  console.log(`${colors.blue}📋 Using todo source: ${source}${colors.reset}\n`);
+  
+  const basicValidationResult = performBasicValidation(todos, source);
   if (basicValidationResult !== 0) {
     return basicValidationResult;
   }
@@ -359,8 +436,14 @@ function main(): number {
 
 // Run the script
 if (require.main === module) {
-  const exitCode = main();
-  process.exit(exitCode);
+  main()
+    .then(exitCode => {
+      process.exit(exitCode);
+    })
+    .catch(error => {
+      console.error(`${colors.red}❌ Script execution failed: ${error}${colors.reset}`);
+      process.exit(1);
+    });
 }
 
 export { parseTodoListFromMarkdown, validateTodoListFormat, getNextTodoItem };
