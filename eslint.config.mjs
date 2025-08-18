@@ -224,6 +224,8 @@ export default [
       '**/dist/',
       '**/build/',
       'eslint.config.mjs', // Ignore main config file
+      'scripts/migrate-*.ts', // Migration scripts
+      'scripts/diagnose-database.ts', // Diagnostic scripts
     ],
   },
 ];

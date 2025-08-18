@@ -20,6 +20,12 @@ interface Task {
   duration?: string;
 }
 
+interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  message?: string;
+}
+
 interface CommitMessageConfig {
   requireTaskId: boolean;
   taskIdPatterns: RegExp[]; // Multiple patterns for different formats
@@ -60,9 +66,8 @@ async function loadTasksFromAPI(apiBaseUrl: string): Promise<Task[]> {
       return [];
     }
 
-    const result = await response.json() as { data?: Task[]; success?: boolean } | Task[];
-    const tasks = result.data || result; // Handle {success: true, data: []} or direct array
-    return Array.isArray(tasks) ? tasks : [];
+    const result = await response.json() as ApiResponse<Task[]>;
+    return result.data || [];
   } catch (error) {
     console.warn(`⚠️  Error loading tasks from API:`, (error as Error).message);
     return [];
@@ -85,8 +90,8 @@ async function createTask(apiBaseUrl: string, task: Omit<Task, 'id' | 'startTime
       return null;
     }
 
-    const result = await response.json() as { data?: Task[]; success?: boolean } | Task[];
-    return result.data || result; // Handle {success: true, data: task} or direct task
+    const result = await response.json() as ApiResponse<Task>;
+    return result.data || null;
   } catch (error) {
     console.warn(`⚠️  Error creating task:`, (error as Error).message);
     return null;
@@ -109,8 +114,8 @@ async function updateTaskStatus(apiBaseUrl: string, taskId: string, status: Task
       return false;
     }
 
-    const result = await response.json() as { data?: Task[]; success?: boolean } | Task[];
-    return result.success !== false; // Handle {success: true} or assume success
+    const result = await response.json() as ApiResponse<Task>;
+    return result.success;
   } catch (error) {
     console.warn(`⚠️  Error updating task ${taskId}:`, (error as Error).message);
     return false;
