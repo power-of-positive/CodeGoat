@@ -375,6 +375,13 @@ class ValidationRunner {
       // Ignore cleanup errors
     }
   }
+
+  /**
+   * Get the validation results (for use by wrapper classes)
+   */
+  getResults(): ValidationResults {
+    return this.results;
+  }
 }
 
 // CLI execution

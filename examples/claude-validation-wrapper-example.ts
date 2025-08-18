@@ -9,7 +9,6 @@
 
 import { ClaudeValidationFactory } from '../src/utils/claude-validation-factory';
 import { createMockLogger } from '../src/test-helpers/logger.mock';
-import * as path from 'path';
 
 async function demonstrateValidationWrapper() {
   console.log('🤖 Claude Validation Wrapper Example');

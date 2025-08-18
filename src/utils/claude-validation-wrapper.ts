@@ -1,8 +1,7 @@
 import { ClaudeCodeExecutor, ClaudeExecutorOptions, ClaudeExecutorResult } from './claude-executor';
 import { ValidationRunner } from '../../scripts/validate-task';
 import { WinstonLogger } from '../logger-winston';
-import { PermissionManager } from './permissions';
-import * as path from 'path';
+import { PermissionManager, ActionType } from './permissions';
 
 export interface ValidationWrapperOptions extends ClaudeExecutorOptions {
   enableValidation?: boolean;
@@ -173,7 +172,7 @@ export class ClaudeValidationWrapper {
       error?: string;
     }>;
   }> {
-    return new Promise(async (resolve, reject) => {
+    return new Promise((resolve, reject) => {
       const sessionId = `claude-wrapper-${Date.now()}`;
       
       // Set up timeout for validation
@@ -181,34 +180,38 @@ export class ClaudeValidationWrapper {
         reject(new Error(`Validation pipeline timed out after ${this.validationTimeout}ms`));
       }, this.validationTimeout);
 
-      try {
-        const runner = new ValidationRunner({
-          sessionId,
-          settingsPath: this.validationSettings
-        });
+      const runValidationAsync = async () => {
+        try {
+          const runner = new ValidationRunner({
+            sessionId,
+            settingsPath: this.validationSettings
+          });
 
-        const success = await runner.runValidation();
-        
-        // Get the results from the runner
-        const results = runner.getResults();
-        
-        clearTimeout(timeout);
-        
-        resolve({
-          success,
-          totalStages: results.totalStages || 0,
-          passed: results.passed || 0,
-          failed: results.failed || 0,
-          totalTime: results.totalTime || 0,
-          stages: results.stages || []
-        });
+          const success = await runner.runValidation();
+          
+          // Get the results from the runner
+          const results = runner.getResults();
+          
+          clearTimeout(timeout);
+          
+          resolve({
+            success,
+            totalStages: results.totalStages || 0,
+            passed: results.passed || 0,
+            failed: results.failed || 0,
+            totalTime: results.totalTime || 0,
+            stages: results.stages || []
+          });
 
-        await runner.cleanup();
-        
-      } catch (error) {
-        clearTimeout(timeout);
-        reject(error);
-      }
+          await runner.cleanup();
+          
+        } catch (error) {
+          clearTimeout(timeout);
+          reject(error);
+        }
+      };
+
+      runValidationAsync();
     });
   }
 
@@ -263,7 +266,7 @@ export class ClaudeValidationWrapper {
     return this.executor.getClaudeCommand();
   }
 
-  checkPermission(action: any, target?: string): boolean {
+  checkPermission(action: ActionType, target?: string): boolean {
     return this.executor.checkPermission(action, target);
   }
 

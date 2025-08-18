@@ -1,7 +1,7 @@
 import { ClaudeValidationWrapper, ValidationWrapperOptions } from '../../utils/claude-validation-wrapper';
 import { ClaudeValidationFactory } from '../../utils/claude-validation-factory';
 import { createMockLogger } from '../../test-helpers/logger.mock';
-import { DefaultPermissions } from '../../utils/permissions';
+import { DefaultPermissions, ActionType } from '../../utils/permissions';
 import * as path from 'path';
 
 // Mock the ValidationRunner to avoid actually running validation in tests
@@ -56,7 +56,7 @@ describe('ClaudeValidationWrapper', () => {
 
   describe('constructor', () => {
     it('should initialize with default options', () => {
-      const wrapper = new ClaudeValidationWrapper(defaultOptions, logger);
+      const wrapper = new ClaudeValidationWrapper(defaultOptions, logger as any);
       
       expect(wrapper.isValidationEnabled()).toBe(true);
       expect(wrapper.getValidationConfig()).toEqual({
@@ -76,7 +76,7 @@ describe('ClaudeValidationWrapper', () => {
         validationSettings: '/custom/settings.json'
       };
 
-      const wrapper = new ClaudeValidationWrapper(customOptions, logger);
+      const wrapper = new ClaudeValidationWrapper(customOptions, logger as any);
       
       expect(wrapper.isValidationEnabled()).toBe(false);
       expect(wrapper.getValidationConfig()).toEqual({
@@ -98,7 +98,7 @@ describe('ClaudeValidationWrapper', () => {
       
       mockExecutor.spawn.mockResolvedValue(mockClaudeResult);
       
-      const wrapper = new ClaudeValidationWrapper(defaultOptions, logger);
+      const wrapper = new ClaudeValidationWrapper(defaultOptions, logger as any);
       const result = await wrapper.execute('test prompt');
 
       expect(mockExecutor.spawn).toHaveBeenCalledWith('test prompt');
@@ -127,7 +127,7 @@ describe('ClaudeValidationWrapper', () => {
       mockExecutor.spawn.mockResolvedValue(mockClaudeResult);
       
       const options = { ...defaultOptions, enableValidation: false };
-      const wrapper = new ClaudeValidationWrapper(options, logger);
+      const wrapper = new ClaudeValidationWrapper(options, logger as any);
       const result = await wrapper.execute('test prompt');
 
       expect(result.validationSkipped).toBe(true);
@@ -144,7 +144,7 @@ describe('ClaudeValidationWrapper', () => {
       mockExecutor.spawn.mockResolvedValue(mockClaudeResult);
       
       const options = { ...defaultOptions, skipValidationOnFailure: true };
-      const wrapper = new ClaudeValidationWrapper(options, logger);
+      const wrapper = new ClaudeValidationWrapper(options, logger as any);
       const result = await wrapper.execute('test prompt');
 
       expect(result.validationSkipped).toBe(true);
@@ -160,7 +160,7 @@ describe('ClaudeValidationWrapper', () => {
       
       mockExecutor.spawn.mockResolvedValue(mockClaudeResult);
       
-      const wrapper = new ClaudeValidationWrapper(defaultOptions, logger);
+      const wrapper = new ClaudeValidationWrapper(defaultOptions, logger as any);
       const result = await wrapper.execute('test prompt');
 
       expect(result.validationSkipped).toBe(false);
@@ -177,23 +177,29 @@ describe('ClaudeValidationWrapper', () => {
       mockExecutor.spawn.mockResolvedValue(mockClaudeResult);
       
       // Mock ValidationRunner to throw an error
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       const { ValidationRunner } = require('../../../scripts/validate-task');
+      const originalMock = ValidationRunner.getMockImplementation();
+      
       ValidationRunner.mockImplementation(() => ({
         runValidation: jest.fn().mockRejectedValue(new Error('Validation failed')),
         cleanup: jest.fn().mockResolvedValue(undefined)
       }));
 
-      const wrapper = new ClaudeValidationWrapper(defaultOptions, logger);
+      const wrapper = new ClaudeValidationWrapper(defaultOptions, logger as any);
       const result = await wrapper.execute('test prompt');
 
       expect(result.validationError).toBe('Validation failed');
       expect(result.validationResults).toBeUndefined();
+      
+      // Restore the original mock
+      ValidationRunner.mockImplementation(originalMock);
     });
   });
 
   describe('runValidationOnly', () => {
     it('should run validation without executing Claude', async () => {
-      const wrapper = new ClaudeValidationWrapper(defaultOptions, logger);
+      const wrapper = new ClaudeValidationWrapper(defaultOptions, logger as any);
       const result = await wrapper.runValidationOnly();
 
       expect(mockExecutor.spawn).not.toHaveBeenCalled();
@@ -209,7 +215,7 @@ describe('ClaudeValidationWrapper', () => {
 
     it('should throw error when validation is disabled', async () => {
       const options = { ...defaultOptions, enableValidation: false };
-      const wrapper = new ClaudeValidationWrapper(options, logger);
+      const wrapper = new ClaudeValidationWrapper(options, logger as any);
 
       await expect(wrapper.runValidationOnly()).rejects.toThrow('Validation is disabled');
     });
@@ -217,11 +223,11 @@ describe('ClaudeValidationWrapper', () => {
 
   describe('delegation methods', () => {
     it('should delegate methods to underlying executor', () => {
-      const wrapper = new ClaudeValidationWrapper(defaultOptions, logger);
+      const wrapper = new ClaudeValidationWrapper(defaultOptions, logger as any);
 
       expect(wrapper.getWorktreeDir()).toBe('/test/worktree');
       expect(wrapper.getClaudeCommand()).toBe('claude-code');
-      expect(wrapper.checkPermission('FILE_READ', 'test.txt')).toBe(true);
+      expect(wrapper.checkPermission(ActionType.FILE_READ, 'test.txt')).toBe(true);
       expect(wrapper.getPermissionManager()).toBeUndefined();
       expect(wrapper.isExecutionPermitted()).toBe(true);
     });
@@ -240,7 +246,7 @@ describe('ClaudeValidationFactory', () => {
     it('should create wrapper with default configuration', () => {
       const wrapper = ClaudeValidationFactory.create({
         worktreeDir: '/test/worktree',
-        logger
+        logger: logger as any
       });
 
       expect(wrapper.isValidationEnabled()).toBe(true);
@@ -253,7 +259,7 @@ describe('ClaudeValidationFactory', () => {
         enableValidation: false,
         permissionMode: 'restrictive',
         validationTimeout: 60000,
-        logger
+        logger: logger as any
       });
 
       expect(wrapper.isValidationEnabled()).toBe(false);
@@ -263,7 +269,7 @@ describe('ClaudeValidationFactory', () => {
 
   describe('preset factories', () => {
     it('should create development wrapper', () => {
-      const wrapper = ClaudeValidationFactory.createForDevelopment('/test/worktree', logger);
+      const wrapper = ClaudeValidationFactory.createForDevelopment('/test/worktree', logger as any);
       
       expect(wrapper.isValidationEnabled()).toBe(true);
       expect(wrapper.getValidationConfig().validationTimeout).toBe(300000); // 5 minutes
@@ -271,7 +277,7 @@ describe('ClaudeValidationFactory', () => {
     });
 
     it('should create production wrapper', () => {
-      const wrapper = ClaudeValidationFactory.createForProduction('/test/worktree', logger);
+      const wrapper = ClaudeValidationFactory.createForProduction('/test/worktree', logger as any);
       
       expect(wrapper.isValidationEnabled()).toBe(true);
       expect(wrapper.getValidationConfig().validationTimeout).toBe(180000); // 3 minutes
@@ -279,7 +285,7 @@ describe('ClaudeValidationFactory', () => {
     });
 
     it('should create wrapper without validation', () => {
-      const wrapper = ClaudeValidationFactory.createWithoutValidation('/test/worktree', logger);
+      const wrapper = ClaudeValidationFactory.createWithoutValidation('/test/worktree', logger as any);
       
       expect(wrapper.isValidationEnabled()).toBe(false);
     });
