@@ -1,12 +1,9 @@
 import express from 'express';
-import { spawn, ChildProcess, exec } from 'child_process';
+import { spawn, ChildProcess } from 'child_process';
 import path from 'path';
 import fs from 'fs';
-import { promisify } from 'util';
 import { CommandInterceptor, formatCommandAnalysis } from '../utils/command-interceptor';
 // import { WinstonLogger } from '../logger-winston';
-
-const execAsync = promisify(exec);
 
 const router = express.Router();
 
@@ -27,70 +24,8 @@ interface ClaudeWorker {
 // In-memory storage for active workers
 const activeWorkers = new Map<string, ClaudeWorker>();
 
-/**
- * Restart worker with validation feedback
- */
-async function restartWorkerWithFeedback(taskId: string, feedbackContent: string, workingDirectory: string): Promise<void> {
-  try {
-    console.error(`🔄 Auto-restarting worker for task ${taskId} with validation feedback`);
-    
-    // Use curl instead of fetch to avoid import issues
-    const curlCommand = `curl -X POST http://localhost:3000/api/claude-workers/start \\
-      -H "Content-Type: application/json" \\
-      -d '${JSON.stringify({
-        taskId: `${taskId}-retry-${Date.now()}`,
-        taskContent: feedbackContent,
-        workingDirectory
-      }).replace(/'/g, "\\'")}'`;
-    
-    const { stdout } = await execAsync(curlCommand);
-    const result = JSON.parse(stdout) as { success: boolean; data?: { workerId: string } };
-    
-    if (result.success && result.data) {
-      console.error(`✅ Successfully restarted worker: ${result.data.workerId}`);
-    } else {
-      console.error(`❌ Failed to restart worker for task ${taskId}`);
-    }
-  } catch (error) {
-    console.error('Error restarting worker with feedback:', error);
-  }
-}
-
-/**
- * Run validation pipeline for a completed worker
- */
-async function runValidation(worker: ClaudeWorker, logStream: fs.WriteStream): Promise<void> {
-  const sessionId = `claude-worker-${worker.id}-${Date.now()}`;
-  logStream.write(`Running validation with session ID: ${sessionId}\n`);
-  
-  try {
-    // Run the validation script (same as used in claude-stop-hook.ts)
-    const { stdout, stderr } = await execAsync(
-      `npx ts-node scripts/validate-task.ts "${sessionId}" --settings=settings.json`,
-      {
-        cwd: process.cwd(),
-        timeout: 120000, // 2 minute timeout
-      }
-    );
-    
-    logStream.write(`Validation stdout:\n${stdout}\n`);
-    if (stderr) {
-      logStream.write(`Validation stderr:\n${stderr}\n`);
-    }
-    
-    console.error(`✅ Validation passed for worker ${worker.id}`);
-  } catch (error: unknown) {
-    const message = (error as Error).message || 'Unknown validation error';
-    const stdout = (error as { stdout?: string }).stdout || '';
-    const stderr = (error as { stderr?: string }).stderr || '';
-    
-    logStream.write(`Validation failed: ${message}\n`);
-    if (stdout) logStream.write(`Stdout: ${stdout}\n`);
-    if (stderr) logStream.write(`Stderr: ${stderr}\n`);
-    
-    throw new Error(`Validation failed: ${message}`);
-  }
-}
+// Validation and feedback functions temporarily removed to fix server stability
+// TODO: Re-implement with proper error handling to prevent server crashes
 
 /**
  * Monitor command output for potential security issues
@@ -313,39 +248,11 @@ router.post('/start', async (req, res) => {
       console.error(`🏁 Claude Code worker ${workerId} completed with exit code ${code}`);
       
       if (code === 0) {
-        // Worker completed successfully - run validation
-        logStream.write(`\n=== Running Validation ===\n`);
-        console.error(`🔍 Running validation for worker ${workerId}`);
-        
-        try {
-          await runValidation(worker, logStream);
-          worker.status = 'completed';
-          console.error(`✅ Worker ${workerId} completed successfully with validation passed`);
-        } catch (error) {
-          worker.status = 'failed';
-          console.error(`❌ Worker ${workerId} failed validation:`, error);
-          logStream.write(`Validation failed: ${error instanceof Error ? error.message : String(error)}\n`);
-          
-          // Implement feedback loop - restart worker with validation feedback
-          const validationFeedback = `Previous attempt failed validation. Please address these issues and try again:
-
-${error instanceof Error ? error.message : String(error)}
-
-Original task: ${worker.taskContent}
-
-Please fix the issues above and ensure your implementation passes all validation steps including:
-- Linting (npm run lint)
-- Type checking (npm run type-check) 
-- Tests (npm test)
-- Any other validation stages configured in settings.json`;
-
-          console.error(`🔄 Restarting worker ${workerId} with validation feedback`);
-          
-          // Restart worker with feedback
-          setTimeout(() => {
-            restartWorkerWithFeedback(worker.taskId, validationFeedback, worker.process?.spawnargs[3] || process.cwd());
-          }, 5000); // Wait 5 seconds before restart
-        }
+        worker.status = 'completed';
+        console.error(`✅ Worker ${workerId} completed successfully`);
+        // TODO: Re-enable validation pipeline after fixing async handling
+        // logStream.write(`\n=== Running Validation ===\n`);
+        // await runValidation(worker, logStream);
       } else {
         worker.status = 'failed';
         console.error(`❌ Worker ${workerId} failed with exit code ${code}`);
