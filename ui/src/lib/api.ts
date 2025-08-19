@@ -541,13 +541,14 @@ export const claudeWorkersApi = {
       id: string;
       taskId: string;
       taskContent: string;
-      status: 'starting' | 'running' | 'completed' | 'failed' | 'stopped';
+      status: 'starting' | 'running' | 'completed' | 'failed' | 'stopped' | 'validating';
       startTime: string;
       endTime?: string;
       pid?: number;
       logFile: string;
       blockedCommands: number;
       hasPermissionSystem: boolean;
+      validationPassed?: boolean;
     }>;
     activeCount: number;
     totalCount: number;
@@ -584,4 +585,39 @@ export const claudeWorkersApi = {
     logFile: string;
   }> =>
     request(`/claude-workers/${workerId}/logs`),
+
+  // Merge worktree changes back to main branch
+  mergeWorktree: (workerId: string): Promise<{
+    message: string;
+    workerId: string;
+    mergedBranch: string;
+    hasChanges: boolean;
+  }> =>
+    request(`/claude-workers/${workerId}/merge-worktree`, {
+      method: 'POST',
+    }),
+
+  // Open worktree in VSCode
+  openVSCode: (workerId: string): Promise<{
+    message: string;
+    workerId: string;
+    worktreePath: string;
+  }> =>
+    request(`/claude-workers/${workerId}/open-vscode`, {
+      method: 'POST',
+    }),
+
+  // Get blocked commands for a worker
+  getBlockedCommands: (workerId: string): Promise<{
+    workerId: string;
+    blockedCommands: number;
+    blockedCommandsList: Array<{
+      timestamp: string;
+      command: string;
+      reason: string;
+      suggestion?: string;
+    }>;
+    hasPermissionSystem: boolean;
+  }> =>
+    request(`/claude-workers/${workerId}/blocked-commands`),
 };

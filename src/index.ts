@@ -168,6 +168,17 @@ const server = httpServer.listen(Number(PORT), HOST, () => {
 // Set reasonable server timeout
 server.timeout = 30000; // 30 seconds
 
+// Global error handlers to prevent server crashes
+process.on('uncaughtException', (error) => {
+  logger.error('Uncaught Exception', error);
+  // Don't exit the process - just log and continue
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  logger.error('Unhandled Rejection', reason instanceof Error ? reason : new Error(String(reason)), { promise: promise.toString() });
+  // Don't exit the process - just log and continue
+});
+
 process.on('SIGTERM', () => {
   logger.info('SIGTERM signal received: closing server');
 

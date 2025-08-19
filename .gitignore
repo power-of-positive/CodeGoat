@@ -33,3 +33,4 @@ test_request.json
 validation-metrics.json
 test-results.xml
 rust-backend-crates/*
+claude-worktrees/**

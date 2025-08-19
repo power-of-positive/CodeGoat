@@ -1,5 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { VariableSizeList } from 'react-window';
+import type { VariableSizeList as VariableSizeListType } from 'react-window';
+import useMeasure from 'react-use-measure';
 import { 
   Play, 
   Square, 
@@ -11,24 +14,30 @@ import {
   AlertCircle,
   Terminal,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Pause,
+  GitMerge,
+  Code2,
+  ShieldAlert
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { claudeWorkersApi } from '../lib/api';
+import LogEntryRow from '../components/logs/LogEntryRow';
 
 interface WorkerStatus {
   id: string;
   taskId: string;
   taskContent: string;
-  status: 'starting' | 'running' | 'completed' | 'failed' | 'stopped';
+  status: 'starting' | 'running' | 'completed' | 'failed' | 'stopped' | 'validating';
   startTime: string;
   endTime?: string;
   pid?: number;
   logFile: string;
   blockedCommands: number;
   hasPermissionSystem: boolean;
+  validationPassed?: boolean;
 }
 
 interface WorkersStatusResponse {
@@ -48,6 +57,7 @@ interface WorkerLogsResponse {
 const statusStyles = {
   starting: 'bg-yellow-100 text-yellow-800 border-yellow-300',
   running: 'bg-blue-100 text-blue-800 border-blue-300',
+  validating: 'bg-purple-100 text-purple-800 border-purple-300',
   completed: 'bg-green-100 text-green-800 border-green-300',
   failed: 'bg-red-100 text-red-800 border-red-300',
   stopped: 'bg-gray-100 text-gray-800 border-gray-300',
@@ -56,6 +66,7 @@ const statusStyles = {
 const statusIcons = {
   starting: AlertCircle,
   running: Play,
+  validating: RefreshCw,
   completed: CheckCircle,
   failed: XCircle,
   stopped: Square,
@@ -65,9 +76,12 @@ interface WorkerCardProps {
   worker: WorkerStatus;
   onViewLogs: (workerId: string) => void;
   onStopWorker: (workerId: string) => void;
+  onMergeWorktree: (workerId: string) => void;
+  onOpenVSCode: (workerId: string) => void;
+  onViewBlockedCommands: (workerId: string) => void;
 }
 
-function WorkerCard({ worker, onViewLogs, onStopWorker }: WorkerCardProps) {
+function WorkerCard({ worker, onViewLogs, onStopWorker, onMergeWorktree, onOpenVSCode, onViewBlockedCommands }: WorkerCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const StatusIcon = statusIcons[worker.status];
   
@@ -121,6 +135,16 @@ function WorkerCard({ worker, onViewLogs, onStopWorker }: WorkerCardProps) {
             {worker.blockedCommands > 0 && (
               <Badge variant="outline" className="text-xs bg-red-50 border-red-300 text-red-700">
                 🚫 {worker.blockedCommands} blocked
+              </Badge>
+            )}
+            {worker.validationPassed === false && worker.status === 'failed' && (
+              <Badge variant="outline" className="text-xs bg-orange-50 border-orange-300 text-orange-700">
+                ⚠️ Validation Failed
+              </Badge>
+            )}
+            {worker.validationPassed === true && worker.status === 'completed' && (
+              <Badge variant="outline" className="text-xs bg-green-50 border-green-300 text-green-700">
+                ✅ Validated
               </Badge>
             )}
           </div>
@@ -215,6 +239,42 @@ function WorkerCard({ worker, onViewLogs, onStopWorker }: WorkerCardProps) {
                   <span>Stop</span>
                 </Button>
               )}
+              
+              {(worker.status === 'completed' || worker.status === 'stopped') && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onMergeWorktree(worker.id)}
+                  className="flex items-center space-x-1 text-green-600 hover:text-green-700 hover:bg-green-50"
+                >
+                  <GitMerge className="h-3 w-3" />
+                  <span>Merge</span>
+                </Button>
+              )}
+              
+              {(worker.status === 'completed' || worker.status === 'stopped' || worker.status === 'running') && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onOpenVSCode(worker.id)}
+                  className="flex items-center space-x-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                >
+                  <Code2 className="h-3 w-3" />
+                  <span>VSCode</span>
+                </Button>
+              )}
+              
+              {worker.blockedCommands > 0 && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onViewBlockedCommands(worker.id)}
+                  className="flex items-center space-x-1 text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                >
+                  <ShieldAlert className="h-3 w-3" />
+                  <span>Blocked ({worker.blockedCommands})</span>
+                </Button>
+              )}
             </div>
           </div>
         </CardContent>
@@ -229,8 +289,11 @@ interface LogViewerProps {
 }
 
 function LogViewer({ workerId, onClose }: LogViewerProps) {
-  const [logs, setLogs] = useState<string>('');
   const [isAutoRefresh, setIsAutoRefresh] = useState(true);
+  const [autoScroll, setAutoScroll] = useState(true);
+  const listRef = useRef<VariableSizeListType>(null);
+  const innerRef = useRef<HTMLDivElement>(null);
+  const [containerRef, bounds] = useMeasure();
 
   const { data: logsData } = useQuery<WorkerLogsResponse>({
     queryKey: ['worker-logs', workerId],
@@ -238,11 +301,57 @@ function LogViewer({ workerId, onClose }: LogViewerProps) {
     refetchInterval: isAutoRefresh ? 2000 : false, // Refresh every 2 seconds
   });
 
+  // Process logs into structured format
+  const processedLogs = React.useMemo(() => {
+    if (!logsData?.logs) return [];
+    
+    const logLines = logsData.logs.split('\n').filter(line => line.trim());
+    return logLines.map((line, index) => ({
+      id: `log-${workerId}-${index}`,
+      timestamp: new Date().toISOString(),
+      level: 'info' as const,
+      content: line,
+      workerId,
+    }));
+  }, [logsData, workerId]);
+
+  const rowHeights = useRef<Record<number, number>>({});
+
+  const getRowHeight = useCallback((index: number): number => {
+    const h = rowHeights.current[index];
+    return h !== undefined ? h : 24; // Default height for log lines
+  }, []);
+
+  const setRowHeight = useCallback((index: number, size: number) => {
+    listRef.current?.resetAfterIndex(0);
+    rowHeights.current = { ...rowHeights.current, [index]: size };
+  }, []);
+
+  // Auto-scroll to bottom when new logs arrive
   useEffect(() => {
-    if (logsData?.logs) {
-      setLogs(logsData.logs);
+    if (autoScroll && processedLogs.length > 0 && listRef.current) {
+      listRef.current.scrollToItem(processedLogs.length - 1, 'end');
     }
-  }, [logsData]);
+  }, [processedLogs.length, autoScroll]);
+
+  // Handle scroll events to detect user scrolling
+  const onScroll = useCallback(
+    ({
+      scrollOffset,
+      scrollUpdateWasRequested,
+    }: {
+      scrollOffset: number;
+      scrollUpdateWasRequested: boolean;
+    }) => {
+      if (!scrollUpdateWasRequested && bounds.height) {
+        const atBottom = innerRef.current
+          ? innerRef.current.offsetHeight - scrollOffset - bounds.height < 20
+          : false;
+        setAutoScroll(atBottom);
+      }
+    },
+    [bounds.height]
+  );
 
   return (
     <Card className="h-96">
@@ -252,6 +361,19 @@ function LogViewer({ workerId, onClose }: LogViewerProps) {
             Worker Logs - {workerId.split('-').pop()}
           </CardTitle>
           <div className="flex items-center space-x-2">
+            <Button
+              size="sm"
+              variant={autoScroll ? "default" : "outline"}
+              onClick={() => setAutoScroll(!autoScroll)}
+              className="flex items-center space-x-1"
+            >
+              {autoScroll ? (
+                <Play className="h-3 w-3" />
+              ) : (
+                <Pause className="h-3 w-3" />
+              )}
+              <span>{autoScroll ? 'Auto' : 'Manual'}</span>
+            </Button>
             <Button
               size="sm"
               variant={isAutoRefresh ? "default" : "outline"}
@@ -268,9 +390,122 @@ function LogViewer({ workerId, onClose }: LogViewerProps) {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="h-64 bg-black text-green-400 p-3 rounded font-mono text-xs overflow-auto whitespace-pre-wrap">
-          {logs || 'No logs available yet...'}
+        <div ref={containerRef} className="h-64 bg-black text-green-400 rounded">
+          {bounds.height && bounds.width && processedLogs.length > 0 ? (
+            <VariableSizeList
+              ref={listRef}
+              innerRef={innerRef}
+              height={bounds.height}
+              width={bounds.width}
+              itemCount={processedLogs.length}
+              itemSize={getRowHeight}
+              onScroll={onScroll}
+              itemData={processedLogs}
+            >
+              {({ index, style, data }) => {
+                const styleWithPadding = { ...style };
+                if (index === processedLogs.length - 1) {
+                  styleWithPadding.paddingBottom = '20px';
+                }
+
+                // Pass the raw log content as string for backwards compatibility
+                return (
+                  <LogEntryRow
+                    entry={data[index].content}
+                    index={index}
+                    style={styleWithPadding}
+                    setRowHeight={setRowHeight}
+                  />
+                );
+              }}
+            </VariableSizeList>
+          ) : (
+            <div className="h-full flex items-center justify-center text-gray-500 text-sm">
+              {processedLogs.length === 0 ? 'No logs available yet...' : 'Loading logs...'}
+            </div>
+          )}
         </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+interface BlockedCommandsViewerProps {
+  workerId: string;
+  onClose: () => void;
+}
+
+function BlockedCommandsViewer({ workerId, onClose }: BlockedCommandsViewerProps) {
+  const { data: blockedData, isLoading } = useQuery({
+    queryKey: ['worker-blocked-commands', workerId],
+    queryFn: () => claudeWorkersApi.getBlockedCommands(workerId),
+    refetchInterval: 5000, // Refresh every 5 seconds
+  });
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <ShieldAlert className="h-4 w-4 text-orange-600" />
+            Blocked Commands - {workerId.split('-').pop()}
+          </CardTitle>
+          <Button size="sm" variant="outline" onClick={onClose}>
+            Close
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="text-sm text-gray-600">Loading blocked commands...</div>
+          </div>
+        ) : (
+          <div>
+            {blockedData && blockedData.blockedCommandsList.length > 0 ? (
+              <div className="space-y-3">
+                <div className="text-sm text-gray-600 mb-4">
+                  Total blocked commands: <span className="font-semibold text-orange-600">{blockedData.blockedCommands}</span>
+                  {!blockedData.hasPermissionSystem && (
+                    <span className="ml-2 text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
+                      Permission system disabled
+                    </span>
+                  )}
+                </div>
+                {blockedData.blockedCommandsList.map((blocked, index) => (
+                  <div key={index} className="bg-red-50 border border-red-200 rounded-lg p-3">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="font-mono text-sm text-red-800 bg-red-100 px-2 py-1 rounded">
+                        {blocked.command}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {new Date(blocked.timestamp).toLocaleString()}
+                      </div>
+                    </div>
+                    <div className="text-sm text-red-700 mb-1">
+                      <strong>Reason:</strong> {blocked.reason}
+                    </div>
+                    {blocked.suggestion && (
+                      <div className="text-sm text-gray-600">
+                        <strong>Suggestion:</strong> {blocked.suggestion}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <ShieldAlert className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                <div className="text-sm text-gray-600">No blocked commands</div>
+                {blockedData && !blockedData.hasPermissionSystem && (
+                  <div className="text-xs text-yellow-600 mt-2">
+                    Permission system is not active for this worker
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
@@ -278,6 +513,7 @@ function LogViewer({ workerId, onClose }: LogViewerProps) {
 
 export function WorkersDashboard() {
   const [selectedWorkerId, setSelectedWorkerId] = useState<string | null>(null);
+  const [selectedBlockedWorkerId, setSelectedBlockedWorkerId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   // Fetch workers status
@@ -299,6 +535,36 @@ export function WorkersDashboard() {
     },
   });
 
+  // Merge worktree mutation
+  const mergeWorktreeMutation = useMutation({
+    mutationFn: claudeWorkersApi.mergeWorktree,
+    onSuccess: (data) => {
+      alert(`Successfully merged changes from ${data.workerId}${data.hasChanges ? ' with changes committed' : ' (no changes to commit)'}`);
+      queryClient.invalidateQueries({ queryKey: ['workers-status'] });
+    },
+    onError: (error) => {
+      console.error('Failed to merge worktree:', error);
+      alert('Failed to merge worktree. Please check the console for details.');
+    },
+  });
+
+  // Open VSCode mutation
+  const openVSCodeMutation = useMutation({
+    mutationFn: claudeWorkersApi.openVSCode,
+    onSuccess: (data) => {
+      alert(`VSCode opened for worktree: ${data.worktreePath}`);
+    },
+    onError: (error) => {
+      console.error('Failed to open VSCode:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      if (errorMessage.includes('VSCode command line tools')) {
+        alert('VSCode command line tools not found. Please install VSCode and enable shell command integration from the Command Palette.');
+      } else {
+        alert(`Failed to open VSCode: ${errorMessage}`);
+      }
+    },
+  });
+
   const handleViewLogs = (workerId: string) => {
     setSelectedWorkerId(workerId);
   };
@@ -307,6 +573,20 @@ export function WorkersDashboard() {
     if (confirm('Are you sure you want to stop this worker?')) {
       stopWorkerMutation.mutate(workerId);
     }
+  };
+
+  const handleMergeWorktree = (workerId: string) => {
+    if (confirm('Are you sure you want to merge the worktree changes to the main branch?')) {
+      mergeWorktreeMutation.mutate(workerId);
+    }
+  };
+
+  const handleOpenVSCode = (workerId: string) => {
+    openVSCodeMutation.mutate(workerId);
+  };
+
+  const handleViewBlockedCommands = (workerId: string) => {
+    setSelectedBlockedWorkerId(workerId);
   };
 
   if (isLoading) {
@@ -421,6 +701,14 @@ export function WorkersDashboard() {
         />
       )}
 
+      {/* Blocked Commands Viewer */}
+      {selectedBlockedWorkerId && (
+        <BlockedCommandsViewer 
+          workerId={selectedBlockedWorkerId} 
+          onClose={() => setSelectedBlockedWorkerId(null)} 
+        />
+      )}
+
       {/* Workers List */}
       <div>
         <h2 className="text-lg font-semibold text-gray-900 mb-4">
@@ -445,6 +733,9 @@ export function WorkersDashboard() {
                 worker={worker}
                 onViewLogs={handleViewLogs}
                 onStopWorker={handleStopWorker}
+                onMergeWorktree={handleMergeWorktree}
+                onOpenVSCode={handleOpenVSCode}
+                onViewBlockedCommands={handleViewBlockedCommands}
               />
             ))}
           </div>

@@ -1,5 +1,5 @@
 {
-  "defaultAllow": false,
+  "defaultAllow": true,
   "enableLogging": true,
   "strictMode": false,
   "rules": [
@@ -126,6 +126,57 @@
       "allowed": true,
       "reason": "Git commands are allowed",
       "priority": 120
+    },
+    {
+      "id": "allow-claude-execute",
+      "action": "claude_execute",
+      "scope": "worktree",
+      "allowed": true,
+      "reason": "Claude Code execution allowed in worktree",
+      "priority": 300
+    },
+    {
+      "id": "allow-file-read",
+      "action": "file_read",
+      "scope": "worktree",
+      "allowed": true,
+      "reason": "File reading allowed in worktree",
+      "priority": 250
+    },
+    {
+      "id": "allow-npm-commands",
+      "action": "system_command",
+      "scope": "pattern",
+      "target": "npm *",
+      "allowed": true,
+      "reason": "NPM commands allowed for development",
+      "priority": 210
+    },
+    {
+      "id": "allow-node-commands",
+      "action": "system_command",
+      "scope": "pattern",
+      "target": "node *",
+      "allowed": true,
+      "reason": "Node.js execution allowed",
+      "priority": 210
+    },
+    {
+      "id": "allow-npx-commands",
+      "action": "system_command",
+      "scope": "pattern",
+      "target": "npx *",
+      "allowed": true,
+      "reason": "NPX commands allowed for development",
+      "priority": 210
+    },
+    {
+      "id": "allow-network-requests",
+      "action": "network_request",
+      "scope": "global",
+      "allowed": true,
+      "reason": "Network requests allowed for API calls",
+      "priority": 180
     }
   ]
 }

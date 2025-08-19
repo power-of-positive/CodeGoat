@@ -10,6 +10,8 @@ jest.mock('../lib/api', () => ({
     getWorkersStatus: jest.fn(),
     getWorkerLogs: jest.fn(),
     stopWorker: jest.fn(),
+    mergeWorktree: jest.fn(),
+    openVSCode: jest.fn(),
   },
 }));
 

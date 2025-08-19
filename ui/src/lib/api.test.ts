@@ -515,5 +515,46 @@ describe('API Client', () => {
         headers: { 'Content-Type': 'application/json' },
       });
     });
+
+    it('should merge worktree', async () => {
+      const mockResponse = {
+        message: 'Successfully merged changes from worker-123',
+        workerId: 'worker-123',
+        mergedBranch: 'feature-branch',
+        hasChanges: true
+      };
+      (fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockResponse,
+      } as Response);
+
+      const result = await claudeWorkersApi.mergeWorktree('worker-123');
+
+      expect(result).toEqual(mockResponse);
+      expect(fetch).toHaveBeenCalledWith('/api/claude-workers/worker-123/merge-worktree', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+    });
+
+    it('should open VSCode', async () => {
+      const mockResponse = {
+        message: 'Opened worktree in VSCode',
+        workerId: 'worker-123',
+        worktreePath: '/path/to/worktree'
+      };
+      (fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockResponse,
+      } as Response);
+
+      const result = await claudeWorkersApi.openVSCode('worker-123');
+
+      expect(result).toEqual(mockResponse);
+      expect(fetch).toHaveBeenCalledWith('/api/claude-workers/worker-123/open-vscode', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+    });
   });
 });

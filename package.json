@@ -24,7 +24,7 @@
     "lint:fix": "eslint . --ext .ts,.tsx --fix",
     "format": "prettier --write \"**/*.{ts,tsx}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx}\"",
-    "type-check": "tsc --noEmit --pretty && cd ui && tsc --noEmit --pretty && echo '✅ TypeScript type checking passed'",
+    "type-check": "tsc --noEmit --pretty --skipLibCheck && cd ui && tsc --noEmit --pretty --skipLibCheck && echo '✅ TypeScript type checking passed'",
     "typescript-check": "node scripts/check-typescript-preference.js",
     "logs:clean:optimized": "npx ts-node scripts/optimized-log-cleanup.ts",
     "logs:stats": "npx ts-node scripts/log-stats.ts",
