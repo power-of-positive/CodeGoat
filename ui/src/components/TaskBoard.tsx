@@ -373,22 +373,24 @@ function StatusColumn({ column, tasks, onEdit, onDelete, onStatusChange, onStart
         </div>
       </div>
       
-      <div className="p-4 max-h-96 overflow-y-auto">
+      <div className="p-4 min-h-[200px]">
         {tasks.length === 0 ? (
           <p className="text-sm text-gray-500 text-center py-8">
             No {column.title.toLowerCase()} tasks
           </p>
         ) : (
-          tasks.map((task) => (
-            <TaskCard
-              key={task.id}
-              task={task}
-              onEdit={onEdit}
-              onDelete={onDelete}
-              onStatusChange={onStatusChange}
-              onStartWorker={onStartWorker}
-            />
-          ))
+          <div className="space-y-3">
+            {tasks.map((task) => (
+              <TaskCard
+                key={task.id}
+                task={task}
+                onEdit={onEdit}
+                onDelete={onDelete}
+                onStatusChange={onStatusChange}
+                onStartWorker={onStartWorker}
+              />
+            ))}
+          </div>
         )}
       </div>
     </div>

@@ -318,77 +318,46 @@ function TaskLogs({ taskId }: TaskLogsProps) {
   );
 }
 
-// Claude Code Interaction Demo Component
-interface ClaudeCodeInteractionDemoProps {
-  taskId: string;
-}
 
-function ClaudeCodeInteractionDemo({ taskId: _taskId }: ClaudeCodeInteractionDemoProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
+function WorkerInfo({ executorId }: { executorId: string }) {
+  const navigate = useNavigate();
+  const { data: workersData } = useQuery({
+    queryKey: ['workers-status'],
+    queryFn: claudeWorkersApi.getWorkersStatus,
+    refetchInterval: 5000,
+  });
 
-  // Mock Claude Code conversation entries showing different types of interactions
-  const mockConversationEntries: NormalizedEntry[] = [
-    {
-      timestamp: new Date(Date.now() - 30000).toISOString(),
-      entry_type: { type: 'user_message' },
-      content: 'Please implement enhanced logging functionality in the worker dashboard and task details components based on the example components provided.'
-    },
-    {
-      timestamp: new Date(Date.now() - 29000).toISOString(),
-      entry_type: { 
-        type: 'tool_use',
-        tool_name: 'TodoWrite',
-        action_type: { action: 'plan_presentation', plan: 'Enhanced logging implementation plan' }
-      },
-      content: 'I\'ll create a comprehensive plan to implement enhanced logging functionality:\n\n1. **Examine example components** - Analyze the structure and functionality\n2. **Create log hooks** - Build useProcessesLogs hook for data management\n3. **Update components** - Enhance WorkersDashboard and TaskDetail with advanced log processing\n4. **Implement Claude Code response processing** - Add normalized conversation display'
-    },
-    {
-      timestamp: new Date(Date.now() - 28000).toISOString(),
-      entry_type: { 
-        type: 'tool_use',
-        tool_name: 'Read',
-        action_type: { action: 'file_read', path: 'useful_logs_view_components/LogsTab.tsx' }
-      },
-      content: 'Reading the enhanced LogsTab component to understand the virtualized scrolling implementation and UnifiedLogEntry structure...'
-    },
-    {
-      timestamp: new Date(Date.now() - 26000).toISOString(),
-      entry_type: { type: 'assistant_message' },
-      content: 'I can see this is a sophisticated logging system with:\n\n- **JSONL log processing** with structured data storage\n- **Multiple log channels**: stdout, stderr, normalized (Claude responses), process_start\n- **Virtualized scrolling** for performance with large log files\n- **Rich conversation display** with tool icons and action types\n\nLet me implement this enhanced system step by step.'
-    },
-    {
-      timestamp: new Date(Date.now() - 25000).toISOString(),
-      entry_type: { 
-        type: 'tool_use',
-        tool_name: 'Write',
-        action_type: { action: 'file_write', path: 'ui/src/hooks/useProcessesLogs.ts' }
-      },
-      content: 'Creating enhanced logging hook with UnifiedLogEntry support and process management...'
-    },
-    {
-      timestamp: new Date(Date.now() - 20000).toISOString(),
-      entry_type: { 
-        type: 'tool_use',
-        tool_name: 'Edit',
-        action_type: { action: 'file_write', path: 'ui/src/components/logs/LogEntryRow.tsx' }
-      },
-      content: 'Updating LogEntryRow to handle multiple log types including normalized conversation entries...'
-    },
-    {
-      timestamp: new Date(Date.now() - 15000).toISOString(),
-      entry_type: { 
-        type: 'tool_use',
-        tool_name: 'bash',
-        action_type: { action: 'command_run', command: 'npm test' }
-      },
-      content: 'Running tests to ensure the enhanced logging components work correctly...'
-    },
-    {
-      timestamp: new Date(Date.now() - 10000).toISOString(),
-      entry_type: { type: 'assistant_message' },
-      content: '✅ **Enhanced logging system successfully implemented!**\n\nKey features added:\n- **Structured log processing** with JSONL format\n- **Multi-channel support** for different log types\n- **Claude Code interaction display** with tool icons\n- **Performance optimizations** with virtualized scrolling\n- **Real-time log streaming** capabilities\n\nThe system now properly handles Claude Code responses, tool usage, and process execution logs in a unified, user-friendly interface.'
-    }
-  ];
+  const worker = workersData?.workers.find(w => w.id === executorId);
+
+  if (!worker) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Bot className="h-5 w-5 text-gray-400" />
+            Worker Information
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-sm text-gray-600">
+            Worker ID: <span className="font-mono">{executorId}</span>
+            <p className="text-xs text-gray-400 mt-2">Worker not currently active</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const statusConfig = {
+    starting: { color: 'bg-yellow-100 text-yellow-800', icon: AlertCircle },
+    running: { color: 'bg-blue-100 text-blue-800', icon: Play },
+    validating: { color: 'bg-purple-100 text-purple-800', icon: Activity },
+    completed: { color: 'bg-green-100 text-green-800', icon: CheckCircle },
+    failed: { color: 'bg-red-100 text-red-800', icon: XCircle },
+    stopped: { color: 'bg-gray-100 text-gray-800', icon: Pause },
+  };
+
+  const StatusIcon = statusConfig[worker.status].icon;
 
   return (
     <Card>
@@ -396,8 +365,116 @@ function ClaudeCodeInteractionDemo({ taskId: _taskId }: ClaudeCodeInteractionDem
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <Bot className="h-5 w-5 text-green-600" />
-            Claude Code Interaction
-            <Badge variant="secondary">Demo</Badge>
+            Worker Information
+          </CardTitle>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => navigate('/workers')}
+            className="flex items-center gap-1"
+          >
+            <ExternalLink className="h-3 w-3" />
+            View in Dashboard
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-gray-600">Worker ID:</span>
+            <Link
+              to={`/workers#${worker.id}`}
+              className="font-mono text-sm text-blue-600 hover:underline"
+            >
+              {worker.id.split('-').slice(-2).join('-')}
+            </Link>
+          </div>
+          
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-gray-600">Status:</span>
+            <div className="flex items-center gap-2">
+              <StatusIcon className="h-4 w-4" />
+              <Badge className={`text-xs ${statusConfig[worker.status].color}`}>
+                {worker.status.toUpperCase()}
+              </Badge>
+            </div>
+          </div>
+
+          {worker.pid && (
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-600">Process ID:</span>
+              <span className="font-mono text-sm">{worker.pid}</span>
+            </div>
+          )}
+
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-gray-600">Started:</span>
+            <span className="text-sm">{new Date(worker.startTime).toLocaleString()}</span>
+          </div>
+
+          {worker.validationPassed !== undefined && (
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-600">Validation:</span>
+              <Badge className={`text-xs ${
+                worker.validationPassed 
+                  ? 'bg-green-100 text-green-800' 
+                  : 'bg-red-100 text-red-800'
+              }`}>
+                {worker.validationPassed ? '✅ Passed' : '❌ Failed'}
+              </Badge>
+            </div>
+          )}
+
+          {worker.blockedCommands > 0 && (
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-600">Blocked Commands:</span>
+              <Badge variant="outline" className="text-xs bg-orange-50 text-orange-700">
+                {worker.blockedCommands}
+              </Badge>
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function WorkerLogs({ executorId }: { executorId: string }) {
+  const [isExpanded, setIsExpanded] = useState(true);
+  const { data: logsData } = useQuery({
+    queryKey: ['worker-logs', executorId],
+    queryFn: () => claudeWorkersApi.getWorkerLogs(executorId),
+    refetchInterval: 2000,
+    retry: 1,
+  });
+
+  // Parse logs if available
+  const logEntries = React.useMemo(() => {
+    if (!logsData?.logs) return [];
+    
+    // Convert raw logs to normalized entries
+    const lines = logsData.logs.split('\n').filter(line => line.trim());
+    return lines.map((line, index) => ({
+      id: `log-${executorId}-${index}`,
+      timestamp: new Date().toISOString(),
+      level: 'info' as const,
+      content: line,
+      workerId: executorId,
+    }));
+  }, [logsData, executorId]);
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <Terminal className="h-5 w-5 text-blue-600" />
+            Worker Logs
+            {logsData && (
+              <Badge variant="secondary" className="text-xs">
+                {executorId.split('-').slice(-2).join('-')}
+              </Badge>
+            )}
           </CardTitle>
           <Button
             variant="outline"
@@ -413,50 +490,45 @@ function ClaudeCodeInteractionDemo({ taskId: _taskId }: ClaudeCodeInteractionDem
             ) : (
               <>
                 <ChevronDown className="h-4 w-4" />
-                Expand Conversation
+                Show Logs
               </>
             )}
           </Button>
         </div>
       </CardHeader>
       <CardContent>
-        <div className="text-sm text-gray-600 mb-4">
-          This demonstrates how Claude Code interactions are processed and displayed with rich formatting,
-          tool usage indicators, and structured conversation flow.
-        </div>
-        
-        {isExpanded ? (
-          <div className="bg-gray-50 dark:bg-gray-900 rounded-lg max-h-96 overflow-y-auto">
-            {mockConversationEntries.map((entry, index) => (
-              <DisplayConversationEntry
-                key={index}
-                entry={entry}
-                index={index}
-                diffDeletable={false}
-              />
-            ))}
+        {!logsData ? (
+          <div className="text-sm text-gray-600">
+            No logs available for worker {executorId}
           </div>
-        ) : (
-          <div className="bg-gray-50 dark:bg-gray-900 rounded-lg p-4">
-            <div className="flex items-center gap-2 text-sm">
-              <User className="h-4 w-4 text-blue-600" />
-              <span className="font-medium">User:</span>
-              <span className="truncate">Please implement enhanced logging functionality...</span>
-            </div>
-            <div className="flex items-center gap-2 text-sm mt-2">
-              <Bot className="h-4 w-4 text-green-600" />
-              <span className="font-medium">Claude:</span>
-              <span className="truncate">Enhanced logging system successfully implemented!</span>
-            </div>
-            <div className="text-xs text-gray-500 mt-2">
-              {mockConversationEntries.length} conversation entries • Click expand to view all
-            </div>
+        ) : isExpanded && (
+          <div className="text-sm text-gray-600 mb-4">
+            Showing worker execution logs, command outputs, and validation results.
+          </div>
+        )}
+        
+        {isExpanded && logsData && (
+          <div className="bg-gray-900 text-green-400 p-3 rounded font-mono text-xs max-h-96 overflow-y-auto">
+            {logEntries.length > 0 ? (
+              logEntries.map((entry, index) => (
+                <LogEntryRow
+                  key={entry.id}
+                  entry={entry.content}
+                  index={index}
+                  style={{ padding: '2px 0' }}
+                  setRowHeight={() => {}}
+                />
+              ))
+            ) : (
+              <div className="text-gray-500">No log entries available</div>
+            )}
           </div>
         )}
       </CardContent>
     </Card>
   );
 }
+
 
 export function TaskDetail() {
   const { taskId } = useParams<{ taskId: string }>();
@@ -644,8 +716,13 @@ export function TaskDetail() {
       {/* Task Logs */}
       <TaskLogs taskId={taskId!} />
 
-      {/* Claude Code Interaction Demo */}
-      <ClaudeCodeInteractionDemo taskId={taskId!} />
+      {/* Worker Information */}
+      {task.executorId && (
+        <>
+          <WorkerInfo executorId={task.executorId} />
+          <WorkerLogs executorId={task.executorId} />
+        </>
+      )}
 
       {/* BDD Scenarios */}
       <Card>

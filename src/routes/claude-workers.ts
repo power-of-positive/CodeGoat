@@ -7,6 +7,7 @@ import { WorktreeManager } from '../utils/worktree-manager';
 import { ValidationRunner } from '../../scripts/validate-task';
 import { getDatabaseService } from '../services/database';
 import { TodoStatus } from '@prisma/client';
+import { logManager } from '../utils/log-manager';
 // import { WinstonLogger } from '../logger-winston';
 
 const router = express.Router();
@@ -438,10 +439,13 @@ function contentItemToEntry(item: unknown, role: string, timestamp: string): {ti
 }
 
 /**
- * Create log directory if it doesn't exist
+ * Create log directory with date-based organization
  */
 function ensureLogDirectory(): string {
-  const logDir = path.join(process.cwd(), 'claude-worker-logs');
+  const today = new Date();
+  const dateFolder = `${today.getFullYear()}-${(today.getMonth() + 1).toString().padStart(2, '0')}-${today.getDate().toString().padStart(2, '0')}`;
+  const logDir = path.join(process.cwd(), 'logs', 'workers', dateFolder);
+  
   if (!fs.existsSync(logDir)) {
     fs.mkdirSync(logDir, { recursive: true });
   }
@@ -1068,13 +1072,24 @@ router.post('/:workerId/merge-worktree', async (req, res) => {
       console.warn(`⚠️ Task ${worker.taskId} not marked as completed - validation did not pass`);
     }
 
+    // Clean up worktree after successful merge
+    if (worker.worktreeManager && worker.worktreePath) {
+      try {
+        await worker.worktreeManager.removeWorktree(worker.worktreePath);
+        console.error(`🧹 Cleaned up worktree ${worker.worktreePath} after successful merge`);
+      } catch (cleanupError) {
+        console.error(`⚠️ Failed to cleanup worktree ${worker.worktreePath}:`, cleanupError);
+      }
+    }
+
     res.json({
       success: true,
       data: {
         message: `Successfully merged changes from worktree ${workerId}`,
         workerId,
         mergedBranch: branchName,
-        hasChanges: !!statusOutput.trim()
+        hasChanges: !!statusOutput.trim(),
+        worktreeCleaned: true
       }
     });
 
@@ -1249,6 +1264,50 @@ router.get('/:workerId/validation-runs/:runId', (req, res) => {
       metrics
     }
   });
+});
+
+/**
+ * Get log statistics
+ */
+router.get('/logs/stats', async (req, res) => {
+  try {
+    const stats = await logManager.getLogStats();
+    res.json({
+      success: true,
+      data: stats
+    });
+  } catch (error) {
+    console.error('Error getting log stats:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get log statistics'
+    });
+  }
+});
+
+/**
+ * Clean up old logs
+ */
+router.post('/logs/cleanup', async (req, res) => {
+  try {
+    console.error('🧹 Starting manual log cleanup...');
+    await logManager.organizeLogs();
+    const cleanupResult = await logManager.cleanupLogs();
+    
+    res.json({
+      success: true,
+      data: {
+        message: 'Log cleanup completed successfully',
+        ...cleanupResult
+      }
+    });
+  } catch (error) {
+    console.error('Error cleaning up logs:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to cleanup logs'
+    });
+  }
 });
 
 

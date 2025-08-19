@@ -168,6 +168,13 @@ const server = httpServer.listen(Number(PORT), HOST, () => {
 // Set reasonable server timeout
 server.timeout = 30000; // 30 seconds
 
+// Initialize log management
+import { logManager } from './utils/log-manager';
+
+// Schedule daily log cleanup
+logManager.scheduleCleanup(24);
+console.error('🧹 Log cleanup scheduled to run every 24 hours');
+
 // Global error handlers to prevent server crashes
 process.on('uncaughtException', (error) => {
   logger.error('Uncaught Exception', error);
