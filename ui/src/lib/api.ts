@@ -514,3 +514,74 @@ export const e2eTestingApi = {
   }> =>
     request(`/e2e/runs/${runId}`),
 };
+
+// Claude Code Workers API
+export const claudeWorkersApi = {
+  // Start a Claude Code worker for a task
+  startWorker: (params: {
+    taskId: string;
+    taskContent: string;
+    workingDirectory?: string;
+  }): Promise<{
+    workerId: string;
+    taskId: string;
+    status: 'starting' | 'running';
+    pid?: number;
+    logFile: string;
+    startTime: string;
+  }> =>
+    request('/claude-workers/start', {
+      method: 'POST',
+      body: JSON.stringify(params),
+    }),
+
+  // Get status of all workers
+  getWorkersStatus: (): Promise<{
+    workers: Array<{
+      id: string;
+      taskId: string;
+      taskContent: string;
+      status: 'starting' | 'running' | 'completed' | 'failed' | 'stopped';
+      startTime: string;
+      endTime?: string;
+      pid?: number;
+      logFile: string;
+      blockedCommands: number;
+      hasPermissionSystem: boolean;
+    }>;
+    activeCount: number;
+    totalCount: number;
+    totalBlockedCommands: number;
+  }> =>
+    request('/claude-workers/status'),
+
+  // Get specific worker status
+  getWorkerStatus: (workerId: string): Promise<{
+    id: string;
+    taskId: string;
+    taskContent: string;
+    status: 'starting' | 'running' | 'completed' | 'failed' | 'stopped';
+    startTime: string;
+    endTime?: string;
+    pid?: number;
+    logFile: string;
+  }> =>
+    request(`/claude-workers/${workerId}`),
+
+  // Stop a worker
+  stopWorker: (workerId: string): Promise<{
+    workerId: string;
+    status: string;
+  }> =>
+    request(`/claude-workers/${workerId}/stop`, {
+      method: 'POST',
+    }),
+
+  // Get worker logs
+  getWorkerLogs: (workerId: string): Promise<{
+    workerId: string;
+    logs: string;
+    logFile: string;
+  }> =>
+    request(`/claude-workers/${workerId}/logs`),
+};

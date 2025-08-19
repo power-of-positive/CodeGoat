@@ -15,6 +15,13 @@ jest.mock('../lib/api', () => ({
     updateTask: jest.fn(),
     deleteTask: jest.fn(),
   },
+  claudeWorkersApi: {
+    startWorker: jest.fn(),
+    getWorkersStatus: jest.fn(),
+    getWorkerStatus: jest.fn(),
+    stopWorker: jest.fn(),
+    getWorkerLogs: jest.fn(),
+  },
 }));
 
 const mockTasks: Task[] = [

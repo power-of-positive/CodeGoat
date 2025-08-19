@@ -10,12 +10,13 @@ import {
   CheckCircle, 
   Play,
   MoreVertical,
-  ExternalLink
+  ExternalLink,
+  Bot
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
-import { taskApi } from '../lib/api';
+import { taskApi, claudeWorkersApi } from '../lib/api';
 import { Task } from '../../shared/types';
 
 // Priority colors
@@ -190,9 +191,10 @@ interface TaskCardProps {
   onEdit: (task: Task) => void;
   onDelete: (id: string) => void;
   onStatusChange: (id: string, status: Task['status']) => void;
+  onStartWorker: (task: Task) => void;
 }
 
-function TaskCard({ task, onEdit, onDelete, onStatusChange }: TaskCardProps) {
+function TaskCard({ task, onEdit, onDelete, onStatusChange, onStartWorker }: TaskCardProps) {
   const [showActions, setShowActions] = useState(false);
 
   const formatDuration = (duration?: string) => {
@@ -296,7 +298,7 @@ function TaskCard({ task, onEdit, onDelete, onStatusChange }: TaskCardProps) {
         )}
         
         {/* Status change buttons */}
-        <div className="flex gap-1">
+        <div className="flex gap-1 flex-wrap">
           {task.status !== 'pending' && (
             <Button
               variant="outline"
@@ -327,6 +329,19 @@ function TaskCard({ task, onEdit, onDelete, onStatusChange }: TaskCardProps) {
               Complete
             </Button>
           )}
+          
+          {/* Start Claude Worker button */}
+          {(task.status === 'pending' || task.status === 'in_progress') && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-6 text-xs bg-purple-50 border-purple-300 text-purple-700 hover:bg-purple-100"
+              onClick={() => onStartWorker(task)}
+            >
+              <Bot className="h-3 w-3 mr-1" />
+              Start Worker
+            </Button>
+          )}
         </div>
       </CardContent>
     </Card>
@@ -340,9 +355,10 @@ interface StatusColumnProps {
   onEdit: (task: Task) => void;
   onDelete: (id: string) => void;
   onStatusChange: (id: string, status: Task['status']) => void;
+  onStartWorker: (task: Task) => void;
 }
 
-function StatusColumn({ column, tasks, onEdit, onDelete, onStatusChange }: StatusColumnProps) {
+function StatusColumn({ column, tasks, onEdit, onDelete, onStatusChange, onStartWorker }: StatusColumnProps) {
   const Icon = column.icon;
   
   return (
@@ -370,6 +386,7 @@ function StatusColumn({ column, tasks, onEdit, onDelete, onStatusChange }: Statu
               onEdit={onEdit}
               onDelete={onDelete}
               onStatusChange={onStatusChange}
+              onStartWorker={onStartWorker}
             />
           ))
         )}
@@ -417,6 +434,21 @@ export function TaskBoard() {
     },
   });
 
+  // Start Claude worker mutation
+  const startWorkerMutation = useMutation({
+    mutationFn: claudeWorkersApi.startWorker,
+    onSuccess: (data) => {
+      console.error(`🚀 Started Claude worker ${data.workerId} for task ${data.taskId}`);
+      // Show success notification with link to worker monitoring
+      const message = `Started Claude Code worker!\nWorker ID: ${data.workerId}\nPID: ${data.pid}\n\nView progress in the Workers dashboard.`;
+      alert(message);
+    },
+    onError: (error) => {
+      console.error('Failed to start Claude worker:', error);
+      alert('Failed to start Claude Code worker. Please check the console for details.');
+    },
+  });
+
   const handleCreateTask = (taskData: Omit<Task, 'id'>) => {
     createTaskMutation.mutate(taskData);
   };
@@ -443,6 +475,16 @@ export function TaskBoard() {
     }
     
     updateTaskMutation.mutate({ id, updates });
+  };
+
+  const handleStartWorker = (task: Task) => {
+    if (confirm(`Start Claude Code worker for task: "${task.content}"?\n\nThis will spawn a new process and execute the task automatically.`)) {
+      startWorkerMutation.mutate({
+        taskId: task.id,
+        taskContent: task.content,
+        // Let the backend determine the working directory
+      });
+    }
   };
 
   // Group tasks by status
@@ -533,6 +575,7 @@ export function TaskBoard() {
             onEdit={setEditingTask}
             onDelete={handleDeleteTask}
             onStatusChange={handleStatusChange}
+            onStartWorker={handleStartWorker}
           />
         ))}
       </div>

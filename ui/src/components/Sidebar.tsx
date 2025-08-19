@@ -9,7 +9,8 @@ import {
   CheckSquare,
   Shield,
   BarChart3,
-  TestTube
+  TestTube,
+  Zap
 } from 'lucide-react';
 import { Button } from './ui/button';
 
@@ -48,6 +49,12 @@ const navItems: NavItem[] = [
     icon: TestTube,
     label: 'BDD Tests',
     description: 'View BDD scenarios and E2E test execution status'
+  },
+  {
+    href: '/workers',
+    icon: Zap,
+    label: 'Workers',
+    description: 'Monitor Claude Code worker processes and logs'
   },
   {
     href: '/permissions',

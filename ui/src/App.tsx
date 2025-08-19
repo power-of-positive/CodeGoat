@@ -9,6 +9,7 @@ import { TaskDetail } from './components/TaskDetail';
 import { TaskAnalytics } from './components/TaskAnalytics';
 import { PermissionEditor } from './components/PermissionEditor';
 import BDDTestsDashboard from './pages/BDDTestsDashboard';
+import { WorkersDashboard } from './pages/WorkersDashboard';
 import { Layout } from './components/Layout';
 
 const queryClient = new QueryClient({
@@ -32,6 +33,7 @@ function App(): React.JSX.Element {
             <Route path="/tasks/:taskId" element={<TaskDetail />} />
             <Route path="/task-analytics" element={<TaskAnalytics />} />
             <Route path="/bdd-tests" element={<BDDTestsDashboard />} />
+            <Route path="/workers" element={<WorkersDashboard />} />
             <Route path="/permissions" element={<PermissionEditor />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/validation-run/:runId" element={<ValidationRunDetail />} />

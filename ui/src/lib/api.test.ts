@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
-import { settingsApi, analyticsApi, configApi, githubAuthApi, taskApi } from './api';
+import { settingsApi, analyticsApi, configApi, githubAuthApi, taskApi, claudeWorkersApi } from './api';
 
 // Mock fetch
 global.fetch = jest.fn() as jest.MockedFunction<typeof fetch>;
@@ -402,6 +402,118 @@ describe('API Client', () => {
       expect(fetch).toHaveBeenCalledWith('/api/settings/validation/stages/stage-123', expect.objectContaining({
         method: 'DELETE'
       }));
+    });
+  });
+
+  describe('claudeWorkersApi', () => {
+    it('should start a worker', async () => {
+      const mockResponse = {
+        workerId: 'worker-123',
+        taskId: 'task-123',
+        status: 'running',
+        pid: 12345,
+        logFile: '/path/to/log.log',
+        startTime: '2023-01-01T00:00:00.000Z'
+      };
+      (fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockResponse,
+      } as Response);
+
+      const result = await claudeWorkersApi.startWorker({
+        taskId: 'task-123',
+        taskContent: 'Test task content'
+      });
+
+      expect(result).toEqual(mockResponse);
+      expect(fetch).toHaveBeenCalledWith('/api/claude-workers/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          taskId: 'task-123',
+          taskContent: 'Test task content'
+        })
+      });
+    });
+
+    it('should get workers status', async () => {
+      const mockResponse = {
+        workers: [],
+        activeCount: 0,
+        totalCount: 0
+      };
+      (fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockResponse,
+      } as Response);
+
+      const result = await claudeWorkersApi.getWorkersStatus();
+
+      expect(result).toEqual(mockResponse);
+      expect(fetch).toHaveBeenCalledWith('/api/claude-workers/status', {
+        headers: { 'Content-Type': 'application/json' },
+      });
+    });
+
+    it('should get specific worker status', async () => {
+      const mockResponse = {
+        id: 'worker-123',
+        taskId: 'task-123',
+        taskContent: 'Test content',
+        status: 'running',
+        startTime: '2023-01-01T00:00:00.000Z',
+        pid: 12345,
+        logFile: '/path/to/log.log'
+      };
+      (fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockResponse,
+      } as Response);
+
+      const result = await claudeWorkersApi.getWorkerStatus('worker-123');
+
+      expect(result).toEqual(mockResponse);
+      expect(fetch).toHaveBeenCalledWith('/api/claude-workers/worker-123', {
+        headers: { 'Content-Type': 'application/json' },
+      });
+    });
+
+    it('should stop a worker', async () => {
+      const mockResponse = {
+        workerId: 'worker-123',
+        status: 'stopped'
+      };
+      (fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockResponse,
+      } as Response);
+
+      const result = await claudeWorkersApi.stopWorker('worker-123');
+
+      expect(result).toEqual(mockResponse);
+      expect(fetch).toHaveBeenCalledWith('/api/claude-workers/worker-123/stop', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+    });
+
+    it('should get worker logs', async () => {
+      const mockResponse = {
+        workerId: 'worker-123',
+        logs: 'Log content here',
+        logFile: '/path/to/log.log'
+      };
+      (fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockResponse,
+      } as Response);
+
+      const result = await claudeWorkersApi.getWorkerLogs('worker-123');
+
+      expect(result).toEqual(mockResponse);
+      expect(fetch).toHaveBeenCalledWith('/api/claude-workers/worker-123/logs', {
+        headers: { 'Content-Type': 'application/json' },
+      });
     });
   });
 });

@@ -4,6 +4,7 @@ import { WinstonLogger } from './logger-winston';
 import { createSettingsRoutes } from './routes/settings';
 import { createAnalyticsRoutes } from './routes/analytics';
 import { createTaskRoutes } from './routes/tasks';
+import claudeWorkersRouter from './routes/claude-workers';
 
 export function createApp() {
   const app = express();
@@ -113,6 +114,7 @@ export function createApp() {
   app.use('/api/settings', createSettingsRoutes(logger));
   app.use('/api/analytics', createAnalyticsRoutes(logger));
   app.use('/api/tasks', createTaskRoutes(logger));
+  app.use('/api/claude-workers', claudeWorkersRouter);
 
   // Health check endpoint
   app.get('/health', (_req: Request, res: Response) => {
