@@ -1,9 +1,12 @@
 import express from 'express';
-import { spawn, ChildProcess } from 'child_process';
+import { spawn, ChildProcess, exec } from 'child_process';
 import path from 'path';
 import fs from 'fs';
+import { promisify } from 'util';
 import { CommandInterceptor, formatCommandAnalysis } from '../utils/command-interceptor';
 // import { WinstonLogger } from '../logger-winston';
+
+const execAsync = promisify(exec);
 
 const router = express.Router();
 
@@ -23,6 +26,71 @@ interface ClaudeWorker {
 
 // In-memory storage for active workers
 const activeWorkers = new Map<string, ClaudeWorker>();
+
+/**
+ * Restart worker with validation feedback
+ */
+async function restartWorkerWithFeedback(taskId: string, feedbackContent: string, workingDirectory: string): Promise<void> {
+  try {
+    console.error(`🔄 Auto-restarting worker for task ${taskId} with validation feedback`);
+    
+    // Use curl instead of fetch to avoid import issues
+    const curlCommand = `curl -X POST http://localhost:3000/api/claude-workers/start \\
+      -H "Content-Type: application/json" \\
+      -d '${JSON.stringify({
+        taskId: `${taskId}-retry-${Date.now()}`,
+        taskContent: feedbackContent,
+        workingDirectory
+      }).replace(/'/g, "\\'")}'`;
+    
+    const { stdout } = await execAsync(curlCommand);
+    const result = JSON.parse(stdout) as { success: boolean; data?: { workerId: string } };
+    
+    if (result.success && result.data) {
+      console.error(`✅ Successfully restarted worker: ${result.data.workerId}`);
+    } else {
+      console.error(`❌ Failed to restart worker for task ${taskId}`);
+    }
+  } catch (error) {
+    console.error('Error restarting worker with feedback:', error);
+  }
+}
+
+/**
+ * Run validation pipeline for a completed worker
+ */
+async function runValidation(worker: ClaudeWorker, logStream: fs.WriteStream): Promise<void> {
+  const sessionId = `claude-worker-${worker.id}-${Date.now()}`;
+  logStream.write(`Running validation with session ID: ${sessionId}\n`);
+  
+  try {
+    // Run the validation script (same as used in claude-stop-hook.ts)
+    const { stdout, stderr } = await execAsync(
+      `npx ts-node scripts/validate-task.ts "${sessionId}" --settings=settings.json`,
+      {
+        cwd: process.cwd(),
+        timeout: 120000, // 2 minute timeout
+      }
+    );
+    
+    logStream.write(`Validation stdout:\n${stdout}\n`);
+    if (stderr) {
+      logStream.write(`Validation stderr:\n${stderr}\n`);
+    }
+    
+    console.error(`✅ Validation passed for worker ${worker.id}`);
+  } catch (error: unknown) {
+    const message = (error as Error).message || 'Unknown validation error';
+    const stdout = (error as { stdout?: string }).stdout || '';
+    const stderr = (error as { stderr?: string }).stderr || '';
+    
+    logStream.write(`Validation failed: ${message}\n`);
+    if (stdout) logStream.write(`Stdout: ${stdout}\n`);
+    if (stderr) logStream.write(`Stderr: ${stderr}\n`);
+    
+    throw new Error(`Validation failed: ${message}`);
+  }
+}
 
 /**
  * Monitor command output for potential security issues
@@ -151,12 +219,13 @@ router.post('/start', async (req, res) => {
     // Create command interceptor for permission checking  
     // Using console as a simplified logger interface
     const logger = {
+      // eslint-disable-next-line no-console
       debug: console.debug.bind(console),
+      // eslint-disable-next-line no-console  
       info: console.info.bind(console),
       warn: console.warn.bind(console),
       error: console.error.bind(console)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } as any; // Type assertion to bypass complex WinstonLogger interface
+    } as unknown as Parameters<typeof CommandInterceptor.createDefault>[0]; // Type assertion to bypass complex WinstonLogger interface
     const interceptor = await CommandInterceptor.createDefault(logger, workDir);
 
     // Create the worker entry
@@ -232,23 +301,57 @@ router.post('/start', async (req, res) => {
     });
 
     // Handle process completion
-    claudeProcess.on('close', (code) => {
+    claudeProcess.on('close', async (code) => {
       worker.endTime = new Date();
-      worker.status = code === 0 ? 'completed' : 'failed';
-      
       const duration = worker.endTime.getTime() - worker.startTime.getTime();
+      
       logStream.write(`\n=== Process Completed ===\n`);
       logStream.write(`Exit Code: ${code}\n`);
       logStream.write(`End Time: ${worker.endTime.toISOString()}\n`);
       logStream.write(`Duration: ${duration}ms\n`);
-      logStream.end();
-
+      
       console.error(`🏁 Claude Code worker ${workerId} completed with exit code ${code}`);
       
-      // Auto-start next task if this one completed successfully
       if (code === 0) {
-        setTimeout(() => autoStartNextTask(workerId), 1000);
+        // Worker completed successfully - run validation
+        logStream.write(`\n=== Running Validation ===\n`);
+        console.error(`🔍 Running validation for worker ${workerId}`);
+        
+        try {
+          await runValidation(worker, logStream);
+          worker.status = 'completed';
+          console.error(`✅ Worker ${workerId} completed successfully with validation passed`);
+        } catch (error) {
+          worker.status = 'failed';
+          console.error(`❌ Worker ${workerId} failed validation:`, error);
+          logStream.write(`Validation failed: ${error instanceof Error ? error.message : String(error)}\n`);
+          
+          // Implement feedback loop - restart worker with validation feedback
+          const validationFeedback = `Previous attempt failed validation. Please address these issues and try again:
+
+${error instanceof Error ? error.message : String(error)}
+
+Original task: ${worker.taskContent}
+
+Please fix the issues above and ensure your implementation passes all validation steps including:
+- Linting (npm run lint)
+- Type checking (npm run type-check) 
+- Tests (npm test)
+- Any other validation stages configured in settings.json`;
+
+          console.error(`🔄 Restarting worker ${workerId} with validation feedback`);
+          
+          // Restart worker with feedback
+          setTimeout(() => {
+            restartWorkerWithFeedback(worker.taskId, validationFeedback, worker.process?.spawnargs[3] || process.cwd());
+          }, 5000); // Wait 5 seconds before restart
+        }
+      } else {
+        worker.status = 'failed';
+        console.error(`❌ Worker ${workerId} failed with exit code ${code}`);
       }
+      
+      logStream.end();
     });
 
     claudeProcess.on('error', (error) => {
@@ -341,6 +444,56 @@ router.get('/:workerId', (req, res) => {
 });
 
 /**
+ * Stop all workers
+ */
+router.post('/stop-all', (req, res) => {
+  let stoppedCount = 0;
+  
+  for (const [workerId, worker] of activeWorkers.entries()) {
+    if (worker.process && worker.status === 'running') {
+      console.error(`🛑 Stopping Claude Code worker ${workerId}`);
+      worker.process.kill('SIGTERM');
+      worker.status = 'stopped';
+      worker.endTime = new Date();
+      stoppedCount++;
+    }
+  }
+  
+  res.json({
+    success: true,
+    data: {
+      message: `Stopped ${stoppedCount} workers`,
+      stoppedCount
+    }
+  });
+});
+
+/**
+ * Clear completed/failed workers from memory
+ */
+router.post('/clear', (req, res) => {
+  const before = activeWorkers.size;
+  
+  for (const [workerId, worker] of activeWorkers.entries()) {
+    if (worker.status === 'completed' || worker.status === 'failed' || worker.status === 'stopped') {
+      activeWorkers.delete(workerId);
+    }
+  }
+  
+  const after = activeWorkers.size;
+  const cleared = before - after;
+  
+  res.json({
+    success: true,
+    data: {
+      message: `Cleared ${cleared} workers`,
+      clearedCount: cleared,
+      remainingCount: after
+    }
+  });
+});
+
+/**
  * Stop a specific worker
  */
 router.post('/:workerId/stop', (req, res) => {
@@ -402,42 +555,5 @@ router.get('/:workerId/logs', (req, res) => {
   }
 });
 
-/**
- * Auto-start next pending task
- */
-async function autoStartNextTask(completedWorkerId: string) {
-  try {
-    console.error(`🔄 Looking for next pending task after ${completedWorkerId} completion`);
-    
-    // This would integrate with your task API to get next pending task
-    // For now, this is a placeholder
-    const response = await fetch('http://localhost:3000/api/tasks');
-    const tasksData = await response.json() as { data?: Array<{ id: string; content: string; status: string }> };
-    
-    const pendingTask = tasksData.data?.find((task) => task.status === 'pending');
-    
-    if (pendingTask) {
-      console.error(`🚀 Auto-starting next task: ${pendingTask.id}`);
-      
-      // Start new worker for next task
-      const startResponse = await fetch('http://localhost:3000/api/claude-workers/start', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          taskId: pendingTask.id,
-          taskContent: pendingTask.content
-        })
-      });
-      
-      if (startResponse.ok) {
-        console.error(`✅ Successfully started worker for task ${pendingTask.id}`);
-      }
-    } else {
-      console.error(`✅ No more pending tasks - all done!`);
-    }
-  } catch (error) {
-    console.error('Error auto-starting next task:', error);
-  }
-}
 
 export default router;
