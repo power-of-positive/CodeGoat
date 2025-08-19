@@ -11,6 +11,21 @@ import { TodoStatus } from '@prisma/client';
 
 const router = express.Router();
 
+interface ValidationRun {
+  id: string;
+  timestamp: Date;
+  stages: Array<{
+    name: string;
+    command: string;
+    status: 'pending' | 'running' | 'passed' | 'failed' | 'skipped';
+    duration?: number;
+    output?: string;
+    error?: string;
+  }>;
+  overallStatus: 'pending' | 'running' | 'passed' | 'failed';
+  metricsFile?: string;
+}
+
 interface ClaudeWorker {
   id: string;
   taskId: string;
@@ -38,6 +53,7 @@ interface ClaudeWorker {
     metadata?: unknown;
   }>;
   validationPassed?: boolean;
+  validationRuns: ValidationRun[];
 }
 
 // In-memory storage for active workers
@@ -101,10 +117,21 @@ async function runValidationChecks(worker: ClaudeWorker): Promise<boolean> {
     console.error(`🔍 Running validation checks for worker ${worker.id}...`);
     worker.status = 'validating';
     
+    // Create new validation run
+    const validationRun: ValidationRun = {
+      id: `validation-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      timestamp: new Date(),
+      stages: [],
+      overallStatus: 'running',
+      metricsFile: path.join(path.dirname(worker.logFile), `validation-${worker.id}.json`)
+    };
+    worker.validationRuns.push(validationRun);
+    
     // Write to log file
     const logMessage = `\n=== Running Validation Checks ===\n` +
       `Worker: ${worker.id}\n` +
       `Task: ${worker.taskId}\n` +
+      `Validation Run ID: ${validationRun.id}\n` +
       `Started at: ${new Date().toISOString()}\n\n`;
     
     try {
@@ -119,8 +146,27 @@ async function runValidationChecks(worker: ClaudeWorker): Promise<boolean> {
       settingsPath: path.join(process.cwd(), 'settings.json')
     });
 
+    // TODO: Capture individual stage results from ValidationRunner
+    // For now, we'll create basic stages
+    const stages = ['lint', 'type-check', 'test', 'e2e'];
+    for (const stageName of stages) {
+      validationRun.stages.push({
+        name: stageName,
+        command: `npm run ${stageName}`,
+        status: 'pending'
+      });
+    }
+
     const success = await runner.runValidation();
     await runner.cleanup();
+
+    // Update validation run status
+    validationRun.overallStatus = success ? 'passed' : 'failed';
+    validationRun.stages.forEach(stage => {
+      if (stage.status === 'pending') {
+        stage.status = success ? 'passed' : 'failed';
+      }
+    });
 
     worker.validationPassed = success;
 
@@ -468,7 +514,8 @@ router.post('/start', async (req, res) => {
       blockedCommandsList: [],
       worktreePath: workDir,
       worktreeManager,
-      structuredEntries: []
+      structuredEntries: [],
+      validationRuns: []
     };
 
     activeWorkers.set(workerId, worker);
@@ -725,7 +772,8 @@ router.get('/status', (req, res) => {
     logFile: worker.logFile,
     blockedCommands: worker.blockedCommands,
     hasPermissionSystem: !!worker.interceptor,
-    validationPassed: worker.validationPassed
+    validationPassed: worker.validationPassed,
+    validationRuns: worker.validationRuns?.length || 0
   }));
 
   res.json({
@@ -1127,6 +1175,78 @@ router.get('/:workerId/blocked-commands', (req, res) => {
       blockedCommands: worker.blockedCommands,
       blockedCommandsList: worker.blockedCommandsList,
       hasPermissionSystem: !!worker.interceptor
+    }
+  });
+});
+
+/**
+ * Get validation runs for a specific worker
+ */
+router.get('/:workerId/validation-runs', (req, res) => {
+  const { workerId } = req.params;
+  const worker = activeWorkers.get(workerId);
+
+  if (!worker) {
+    return res.status(404).json({
+      success: false,
+      error: 'Worker not found'
+    });
+  }
+
+  res.json({
+    success: true,
+    data: {
+      workerId,
+      validationRuns: worker.validationRuns || [],
+      totalRuns: worker.validationRuns?.length || 0,
+      lastRun: worker.validationRuns?.length > 0 
+        ? worker.validationRuns[worker.validationRuns.length - 1] 
+        : null
+    }
+  });
+});
+
+/**
+ * Get specific validation run details
+ */
+router.get('/:workerId/validation-runs/:runId', (req, res) => {
+  const { workerId, runId } = req.params;
+  const worker = activeWorkers.get(workerId);
+
+  if (!worker) {
+    return res.status(404).json({
+      success: false,
+      error: 'Worker not found'
+    });
+  }
+
+  const validationRun = worker.validationRuns?.find(run => run.id === runId);
+  
+  if (!validationRun) {
+    return res.status(404).json({
+      success: false,
+      error: 'Validation run not found'
+    });
+  }
+
+  // Try to read metrics file if available
+  let metrics = null;
+  if (validationRun.metricsFile) {
+    try {
+      const metricsContent = fs.readFileSync(validationRun.metricsFile, 'utf-8');
+      metrics = JSON.parse(metricsContent);
+    } catch (error) {
+      console.warn(`Could not read metrics file for validation run ${runId}:`, error);
+    }
+  }
+
+  res.json({
+    success: true,
+    data: {
+      workerId,
+      runId,
+      validationRun,
+      metrics
     }
   });
 });

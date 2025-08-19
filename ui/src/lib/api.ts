@@ -620,4 +620,52 @@ export const claudeWorkersApi = {
     hasPermissionSystem: boolean;
   }> =>
     request(`/claude-workers/${workerId}/blocked-commands`),
+
+  // Get validation runs for a worker
+  getValidationRuns: (workerId: string): Promise<{
+    workerId: string;
+    validationRuns: Array<{
+      id: string;
+      timestamp: string;
+      stages: Array<{
+        name: string;
+        command: string;
+        status: 'pending' | 'running' | 'passed' | 'failed' | 'skipped';
+        duration?: number;
+        output?: string;
+        error?: string;
+      }>;
+      overallStatus: 'pending' | 'running' | 'passed' | 'failed';
+      metricsFile?: string;
+    }>;
+    totalRuns: number;
+    lastRun: {
+      id: string;
+      timestamp: string;
+      overallStatus: 'pending' | 'running' | 'passed' | 'failed';
+    } | null;
+  }> =>
+    request(`/claude-workers/${workerId}/validation-runs`),
+
+  // Get specific validation run details
+  getValidationRunDetails: (workerId: string, runId: string): Promise<{
+    workerId: string;
+    runId: string;
+    validationRun: {
+      id: string;
+      timestamp: string;
+      stages: Array<{
+        name: string;
+        command: string;
+        status: 'pending' | 'running' | 'passed' | 'failed' | 'skipped';
+        duration?: number;
+        output?: string;
+        error?: string;
+      }>;
+      overallStatus: 'pending' | 'running' | 'passed' | 'failed';
+      metricsFile?: string;
+    };
+    metrics: unknown | null;
+  }> =>
+    request(`/claude-workers/${workerId}/validation-runs/${runId}`),
 };

@@ -76,11 +76,68 @@ export class CommandInterceptor {
   private permissionManager: PermissionManager;
   private logger: WinstonLogger;
   private worktreeDir: string;
+  private claudeDenyList: string[] = [];
 
   constructor(permissionManager: PermissionManager, logger: WinstonLogger, worktreeDir: string) {
     this.permissionManager = permissionManager;
     this.logger = logger;
     this.worktreeDir = worktreeDir;
+    this.loadClaudeDenyList();
+  }
+
+  /**
+   * Load deny list from .claude/settings.json
+   */
+  private async loadClaudeDenyList(): Promise<void> {
+    try {
+      const settingsPath = path.join(process.cwd(), '.claude', 'settings.json');
+      const settingsContent = await fs.readFile(settingsPath, 'utf-8');
+      const settings = JSON.parse(settingsContent);
+      
+      if (settings.permissions?.deny && Array.isArray(settings.permissions.deny)) {
+        this.claudeDenyList = settings.permissions.deny;
+        this.logger.info('Loaded Claude deny list', { count: this.claudeDenyList.length });
+      }
+    } catch (error) {
+      this.logger.warn('Could not load .claude/settings.json deny list', { error });
+    }
+  }
+
+  /**
+   * Check if command matches Claude deny list patterns
+   */
+  private matchesClaudeDenyPattern(command: string): { matches: boolean; pattern?: string } {
+    for (const denyPattern of this.claudeDenyList) {
+      // Handle Bash command patterns like "Bash(HUSKY=0*:"
+      if (denyPattern.startsWith('Bash(') && denyPattern.endsWith(':')) {
+        const bashPattern = denyPattern.slice(5, -1); // Remove "Bash(" and ":"
+        const regexPattern = bashPattern.replace(/\*/g, '.*'); // Convert * to regex .*
+        if (new RegExp(regexPattern).test(command)) {
+          return { matches: true, pattern: denyPattern };
+        }
+      }
+      
+      // Parse Update() patterns
+      const updateMatch = denyPattern.match(/^Update\((.+)\)$/);
+      if (updateMatch) {
+        const filePath = updateMatch[1];
+        // Check if command is trying to edit/write to this file
+        const fileEditPatterns = [
+          new RegExp(`\\b(vim|nano|emacs|code|subl)\\s+.*${filePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`),
+          new RegExp(`>\\s*${filePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`),
+          new RegExp(`>>\\s*${filePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`),
+          new RegExp(`\\becho\\s+.*>\\s*${filePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`),
+          new RegExp(`\\btee\\s+.*${filePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`),
+        ];
+        
+        for (const pattern of fileEditPatterns) {
+          if (pattern.test(command)) {
+            return { matches: true, pattern: denyPattern };
+          }
+        }
+      }
+    }
+    return { matches: false };
   }
 
   /**
@@ -89,7 +146,19 @@ export class CommandInterceptor {
   analyzeCommand(command: string): CommandAnalysisResult {
     const trimmedCommand = command.trim();
     
-    // Check for dangerous commands first
+    // Check Claude deny list first
+    const claudeDenyMatch = this.matchesClaudeDenyPattern(trimmedCommand);
+    if (claudeDenyMatch.matches) {
+      this.logger.warn('Command blocked by Claude deny list', { command: trimmedCommand, pattern: claudeDenyMatch.pattern });
+      return {
+        allowed: false,
+        reason: `❌ Command blocked by .claude/settings.json deny list: ${claudeDenyMatch.pattern}`,
+        severity: 'error',
+        suggestion: 'This operation is restricted by project configuration.'
+      };
+    }
+    
+    // Check for dangerous commands
     for (const dangerous of DANGEROUS_COMMANDS) {
       if (trimmedCommand.includes(dangerous)) {
         this.logger.warn('Dangerous command detected', { command: trimmedCommand, dangerous });
