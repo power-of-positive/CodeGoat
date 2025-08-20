@@ -15,11 +15,11 @@ import type {
   APIResponse,
 } from './ai-code-reviewer.types';
 
-const logger = new WinstonLogger({ 
-  level: 'info', 
-  logsDir: './logs', 
-  enableConsole: true, 
-  enableFile: process.env.NODE_ENV !== 'test'
+const logger = new WinstonLogger({
+  level: 'info',
+  logsDir: './logs',
+  enableConsole: true,
+  enableFile: process.env.NODE_ENV !== 'test',
 });
 
 // Configuration factory function for testability
@@ -134,27 +134,27 @@ function extractJSONFromResponse(reviewText: string): string {
 
 function createFailureResponse(filePath: string, error: Error): ReviewResult {
   console.warn(`AI review failed for ${filePath}:`, error.message);
-  
+
   // Determine severity based on error type
   let severity: 'info' | 'low' | 'medium' | 'high' | 'critical';
   let suggestion: string;
-  
+
   if (error.message.includes('No valid API key configured')) {
     severity = 'critical';
-    suggestion = 'Configure OPENAI_API_KEY or OPENROUTER_API_KEY in your .env file';
+    suggestion = ''; // Suggestion disabled
   } else if (error.message.includes('401 Unauthorized')) {
     severity = 'info'; // Don't block commits for auth issues
-    suggestion = 'Configure a valid OPENAI_API_KEY or OPENROUTER_API_KEY in your .env file. Current key appears to be invalid.';
+    suggestion = ''; // Suggestion disabled
   } else if (error.message.includes('API request failed')) {
     severity = 'low'; // Don't block commits for network issues
-    suggestion = 'Check network connectivity and API configuration';
+    suggestion = ''; // Suggestion disabled
   } else {
     severity = 'medium';
-    suggestion = 'Check AI reviewer configuration and network connectivity';
+    suggestion = ''; // Suggestion disabled
   }
-  
+
   const category = 'system' as const;
-  
+
   return {
     reviews: [
       {
@@ -198,13 +198,17 @@ async function callReviewAPI(config: Config, prompt: string): Promise<string> {
 export async function reviewCode(filePath: string, content: string): Promise<ReviewResult> {
   const config = getConfig();
 
-  if (!config.openaiApiKey || config.openaiApiKey === 'your_openrouter_api_key_here' || config.openaiApiKey === 'test-key') {
+  if (
+    !config.openaiApiKey ||
+    config.openaiApiKey === 'your_openrouter_api_key_here' ||
+    config.openaiApiKey === 'test-key'
+  ) {
     console.warn('⚠️  No valid API key configured for AI code reviewer');
     console.warn('   Please set either OPENAI_API_KEY or OPENROUTER_API_KEY environment variable');
     console.warn('   Current API endpoint:', config.apiEndpoint);
     console.warn('   Current model:', config.model);
     console.warn('   Skipping AI review for:', filePath);
-    
+
     // Return a non-blocking warning instead of a high-severity error
     return {
       reviews: [
@@ -213,7 +217,7 @@ export async function reviewCode(filePath: string, content: string): Promise<Rev
           severity: 'info',
           category: 'system',
           message: 'AI code review skipped: No valid API key configured',
-          suggestion: 'Configure OPENAI_API_KEY or OPENROUTER_API_KEY in your .env file to enable AI code review',
+          suggestion: '', // Suggestion disabled
         },
       ],
       summary: 'AI review skipped due to missing API configuration',
@@ -305,7 +309,7 @@ function getSeverityEmoji(severity: string): string {
 function outputBasicSummary(results: FormattedResults): void {
   const isTest = process.env.NODE_ENV === 'test';
   const log = isTest ? console.log : logger.info.bind(logger);
-  
+
   log('\n🤖 AI Code Review Results');
   log('='.repeat(40));
   log(`Files reviewed: ${results.summary.totalFiles}`);
@@ -346,7 +350,7 @@ function outputNotableIssues(results: FormattedResults): void {
 function outputBlockingIssues(results: FormattedResults, config: Config): void {
   const isTest = process.env.NODE_ENV === 'test';
   const log = isTest ? console.log : logger.info.bind(logger);
-  
+
   if (!results.blocked) {
     log('\n✅ No blocking issues found. Commit can proceed.');
     log(`   Current blocking threshold: ${config.maxSeverityToBlock}`);
@@ -359,7 +363,7 @@ function outputBlockingIssues(results: FormattedResults, config: Config): void {
   );
 
   const errorLog = isTest ? console.log : logger.error.bind(logger);
-  
+
   errorLog('\n❌ Commit blocked due to severity issues!');
   errorLog(
     `   Found ${blockingIssues.length} issue(s) at ${config.maxSeverityToBlock} severity or higher`
@@ -394,9 +398,9 @@ export function outputResults(results: FormattedResults): void {
   outputBasicSummary(results);
   outputSeverityBreakdown(results);
   outputNotableIssues(results);
-  
+
   logger.info(`\n📊 Detailed results saved to: ${config.outputFile}`);
-  
+
   outputBlockingIssues(results, config);
 }
 

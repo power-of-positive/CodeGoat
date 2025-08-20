@@ -1,6 +1,12 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { PermissionManager, ActionType, PermissionConfig, PermissionContext, DefaultPermissions } from './permissions';
+import {
+  PermissionManager,
+  ActionType,
+  PermissionConfig,
+  PermissionContext,
+  DefaultPermissions,
+} from './permissions';
 import { WinstonLogger } from '../logger-winston';
 
 /**
@@ -17,30 +23,45 @@ interface CommandPattern {
  */
 const COMMAND_PATTERNS: CommandPattern[] = [
   // File operations
-  { pattern: /^(cat|less|more|head|tail|grep|find|locate)\s+(.+)$/, action: ActionType.FILE_READ, targetIndex: 2 },
+  {
+    pattern: /^(cat|less|more|head|tail|grep|find|locate)\s+(.+)$/,
+    action: ActionType.FILE_READ,
+    targetIndex: 2,
+  },
   { pattern: /^(vim|nano|emacs|code|subl)\s+(.+)$/, action: ActionType.FILE_WRITE, targetIndex: 2 },
   { pattern: /^(echo|tee|printf)\s+.*>\s*(.+)$/, action: ActionType.FILE_WRITE, targetIndex: 2 },
   { pattern: /^(cp|mv|rsync)\s+.*\s+(.+)$/, action: ActionType.FILE_WRITE, targetIndex: 2 },
   { pattern: /^(rm|unlink)\s+(.+)$/, action: ActionType.FILE_DELETE, targetIndex: 2 },
   { pattern: /^(mkdir|mktemp)\s+(.+)$/, action: ActionType.DIRECTORY_CREATE, targetIndex: 2 },
-  { pattern: /^(rmdir|rm\s+-r|rm\s+-rf)\s+(.+)$/, action: ActionType.DIRECTORY_DELETE, targetIndex: 2 },
-  
+  {
+    pattern: /^(rmdir|rm\s+-r|rm\s+-rf)\s+(.+)$/,
+    action: ActionType.DIRECTORY_DELETE,
+    targetIndex: 2,
+  },
+
   // Network operations
-  { pattern: /^(curl|wget|http|fetch)\s+(.+)$/, action: ActionType.NETWORK_REQUEST, targetIndex: 2 },
+  {
+    pattern: /^(curl|wget|http|fetch)\s+(.+)$/,
+    action: ActionType.NETWORK_REQUEST,
+    targetIndex: 2,
+  },
   { pattern: /^(nc|netcat|socat)\s+.*-l.*$/, action: ActionType.NETWORK_LISTEN, targetIndex: 0 },
-  
+
   // Process operations
   { pattern: /^(kill|killall|pkill)\s+(.+)$/, action: ActionType.PROCESS_KILL, targetIndex: 2 },
-  
+
   // System commands
   { pattern: /^(sudo|su)\s+(.+)$/, action: ActionType.SYSTEM_COMMAND, targetIndex: 1 },
   { pattern: /^(chmod|chown|chgrp)\s+(.+)$/, action: ActionType.SYSTEM_COMMAND, targetIndex: 2 },
-  { pattern: /^(service|systemctl|launchctl)\s+(.+)$/, action: ActionType.SYSTEM_COMMAND, targetIndex: 2 },
-  
+  {
+    pattern: /^(service|systemctl|launchctl)\s+(.+)$/,
+    action: ActionType.SYSTEM_COMMAND,
+    targetIndex: 2,
+  },
+
   // Environment operations
   { pattern: /^(export|unset)\s+(.+)$/, action: ActionType.ENVIRONMENT_WRITE, targetIndex: 2 },
 ];
-
 
 /**
  * Result of command analysis
@@ -78,13 +99,13 @@ export class CommandInterceptor {
       const settingsPath = path.join(process.cwd(), '.claude', 'settings.json');
       const settingsContent = await fs.readFile(settingsPath, 'utf-8');
       const settings = JSON.parse(settingsContent);
-      
+
       if (settings.permissions?.deny && Array.isArray(settings.permissions.deny)) {
         this.claudeDenyList = settings.permissions.deny;
-        this.logger.info('Loaded Claude deny list', { count: this.claudeDenyList.length });
+        // Deny list loading info disabled
       }
-    } catch (error) {
-      this.logger.warn('Could not load .claude/settings.json deny list', { error });
+    } catch {
+      // Settings loading warning disabled
     }
   }
 
@@ -101,20 +122,22 @@ export class CommandInterceptor {
           return { matches: true, pattern: denyPattern };
         }
       }
-      
+
       // Parse Update() patterns
       const updateMatch = denyPattern.match(/^Update\((.+)\)$/);
       if (updateMatch) {
         const filePath = updateMatch[1];
         // Check if command is trying to edit/write to this file
         const fileEditPatterns = [
-          new RegExp(`\\b(vim|nano|emacs|code|subl)\\s+.*${filePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`),
+          new RegExp(
+            `\\b(vim|nano|emacs|code|subl)\\s+.*${filePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`
+          ),
           new RegExp(`>\\s*${filePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`),
           new RegExp(`>>\\s*${filePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`),
           new RegExp(`\\becho\\s+.*>\\s*${filePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`),
           new RegExp(`\\btee\\s+.*${filePath.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`),
         ];
-        
+
         for (const pattern of fileEditPatterns) {
           if (pattern.test(command)) {
             return { matches: true, pattern: denyPattern };
@@ -130,16 +153,16 @@ export class CommandInterceptor {
    */
   analyzeCommand(command: string): CommandAnalysisResult {
     const trimmedCommand = command.trim();
-    
+
     // Check Claude deny list first (only use user-defined deny list)
     const claudeDenyMatch = this.matchesClaudeDenyPattern(trimmedCommand);
     if (claudeDenyMatch.matches) {
-      this.logger.warn('Command blocked by Claude deny list', { command: trimmedCommand, pattern: claudeDenyMatch.pattern });
+      // Command blocking log disabled
       return {
         allowed: false,
         reason: `❌ Command blocked by .claude/settings.json deny list: ${claudeDenyMatch.pattern}`,
         severity: 'error',
-        suggestion: 'This operation is restricted by project configuration.'
+        // Suggestion removed to reduce noise
       };
     }
 
@@ -148,17 +171,17 @@ export class CommandInterceptor {
       const match = trimmedCommand.match(pattern.pattern);
       if (match) {
         const target = match[pattern.targetIndex] || trimmedCommand; // Extract target path/argument
-        
+
         // Check permission
         const context: PermissionContext = {
           action: pattern.action,
           target: this.resolveTarget(target),
           worktreeDir: this.worktreeDir,
-          additionalData: { originalCommand: command }
+          additionalData: { originalCommand: command },
         };
 
         const permissionResult = this.permissionManager.checkPermission(context);
-        
+
         if (!permissionResult.allowed) {
           return {
             allowed: false,
@@ -166,7 +189,7 @@ export class CommandInterceptor {
             action: pattern.action,
             target,
             severity: 'error',
-            suggestion: this.generateSuggestion(pattern.action, target, permissionResult.reason)
+            // Suggestion removed to reduce noise
           };
         }
 
@@ -176,7 +199,7 @@ export class CommandInterceptor {
           reason: `✅ Command permitted: ${permissionResult.reason}`,
           action: pattern.action,
           target,
-          severity: 'info'
+          severity: 'info',
         };
       }
     }
@@ -186,11 +209,11 @@ export class CommandInterceptor {
       action: ActionType.SYSTEM_COMMAND,
       target: trimmedCommand.split(' ')[0], // First word is the command
       worktreeDir: this.worktreeDir,
-      additionalData: { originalCommand: command }
+      additionalData: { originalCommand: command },
     };
 
     const permissionResult = this.permissionManager.checkPermission(context);
-    
+
     if (!permissionResult.allowed) {
       return {
         allowed: false,
@@ -198,7 +221,7 @@ export class CommandInterceptor {
         action: ActionType.SYSTEM_COMMAND,
         target: context.target,
         severity: 'error',
-        suggestion: this.generateSuggestion(ActionType.SYSTEM_COMMAND, context.target || '', permissionResult.reason)
+        // Suggestion removed to reduce noise
       };
     }
 
@@ -209,7 +232,7 @@ export class CommandInterceptor {
       action: ActionType.SYSTEM_COMMAND,
       target: context.target,
       severity: 'warning',
-      suggestion: 'Be cautious with unrecognized commands. Consider adding specific permission rules.'
+      // Suggestion removed to reduce noise
     };
   }
 
@@ -218,46 +241,32 @@ export class CommandInterceptor {
    */
   private resolveTarget(target: string): string {
     if (!target) return '';
-    
+
     // Handle relative paths
     if (!path.isAbsolute(target)) {
       return path.join(this.worktreeDir, target);
     }
-    
+
     return target;
   }
 
   /**
-   * Generate helpful suggestions for blocked commands
+   * Generate helpful suggestions for blocked commands (disabled)
    */
-  private generateSuggestion(action: ActionType, target: string, _reason: string): string {
-    switch (action) {
-      case ActionType.FILE_WRITE:
-        return `Consider creating the file in an allowed directory, or ask an administrator to whitelist "${target}"`;
-      
-      case ActionType.FILE_DELETE:
-        return `Deletion of "${target}" is restricted. Use version control for file management instead.`;
-      
-      case ActionType.SYSTEM_COMMAND:
-        return `System command blocked for security. Check with administrator about permission rules.`;
-      
-      case ActionType.NETWORK_REQUEST:
-        return `Network access to "${target}" is restricted. Consider using allowed endpoints only.`;
-      
-      case ActionType.DIRECTORY_CREATE:
-        return `Directory creation at "${target}" not allowed. Use designated working directories.`;
-      
-      default:
-        return `Contact administrator to review permission rules for this operation.`;
-    }
+  private generateSuggestion(_action: ActionType, _target: string, _reason: string): string {
+    // Suggestions disabled to reduce noise
+    return '';
   }
 
   /**
    * Create command interceptor with default configuration
    */
-  static async createDefault(logger: WinstonLogger, worktreeDir: string): Promise<CommandInterceptor> {
+  static async createDefault(
+    logger: WinstonLogger,
+    worktreeDir: string
+  ): Promise<CommandInterceptor> {
     const permissionsConfigPath = path.join(process.cwd(), 'permissions-config.json');
-    
+
     let config: PermissionConfig;
     try {
       const data = await fs.readFile(permissionsConfigPath, 'utf-8');
@@ -266,7 +275,7 @@ export class CommandInterceptor {
       // Use restrictive default if no config exists
       config = DefaultPermissions.development(); // More permissive for development
     }
-    
+
     const permissionManager = new PermissionManager(config, logger);
     return new CommandInterceptor(permissionManager, logger, worktreeDir);
   }
@@ -277,15 +286,13 @@ export class CommandInterceptor {
  */
 export function formatCommandAnalysis(result: CommandAnalysisResult): string {
   const lines = [result.reason];
-  
+
   if (result.action && result.target) {
     lines.push(`Action: ${result.action}`);
     lines.push(`Target: ${result.target}`);
   }
-  
-  if (result.suggestion) {
-    lines.push(`💡 Suggestion: ${result.suggestion}`);
-  }
-  
+
+  // Suggestions disabled to reduce noise
+
   return lines.join('\n');
 }

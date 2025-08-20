@@ -52,7 +52,7 @@ describe('AI Code Reviewer', () => {
     it('should block on medium severity when configured for medium', () => {
       // Explicitly set the severity level to ensure test consistency
       process.env.AI_REVIEWER_MAX_SEVERITY = 'medium';
-      
+
       const reviews: ReviewItem[] = [
         {
           line: 10,
@@ -75,7 +75,7 @@ describe('AI Code Reviewer', () => {
     it('should not block on low severity when configured for medium', () => {
       // Explicitly set the severity level to ensure test consistency
       process.env.AI_REVIEWER_MAX_SEVERITY = 'medium';
-      
+
       const reviews: ReviewItem[] = [
         {
           line: 10,
@@ -98,7 +98,7 @@ describe('AI Code Reviewer', () => {
     it('should block on high severity when configured for medium', () => {
       // Explicitly set the severity level to ensure test consistency
       process.env.AI_REVIEWER_MAX_SEVERITY = 'medium';
-      
+
       const reviews: ReviewItem[] = [
         {
           line: 10,
@@ -115,7 +115,7 @@ describe('AI Code Reviewer', () => {
     it('should block on critical severity when configured for medium', () => {
       // Explicitly set the severity level to ensure test consistency
       process.env.AI_REVIEWER_MAX_SEVERITY = 'medium';
-      
+
       const reviews: ReviewItem[] = [
         {
           line: 5,
@@ -157,7 +157,7 @@ describe('AI Code Reviewer', () => {
     it('should handle empty reviews', () => {
       // Explicitly set the severity level to ensure test consistency
       process.env.AI_REVIEWER_MAX_SEVERITY = 'medium';
-      
+
       const reviews: ReviewItem[] = [];
       const result = shouldBlockCommit(reviews);
       expect(result).toBe(false); // No issues, no blocking
@@ -168,7 +168,7 @@ describe('AI Code Reviewer', () => {
     it('should correctly format results and identify blocking status', () => {
       // Explicitly set the severity level to ensure test consistency
       process.env.AI_REVIEWER_MAX_SEVERITY = 'medium';
-      
+
       const fileResults: FileReviewResult[] = [
         {
           file: 'src/index.ts',
@@ -248,7 +248,6 @@ describe('AI Code Reviewer', () => {
   });
 
   describe('Config', () => {
-
     it('should default to medium severity blocking', () => {
       delete process.env.AI_REVIEWER_MAX_SEVERITY;
       const config = getConfig();
@@ -378,7 +377,7 @@ describe('AI Code Reviewer', () => {
       delete process.env.OPENROUTER_API_KEY;
 
       const result = await reviewCode('test.ts', 'const x = 1;');
-      
+
       expect(result).toEqual({
         reviews: [
           {
@@ -386,7 +385,7 @@ describe('AI Code Reviewer', () => {
             severity: 'info',
             category: 'system',
             message: 'AI code review skipped: No valid API key configured',
-            suggestion: 'Configure OPENAI_API_KEY or OPENROUTER_API_KEY in your .env file to enable AI code review',
+            suggestion: '', // Suggestions disabled
           },
         ],
         summary: 'AI review skipped due to missing API configuration',
@@ -396,7 +395,7 @@ describe('AI Code Reviewer', () => {
     it('should make API call and parse response', async () => {
       // Ensure we have a valid API key for this test
       process.env.OPENAI_API_KEY = 'test-key-valid';
-      
+
       const mockResponse = {
         reviews: [
           {
@@ -440,7 +439,7 @@ describe('AI Code Reviewer', () => {
     it('should handle API errors gracefully', async () => {
       // Set valid API key to ensure we actually call the API
       process.env.OPENAI_API_KEY = 'test-key-valid';
-      
+
       global.fetch = jest.fn().mockRejectedValue(new Error('Network error'));
 
       const result = await reviewCode('test.ts', 'const x = 1;');
@@ -452,7 +451,7 @@ describe('AI Code Reviewer', () => {
             severity: 'medium',
             category: 'system',
             message: 'AI review failed: Network error',
-            suggestion: 'Check AI reviewer configuration and network connectivity',
+            suggestion: '', // Suggestions disabled
           },
         ],
         summary: 'Review failed due to technical issue',
@@ -462,7 +461,7 @@ describe('AI Code Reviewer', () => {
     it('should handle invalid JSON response', async () => {
       // Set valid API key to ensure we actually call the API
       process.env.OPENAI_API_KEY = 'test-key-valid';
-      
+
       global.fetch = jest.fn().mockResolvedValue({
         ok: true,
         json: jest.fn().mockResolvedValue({
@@ -485,7 +484,7 @@ describe('AI Code Reviewer', () => {
             severity: 'medium',
             category: 'system',
             message: expect.stringContaining('AI review failed:'),
-            suggestion: 'Check AI reviewer configuration and network connectivity',
+            suggestion: '', // Suggestions disabled
           },
         ],
         summary: 'Review failed due to technical issue',

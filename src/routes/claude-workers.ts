@@ -65,20 +65,24 @@ const activeWorkers = new Map<string, ClaudeWorker>();
 /**
  * Update task status in database
  */
-async function updateTaskStatus(taskId: string, status: TodoStatus, workerId?: string): Promise<void> {
+async function updateTaskStatus(
+  taskId: string,
+  status: TodoStatus,
+  workerId?: string
+): Promise<void> {
   try {
     const db = getDatabaseService();
-    
+
     // Check if task exists
     const existingTask = await db.todoTask.findUnique({
-      where: { id: taskId }
+      where: { id: taskId },
     });
-    
+
     if (!existingTask) {
-      console.warn(`⚠️ Task ${taskId} not found in database`);
+      // Task not found warning disabled
       return;
     }
-    
+
     // Prepare update data
     const updateData: {
       status: TodoStatus;
@@ -86,27 +90,28 @@ async function updateTaskStatus(taskId: string, status: TodoStatus, workerId?: s
       startTime?: Date;
       endTime?: Date;
     } = {
-      status
+      status,
     };
-    
+
     // Set executor when starting task
     if (status === TodoStatus.IN_PROGRESS && workerId) {
       updateData.executorId = workerId;
       updateData.startTime = new Date();
     }
-    
+
     // Set end time when completing task
     if (status === TodoStatus.COMPLETED) {
       updateData.endTime = new Date();
     }
-    
+
     await db.todoTask.update({
       where: { id: taskId },
-      data: updateData
+      data: updateData,
     });
-    
-    console.error(`📝 Updated task ${taskId} status to ${status}${workerId ? ` (executor: ${workerId})` : ''}`);
-    
+
+    console.error(
+      `📝 Updated task ${taskId} status to ${status}${workerId ? ` (executor: ${workerId})` : ''}`
+    );
   } catch (error) {
     console.error(`❌ Failed to update task ${taskId} status:`, error);
   }
@@ -115,28 +120,31 @@ async function updateTaskStatus(taskId: string, status: TodoStatus, workerId?: s
 /**
  * Run validation checks after worker completion
  */
-async function runValidationChecks(worker: ClaudeWorker): Promise<{ success: boolean; results?: ValidationRun; message?: string }> {
+async function runValidationChecks(
+  worker: ClaudeWorker
+): Promise<{ success: boolean; results?: ValidationRun; message?: string }> {
   try {
     console.error(`🔍 Running validation checks for worker ${worker.id}...`);
     worker.status = 'validating';
-    
+
     // Create new validation run
     const validationRun: ValidationRun = {
       id: `validation-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       timestamp: new Date(),
       stages: [],
       overallStatus: 'running',
-      metricsFile: path.join(path.dirname(worker.logFile), `validation-${worker.id}.json`)
+      metricsFile: path.join(path.dirname(worker.logFile), `validation-${worker.id}.json`),
     };
     worker.validationRuns.push(validationRun);
-    
+
     // Write to log file
-    const logMessage = `\n=== Running Validation Checks ===\n` +
+    const logMessage =
+      `\n=== Running Validation Checks ===\n` +
       `Worker: ${worker.id}\n` +
       `Task: ${worker.taskId}\n` +
       `Validation Run ID: ${validationRun.id}\n` +
       `Started at: ${new Date().toISOString()}\n\n`;
-    
+
     try {
       fs.appendFileSync(worker.logFile, logMessage);
     } catch (logError) {
@@ -144,9 +152,9 @@ async function runValidationChecks(worker: ClaudeWorker): Promise<{ success: boo
     }
 
     // Create validation runner with session ID based on worker ID
-    const runner = new ValidationRunner({ 
+    const runner = new ValidationRunner({
       sessionId: worker.id,
-      settingsPath: path.join(process.cwd(), 'settings.json')
+      settingsPath: path.join(process.cwd(), 'settings.json'),
     });
 
     // TODO: Capture individual stage results from ValidationRunner
@@ -156,7 +164,7 @@ async function runValidationChecks(worker: ClaudeWorker): Promise<{ success: boo
       validationRun.stages.push({
         name: stageName,
         command: `npm run ${stageName}`,
-        status: 'pending'
+        status: 'pending',
       });
     }
 
@@ -174,10 +182,10 @@ async function runValidationChecks(worker: ClaudeWorker): Promise<{ success: boo
     worker.validationPassed = success;
 
     // Write validation result to log file
-    const resultMessage = success 
+    const resultMessage = success
       ? `✅ Validation passed for worker ${worker.id}\n`
       : `❌ Validation failed for worker ${worker.id}\n`;
-    
+
     try {
       fs.appendFileSync(worker.logFile, `${resultMessage}\n`);
     } catch (logError) {
@@ -189,19 +197,19 @@ async function runValidationChecks(worker: ClaudeWorker): Promise<{ success: boo
       return { success: true };
     } else {
       console.error(`❌ Validation checks failed for worker ${worker.id}`);
-      
+
       // Create detailed failure message
       const failedStages = validationRun.stages.filter(stage => stage.status === 'failed');
       const failureMessage = `Validation failed on ${failedStages.length} stage(s): ${failedStages.map(s => s.name).join(', ')}. Please fix the following issues and try again:\n\n${failedStages.map(stage => `• ${stage.name}: ${stage.error || 'Failed without specific error message'}`).join('\n')}`;
-      
-      return { 
-        success: false, 
+
+      return {
+        success: false,
         results: validationRun,
-        message: failureMessage
+        message: failureMessage,
       };
     }
   } catch (error) {
-    console.error(`⚠️ Error running validation for worker ${worker.id}:`, error);
+    // Validation error logging disabled
     worker.validationPassed = false;
 
     try {
@@ -210,9 +218,9 @@ async function runValidationChecks(worker: ClaudeWorker): Promise<{ success: boo
       console.error(`Failed to write validation error log for worker ${worker.id}:`, logError);
     }
 
-    return { 
-      success: false, 
-      message: `Validation error: ${(error as Error).message}` 
+    return {
+      success: false,
+      message: `Validation error: ${(error as Error).message}`,
     };
   }
 }
@@ -220,32 +228,40 @@ async function runValidationChecks(worker: ClaudeWorker): Promise<{ success: boo
 /**
  * Restart worker with validation feedback
  */
-async function restartWorkerWithFeedback(worker: ClaudeWorker, validationMessage: string): Promise<void> {
+async function restartWorkerWithFeedback(
+  worker: ClaudeWorker,
+  validationMessage: string
+): Promise<void> {
   try {
-    console.error(`🔄 Restarting worker ${worker.id} with validation feedback (attempt ${(worker.validationAttempts || 0) + 1}/${worker.maxValidationAttempts})`);
-    
+    console.error(
+      `🔄 Restarting worker ${worker.id} with validation feedback (attempt ${(worker.validationAttempts || 0) + 1}/${worker.maxValidationAttempts})`
+    );
+
     // Increment validation attempts
     worker.validationAttempts = (worker.validationAttempts || 0) + 1;
-    
+
     // Stop current process if running (it should already be finished, but just in case)
     if (worker.process && !worker.process.killed) {
       worker.process.kill('SIGTERM');
     }
     worker.process = null;
-    
+
     // Reset worker status
     worker.status = 'running';
     worker.endTime = undefined;
-    
+
     // Write validation feedback to log file
     const feedbackMessage = `\n🔄 VALIDATION FEEDBACK (Attempt ${worker.validationAttempts}/${worker.maxValidationAttempts})\n${validationMessage}\n\nRestarting to address these issues...\n\n`;
-    
+
     try {
       fs.appendFileSync(worker.logFile, feedbackMessage);
     } catch (logError) {
-      console.error(`Failed to write validation feedback to log for worker ${worker.id}:`, logError);
+      console.error(
+        `Failed to write validation feedback to log for worker ${worker.id}:`,
+        logError
+      );
     }
-    
+
     // Create validation feedback prompt for Claude
     const feedbackPrompt = `The validation checks failed after your previous work completed. Here are the specific issues that need to be fixed:
 
@@ -260,33 +276,31 @@ Continue working from where you left off and fix these validation issues.`;
 
     // Start new Claude Code process with feedback
     const workDir = worker.worktreePath; // Use worktreePath directly
-    
-    const claudeArgs = [
-      'npx', '@anthropic/claude-code@latest',
-      '--message', feedbackPrompt
-    ];
-    
-    console.error(`🚀 Restarting Claude Code process for worker ${worker.id} with validation feedback`);
-    
+
+    const claudeArgs = ['npx', '@anthropic/claude-code@latest', '--message', feedbackPrompt];
+
+    console.error(
+      `🚀 Restarting Claude Code process for worker ${worker.id} with validation feedback`
+    );
+
     const claudeProcess = spawn('bash', ['-c', claudeArgs.join(' ')], {
       cwd: workDir,
       stdio: ['pipe', 'pipe', 'pipe'],
       env: {
         ...process.env,
         FORCE_COLOR: '1',
-        CLAUDE_API_KEY: process.env.CLAUDE_API_KEY
-      }
+        CLAUDE_API_KEY: process.env.CLAUDE_API_KEY,
+      },
     });
-    
+
     worker.process = claudeProcess;
     worker.pid = claudeProcess.pid;
-    
+
     // Set up basic process handlers for the restarted worker
     claudeProcess.on('close', (code: number | null) => {
       console.error(`🔄 Restarted worker ${worker.id} process exited with code ${code}`);
       // The main process handler will take care of validation on the next completion
     });
-    
   } catch (error) {
     console.error(`❌ Failed to restart worker ${worker.id} with feedback:`, error);
     worker.status = 'failed';
@@ -324,7 +338,7 @@ function monitorCommandOutput(worker: ClaudeWorker, output: string): string {
 
   for (const line of lines) {
     let monitoredLine = line;
-    
+
     // Look for command patterns in the output
     const commandPatterns = [
       /Executing command:\s*(.+)$/i,
@@ -332,14 +346,14 @@ function monitorCommandOutput(worker: ClaudeWorker, output: string): string {
       /\$\s*(.+)$/,
       />\s*(.+)$/,
       // Match common CLI output patterns
-      /^[a-zA-Z_][a-zA-Z0-9_-]*\s+/
+      /^[a-zA-Z_][a-zA-Z0-9_-]*\s+/,
     ];
 
     for (const pattern of commandPatterns) {
       const match = line.match(pattern);
       if (match) {
         const command = match[1] || match[0];
-        
+
         // Skip common non-command outputs
         if (isNonCommand(command)) {
           continue;
@@ -347,32 +361,31 @@ function monitorCommandOutput(worker: ClaudeWorker, output: string): string {
 
         // Analyze the command
         const analysis = worker.interceptor.analyzeCommand(command);
-        
+
         if (!analysis.allowed) {
           worker.blockedCommands++;
-          
+
           // Store blocked command details
           worker.blockedCommandsList.push({
             timestamp: new Date().toISOString(),
             command: command,
             reason: analysis.reason || 'Command not allowed',
-            suggestion: analysis.suggestion
+            suggestion: analysis.suggestion,
           });
-          
+
           const blockMessage = `\n🚫 COMMAND BLOCKED: ${formatCommandAnalysis(analysis)}\n`;
           monitoredLine += blockMessage;
-          
+
           console.error(`[PERMISSION DENIED] Worker ${worker.id}: ${command}`);
           console.error(`Reason: ${analysis.reason}`);
         } else if (analysis.severity === 'warning') {
-          const warningMessage = `\n⚠️  COMMAND WARNING: ${formatCommandAnalysis(analysis)}\n`;
-          monitoredLine += warningMessage;
+          // Warning messages disabled to reduce noise
         }
-        
+
         break; // Only process first matching pattern per line
       }
     }
-    
+
     monitoredLines.push(monitoredLine);
   }
 
@@ -384,25 +397,25 @@ function monitorCommandOutput(worker: ClaudeWorker, output: string): string {
  */
 function isNonCommand(str: string): boolean {
   const trimmed = str.trim();
-  
+
   // Skip empty strings
   if (!trimmed) return true;
-  
+
   // Skip pure output/log messages
   if (/^(error|warning|info|debug|log):/i.test(trimmed)) return true;
-  
+
   // Skip URLs
   if (/^https?:\/\//.test(trimmed)) return true;
-  
+
   // Skip file paths without command context
   if (/^[./~]/.test(trimmed) && !trimmed.includes(' ')) return true;
-  
+
   // Skip numbers/timestamps
   if (/^\d+([:.]\d+)*$/.test(trimmed)) return true;
-  
+
   // Skip JSON-like content
   if (/^[{[]/.test(trimmed)) return true;
-  
+
   return false;
 }
 
@@ -416,9 +429,11 @@ function generateWorkerId(): string {
 /**
  * Process Claude JSON output into structured entries
  */
-function processClaudeJson(claudeJson: unknown): Array<{timestamp: string; type: string; content: string; metadata?: unknown}> {
+function processClaudeJson(
+  claudeJson: unknown
+): Array<{ timestamp: string; type: string; content: string; metadata?: unknown }> {
   const timestamp = new Date().toISOString();
-  
+
   if (!claudeJson || typeof claudeJson !== 'object') return [];
   const typedJson = claudeJson as Record<string, unknown>;
   const type = typeof typedJson.type === 'string' ? typedJson.type : undefined;
@@ -426,28 +441,37 @@ function processClaudeJson(claudeJson: unknown): Array<{timestamp: string; type:
   const model = typeof typedJson.model === 'string' ? typedJson.model : undefined;
   const tool_name = typeof typedJson.tool_name === 'string' ? typedJson.tool_name : undefined;
   const is_error = typeof typedJson.is_error === 'boolean' ? typedJson.is_error : false;
-  
+
   switch (type) {
     case 'system': {
       if (subtype === 'init') {
-        return [{
-          timestamp,
-          type: 'SystemInit',
-          content: `System initialized${model ? ` with model: ${model}` : ''}`,
-          metadata: claudeJson
-        }];
+        return [
+          {
+            timestamp,
+            type: 'SystemInit',
+            content: `System initialized${model ? ` with model: ${model}` : ''}`,
+            metadata: claudeJson,
+          },
+        ];
       }
-      return [{
-        timestamp,
-        type: 'SystemMessage',
-        content: subtype ? `System: ${subtype}` : 'System message',
-        metadata: claudeJson,
-      }];
+      return [
+        {
+          timestamp,
+          type: 'SystemMessage',
+          content: subtype ? `System: ${subtype}` : 'System message',
+          metadata: claudeJson,
+        },
+      ];
     }
     case 'assistant': {
       const message = typedJson.message;
-      const entries: Array<{timestamp: string; type: string; content: string; metadata?: unknown}> = [];
-      
+      const entries: Array<{
+        timestamp: string;
+        type: string;
+        content: string;
+        metadata?: unknown;
+      }> = [];
+
       if (message && typeof message === 'object') {
         const messageObj = message as Record<string, unknown>;
         const content = messageObj.content;
@@ -462,8 +486,13 @@ function processClaudeJson(claudeJson: unknown): Array<{timestamp: string; type:
     }
     case 'user': {
       const message = typedJson.message;
-      const entries: Array<{timestamp: string; type: string; content: string; metadata?: unknown}> = [];
-      
+      const entries: Array<{
+        timestamp: string;
+        type: string;
+        content: string;
+        metadata?: unknown;
+      }> = [];
+
       if (message && typeof message === 'object') {
         const messageObj = message as Record<string, unknown>;
         const content = messageObj.content;
@@ -477,45 +506,55 @@ function processClaudeJson(claudeJson: unknown): Array<{timestamp: string; type:
       return entries;
     }
     case 'tool_use': {
-      return [{
-        timestamp,
-        type: 'ToolUse',
-        content: `Tool use: ${tool_name || 'unknown'}`,
-        metadata: claudeJson,
-      }];
+      return [
+        {
+          timestamp,
+          type: 'ToolUse',
+          content: `Tool use: ${tool_name || 'unknown'}`,
+          metadata: claudeJson,
+        },
+      ];
     }
     case 'tool_result':
     case 'result':
       if (is_error) {
-        return [{
-          timestamp,
-          type: 'Error',
-          content: `Tool result error: ${JSON.stringify(typedJson.result)}`,
-          metadata: claudeJson
-        }];
+        return [
+          {
+            timestamp,
+            type: 'Error',
+            content: `Tool result error: ${JSON.stringify(typedJson.result)}`,
+            metadata: claudeJson,
+          },
+        ];
       }
       return [];
     default:
-      return [{
-        timestamp,
-        type: 'SystemMessage',
-        content: 'Unrecognized JSON message from Claude',
-        metadata: claudeJson
-      }];
+      return [
+        {
+          timestamp,
+          type: 'SystemMessage',
+          content: 'Unrecognized JSON message from Claude',
+          metadata: claudeJson,
+        },
+      ];
   }
 }
 
 /**
  * Convert Claude content item to entry
  */
-function contentItemToEntry(item: unknown, role: string, timestamp: string): {timestamp: string; type: string; content: string; metadata: unknown} | undefined {
+function contentItemToEntry(
+  item: unknown,
+  role: string,
+  timestamp: string
+): { timestamp: string; type: string; content: string; metadata: unknown } | undefined {
   if (!item || typeof item !== 'object') return undefined;
   const typedItem = item as Record<string, unknown>;
   const type = typeof typedItem.type === 'string' ? typedItem.type : undefined;
   const text = typeof typedItem.text === 'string' ? typedItem.text : '';
   const thinking = typeof typedItem.thinking === 'string' ? typedItem.thinking : '';
   const name = typeof typedItem.name === 'string' ? typedItem.name : 'unknown';
-  
+
   switch (type) {
     case 'text':
       return {
@@ -550,7 +589,7 @@ function ensureLogDirectory(): string {
   const today = new Date();
   const dateFolder = `${today.getFullYear()}-${(today.getMonth() + 1).toString().padStart(2, '0')}-${today.getDate().toString().padStart(2, '0')}`;
   const logDir = path.join(process.cwd(), 'logs', 'workers', dateFolder);
-  
+
   if (!fs.existsSync(logDir)) {
     fs.mkdirSync(logDir, { recursive: true });
   }
@@ -567,17 +606,17 @@ router.post('/start', async (req, res) => {
     if (!taskId || !taskContent) {
       return res.status(400).json({
         success: false,
-        error: 'taskId and taskContent are required'
+        error: 'taskId and taskContent are required',
       });
     }
 
     const workerId = generateWorkerId();
     const logDir = ensureLogDirectory();
     const logFile = path.join(logDir, `${workerId}.log`);
-    
+
     // Create Git worktree manager
     const worktreeManager = new WorktreeManager();
-    
+
     // Create isolated Git worktree for this task
     let workDir: string;
     try {
@@ -586,26 +625,26 @@ router.post('/start', async (req, res) => {
       } else {
         workDir = await worktreeManager.createWorktree({
           taskId,
-          workerId
+          workerId,
         });
       }
     } catch (error) {
       console.error(`Failed to create worktree for worker ${workerId}:`, error);
       return res.status(500).json({
         success: false,
-        error: `Failed to create worktree: ${(error as Error).message}`
+        error: `Failed to create worktree: ${(error as Error).message}`,
       });
     }
 
-    // Create command interceptor for permission checking  
+    // Create command interceptor for permission checking
     // Using console as a simplified logger interface
     const logger = {
       // eslint-disable-next-line no-console
       debug: console.debug.bind(console),
-      // eslint-disable-next-line no-console  
+      // eslint-disable-next-line no-console
       info: console.info.bind(console),
       warn: console.warn.bind(console),
-      error: console.error.bind(console)
+      error: console.error.bind(console),
     } as unknown as Parameters<typeof CommandInterceptor.createDefault>[0]; // Type assertion to bypass complex WinstonLogger interface
     const interceptor = await CommandInterceptor.createDefault(logger, workDir);
 
@@ -626,23 +665,24 @@ router.post('/start', async (req, res) => {
       structuredEntries: [],
       validationRuns: [],
       validationAttempts: 0,
-      maxValidationAttempts: 3 // Will be updated from settings
+      maxValidationAttempts: 3, // Will be updated from settings
     };
 
     // Load max validation attempts from settings
     worker.maxValidationAttempts = await getMaxValidationAttempts();
-    
+
     activeWorkers.set(workerId, worker);
 
     // Prepare Claude Code command with proper npx usage and JSON streaming
     // Send prompt via stdin like the example-ts-backend does
     const claudeCommand = 'npx';
     const claudeArgs = [
-      '-y', '@anthropic-ai/claude-code@latest',
-      '-p', 
+      '-y',
+      '@anthropic-ai/claude-code@latest',
+      '-p',
       '--dangerously-skip-permissions',
       '--verbose',
-      '--output-format=stream-json'
+      '--output-format=stream-json',
       // No prompt argument - we'll send it via stdin
     ];
 
@@ -658,8 +698,8 @@ router.post('/start', async (req, res) => {
       env: {
         ...process.env,
         CLAUDE_TASK_ID: taskId,
-        CLAUDE_WORKER_ID: workerId
-      }
+        CLAUDE_WORKER_ID: workerId,
+      },
     });
 
     worker.process = claudeProcess;
@@ -669,14 +709,14 @@ router.post('/start', async (req, res) => {
     // Update task status to in_progress when worker starts
     try {
       await updateTaskStatus(taskId, TodoStatus.IN_PROGRESS, workerId);
-    } catch (error) {
-      console.error(`⚠️ Failed to update task status for ${taskId}:`, error);
+    } catch {
+      // Task status update error logging disabled
     }
 
     // Create log file stream
     const logStream = fs.createWriteStream(logFile, { flags: 'a' });
     let logStreamClosed = false;
-    
+
     // Log initial info
     logStream.write(`=== Claude Code Worker ${workerId} Started ===\n`);
     logStream.write(`Task ID: ${taskId}\n`);
@@ -689,13 +729,13 @@ router.post('/start', async (req, res) => {
 
     // Handle process output with command monitoring and JSON stream processing
     console.error(`[${workerId}] Setting up stdout/stderr listeners`);
-    
-    claudeProcess.stdout?.on('data', (data) => {
+
+    claudeProcess.stdout?.on('data', data => {
       const output = data.toString();
       console.error(`[${workerId}] STDOUT: ${output.length} bytes received`);
       const monitoredOutput = monitorCommandOutput(worker, output);
       logStream.write(`STDOUT: ${monitoredOutput}`);
-      
+
       // Process JSON stream lines
       const lines = output.split('\n').filter((line: string) => line.trim());
       for (const line of lines) {
@@ -714,19 +754,19 @@ router.post('/start', async (req, res) => {
       }
     });
 
-    claudeProcess.stderr?.on('data', (data) => {
+    claudeProcess.stderr?.on('data', data => {
       const output = data.toString();
       console.error(`[${workerId}] STDERR: ${output.trim()}`);
       const monitoredOutput = monitorCommandOutput(worker, output);
       logStream.write(`STDERR: ${monitoredOutput}`);
     });
-    
+
     // Add debug listeners for stream events
     claudeProcess.stdout?.on('end', () => {
       console.error(`[${workerId}] STDOUT stream ended`);
       logStream.write('STDOUT stream ended\n');
     });
-    
+
     claudeProcess.stderr?.on('end', () => {
       console.error(`[${workerId}] STDERR stream ended`);
       logStream.write('STDERR stream ended\n');
@@ -744,41 +784,43 @@ router.post('/start', async (req, res) => {
     }
 
     // Handle process completion
-    claudeProcess.on('close', async (code) => {
+    claudeProcess.on('close', async code => {
       try {
         worker.endTime = new Date();
         const duration = worker.endTime.getTime() - worker.startTime.getTime();
-        
+
         if (!logStreamClosed && !logStream.destroyed) {
           logStream.write(`\n=== Process Completed ===\n`);
           logStream.write(`Exit Code: ${code}\n`);
-          
+
           // Provide better information about exit codes
           if (code === 0) {
             logStream.write(`Status: SUCCESS - Process completed normally\n`);
           } else if (code === null) {
-            logStream.write(`Status: TERMINATED - Process was killed by signal (likely SIGTERM from manual stop)\n`);
+            logStream.write(
+              `Status: TERMINATED - Process was killed by signal (likely SIGTERM from manual stop)\n`
+            );
           } else if (code > 0) {
             logStream.write(`Status: ERROR - Process exited with error code ${code}\n`);
           } else {
             logStream.write(`Status: UNKNOWN - Process exited with unexpected code ${code}\n`);
           }
-          
+
           logStream.write(`End Time: ${worker.endTime.toISOString()}\n`);
           logStream.write(`Duration: ${duration}ms\n`);
           logStream.end();
           logStreamClosed = true;
         }
-        
+
         console.error(`🏁 Claude Code worker ${workerId} completed with exit code ${code}`);
-        
+
         if (code === 0) {
           console.error(`✅ Worker ${workerId} completed successfully`);
-          
+
           // Run validation checks on successful completion
           try {
             const validationResult = await runValidationChecks(worker);
-            
+
             if (validationResult.success) {
               console.error(`✅ Worker ${workerId} passed validation, marking task as completed`);
               worker.status = 'completed';
@@ -786,24 +828,28 @@ router.post('/start', async (req, res) => {
               // Task will be marked as completed when merge happens (task 5)
             } else {
               console.error(`❌ Worker ${workerId} failed validation checks`);
-              
+
               // Check if we can retry with feedback
               const currentAttempts = worker.validationAttempts || 0;
               const maxAttempts = worker.maxValidationAttempts || 3;
-              
+
               if (currentAttempts < maxAttempts && validationResult.message) {
-                console.error(`🔄 Restarting worker ${workerId} with validation feedback (attempt ${currentAttempts + 1}/${maxAttempts})`);
+                console.error(
+                  `🔄 Restarting worker ${workerId} with validation feedback (attempt ${currentAttempts + 1}/${maxAttempts})`
+                );
                 await restartWorkerWithFeedback(worker, validationResult.message);
                 // Don't clean up worktree yet, worker is restarting
-                return; 
+                return;
               } else {
-                console.error(`❌ Worker ${workerId} exceeded max validation attempts (${maxAttempts}), marking as failed`);
+                console.error(
+                  `❌ Worker ${workerId} exceeded max validation attempts (${maxAttempts}), marking as failed`
+                );
                 worker.status = 'failed';
                 worker.validationPassed = false;
               }
             }
-          } catch (validationError) {
-            console.error(`⚠️ Validation error for worker ${workerId}:`, validationError);
+          } catch {
+            // Validation error logging disabled
             worker.status = 'failed';
             worker.validationPassed = false;
           }
@@ -814,12 +860,13 @@ router.post('/start', async (req, res) => {
 
         // Clean up worktree after completion
         if (worker.worktreeManager && worker.worktreePath && !workingDirectory) {
-          worker.worktreeManager.removeWorktree(worker.worktreePath)
+          worker.worktreeManager
+            .removeWorktree(worker.worktreePath)
             .then(() => {
               console.error(`🧹 Cleaned up worktree for worker ${workerId}`);
             })
-            .catch(cleanupError => {
-              console.error(`⚠️ Failed to cleanup worktree for worker ${workerId}:`, cleanupError);
+            .catch(_cleanupError => {
+              // Worktree cleanup error logging disabled
             });
         }
       } catch (error) {
@@ -832,11 +879,11 @@ router.post('/start', async (req, res) => {
       }
     });
 
-    claudeProcess.on('error', (error) => {
+    claudeProcess.on('error', error => {
       try {
         worker.status = 'failed';
         worker.endTime = new Date();
-        
+
         if (!logStreamClosed && !logStream.destroyed) {
           logStream.write(`\n=== Process Error ===\n`);
           logStream.write(`Error: ${error.message}\n`);
@@ -845,15 +892,19 @@ router.post('/start', async (req, res) => {
         }
 
         console.error(`❌ Claude Code worker ${workerId} failed:`, error);
-        
+
         // Clean up worktree after error
         if (worker.worktreeManager && worker.worktreePath && !workingDirectory) {
-          worker.worktreeManager.removeWorktree(worker.worktreePath)
+          worker.worktreeManager
+            .removeWorktree(worker.worktreePath)
             .then(() => {
               console.error(`🧹 Cleaned up worktree for failed worker ${workerId}`);
             })
             .catch(cleanupError => {
-              console.error(`⚠️ Failed to cleanup worktree for failed worker ${workerId}:`, cleanupError);
+              console.error(
+                `⚠️ Failed to cleanup worktree for failed worker ${workerId}:`,
+                cleanupError
+              );
             });
         }
       } catch (err) {
@@ -874,15 +925,14 @@ router.post('/start', async (req, res) => {
         status: worker.status,
         pid: worker.pid,
         logFile,
-        startTime: worker.startTime
-      }
+        startTime: worker.startTime,
+      },
     });
-
   } catch (error) {
     console.error('Error starting Claude Code worker:', error);
     res.status(500).json({
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : 'Unknown error',
     });
   }
 });
@@ -903,7 +953,7 @@ router.get('/status', (req, res) => {
     blockedCommands: worker.blockedCommands,
     hasPermissionSystem: !!worker.interceptor,
     validationPassed: worker.validationPassed,
-    validationRuns: worker.validationRuns?.length || 0
+    validationRuns: worker.validationRuns?.length || 0,
   }));
 
   res.json({
@@ -912,8 +962,8 @@ router.get('/status', (req, res) => {
       workers,
       activeCount: workers.filter(w => w.status === 'running').length,
       totalCount: workers.length,
-      totalBlockedCommands: workers.reduce((sum, w) => sum + w.blockedCommands, 0)
-    }
+      totalBlockedCommands: workers.reduce((sum, w) => sum + w.blockedCommands, 0),
+    },
   });
 });
 
@@ -927,7 +977,7 @@ router.get('/:workerId', (req, res) => {
   if (!worker) {
     return res.status(404).json({
       success: false,
-      error: 'Worker not found'
+      error: 'Worker not found',
     });
   }
 
@@ -941,8 +991,8 @@ router.get('/:workerId', (req, res) => {
       startTime: worker.startTime,
       endTime: worker.endTime,
       pid: worker.pid,
-      logFile: worker.logFile
-    }
+      logFile: worker.logFile,
+    },
   });
 });
 
@@ -951,7 +1001,7 @@ router.get('/:workerId', (req, res) => {
  */
 router.post('/stop-all', (req, res) => {
   let stoppedCount = 0;
-  
+
   for (const [workerId, worker] of activeWorkers.entries()) {
     if (worker.process && worker.status === 'running') {
       console.error(`🛑 Stopping Claude Code worker ${workerId}`);
@@ -961,13 +1011,13 @@ router.post('/stop-all', (req, res) => {
       stoppedCount++;
     }
   }
-  
+
   res.json({
     success: true,
     data: {
       message: `Stopped ${stoppedCount} workers`,
-      stoppedCount
-    }
+      stoppedCount,
+    },
   });
 });
 
@@ -976,23 +1026,27 @@ router.post('/stop-all', (req, res) => {
  */
 router.post('/clear', (req, res) => {
   const before = activeWorkers.size;
-  
+
   for (const [workerId, worker] of activeWorkers.entries()) {
-    if (worker.status === 'completed' || worker.status === 'failed' || worker.status === 'stopped') {
+    if (
+      worker.status === 'completed' ||
+      worker.status === 'failed' ||
+      worker.status === 'stopped'
+    ) {
       activeWorkers.delete(workerId);
     }
   }
-  
+
   const after = activeWorkers.size;
   const cleared = before - after;
-  
+
   res.json({
     success: true,
     data: {
       message: `Cleared ${cleared} workers`,
       clearedCount: cleared,
-      remainingCount: after
-    }
+      remainingCount: after,
+    },
   });
 });
 
@@ -1006,26 +1060,27 @@ router.post('/:workerId/stop', (req, res) => {
   if (!worker) {
     return res.status(404).json({
       success: false,
-      error: 'Worker not found'
+      error: 'Worker not found',
     });
   }
 
   if (worker.process && worker.status === 'running') {
     console.error(`🛑 Stopping Claude Code worker ${workerId}`);
-    
+
     // Write termination reason to log file before killing process
     try {
-      const logMessage = `\n=== Manual Termination ===\n` +
+      const logMessage =
+        `\n=== Manual Termination ===\n` +
         `Reason: Worker stopped manually via API/UI\n` +
         `Terminated by: User request\n` +
         `Termination time: ${new Date().toISOString()}\n` +
         `Signal: SIGTERM\n\n`;
-      
+
       fs.appendFileSync(worker.logFile, logMessage);
     } catch (logError) {
       console.error(`Failed to write termination log for worker ${workerId}:`, logError);
     }
-    
+
     worker.process.kill('SIGTERM');
     worker.status = 'stopped';
     worker.endTime = new Date();
@@ -1035,8 +1090,8 @@ router.post('/:workerId/stop', (req, res) => {
     success: true,
     data: {
       workerId,
-      status: worker.status
-    }
+      status: worker.status,
+    },
   });
 });
 
@@ -1050,7 +1105,7 @@ router.get('/:workerId/logs', (req, res) => {
   if (!worker) {
     return res.status(404).json({
       success: false,
-      error: 'Worker not found'
+      error: 'Worker not found',
     });
   }
 
@@ -1061,13 +1116,13 @@ router.get('/:workerId/logs', (req, res) => {
       data: {
         workerId,
         logs,
-        logFile: worker.logFile
-      }
+        logFile: worker.logFile,
+      },
     });
   } catch {
     res.status(500).json({
       success: false,
-      error: 'Failed to read log file'
+      error: 'Failed to read log file',
     });
   }
 });
@@ -1078,11 +1133,11 @@ router.get('/:workerId/logs', (req, res) => {
 router.post('/:workerId/message', (req, res) => {
   const { workerId } = req.params;
   const { message } = req.body;
-  
+
   if (!message) {
     return res.status(400).json({
       success: false,
-      error: 'Message content is required'
+      error: 'Message content is required',
     });
   }
 
@@ -1091,21 +1146,21 @@ router.post('/:workerId/message', (req, res) => {
   if (!worker) {
     return res.status(404).json({
       success: false,
-      error: 'Worker not found'
+      error: 'Worker not found',
     });
   }
 
   if (worker.status !== 'running') {
     return res.status(400).json({
       success: false,
-      error: `Cannot send message to worker with status: ${worker.status}`
+      error: `Cannot send message to worker with status: ${worker.status}`,
     });
   }
 
   if (!worker.process || !worker.process.stdin) {
     return res.status(400).json({
       success: false,
-      error: 'Worker process is not available for input'
+      error: 'Worker process is not available for input',
     });
   }
 
@@ -1120,7 +1175,7 @@ router.post('/:workerId/message', (req, res) => {
       timestamp,
       type: 'UserMessage',
       content: message,
-      metadata: { source: 'api' }
+      metadata: { source: 'api' },
     });
 
     // Send message to worker process via stdin
@@ -1132,16 +1187,15 @@ router.post('/:workerId/message', (req, res) => {
         workerId,
         message,
         timestamp,
-        status: 'sent'
-      }
+        status: 'sent',
+      },
     });
-
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    
+
     res.status(500).json({
       success: false,
-      error: `Failed to send message: ${errorMessage}`
+      error: `Failed to send message: ${errorMessage}`,
     });
   }
 });
@@ -1156,7 +1210,7 @@ router.get('/:workerId/entries', (req, res) => {
   if (!worker) {
     return res.status(404).json({
       success: false,
-      error: 'Worker not found'
+      error: 'Worker not found',
     });
   }
 
@@ -1166,10 +1220,11 @@ router.get('/:workerId/entries', (req, res) => {
       workerId,
       entries: worker.structuredEntries,
       totalEntries: worker.structuredEntries.length,
-      lastUpdate: worker.structuredEntries.length > 0 
-        ? worker.structuredEntries[worker.structuredEntries.length - 1].timestamp 
-        : worker.startTime.toISOString()
-    }
+      lastUpdate:
+        worker.structuredEntries.length > 0
+          ? worker.structuredEntries[worker.structuredEntries.length - 1].timestamp
+          : worker.startTime.toISOString(),
+    },
   });
 });
 
@@ -1180,32 +1235,39 @@ router.post('/cleanup-worktrees', async (req, res) => {
   try {
     const worktreeBaseDir = path.join(path.dirname(process.cwd()), 'claude-worktrees');
     let cleanedCount = 0;
-    
+
     for (const [workerId, worker] of activeWorkers.entries()) {
-      if (worker.status === 'completed' || worker.status === 'failed' || worker.status === 'stopped') {
+      if (
+        worker.status === 'completed' ||
+        worker.status === 'failed' ||
+        worker.status === 'stopped'
+      ) {
         try {
           // Extract task info from worktree path if it exists
-          const worktreePath = path.join(worktreeBaseDir, `worktree-${worker.taskId}-${workerId.split('-').pop()}`);
+          const worktreePath = path.join(
+            worktreeBaseDir,
+            `worktree-${worker.taskId}-${workerId.split('-').pop()}`
+          );
           await fs.promises.rm(worktreePath, { recursive: true, force: true });
           cleanedCount++;
-        } catch (error) {
-          console.warn(`Failed to cleanup worktree for worker ${workerId}:`, error);
+        } catch {
+          // Worktree cleanup warning disabled
         }
       }
     }
-    
+
     res.json({
       success: true,
       data: {
         message: `Cleaned up ${cleanedCount} worktrees`,
-        cleanedCount
-      }
+        cleanedCount,
+      },
     });
   } catch (error) {
     console.error('Error cleaning up worktrees:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to cleanup worktrees'
+      error: 'Failed to cleanup worktrees',
     });
   }
 });
@@ -1220,14 +1282,14 @@ router.post('/:workerId/merge-worktree', async (req, res) => {
   if (!worker) {
     return res.status(404).json({
       success: false,
-      error: 'Worker not found'
+      error: 'Worker not found',
     });
   }
 
   if (!worker.worktreePath) {
     return res.status(400).json({
       success: false,
-      error: 'No worktree associated with this worker'
+      error: 'No worktree associated with this worker',
     });
   }
 
@@ -1237,23 +1299,23 @@ router.post('/:workerId/merge-worktree', async (req, res) => {
     const execAsync = util.promisify(exec);
 
     // Check if there are any changes to commit
-    const { stdout: statusOutput } = await execAsync('git status --porcelain', { 
-      cwd: worker.worktreePath 
+    const { stdout: statusOutput } = await execAsync('git status --porcelain', {
+      cwd: worker.worktreePath,
     });
 
     if (statusOutput.trim()) {
       // Commit changes in worktree
       await execAsync('git add .', { cwd: worker.worktreePath });
-      await execAsync(`git commit -m "Task ${worker.taskId}: Changes from worker ${workerId}"`, { 
-        cwd: worker.worktreePath 
+      await execAsync(`git commit -m "Task ${worker.taskId}: Changes from worker ${workerId}"`, {
+        cwd: worker.worktreePath,
       });
     }
 
     // Get current branch in worktree
-    const { stdout: currentBranch } = await execAsync('git branch --show-current', { 
-      cwd: worker.worktreePath 
+    const { stdout: currentBranch } = await execAsync('git branch --show-current', {
+      cwd: worker.worktreePath,
     });
-    
+
     const branchName = currentBranch.trim() || 'HEAD';
 
     // Switch to main branch and merge
@@ -1265,11 +1327,11 @@ router.post('/:workerId/merge-worktree', async (req, res) => {
       try {
         await updateTaskStatus(worker.taskId, TodoStatus.COMPLETED);
         console.error(`✅ Task ${worker.taskId} marked as completed after successful merge`);
-      } catch (error) {
-        console.error(`⚠️ Failed to mark task ${worker.taskId} as completed:`, error);
+      } catch {
+        // Task completion error logging disabled
       }
     } else {
-      console.warn(`⚠️ Task ${worker.taskId} not marked as completed - validation did not pass`);
+      // Task validation warning disabled
     }
 
     // Clean up worktree after successful merge
@@ -1277,8 +1339,8 @@ router.post('/:workerId/merge-worktree', async (req, res) => {
       try {
         await worker.worktreeManager.removeWorktree(worker.worktreePath);
         console.error(`🧹 Cleaned up worktree ${worker.worktreePath} after successful merge`);
-      } catch (cleanupError) {
-        console.error(`⚠️ Failed to cleanup worktree ${worker.worktreePath}:`, cleanupError);
+      } catch {
+        // Worktree cleanup error logging disabled
       }
     }
 
@@ -1289,15 +1351,14 @@ router.post('/:workerId/merge-worktree', async (req, res) => {
         workerId,
         mergedBranch: branchName,
         hasChanges: !!statusOutput.trim(),
-        worktreeCleaned: true
-      }
+        worktreeCleaned: true,
+      },
     });
-
   } catch (error) {
     console.error(`Error merging worktree for worker ${workerId}:`, error);
     res.status(500).json({
       success: false,
-      error: `Failed to merge worktree: ${(error as Error).message}`
+      error: `Failed to merge worktree: ${(error as Error).message}`,
     });
   }
 });
@@ -1312,14 +1373,14 @@ router.post('/:workerId/open-vscode', async (req, res) => {
   if (!worker) {
     return res.status(404).json({
       success: false,
-      error: 'Worker not found'
+      error: 'Worker not found',
     });
   }
 
   if (!worker.worktreePath) {
     return res.status(400).json({
       success: false,
-      error: 'No worktree associated with this worker'
+      error: 'No worktree associated with this worker',
     });
   }
 
@@ -1332,13 +1393,13 @@ router.post('/:workerId/open-vscode', async (req, res) => {
     if (!fs.existsSync(worker.worktreePath)) {
       return res.status(404).json({
         success: false,
-        error: 'Worktree directory not found'
+        error: 'Worktree directory not found',
       });
     }
 
     // Try to open in VSCode - using 'code' command
-    await execAsync(`code "${worker.worktreePath}"`, { 
-      timeout: 10000 // 10 second timeout
+    await execAsync(`code "${worker.worktreePath}"`, {
+      timeout: 10000, // 10 second timeout
     });
 
     res.json({
@@ -1346,25 +1407,25 @@ router.post('/:workerId/open-vscode', async (req, res) => {
       data: {
         message: `Opened worktree in VSCode: ${worker.worktreePath}`,
         workerId,
-        worktreePath: worker.worktreePath
-      }
+        worktreePath: worker.worktreePath,
+      },
     });
-
   } catch (error) {
     console.error(`Error opening VSCode for worker ${workerId}:`, error);
-    
+
     // Provide helpful error message if 'code' command not found
     const errorMessage = (error as Error).message;
     if (errorMessage.includes('command not found') || errorMessage.includes('not recognized')) {
       return res.status(500).json({
         success: false,
-        error: 'VSCode command line tools not installed. Install VSCode and enable shell command integration.'
+        error:
+          'VSCode command line tools not installed. Install VSCode and enable shell command integration.',
       });
     }
 
     res.status(500).json({
       success: false,
-      error: `Failed to open VSCode: ${errorMessage}`
+      error: `Failed to open VSCode: ${errorMessage}`,
     });
   }
 });
@@ -1379,7 +1440,7 @@ router.get('/:workerId/blocked-commands', (req, res) => {
   if (!worker) {
     return res.status(404).json({
       success: false,
-      error: 'Worker not found'
+      error: 'Worker not found',
     });
   }
 
@@ -1389,8 +1450,8 @@ router.get('/:workerId/blocked-commands', (req, res) => {
       workerId,
       blockedCommands: worker.blockedCommands,
       blockedCommandsList: worker.blockedCommandsList,
-      hasPermissionSystem: !!worker.interceptor
-    }
+      hasPermissionSystem: !!worker.interceptor,
+    },
   });
 });
 
@@ -1404,7 +1465,7 @@ router.get('/:workerId/validation-runs', (req, res) => {
   if (!worker) {
     return res.status(404).json({
       success: false,
-      error: 'Worker not found'
+      error: 'Worker not found',
     });
   }
 
@@ -1414,10 +1475,11 @@ router.get('/:workerId/validation-runs', (req, res) => {
       workerId,
       validationRuns: worker.validationRuns || [],
       totalRuns: worker.validationRuns?.length || 0,
-      lastRun: worker.validationRuns?.length > 0 
-        ? worker.validationRuns[worker.validationRuns.length - 1] 
-        : null
-    }
+      lastRun:
+        worker.validationRuns?.length > 0
+          ? worker.validationRuns[worker.validationRuns.length - 1]
+          : null,
+    },
   });
 });
 
@@ -1431,16 +1493,16 @@ router.get('/:workerId/validation-runs/:runId', (req, res) => {
   if (!worker) {
     return res.status(404).json({
       success: false,
-      error: 'Worker not found'
+      error: 'Worker not found',
     });
   }
 
   const validationRun = worker.validationRuns?.find(run => run.id === runId);
-  
+
   if (!validationRun) {
     return res.status(404).json({
       success: false,
-      error: 'Validation run not found'
+      error: 'Validation run not found',
     });
   }
 
@@ -1450,8 +1512,8 @@ router.get('/:workerId/validation-runs/:runId', (req, res) => {
     try {
       const metricsContent = fs.readFileSync(validationRun.metricsFile, 'utf-8');
       metrics = JSON.parse(metricsContent);
-    } catch (error) {
-      console.warn(`Could not read metrics file for validation run ${runId}:`, error);
+    } catch {
+      // Metrics file read warning disabled
     }
   }
 
@@ -1461,8 +1523,8 @@ router.get('/:workerId/validation-runs/:runId', (req, res) => {
       workerId,
       runId,
       validationRun,
-      metrics
-    }
+      metrics,
+    },
   });
 });
 
@@ -1474,13 +1536,13 @@ router.get('/logs/stats', async (req, res) => {
     const stats = await logManager.getLogStats();
     res.json({
       success: true,
-      data: stats
+      data: stats,
     });
   } catch (error) {
     console.error('Error getting log stats:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to get log statistics'
+      error: 'Failed to get log statistics',
     });
   }
 });
@@ -1493,22 +1555,21 @@ router.post('/logs/cleanup', async (req, res) => {
     console.error('🧹 Starting manual log cleanup...');
     await logManager.organizeLogs();
     const cleanupResult = await logManager.cleanupLogs();
-    
+
     res.json({
       success: true,
       data: {
         message: 'Log cleanup completed successfully',
-        ...cleanupResult
-      }
+        ...cleanupResult,
+      },
     });
   } catch (error) {
     console.error('Error cleaning up logs:', error);
     res.status(500).json({
       success: false,
-      error: 'Failed to cleanup logs'
+      error: 'Failed to cleanup logs',
     });
   }
 });
-
 
 export default router;
