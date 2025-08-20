@@ -1,8 +1,8 @@
 /**
  * Environment configuration helper utilities
  */
-import * as path from "path";
-import * as fs from "fs";
+import * as path from 'path';
+import * as fs from 'fs';
 
 export type EnvLoadResult = {
   success: boolean;
@@ -30,27 +30,25 @@ export async function fileExists(filePath: string): Promise<boolean> {
 export function processVariables(
   parsed: Record<string, string>,
   mergedVariables: Record<string, string>,
-  envPath: string,
+  envPath: string
 ): number {
   let count = 0;
 
   Object.entries(parsed).forEach(([key, value]) => {
     if (!/^[A-Z_][A-Z0-9_]*$/i.test(key)) {
-      console.warn(
-        `Warning: Invalid environment variable name '${key}' in ${envPath}`,
-      );
+      console.warn(`Warning: Invalid environment variable name '${key}' in ${envPath}`);
       return;
     }
 
     const sanitizedValue =
-      typeof value === "string"
+      typeof value === 'string'
         ? value
-            .split("")
-            .filter((char) => {
+            .split('')
+            .filter(char => {
               const code = char.charCodeAt(0);
               return code > 31 && code !== 127;
             })
-            .join("")
+            .join('')
         : String(value);
 
     mergedVariables[key] = sanitizedValue;
@@ -63,9 +61,7 @@ export function processVariables(
 /**
  * Apply variables to process.env
  */
-export function applyVariablesToEnv(
-  mergedVariables: Record<string, string>,
-): void {
+export function applyVariablesToEnv(mergedVariables: Record<string, string>): void {
   Object.entries(mergedVariables).forEach(([key, value]) => {
     if (!(key in process.env)) {
       process.env[key] = value;
@@ -77,7 +73,7 @@ export function applyVariablesToEnv(
  * Log success message
  */
 export function logSuccess(totalVariablesLoaded: number): void {
-  if (process.env.NODE_ENV !== "test" && totalVariablesLoaded > 0) {
+  if (process.env.NODE_ENV !== 'test' && totalVariablesLoaded > 0) {
     console.log(`✅ Loaded ${totalVariablesLoaded} environment variables`);
   }
 }
@@ -86,9 +82,9 @@ export function logSuccess(totalVariablesLoaded: number): void {
  * Log no file found message
  */
 export function logNoFileFound(projectRoot: string, envPaths: string[]): void {
-  if (process.env.NODE_ENV !== "test") {
+  if (process.env.NODE_ENV !== 'test') {
     console.log(
-      `ℹ️ No .env file found in ${projectRoot} (checked: ${envPaths.map((p) => path.basename(p)).join(", ")})`,
+      `ℹ️ No .env file found in ${projectRoot} (checked: ${envPaths.map(p => path.basename(p)).join(', ')})`
     );
   }
 }
@@ -99,8 +95,8 @@ export function logNoFileFound(projectRoot: string, envPaths: string[]): void {
 export function handleLoadError(error: unknown): EnvLoadResult {
   const errorMsg = error instanceof Error ? error.message : String(error);
 
-  if (process.env.NODE_ENV !== "test") {
-    console.warn("Warning: Failed to load environment config:", errorMsg);
+  if (process.env.NODE_ENV !== 'test') {
+    console.warn('Warning: Failed to load environment config:', errorMsg);
   }
 
   return { success: false, error: errorMsg };

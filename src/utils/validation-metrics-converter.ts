@@ -11,7 +11,10 @@ export class ValidationMetricsConverter {
   /**
    * Convert validation metrics to session-like objects for display
    */
-  private static convertMetricToSession(metric: Record<string, unknown>, index: number): SessionMetrics {
+  private static convertMetricToSession(
+    metric: Record<string, unknown>,
+    index: number
+  ): SessionMetrics {
     const timestamp = metric.timestamp as string;
     const totalTime = (metric.totalTime as number) || 0;
     const totalStages = (metric.totalStages as number) || 0;
@@ -25,34 +28,44 @@ export class ValidationMetricsConverter {
       totalDuration: totalTime,
       userPrompt: 'Validation Run',
       taskDescription: `Validation pipeline execution (${success ? 'Success' : 'Failed'})`,
-      attempts: [{
-        attempt: 1,
-        timestamp,
-        startTime: new Date(timestamp).getTime(),
-        totalTime,
-        totalStages,
-        passed: (metric.passed as number) || 0,
-        failed: (metric.failed as number) || 0,
-        success,
-        stages: stages.map((stage: Record<string, unknown>): ValidationStageMetrics => ({
-          id: (stage.id as string) || 'unknown',
-          name: (stage.name as string) || (stage.id as string) || 'Unknown Stage',
-          success: Boolean(stage.success),
-          duration: (stage.duration as number) || 0,
+      attempts: [
+        {
           attempt: 1,
-          output: (stage.output as string) || undefined,
-          error: (stage.error as string) || undefined
-        }))
-      }],
+          timestamp,
+          startTime: new Date(timestamp).getTime(),
+          totalTime,
+          totalStages,
+          passed: (metric.passed as number) || 0,
+          failed: (metric.failed as number) || 0,
+          success,
+          stages: stages.map(
+            (stage: Record<string, unknown>): ValidationStageMetrics => ({
+              id: (stage.id as string) || 'unknown',
+              name: (stage.name as string) || (stage.id as string) || 'Unknown Stage',
+              success: Boolean(stage.success),
+              duration: (stage.duration as number) || 0,
+              attempt: 1,
+              output: (stage.output as string) || undefined,
+              error: (stage.error as string) || undefined,
+            })
+          ),
+        },
+      ],
       finalSuccess: success,
       totalValidationTime: totalTime,
       averageStageTime: totalStages > 0 ? totalTime / totalStages : 0,
     };
   }
 
-  static convertToSessions(validationMetrics: Record<string, unknown>[], limit: number): SessionMetrics[] {
+  static convertToSessions(
+    validationMetrics: Record<string, unknown>[],
+    limit: number
+  ): SessionMetrics[] {
     const recentMetrics = validationMetrics
-      .sort((a, b) => new Date(b.timestamp as string).getTime() - new Date(a.timestamp as string).getTime())
+      .sort(
+        (a, b) =>
+          new Date(b.timestamp as string).getTime() - new Date(a.timestamp as string).getTime()
+      )
       .slice(0, limit);
 
     return recentMetrics.map((metric, index) => this.convertMetricToSession(metric, index));
@@ -100,7 +113,10 @@ export class ValidationMetricsConverter {
 
   private static calculateAverageTime(successfulAttempts: Record<string, unknown>[]): number {
     if (successfulAttempts.length === 0) return 0;
-    const totalTime = successfulAttempts.reduce((sum, m) => sum + (m.totalTime as number || 0), 0);
+    const totalTime = successfulAttempts.reduce(
+      (sum, m) => sum + ((m.totalTime as number) || 0),
+      0
+    );
     return totalTime / successfulAttempts.length;
   }
 
@@ -108,7 +124,7 @@ export class ValidationMetricsConverter {
     metrics: Record<string, unknown>[]
   ): Record<string, { attempts: number; successes: number; rate: number }> {
     const stageStats: Record<string, { attempts: number; successes: number }> = {};
-    
+
     metrics.forEach(metric => {
       if (metric.stages && Array.isArray(metric.stages)) {
         metric.stages.forEach((stage: Record<string, unknown>) => {
@@ -124,7 +140,8 @@ export class ValidationMetricsConverter {
       }
     });
 
-    const stageSuccessRates: Record<string, { attempts: number; successes: number; rate: number }> = {};
+    const stageSuccessRates: Record<string, { attempts: number; successes: number; rate: number }> =
+      {};
     Object.entries(stageStats).forEach(([stageId, stats]) => {
       stageSuccessRates[stageId] = {
         ...stats,
@@ -135,7 +152,9 @@ export class ValidationMetricsConverter {
     return stageSuccessRates;
   }
 
-  private static calculateAverageStageTime(metrics: Record<string, unknown>[]): Record<string, number> {
+  private static calculateAverageStageTime(
+    metrics: Record<string, unknown>[]
+  ): Record<string, number> {
     const stageTimeStats: Record<string, { totalTime: number; count: number }> = {};
 
     metrics.forEach(metric => {
@@ -143,7 +162,7 @@ export class ValidationMetricsConverter {
       stages.forEach((stage: Record<string, unknown>) => {
         const stageId = (stage.id as string) || 'unknown';
         const duration = (stage.duration as number) || 0;
-        
+
         if (!stageTimeStats[stageId]) {
           stageTimeStats[stageId] = { totalTime: 0, count: 0 };
         }
@@ -161,21 +180,24 @@ export class ValidationMetricsConverter {
   }
 
   private static findMostFailedStage(stageSuccessRates: Record<string, { rate: number }>): string {
-    return Object.entries(stageSuccessRates).sort((a, b) => a[1].rate - b[1].rate)[0]?.[0] || 'none';
+    return (
+      Object.entries(stageSuccessRates).sort((a, b) => a[1].rate - b[1].rate)[0]?.[0] || 'none'
+    );
   }
 
   private static calculateDailyStats(
     metrics: Record<string, unknown>[]
   ): Record<string, { sessions: number; successes: number; totalTime: number }> {
-    const dailyStats: Record<string, { sessions: number; successes: number; totalTime: number }> = {};
-    
+    const dailyStats: Record<string, { sessions: number; successes: number; totalTime: number }> =
+      {};
+
     metrics.forEach(metric => {
       const timestamp = metric.timestamp as string;
       if (!timestamp) return; // Skip invalid timestamps
-      
+
       const date = new Date(timestamp);
       if (isNaN(date.getTime())) return; // Skip invalid dates
-      
+
       const dateStr = date.toISOString().split('T')[0];
       if (!dailyStats[dateStr]) {
         dailyStats[dateStr] = { sessions: 0, successes: 0, totalTime: 0 };

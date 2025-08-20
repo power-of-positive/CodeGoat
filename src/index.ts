@@ -145,7 +145,6 @@ app.use((_req: Request, res: Response) => {
   res.status(404).json({ error: 'Not found' });
 });
 
-
 // Create HTTP server
 const httpServer = createServer(app);
 
@@ -176,13 +175,17 @@ logManager.scheduleCleanup(24);
 console.error('🧹 Log cleanup scheduled to run every 24 hours');
 
 // Global error handlers to prevent server crashes
-process.on('uncaughtException', (error) => {
+process.on('uncaughtException', error => {
   logger.error('Uncaught Exception', error);
   // Don't exit the process - just log and continue
 });
 
 process.on('unhandledRejection', (reason, promise) => {
-  logger.error('Unhandled Rejection', reason instanceof Error ? reason : new Error(String(reason)), { promise: promise.toString() });
+  logger.error(
+    'Unhandled Rejection',
+    reason instanceof Error ? reason : new Error(String(reason)),
+    { promise: promise.toString() }
+  );
   // Don't exit the process - just log and continue
 });
 

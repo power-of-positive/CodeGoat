@@ -32,7 +32,7 @@ describe('OptimizedLogCleaner', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     mockLogger = {
       info: jest.fn(),
       error: jest.fn(),
@@ -158,7 +158,7 @@ describe('OptimizedLogCleaner', () => {
       (fs.rename as jest.Mock).mockResolvedValue(undefined);
       (fs.writeFile as jest.Mock).mockResolvedValue(undefined);
       (fs.unlink as jest.Mock).mockResolvedValue(undefined);
-      
+
       // Mock compression
       const mockGzip = {
         on: jest.fn(),
@@ -419,7 +419,9 @@ describe('OptimizedLogCleaner', () => {
       };
 
       const cleanerWithCustom = new OptimizedLogCleaner(customConfig, mockLogger);
-      expect((cleanerWithCustom as any).config.retentionPolicy).toEqual(customConfig.retentionPolicy);
+      expect((cleanerWithCustom as any).config.retentionPolicy).toEqual(
+        customConfig.retentionPolicy
+      );
       expect((cleanerWithCustom as any).config.compressionEnabled).toBe(false);
     });
   });

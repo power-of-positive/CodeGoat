@@ -36,7 +36,7 @@ const colors: Colors = {
   green: '\x1b[32m',
   yellow: '\x1b[33m',
   blue: '\x1b[34m',
-  cyan: '\x1b[36m'
+  cyan: '\x1b[36m',
 };
 
 class TypeScriptPreferenceChecker {
@@ -58,22 +58,26 @@ class TypeScriptPreferenceChecker {
     'scripts/**/*.js', // Allow scripts to be JS (for now)
     'tools/**/*.js',
     'build/**/*.js',
-    // Test setup files  
+    // Test setup files
     'jest.setup.js',
     'test-setup.js',
     // Node.js files that might need to be JS
     'server.js',
-    'app.js'
+    'app.js',
   ];
 
   async checkProject(): Promise<void> {
     try {
       // Find all JavaScript files in source directories
       const jsFiles = await this.findJavaScriptFiles();
-      
+
       if (jsFiles.length === 0) {
-        console.log(`${colors.green}✅ No JavaScript files found in source directories${colors.reset}`);
-        console.log(`${colors.cyan}💡 Project already follows TypeScript-first approach${colors.reset}`);
+        console.log(
+          `${colors.green}✅ No JavaScript files found in source directories${colors.reset}`
+        );
+        console.log(
+          `${colors.cyan}💡 Project already follows TypeScript-first approach${colors.reset}`
+        );
         return;
       }
 
@@ -85,7 +89,9 @@ class TypeScriptPreferenceChecker {
 
       this.generateReport();
     } catch (error) {
-      console.error(`${colors.red}❌ Error checking TypeScript preference: ${(error as Error).message}${colors.reset}`);
+      console.error(
+        `${colors.red}❌ Error checking TypeScript preference: ${(error as Error).message}${colors.reset}`
+      );
       process.exit(1);
     }
   }
@@ -93,25 +99,25 @@ class TypeScriptPreferenceChecker {
   private async findJavaScriptFiles(): Promise<string[]> {
     const patterns = [
       'src/**/*.js',
-      'src/**/*.jsx', 
+      'src/**/*.jsx',
       'tests/**/*.js',
       'test/**/*.js',
-      '__tests__/**/*.js'
+      '__tests__/**/*.js',
     ];
 
     let allFiles: string[] = [];
-    
+
     for (const pattern of patterns) {
-      const files = await glob(pattern, { 
+      const files = await glob(pattern, {
         ignore: [
           ...this.allowedJsFiles,
           '**/node_modules/**',
           'node_modules/**',
           '**/build/**',
           '**/dist/**',
-          '**/coverage/**'
+          '**/coverage/**',
         ],
-        absolute: false 
+        absolute: false,
       });
       allFiles = allFiles.concat(files);
     }
@@ -128,7 +134,7 @@ class TypeScriptPreferenceChecker {
         this.errors.push(filePath);
         console.log(`${colors.red}❌ ${filePath}${colors.reset}`);
         console.log(`   ${colors.red}Contains TypeScript features:${colors.reset}`);
-        
+
         validation.features.forEach((f: TypeScriptFeature) => {
           console.log(`   - ${f.feature} (line ${f.line})`);
         });
@@ -137,10 +143,14 @@ class TypeScriptPreferenceChecker {
         this.warnings.push(filePath);
         console.log(`${colors.yellow}⚠️  ${filePath}${colors.reset}`);
         console.log(`   ${colors.yellow}Pure JavaScript file in TypeScript project${colors.reset}`);
-        console.log(`   ${colors.cyan}💡 Consider migrating to TypeScript for better type safety${colors.reset}\n`);
+        console.log(
+          `   ${colors.cyan}💡 Consider migrating to TypeScript for better type safety${colors.reset}\n`
+        );
       }
     } catch (error) {
-      console.error(`${colors.red}Error analyzing ${filePath}: ${(error as Error).message}${colors.reset}`);
+      console.error(
+        `${colors.red}Error analyzing ${filePath}: ${(error as Error).message}${colors.reset}`
+      );
     }
   }
 
@@ -160,7 +170,7 @@ class TypeScriptPreferenceChecker {
       { pattern: /public\s+|private\s+|protected\s+/, feature: 'Access modifiers' },
       { pattern: /readonly\s+/, feature: 'Readonly modifier' },
       { pattern: /\?\s*:/, feature: 'Optional properties' },
-      { pattern: /!\./, feature: 'Non-null assertion' }
+      { pattern: /!\./, feature: 'Non-null assertion' },
     ];
 
     lines.forEach((line, index) => {
@@ -169,7 +179,7 @@ class TypeScriptPreferenceChecker {
           features.push({
             feature,
             line: index + 1,
-            context: line.trim()
+            context: line.trim(),
           });
         }
       });
@@ -177,27 +187,37 @@ class TypeScriptPreferenceChecker {
 
     return {
       hasTypeScriptFeatures: features.length > 0,
-      features
+      features,
     };
   }
 
   private generateReport(): void {
     console.log(`${colors.bright}${colors.blue}📋 TypeScript Preference Report${colors.reset}`);
-    console.log(`${colors.blue}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${colors.reset}\n`);
+    console.log(
+      `${colors.blue}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${colors.reset}\n`
+    );
 
     console.log(`${colors.bright}Summary:${colors.reset}`);
-    console.log(`• Files with TypeScript features in .js files: ${colors.red}${this.errors.length}${colors.reset}`);
-    console.log(`• Pure JavaScript files: ${colors.yellow}${this.warnings.length}${colors.reset}\n`);
+    console.log(
+      `• Files with TypeScript features in .js files: ${colors.red}${this.errors.length}${colors.reset}`
+    );
+    console.log(
+      `• Pure JavaScript files: ${colors.yellow}${this.warnings.length}${colors.reset}\n`
+    );
 
     if (this.errors.length > 0) {
-      console.log(`${colors.red}${colors.bright}❌ TypeScript features found in JavaScript files${colors.reset}`);
+      console.log(
+        `${colors.red}${colors.bright}❌ TypeScript features found in JavaScript files${colors.reset}`
+      );
       console.log(`${colors.red}These files should be renamed to .ts/.tsx:${colors.reset}`);
       this.errors.forEach(file => console.log(`  • ${file}`));
       console.log();
     }
 
     if (this.warnings.length > 0) {
-      console.log(`${colors.yellow}${colors.bright}⚠️  JavaScript files in TypeScript project${colors.reset}`);
+      console.log(
+        `${colors.yellow}${colors.bright}⚠️  JavaScript files in TypeScript project${colors.reset}`
+      );
       console.log(`${colors.yellow}Consider migrating these to TypeScript:${colors.reset}`);
       this.warnings.forEach(file => console.log(`  • ${file}`));
       console.log();
@@ -205,22 +225,34 @@ class TypeScriptPreferenceChecker {
 
     // Recommendations
     console.log(`${colors.bright}${colors.cyan}💡 Recommendations:${colors.reset}`);
-    
+
     if (this.errors.length > 0) {
-      console.log(`${colors.cyan}1. Rename .js/.jsx files with TypeScript features to .ts/.tsx${colors.reset}`);
-      console.log(`${colors.cyan}2. Update any imports/references to use new file extensions${colors.reset}`);
-    }
-    
-    if (this.warnings.length > 0) {
-      console.log(`${colors.cyan}3. Gradually migrate JavaScript files to TypeScript${colors.reset}`);
-      console.log(`${colors.cyan}4. Add type annotations and interfaces for better type safety${colors.reset}`);
+      console.log(
+        `${colors.cyan}1. Rename .js/.jsx files with TypeScript features to .ts/.tsx${colors.reset}`
+      );
+      console.log(
+        `${colors.cyan}2. Update any imports/references to use new file extensions${colors.reset}`
+      );
     }
 
-    console.log(`${colors.cyan}5. Consider updating build scripts to use TypeScript files${colors.reset}\n`);
+    if (this.warnings.length > 0) {
+      console.log(
+        `${colors.cyan}3. Gradually migrate JavaScript files to TypeScript${colors.reset}`
+      );
+      console.log(
+        `${colors.cyan}4. Add type annotations and interfaces for better type safety${colors.reset}`
+      );
+    }
+
+    console.log(
+      `${colors.cyan}5. Consider updating build scripts to use TypeScript files${colors.reset}\n`
+    );
 
     // Exit with appropriate code
     if (this.errors.length > 0) {
-      console.log(`${colors.red}❌ Check failed: Found TypeScript features in JavaScript files${colors.reset}`);
+      console.log(
+        `${colors.red}❌ Check failed: Found TypeScript features in JavaScript files${colors.reset}`
+      );
       process.exit(1);
     } else if (this.warnings.length > 0) {
       console.log(`${colors.yellow}⚠️  Check passed with warnings${colors.reset}`);

@@ -1,6 +1,15 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Settings as SettingsIcon, Plus, Trash2, Save, AlertCircle, ChevronUp, ChevronDown, GripVertical } from 'lucide-react';
+import {
+  Settings as SettingsIcon,
+  Plus,
+  Trash2,
+  Save,
+  AlertCircle,
+  ChevronUp,
+  ChevronDown,
+  GripVertical,
+} from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Input } from './ui/input';
@@ -8,11 +17,11 @@ import { Label } from './ui/label';
 import { settingsApi } from '../lib/api';
 import { ValidationStage } from '../../shared/types';
 
-function ValidationStageForm({ 
-  stage, 
-  onSave, 
-  onCancel 
-}: { 
+function ValidationStageForm({
+  stage,
+  onSave,
+  onCancel,
+}: {
   stage?: ValidationStage;
   onSave: (stage: Omit<ValidationStage, 'id'>) => void;
   onCancel: () => void;
@@ -38,7 +47,9 @@ function ValidationStageForm({
         <Input
           id="name"
           value={formData.name}
-          onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+          onChange={(e) =>
+            setFormData((prev) => ({ ...prev, name: e.target.value }))
+          }
           placeholder="e.g., Lint Check"
           required
         />
@@ -49,7 +60,9 @@ function ValidationStageForm({
         <Input
           id="command"
           value={formData.command}
-          onChange={(e) => setFormData(prev => ({ ...prev, command: e.target.value }))}
+          onChange={(e) =>
+            setFormData((prev) => ({ ...prev, command: e.target.value }))
+          }
           placeholder="e.g., npm run lint"
           required
         />
@@ -61,7 +74,12 @@ function ValidationStageForm({
           id="timeout"
           type="number"
           value={formData.timeout}
-          onChange={(e) => setFormData(prev => ({ ...prev, timeout: parseInt(e.target.value) || 1000 }))}
+          onChange={(e) =>
+            setFormData((prev) => ({
+              ...prev,
+              timeout: parseInt(e.target.value) || 1000,
+            }))
+          }
           min="1000"
         />
       </div>
@@ -72,7 +90,12 @@ function ValidationStageForm({
           id="priority"
           type="number"
           value={formData.priority}
-          onChange={(e) => setFormData(prev => ({ ...prev, priority: parseInt(e.target.value) || 0 }))}
+          onChange={(e) =>
+            setFormData((prev) => ({
+              ...prev,
+              priority: parseInt(e.target.value) || 0,
+            }))
+          }
         />
       </div>
 
@@ -81,7 +104,9 @@ function ValidationStageForm({
           <input
             type="checkbox"
             checked={formData.enabled}
-            onChange={(e) => setFormData(prev => ({ ...prev, enabled: e.target.checked }))}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, enabled: e.target.checked }))
+            }
           />
           <span className="text-gray-900">Enabled</span>
         </label>
@@ -90,7 +115,12 @@ function ValidationStageForm({
           <input
             type="checkbox"
             checked={formData.continueOnFailure}
-            onChange={(e) => setFormData(prev => ({ ...prev, continueOnFailure: e.target.checked }))}
+            onChange={(e) =>
+              setFormData((prev) => ({
+                ...prev,
+                continueOnFailure: e.target.checked,
+              }))
+            }
           />
           <span className="text-gray-900">Continue on Failure</span>
         </label>
@@ -141,16 +171,16 @@ function EmptyStagesList() {
   );
 }
 
-function StageReorderControls({ 
-  stage, 
-  index, 
-  totalStages, 
-  onMove 
-}: { 
-  stage: ValidationStage; 
-  index: number; 
-  totalStages: number; 
-  onMove: (stageId: string, direction: 'up' | 'down') => void; 
+function StageReorderControls({
+  stage,
+  index,
+  totalStages,
+  onMove,
+}: {
+  stage: ValidationStage;
+  index: number;
+  totalStages: number;
+  onMove: (stageId: string, direction: 'up' | 'down') => void;
 }) {
   return (
     <div className="flex flex-col">
@@ -176,32 +206,32 @@ function StageReorderControls({
   );
 }
 
-function StageListItem({ 
-  stage, 
-  index, 
-  totalStages, 
-  editingStage, 
-  onEdit, 
-  onDelete, 
-  onMove, 
-  onUpdate, 
+function StageListItem({
+  stage,
+  index,
+  totalStages,
+  editingStage,
+  onEdit,
+  onDelete,
+  onMove,
+  onUpdate,
   onCancelEdit,
   onDragStart,
   onDragEnd,
   onDragOver,
   onDrop,
   isDragging,
-  dragOverIndex
-}: { 
-  stage: ValidationStage; 
-  index: number; 
-  totalStages: number; 
-  editingStage: ValidationStage | null; 
-  onEdit: (stage: ValidationStage) => void; 
-  onDelete: (stageId: string) => void; 
-  onMove: (stageId: string, direction: 'up' | 'down') => void; 
-  onUpdate: (id: string, stage: Omit<ValidationStage, 'id'>) => void; 
-  onCancelEdit: () => void; 
+  dragOverIndex,
+}: {
+  stage: ValidationStage;
+  index: number;
+  totalStages: number;
+  editingStage: ValidationStage | null;
+  onEdit: (stage: ValidationStage) => void;
+  onDelete: (stageId: string) => void;
+  onMove: (stageId: string, direction: 'up' | 'down') => void;
+  onUpdate: (id: string, stage: Omit<ValidationStage, 'id'>) => void;
+  onCancelEdit: () => void;
   onDragStart: (e: React.DragEvent, stageIndex: number) => void;
   onDragEnd: () => void;
   onDragOver: (e: React.DragEvent, targetIndex: number) => void;
@@ -248,7 +278,9 @@ function StageListItem({
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="font-medium text-gray-900">{stage.name}</span>
+                    <span className="font-medium text-gray-900">
+                      {stage.name}
+                    </span>
                     {!stage.enabled && (
                       <span className="px-2 py-1 text-xs bg-gray-200 text-gray-600 rounded">
                         Disabled
@@ -256,7 +288,8 @@ function StageListItem({
                     )}
                   </div>
                   <div className="text-sm text-gray-600">
-                    {stage.command} • {stage.timeout}ms timeout • Priority: {stage.priority || 0}
+                    {stage.command} • {stage.timeout}ms timeout • Priority:{' '}
+                    {stage.priority || 0}
                   </div>
                 </div>
               </div>
@@ -298,8 +331,13 @@ function useValidationStagesMutations() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, stage }: { id: string; stage: Partial<ValidationStage> }) =>
-      settingsApi.updateValidationStage(id, stage),
+    mutationFn: ({
+      id,
+      stage,
+    }: {
+      id: string;
+      stage: Partial<ValidationStage>;
+    }) => settingsApi.updateValidationStage(id, stage),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['validation-stages'] });
     },
@@ -318,12 +356,21 @@ function useValidationStagesMutations() {
   return { addMutation, updateMutation, deleteMutation };
 }
 
-function useStageReordering(sortedStages: ValidationStage[], updateMutation: { mutateAsync: (params: { id: string; stage: ValidationStage }) => Promise<ValidationStage> }) {
+function useStageReordering(
+  sortedStages: ValidationStage[],
+  updateMutation: {
+    mutateAsync: (params: {
+      id: string;
+      stage: ValidationStage;
+    }) => Promise<ValidationStage>;
+  }
+) {
   const moveStage = async (stageId: string, direction: 'up' | 'down') => {
-    const currentIndex = sortedStages.findIndex(s => s.id === stageId);
+    const currentIndex = sortedStages.findIndex((s) => s.id === stageId);
     if (currentIndex === -1) return;
 
-    const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    const targetIndex =
+      direction === 'up' ? currentIndex - 1 : currentIndex + 1;
     if (targetIndex < 0 || targetIndex >= sortedStages.length) return;
 
     const currentStage = sortedStages[currentIndex];
@@ -337,21 +384,21 @@ function useStageReordering(sortedStages: ValidationStage[], updateMutation: { m
     try {
       // Update sequentially with temporary priority to avoid conflicts
       // First, move current stage to a temporary priority
-      await updateMutation.mutateAsync({ 
-        id: currentStage.id, 
-        stage: { ...currentStage, priority: tempPriority } 
+      await updateMutation.mutateAsync({
+        id: currentStage.id,
+        stage: { ...currentStage, priority: tempPriority },
       });
-      
+
       // Then move target stage to current stage's priority
-      await updateMutation.mutateAsync({ 
-        id: targetStage.id, 
-        stage: { ...targetStage, priority: currentPriority } 
+      await updateMutation.mutateAsync({
+        id: targetStage.id,
+        stage: { ...targetStage, priority: currentPriority },
       });
-      
+
       // Finally, move current stage to target stage's priority
-      await updateMutation.mutateAsync({ 
-        id: currentStage.id, 
-        stage: { ...currentStage, priority: targetPriority } 
+      await updateMutation.mutateAsync({
+        id: currentStage.id,
+        stage: { ...currentStage, priority: targetPriority },
       });
     } catch (error) {
       console.error('Failed to reorder stages:', error);
@@ -360,8 +407,13 @@ function useStageReordering(sortedStages: ValidationStage[], updateMutation: { m
   };
 
   const reorderByDrag = async (fromIndex: number, toIndex: number) => {
-    if (fromIndex === toIndex || fromIndex < 0 || toIndex < 0 || 
-        fromIndex >= sortedStages.length || toIndex >= sortedStages.length) {
+    if (
+      fromIndex === toIndex ||
+      fromIndex < 0 ||
+      toIndex < 0 ||
+      fromIndex >= sortedStages.length ||
+      toIndex >= sortedStages.length
+    ) {
       return;
     }
 
@@ -374,22 +426,22 @@ function useStageReordering(sortedStages: ValidationStage[], updateMutation: { m
       // Update priorities sequentially to avoid race conditions
       // Start with a high temporary priority to avoid conflicts
       const tempPriorityBase = sortedStages.length + 1000;
-      
+
       // First, assign temporary priorities to all stages to avoid conflicts
       for (let i = 0; i < reorderedStages.length; i++) {
         const stage = reorderedStages[i];
         await updateMutation.mutateAsync({
           id: stage.id,
-          stage: { ...stage, priority: tempPriorityBase + i }
+          stage: { ...stage, priority: tempPriorityBase + i },
         });
       }
-      
+
       // Then assign final priorities
       for (let i = 0; i < reorderedStages.length; i++) {
         const stage = reorderedStages[i];
         await updateMutation.mutateAsync({
           id: stage.id,
-          stage: { ...stage, priority: i }
+          stage: { ...stage, priority: i },
         });
       }
     } catch (error) {
@@ -402,14 +454,14 @@ function useStageReordering(sortedStages: ValidationStage[], updateMutation: { m
   return { moveStage, reorderByDrag };
 }
 
-function AddStageForm({ 
-  showAddForm, 
-  onAdd, 
-  onCancel 
-}: { 
-  showAddForm: boolean; 
-  onAdd: (stage: Omit<ValidationStage, 'id'>) => void; 
-  onCancel: () => void; 
+function AddStageForm({
+  showAddForm,
+  onAdd,
+  onCancel,
+}: {
+  showAddForm: boolean;
+  onAdd: (stage: Omit<ValidationStage, 'id'>) => void;
+  onCancel: () => void;
 }) {
   if (!showAddForm) return null;
 
@@ -419,32 +471,29 @@ function AddStageForm({
         <CardTitle>Add New Validation Stage</CardTitle>
       </CardHeader>
       <CardContent>
-        <ValidationStageForm
-          onSave={onAdd}
-          onCancel={onCancel}
-        />
+        <ValidationStageForm onSave={onAdd} onCancel={onCancel} />
       </CardContent>
     </Card>
   );
 }
 
-function StagesList({ 
-  stages, 
-  editingStage, 
-  onEdit, 
-  onDelete, 
-  onMove, 
-  onUpdate, 
+function StagesList({
+  stages,
+  editingStage,
+  onEdit,
+  onDelete,
+  onMove,
+  onUpdate,
   onCancelEdit,
-  onReorderByDrag
-}: { 
-  stages: ValidationStage[]; 
-  editingStage: ValidationStage | null; 
-  onEdit: (stage: ValidationStage) => void; 
-  onDelete: (stageId: string) => void; 
-  onMove: (stageId: string, direction: 'up' | 'down') => void; 
-  onUpdate: (id: string, stage: Omit<ValidationStage, 'id'>) => void; 
-  onCancelEdit: () => void; 
+  onReorderByDrag,
+}: {
+  stages: ValidationStage[];
+  editingStage: ValidationStage | null;
+  onEdit: (stage: ValidationStage) => void;
+  onDelete: (stageId: string) => void;
+  onMove: (stageId: string, direction: 'up' | 'down') => void;
+  onUpdate: (id: string, stage: Omit<ValidationStage, 'id'>) => void;
+  onCancelEdit: () => void;
   onReorderByDrag: (fromIndex: number, toIndex: number) => void;
 }) {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
@@ -473,11 +522,11 @@ function StagesList({
 
   const handleDrop = (e: React.DragEvent, targetIndex: number) => {
     e.preventDefault();
-    
+
     if (draggedIndex !== null && draggedIndex !== targetIndex) {
       onReorderByDrag(draggedIndex, targetIndex);
     }
-    
+
     setDraggedIndex(null);
     setDragOverIndex(null);
   };
@@ -509,15 +558,22 @@ function StagesList({
 }
 
 function ValidationStagesList() {
-  const [editingStage, setEditingStage] = useState<ValidationStage | null>(null);
+  const [editingStage, setEditingStage] = useState<ValidationStage | null>(
+    null
+  );
   const [showAddForm, setShowAddForm] = useState(false);
 
-  const { data: stages = [], isLoading, error } = useQuery({
+  const {
+    data: stages = [],
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ['validation-stages'],
     queryFn: settingsApi.getValidationStages,
   });
 
-  const { addMutation, updateMutation, deleteMutation } = useValidationStagesMutations();
+  const { addMutation, updateMutation, deleteMutation } =
+    useValidationStagesMutations();
 
   // Sort stages by order/priority for display
   const sortedStages = [...stages].sort((a, b) => {
@@ -526,7 +582,10 @@ function ValidationStagesList() {
     return aOrder - bOrder;
   });
 
-  const { moveStage, reorderByDrag } = useStageReordering(sortedStages, updateMutation);
+  const { moveStage, reorderByDrag } = useStageReordering(
+    sortedStages,
+    updateMutation
+  );
 
   const handleAddStage = (stage: Omit<ValidationStage, 'id'>) => {
     addMutation.mutate(stage, {
@@ -535,11 +594,17 @@ function ValidationStagesList() {
     });
   };
 
-  const handleUpdateStage = (id: string, stage: Omit<ValidationStage, 'id'>) => {
-    updateMutation.mutate({ id, stage }, {
-      onSuccess: () => setEditingStage(null),
-      onError: () => setEditingStage(null), // Still close form to prevent hanging in tests
-    });
+  const handleUpdateStage = (
+    id: string,
+    stage: Omit<ValidationStage, 'id'>
+  ) => {
+    updateMutation.mutate(
+      { id, stage },
+      {
+        onSuccess: () => setEditingStage(null),
+        onError: () => setEditingStage(null), // Still close form to prevent hanging in tests
+      }
+    );
   };
 
   if (isLoading) {
@@ -553,7 +618,9 @@ function ValidationStagesList() {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold text-gray-900">Validation Stages</h3>
+        <h3 className="text-lg font-semibold text-gray-900">
+          Validation Stages
+        </h3>
         <Button onClick={() => setShowAddForm(true)}>
           <Plus className="w-4 h-4 mr-2" />
           Add Stage

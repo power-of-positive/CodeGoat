@@ -2,24 +2,18 @@
  * Test utilities and mock helpers
  */
 
-import { vi } from "vitest";
-import {
-  StructuredReviewData,
-  ReviewResult,
-  ProjectMetrics,
-} from "../utils/types";
+import { vi } from 'vitest';
+import { StructuredReviewData, ReviewResult, ProjectMetrics } from '../utils/types';
 
 /**
  * Creates a mock ReviewResult with default values
  */
-export function createMockReviewResult(
-  overrides: Partial<ReviewResult> = {},
-): ReviewResult {
+export function createMockReviewResult(overrides: Partial<ReviewResult> = {}): ReviewResult {
   return {
-    severity: "low",
+    severity: 'low',
     issues: [],
     suggestions: [],
-    summary: "Mock review summary",
+    summary: 'Mock review summary',
     hasBlockingIssues: false,
     confidence: 0.9,
     ...overrides,
@@ -30,12 +24,12 @@ export function createMockReviewResult(
  * Creates mock structured review data
  */
 export function createMockStructuredReview(
-  overrides: Partial<StructuredReviewData> = {},
+  overrides: Partial<StructuredReviewData> = {}
 ): StructuredReviewData {
   return {
     files: [
       {
-        file: "test.ts",
+        file: 'test.ts',
         result: createMockReviewResult(),
       },
     ],
@@ -52,9 +46,7 @@ export function createMockStructuredReview(
 /**
  * Creates mock project metrics
  */
-export function createMockProjectMetrics(
-  overrides: Partial<ProjectMetrics> = {},
-): ProjectMetrics {
+export function createMockProjectMetrics(overrides: Partial<ProjectMetrics> = {}): ProjectMetrics {
   return {
     linesOfCode: 1000,
     testFiles: 10,
@@ -69,7 +61,7 @@ export function createMockProjectMetrics(
 export class MockLLMReviewer {
   reviewChangedFiles = vi.fn().mockResolvedValue({
     structuredData: createMockStructuredReview(),
-    textReport: "Mock text report",
+    textReport: 'Mock text report',
   });
 }
 
@@ -77,7 +69,7 @@ export class MockLLMReviewer {
  * Common mock setup for execCommand
  */
 export function setupExecCommandMock(mockImplementation?: () => string) {
-  return vi.fn().mockImplementation(mockImplementation || (() => ""));
+  return vi.fn().mockImplementation(mockImplementation || (() => ''));
 }
 
 /**
@@ -100,7 +92,7 @@ export function setupTestMocks() {
   };
 
   const cleanup = () => {
-    Object.values(mocks).forEach((mock) => mock.mockReset());
+    Object.values(mocks).forEach(mock => mock.mockReset());
   };
 
   return { mocks, cleanup };

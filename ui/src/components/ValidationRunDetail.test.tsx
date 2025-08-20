@@ -61,9 +61,7 @@ const renderWithProviders = (component: React.ReactElement) => {
   const queryClient = createTestQueryClient();
   return render(
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        {component}
-      </BrowserRouter>
+      <BrowserRouter>{component}</BrowserRouter>
     </QueryClientProvider>
   );
 };
@@ -80,7 +78,9 @@ describe('ValidationRunDetail', () => {
 
     renderWithProviders(<ValidationRunDetail />);
 
-    expect(screen.getByText('Loading validation run details...')).toBeInTheDocument();
+    expect(
+      screen.getByText('Loading validation run details...')
+    ).toBeInTheDocument();
   });
 
   it('should render error state when API fails', async () => {
@@ -92,7 +92,9 @@ describe('ValidationRunDetail', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Failed to Load')).toBeInTheDocument();
-      expect(screen.getByText('Could not load validation run details')).toBeInTheDocument();
+      expect(
+        screen.getByText('Could not load validation run details')
+      ).toBeInTheDocument();
     });
   });
 
@@ -105,14 +107,18 @@ describe('ValidationRunDetail', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Run Not Found')).toBeInTheDocument();
-      expect(screen.getByText('The validation run with ID "test-run-123" could not be found.')).toBeInTheDocument();
+      expect(
+        screen.getByText(
+          'The validation run with ID "test-run-123" could not be found.'
+        )
+      ).toBeInTheDocument();
     });
   });
 
   it('should render validation run details when data is available', async () => {
-    (analyticsApi.getValidationRuns as jest.Mock).mockResolvedValue(
-      [mockValidationRun]
-    );
+    (analyticsApi.getValidationRuns as jest.Mock).mockResolvedValue([
+      mockValidationRun,
+    ]);
 
     renderWithProviders(<ValidationRunDetail />);
 
@@ -134,9 +140,9 @@ describe('ValidationRunDetail', () => {
   });
 
   it('should show stage logs when Show Logs button is clicked', async () => {
-    (analyticsApi.getValidationRuns as jest.Mock).mockResolvedValue(
-      [mockValidationRun]
-    );
+    (analyticsApi.getValidationRuns as jest.Mock).mockResolvedValue([
+      mockValidationRun,
+    ]);
 
     renderWithProviders(<ValidationRunDetail />);
 
@@ -158,14 +164,16 @@ describe('ValidationRunDetail', () => {
       expect(screen.getByText('Error Output:')).toBeInTheDocument();
       expect(screen.getByText('Type error in file.ts:15')).toBeInTheDocument();
       expect(screen.getByText('Standard Output:')).toBeInTheDocument();
-      expect(screen.getByText('TypeScript compilation completed')).toBeInTheDocument();
+      expect(
+        screen.getByText('TypeScript compilation completed')
+      ).toBeInTheDocument();
     });
   });
 
   it('should navigate back to analytics when back button is clicked', async () => {
-    (analyticsApi.getValidationRuns as jest.Mock).mockResolvedValue(
-      [mockValidationRun]
-    );
+    (analyticsApi.getValidationRuns as jest.Mock).mockResolvedValue([
+      mockValidationRun,
+    ]);
 
     renderWithProviders(<ValidationRunDetail />);
 
@@ -184,12 +192,15 @@ describe('ValidationRunDetail', () => {
     const failedRun: ValidationRun = {
       ...mockValidationRun,
       success: false,
-      stages: mockValidationRun.stages.map(stage => ({ ...stage, success: false })),
+      stages: mockValidationRun.stages.map((stage) => ({
+        ...stage,
+        success: false,
+      })),
     };
 
-    (analyticsApi.getValidationRuns as jest.Mock).mockResolvedValue(
-      [failedRun]
-    );
+    (analyticsApi.getValidationRuns as jest.Mock).mockResolvedValue([
+      failedRun,
+    ]);
 
     renderWithProviders(<ValidationRunDetail />);
 

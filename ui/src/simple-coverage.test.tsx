@@ -55,14 +55,18 @@ describe('Coverage Tests', () => {
     const obj = { a: 1, b: 2, c: 3 };
     expect(Object.keys(obj)).toEqual(['a', 'b', 'c']);
     expect(Object.values(obj)).toEqual([1, 2, 3]);
-    expect(Object.entries(obj)).toEqual([['a', 1], ['b', 2], ['c', 3]]);
+    expect(Object.entries(obj)).toEqual([
+      ['a', 1],
+      ['b', 2],
+      ['c', 3],
+    ]);
     expect({ ...obj, d: 4 }).toEqual({ a: 1, b: 2, c: 3, d: 4 });
   });
 
   it('exercises Promise patterns', async () => {
     const promise = Promise.resolve('test');
     await expect(promise).resolves.toBe('test');
-    
+
     const rejectedPromise = Promise.reject(new Error('test error'));
     await expect(rejectedPromise).rejects.toThrow('test error');
   });
@@ -81,7 +85,7 @@ describe('Coverage Tests', () => {
     // Test localStorage functionality
     const key = 'test-key';
     const value = 'test-value';
-    
+
     localStorage.setItem(key, value);
     expect(localStorage.getItem(key)).toBe(value);
     localStorage.removeItem(key);
@@ -112,12 +116,12 @@ describe('Coverage Tests', () => {
     expect(JSON.parse(json)).toEqual(obj);
   });
 
-  it('exercises setTimeout and clearTimeout', (done) => {
+  it('exercises setTimeout and clearTimeout', done => {
     const timeoutId = setTimeout(() => {
       expect(true).toBe(true);
       done();
     }, 1);
-    
+
     expect(typeof timeoutId).toBe('number');
   });
 
@@ -125,7 +129,7 @@ describe('Coverage Tests', () => {
     const regex = /test-(\d+)/;
     const str = 'test-123';
     const match = str.match(regex);
-    
+
     expect(match).toBeTruthy();
     expect(match![1]).toBe('123');
     expect(regex.test(str)).toBe(true);

@@ -1,7 +1,11 @@
 import { jest } from '@jest/globals';
 import { spawn, ChildProcess } from 'child_process';
 import { EventEmitter } from 'events';
-import { ClaudeCodeExecutor, ClaudeExecutorOptions, ClaudeExecutorResult } from '../claude-executor';
+import {
+  ClaudeCodeExecutor,
+  ClaudeExecutorOptions,
+  ClaudeExecutorResult,
+} from '../claude-executor';
 import { WinstonLogger } from '../../logger-winston';
 
 // Mock child_process
@@ -36,7 +40,7 @@ describe('ClaudeCodeExecutor', () => {
   let mockChildProcess: MockChildProcess;
   const defaultOptions: ClaudeExecutorOptions = {
     worktreeDir: '/tmp/test-worktree',
-    claudeCommand: 'npx -y @anthropic-ai/claude-code@latest -p --dangerously-skip-permissions'
+    claudeCommand: 'npx -y @anthropic-ai/claude-code@latest -p --dangerously-skip-permissions',
   };
 
   beforeEach(() => {
@@ -61,7 +65,7 @@ describe('ClaudeCodeExecutor', () => {
   describe('parseShellCommand', () => {
     it('should parse simple command with arguments', async () => {
       const testPromise = executor.spawn('test');
-      
+
       expect(mockSpawn).toHaveBeenCalledWith(
         'npx',
         ['-y', '@anthropic-ai/claude-code@latest', '-p', '--dangerously-skip-permissions'],
@@ -80,7 +84,7 @@ describe('ClaudeCodeExecutor', () => {
     it('should parse command with quoted arguments', async () => {
       const executorWithQuotes = new ClaudeCodeExecutor({
         worktreeDir: '/tmp/test',
-        claudeCommand: 'node script.js --flag "value with spaces" --other \'single quotes\''
+        claudeCommand: 'node script.js --flag "value with spaces" --other \'single quotes\'',
       });
 
       const testPromise = executorWithQuotes.spawn('test');
@@ -98,7 +102,7 @@ describe('ClaudeCodeExecutor', () => {
     it('should handle escaped characters', async () => {
       const executorWithEscapes = new ClaudeCodeExecutor({
         worktreeDir: '/tmp/test',
-        claudeCommand: 'echo hello\\ world test\\nline'
+        claudeCommand: 'echo hello\\ world test\\nline',
       });
 
       const testPromise = executorWithEscapes.spawn('test');
@@ -190,7 +194,9 @@ describe('ClaudeCodeExecutor', () => {
       const error = new Error('Command not found');
       mockChildProcess.emit('error', error);
 
-      await expect(spawnPromise).rejects.toThrow('Failed to start Claude process: Command not found');
+      await expect(spawnPromise).rejects.toThrow(
+        'Failed to start Claude process: Command not found'
+      );
     });
 
     it('should handle missing stdin', async () => {
@@ -214,19 +220,19 @@ describe('ClaudeCodeExecutor', () => {
 
       expect(mockLogger.info).toHaveBeenCalledWith('Starting Claude executor', {
         worktreeDir: '/tmp/test-worktree',
-        command: 'npx -y @anthropic-ai/claude-code@latest -p --dangerously-skip-permissions'
+        command: 'npx -y @anthropic-ai/claude-code@latest -p --dangerously-skip-permissions',
       });
 
       expect(mockLogger.debug).toHaveBeenCalledWith('Parsed command', {
         executable: 'npx',
-        args: ['-y', '@anthropic-ai/claude-code@latest', '-p', '--dangerously-skip-permissions']
+        args: ['-y', '@anthropic-ai/claude-code@latest', '-p', '--dangerously-skip-permissions'],
       });
 
       expect(mockLogger.info).toHaveBeenCalledWith('Claude process completed', {
         exitCode: 0,
         signal: null,
         stdoutLength: 6,
-        stderrLength: 0
+        stderrLength: 0,
       });
     });
 
@@ -253,7 +259,9 @@ describe('ClaudeCodeExecutor', () => {
     });
 
     it('should return Claude command', () => {
-      expect(executor.getClaudeCommand()).toBe('npx -y @anthropic-ai/claude-code@latest -p --dangerously-skip-permissions');
+      expect(executor.getClaudeCommand()).toBe(
+        'npx -y @anthropic-ai/claude-code@latest -p --dangerously-skip-permissions'
+      );
     });
   });
 

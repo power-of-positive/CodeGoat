@@ -1,47 +1,39 @@
-import { execCommand } from "../utils/command-utils";
-import { validateInput } from "../utils/validation-utils";
-import { CheckResult } from "../utils/types";
-import { findAvailablePort } from "../utils/port-utils";
-import * as path from "path";
+import { execCommand } from '../utils/command-utils';
+import { validateInput } from '../utils/validation-utils';
+import { CheckResult } from '../utils/types';
+import { findAvailablePort } from '../utils/port-utils';
+import * as path from 'path';
 export {
   runFrontendLinting,
   runFrontendTests,
   runPlaywrightTests,
-} from "../runners/frontend-runners";
-export { runRustFormatting, runRustLinting } from "../runners/rust-runners";
-export {
-  runTypeScriptCheck,
-  runPrettierFormat,
-  runEslintFix,
-} from "../formatting/format-runners";
+} from '../runners/frontend-runners';
+export { runRustFormatting, runRustLinting } from '../runners/rust-runners';
+export { runTypeScriptCheck, runPrettierFormat, runEslintFix } from '../formatting/format-runners';
 
 /**
  * Run API E2E tests with dynamic port
  */
-export async function runApiE2eTests(
-  projectRoot: string,
-): Promise<CheckResult> {
-  console.log("🧪 Running API E2E tests...");
+export async function runApiE2eTests(projectRoot: string): Promise<CheckResult> {
+  console.log('🧪 Running API E2E tests...');
 
   try {
     // Validate path format first (catches empty strings)
-    if (!projectRoot || typeof projectRoot !== "string") {
-      throw new Error("Invalid path: must be non-empty string");
+    if (!projectRoot || typeof projectRoot !== 'string') {
+      throw new Error('Invalid path: must be non-empty string');
     }
-    
+
     // Resolve to absolute path to avoid validation issues with ".."
     const absoluteProjectRoot = path.resolve(projectRoot);
-    validateInput(absoluteProjectRoot, "path");
+    validateInput(absoluteProjectRoot, 'path');
     const availablePort = await findAvailablePort(3001);
     console.log(`📡 Using port ${availablePort} for API E2E tests`);
 
-    const result = execCommand("npm run test:e2e:api", projectRoot, 180000, {
+    const result = execCommand('npm run test:e2e:api', projectRoot, 180000, {
       BACKEND_PORT: availablePort.toString(),
     });
 
-    console.log(
-      result.success ? "✅ API E2E tests passed" : "❌ API E2E tests failed",
-    );
+    console.log(result.success ? '✅ API E2E tests passed' : '❌ API E2E tests failed');
     return result;
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);

@@ -2,7 +2,7 @@
  * Centralized result utility functions for creating consistent check results
  */
 
-import { CheckResult } from "./types";
+import { CheckResult } from './types';
 
 /**
  * Create a successful check result

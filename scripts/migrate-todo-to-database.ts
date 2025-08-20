@@ -18,16 +18,16 @@ interface JsonTask {
 
 // Status mapping between JSON and Prisma enum
 const statusMapping: Record<string, TodoStatus> = {
-  'pending': TodoStatus.PENDING,
-  'in_progress': TodoStatus.IN_PROGRESS,
-  'completed': TodoStatus.COMPLETED,
+  pending: TodoStatus.PENDING,
+  in_progress: TodoStatus.IN_PROGRESS,
+  completed: TodoStatus.COMPLETED,
 };
 
 // Priority mapping between JSON and Prisma enum
 const priorityMapping: Record<string, TodoPriority> = {
-  'low': TodoPriority.LOW,
-  'medium': TodoPriority.MEDIUM,
-  'high': TodoPriority.HIGH,
+  low: TodoPriority.LOW,
+  medium: TodoPriority.MEDIUM,
+  high: TodoPriority.HIGH,
 };
 
 async function migrateTodoTasks() {
@@ -46,7 +46,7 @@ async function migrateTodoTasks() {
 
     // Check existing tasks in database to avoid duplicates
     const existingTasks = await db.todoTask.findMany({
-      select: { id: true }
+      select: { id: true },
     });
     const existingIds = new Set(existingTasks.map(t => t.id));
 
@@ -74,12 +74,11 @@ async function migrateTodoTasks() {
         };
 
         await db.todoTask.create({
-          data: dbTask
+          data: dbTask,
         });
 
         logger.debug(`Migrated task ${task.id}: ${task.content.substring(0, 50)}...`);
         migrated++;
-
       } catch (error) {
         logger.error(`Failed to migrate task ${task.id}:`, error as Error);
         failed++;
@@ -94,13 +93,12 @@ async function migrateTodoTasks() {
 
     if (migrated > 0) {
       logger.info('✅ Migration successful! Tasks have been migrated to the database.');
-      
+
       // Optionally backup the JSON file
       const backupPath = path.join(process.cwd(), `todo-list.json.backup.${Date.now()}`);
       await fs.copyFile(todoListPath, backupPath);
       logger.info(`📋 Backup created at: ${backupPath}`);
     }
-
   } catch (error) {
     logger.error('Migration failed:', error as Error);
     process.exit(1);
@@ -116,7 +114,7 @@ if (require.main === module) {
       console.log('Migration script completed successfully');
       process.exit(0);
     })
-    .catch((error) => {
+    .catch(error => {
       console.error('Migration script failed:', error);
       process.exit(1);
     });

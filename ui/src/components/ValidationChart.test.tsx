@@ -1,5 +1,11 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  act,
+} from '@testing-library/react';
 import { ValidationChart } from './ValidationChart';
 import { ValidationMetrics } from 'shared/types';
 import { settingsApi } from '../lib/api';
@@ -75,7 +81,9 @@ describe('ValidationChart', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    (settingsApi.getValidationStages as jest.Mock).mockResolvedValue(mockStages);
+    (settingsApi.getValidationStages as jest.Mock).mockResolvedValue(
+      mockStages
+    );
   });
 
   it('renders stage performance overview', async () => {
@@ -89,7 +97,7 @@ describe('ValidationChart', () => {
     await act(async () => {
       render(<ValidationChart metrics={mockMetrics} />);
     });
-    
+
     expect(screen.getByText('Code Linting')).toBeInTheDocument();
     expect(screen.getByText('Unit Tests')).toBeInTheDocument();
     expect(screen.getByText('90.0% success')).toBeInTheDocument();
@@ -102,16 +110,20 @@ describe('ValidationChart', () => {
     await act(async () => {
       render(<ValidationChart metrics={mockMetrics} />);
     });
-    
-    expect(screen.getByText(/10 total runs • 9 successes • 1 failures/)).toBeInTheDocument();
-    expect(screen.getByText(/8 total runs • 6 successes • 2 failures/)).toBeInTheDocument();
+
+    expect(
+      screen.getByText(/10 total runs • 9 successes • 1 failures/)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/8 total runs • 6 successes • 2 failures/)
+    ).toBeInTheDocument();
   });
 
   it('shows disabled stages with proper indicators', async () => {
     await act(async () => {
       render(<ValidationChart metrics={mockMetrics} />);
     });
-    
+
     expect(screen.getByText('Disabled Stage')).toBeInTheDocument();
     expect(screen.getByText('Disabled')).toBeInTheDocument();
   });
@@ -133,11 +145,11 @@ describe('ValidationChart', () => {
         },
       },
     };
-    
+
     await act(async () => {
       render(<ValidationChart metrics={metricsWithNoDataStage} />);
     });
-    
+
     expect(screen.getByText('No Data Stage')).toBeInTheDocument();
     expect(screen.getByText('No Data')).toBeInTheDocument();
   });
@@ -146,13 +158,13 @@ describe('ValidationChart', () => {
     await act(async () => {
       render(<ValidationChart metrics={mockMetrics} />);
     });
-    
+
     const lintStage = screen.getByText('Code Linting').closest('div');
-    
+
     await act(async () => {
       fireEvent.click(lintStage!);
     });
-    
+
     expect(screen.getByText('Code Linting Details')).toBeInTheDocument();
     expect(screen.getByText('90.00%')).toBeInTheDocument();
     expect(screen.getByText('2.00s')).toBeInTheDocument();
@@ -162,17 +174,17 @@ describe('ValidationChart', () => {
     await act(async () => {
       render(<ValidationChart metrics={mockMetrics} />);
     });
-    
+
     const lintSuccessRate = screen.getByText('90.0% success');
     const testSuccessRate = screen.getByText('75.0% success');
-    
+
     expect(lintSuccessRate).toHaveClass('text-green-600');
     expect(testSuccessRate).toHaveClass('text-yellow-600');
   });
 
   it('displays continue on failure information', async () => {
     render(<ValidationChart metrics={mockMetrics} />);
-    
+
     await waitFor(() => {
       expect(screen.getByText('Stop on fail')).toBeInTheDocument();
       expect(screen.getByText('Continue on fail')).toBeInTheDocument();
@@ -183,17 +195,17 @@ describe('ValidationChart', () => {
     await act(async () => {
       render(<ValidationChart metrics={mockMetrics} />);
     });
-    
+
     await waitFor(() => {
       expect(screen.getByText('Code Linting')).toBeInTheDocument();
     });
 
     const lintStage = screen.getByText('Code Linting').closest('div');
-    
+
     await act(async () => {
       fireEvent.click(lintStage!);
     });
-    
+
     await waitFor(() => {
       expect(screen.getByText('Continue on Failure:')).toBeInTheDocument();
       expect(screen.getByText('No')).toBeInTheDocument();

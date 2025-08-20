@@ -2,7 +2,7 @@
 
 /**
  * Optimized Log Cleanup Script
- * 
+ *
  * Provides advanced log cleanup with performance metrics and flexible policies.
  */
 
@@ -31,7 +31,7 @@ function displayPreCleanupStats(stats: LogStats): void {
   console.log(`  Total files: ${stats.totalFiles}`);
   console.log(`  Total size: ${(stats.totalSize / 1024 / 1024).toFixed(2)} MB`);
   console.log(`  Average file size: ${(stats.averageFileSize / 1024).toFixed(2)} KB`);
-  
+
   if (stats.oldestFile && stats.newestFile) {
     console.log(`  Oldest file: ${stats.oldestFile.toLocaleDateString()}`);
     console.log(`  Newest file: ${stats.newestFile.toLocaleDateString()}`);
@@ -57,7 +57,7 @@ function displayPostCleanupStats(statsBefore: LogStats, statsAfter: LogStats): v
   console.log('\n📊 Log directory statistics (after cleanup):');
   console.log(`  Total files: ${statsAfter.totalFiles}`);
   console.log(`  Total size: ${(statsAfter.totalSize / 1024 / 1024).toFixed(2)} MB`);
-  
+
   const spaceSaved = statsBefore.totalSize - statsAfter.totalSize;
   const percentageSaved = ((spaceSaved / statsBefore.totalSize) * 100).toFixed(1);
   console.log(`  Space saved: ${(spaceSaved / 1024 / 1024).toFixed(2)} MB (${percentageSaved}%)`);
@@ -65,9 +65,9 @@ function displayPostCleanupStats(statsBefore: LogStats, statsAfter: LogStats): v
 
 function assessPerformance(statsBefore: LogStats, result: CleanupResult): void {
   console.log('\n⚡ Performance Assessment:');
-  const processingSpeed = (statsBefore.totalSize / 1024 / 1024) / (result.processingTime / 1000);
+  const processingSpeed = statsBefore.totalSize / 1024 / 1024 / (result.processingTime / 1000);
   console.log(`  Processing speed: ${processingSpeed.toFixed(2)} MB/s`);
-  
+
   if (result.processingTime < 5000) {
     console.log('  Performance: Excellent ✅');
   } else if (result.processingTime < 15000) {
@@ -77,7 +77,11 @@ function assessPerformance(statsBefore: LogStats, result: CleanupResult): void {
   }
 }
 
-function displayOptimizationRecommendations(statsAfter: LogStats, result: CleanupResult, statsBefore: LogStats): void {
+function displayOptimizationRecommendations(
+  statsAfter: LogStats,
+  result: CleanupResult,
+  statsBefore: LogStats
+): void {
   console.log('\n💡 Recommendations:');
   if (statsAfter.totalFiles > 30) {
     console.log('  - Consider reducing maxLogFiles for better performance');
@@ -97,7 +101,7 @@ async function main() {
   console.log('🧹 Starting optimized log cleanup...\n');
 
   const logsDir = join(process.cwd(), 'logs');
-  
+
   const logger = new WinstonLogger({
     level: 'info',
     logsDir,
@@ -130,12 +134,11 @@ async function main() {
     const result = await cleaner.cleanLogs();
 
     displayCleanupResults(result);
-    
+
     const statsAfter = await cleaner.getLogStats();
     displayPostCleanupStats(statsBefore, statsAfter);
     assessPerformance(statsBefore, result);
     displayOptimizationRecommendations(statsAfter, result, statsBefore);
-
   } catch (error) {
     console.error('❌ Cleanup failed:', error);
     process.exit(1);
@@ -144,7 +147,7 @@ async function main() {
 
 // Handle script execution
 if (require.main === module) {
-  main().catch((error) => {
+  main().catch(error => {
     console.error('❌ Script failed:', error);
     process.exit(1);
   });

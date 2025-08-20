@@ -9,16 +9,16 @@ export { SettingsLoader } from './settings-loader';
 export { ValidationMetricsConverter } from './validation-metrics-converter';
 
 // Permission system exports
-export { 
-  PermissionManager, 
-  PermissionError, 
+export {
+  PermissionManager,
+  PermissionError,
   DefaultPermissions,
   ActionType,
-  PermissionScope 
+  PermissionScope,
 } from './permissions';
-export type { 
-  PermissionRule, 
-  PermissionConfig, 
-  PermissionContext, 
-  PermissionResult 
+export type {
+  PermissionRule,
+  PermissionConfig,
+  PermissionContext,
+  PermissionResult,
 } from './permissions';

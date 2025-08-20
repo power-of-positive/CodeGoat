@@ -2,14 +2,14 @@
  * Main review orchestration
  */
 
-import * as fs from "fs";
-import * as path from "path";
-import { findProjectRoot } from "./review-utils";
-import { generateLlmReviewComments } from "../llm/llm-review-generator";
-import { checkPlaywrightCoverage } from "../playwright-coverage";
-import { analyzeLlmReviewSeverity } from "../severity/severity-analyzer";
-import { PrecommitResult } from "./utils";
-import { REVIEW_FILE_NAME } from "./constants";
+import * as fs from 'fs';
+import * as path from 'path';
+import { findProjectRoot } from './review-utils';
+import { generateLlmReviewComments } from '../llm/llm-review-generator';
+import { checkPlaywrightCoverage } from '../playwright-coverage';
+import { analyzeLlmReviewSeverity } from '../severity/severity-analyzer';
+import { PrecommitResult } from './utils';
+import { REVIEW_FILE_NAME } from './constants';
 
 /**
  * Perform comprehensive code review on specified files
@@ -23,11 +23,11 @@ export async function performCodeReview(files: string): Promise<string> {
   await generateLlmReviewComments(projectRoot);
 
   // Perform automated checks
-  let reviewComments = "";
+  let reviewComments = '';
   reviewComments += checkPlaywrightCoverage(files);
 
   // Analyze LLM review for severity (only for staged files)
-  const llmReviewPath = path.join(projectRoot, "code-review-comments.tmp");
+  const llmReviewPath = path.join(projectRoot, 'code-review-comments.tmp');
   if (fs.existsSync(llmReviewPath)) {
     reviewComments += analyzeLlmReviewSeverity(llmReviewPath);
   }
@@ -67,12 +67,12 @@ Note: File length violations are handled by ESLint's max-lines rule`;
  */
 export function processReviewResults(reviewComments: string): PrecommitResult {
   if (shouldBlockClaude(reviewComments)) {
-    return { decision: "block", reason: createBlockMessage(reviewComments) };
+    return { decision: 'block', reason: createBlockMessage(reviewComments) };
   }
 
   const feedback = reviewComments.trim()
     ? `Code review completed with minor recommendations:\n\n${reviewComments}\n\nReview details saved to: ${REVIEW_FILE_NAME}\n\nThese are low-priority items that don't block Claude but should be addressed when convenient.`
     : `Code review completed - no issues detected. Review comments saved to ${REVIEW_FILE_NAME}`;
 
-  return { decision: "approve", feedback };
+  return { decision: 'approve', feedback };
 }

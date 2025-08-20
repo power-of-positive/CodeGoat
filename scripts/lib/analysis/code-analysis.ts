@@ -2,7 +2,7 @@
  * Code analysis utilities
  */
 
-import { runAnalysis } from "../../code-analysis-staged";
+import { runAnalysis } from '../../code-analysis-staged';
 
 /**
  * Run code analysis checks
@@ -20,13 +20,12 @@ export async function runCodeAnalysis(): Promise<{
     if (result.blocked) {
       return {
         blocked: true,
-        details: `Code Analysis Blocking Issues:\n${result.reasons.map((r: string) => `- ${r}`).join("\n")}`,
+        details: `Code Analysis Blocking Issues:\n${result.reasons.map((r: string) => `- ${r}`).join('\n')}`,
       };
     }
-    return { blocked: false, details: "" };
+    return { blocked: false, details: '' };
   } catch (error: unknown) {
-    const errorMessage =
-      error instanceof Error ? error.message : "Unknown error";
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return {
       blocked: true,
       details: `Code Analysis Failed:\n${errorMessage}`,

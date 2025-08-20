@@ -2,15 +2,15 @@
  * Path validation utilities for security and safety
  */
 
-import * as path from "path";
-import * as fs from "fs";
+import * as path from 'path';
+import * as fs from 'fs';
 
 /**
  * Validate path input is non-empty string
  */
 function validatePathFormat(value: string): void {
-  if (!value || typeof value !== "string") {
-    throw new Error("Invalid path: must be non-empty string");
+  if (!value || typeof value !== 'string') {
+    throw new Error('Invalid path: must be non-empty string');
   }
 }
 
@@ -18,8 +18,8 @@ function validatePathFormat(value: string): void {
  * Check for directory traversal attacks
  */
 function validateNoDirectoryTraversal(value: string): void {
-  if (value.includes("..")) {
-    throw new Error("Invalid path: directory traversal not allowed");
+  if (value.includes('..')) {
+    throw new Error('Invalid path: directory traversal not allowed');
   }
 }
 
@@ -27,21 +27,9 @@ function validateNoDirectoryTraversal(value: string): void {
  * Check for command injection attempts via dangerous characters
  */
 function validateNoCommandInjection(value: string): void {
-  const dangerousChars = [
-    ";",
-    "|",
-    "&",
-    "$",
-    "`",
-    "(",
-    ")",
-    "{",
-    "}",
-    "<",
-    ">",
-  ];
-  if (dangerousChars.some((char) => value.includes(char))) {
-    throw new Error("Invalid path: contains dangerous characters");
+  const dangerousChars = [';', '|', '&', '$', '`', '(', ')', '{', '}', '<', '>'];
+  if (dangerousChars.some(char => value.includes(char))) {
+    throw new Error('Invalid path: contains dangerous characters');
   }
 }
 
@@ -49,8 +37,8 @@ function validateNoCommandInjection(value: string): void {
  * Check for null bytes and unicode escapes
  */
 function validateNoControlCharacters(value: string): void {
-  if (value.includes("\0") || /\\u[0-9a-fA-F]{4}/.test(value)) {
-    throw new Error("Invalid path: contains null bytes or unicode escapes");
+  if (value.includes('\0') || /\\u[0-9a-fA-F]{4}/.test(value)) {
+    throw new Error('Invalid path: contains null bytes or unicode escapes');
   }
 }
 
@@ -59,28 +47,28 @@ function validateNoControlCharacters(value: string): void {
  */
 function validatePathWithinProject(value: string): void {
   // Empty or just current directory should fail
-  if (!value || value === ".") {
-    throw new Error("Invalid path: must be within project directory");
+  if (!value || value === '.') {
+    throw new Error('Invalid path: must be within project directory');
   }
-  
+
   const resolved = path.resolve(value);
   const currentDir = process.cwd();
-  
+
   // Find project root by looking for package.json
   let projectRoot = currentDir;
   while (projectRoot !== path.dirname(projectRoot)) {
-    if (fs.existsSync(path.join(projectRoot, "package.json"))) {
+    if (fs.existsSync(path.join(projectRoot, 'package.json'))) {
       break;
     }
     projectRoot = path.dirname(projectRoot);
   }
-  
+
   // Allow paths within project root or current working directory
   const validRoots = [projectRoot, currentDir];
   const isValid = validRoots.some(root => resolved.startsWith(root));
-  
+
   if (!isValid) {
-    throw new Error("Invalid path: must be within project directory");
+    throw new Error('Invalid path: must be within project directory');
   }
 }
 

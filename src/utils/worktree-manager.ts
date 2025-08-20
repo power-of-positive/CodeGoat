@@ -36,7 +36,7 @@ export class WorktreeManager {
 
       // Check if this is a Git repository
       const isGitRepo = await this.isGitRepository();
-      
+
       if (isGitRepo) {
         // Create Git worktree
         await this.executeGitCommand(['worktree', 'add', worktreePath, 'HEAD']);
@@ -49,7 +49,11 @@ export class WorktreeManager {
 
       return worktreePath;
     } catch (error) {
-      this.logger?.error('Failed to create worktree', error as Error, { taskId, workerId, worktreePath });
+      this.logger?.error('Failed to create worktree', error as Error, {
+        taskId,
+        workerId,
+        worktreePath,
+      });
       throw error;
     }
   }
@@ -62,8 +66,8 @@ export class WorktreeManager {
 
     try {
       const isGitRepo = await this.isGitRepository();
-      
-      if (isGitRepo && await this.isGitWorktree(worktreePath)) {
+
+      if (isGitRepo && (await this.isGitWorktree(worktreePath))) {
         // Remove Git worktree
         await this.executeGitCommand(['worktree', 'remove', worktreePath, '--force']);
         this.logger?.info('Removed Git worktree', { worktreePath });
@@ -84,7 +88,7 @@ export class WorktreeManager {
   async listWorktrees(): Promise<string[]> {
     try {
       const isGitRepo = await this.isGitRepository();
-      
+
       if (isGitRepo) {
         // List Git worktrees
         const output = await this.executeGitCommand(['worktree', 'list', '--porcelain']);
@@ -110,18 +114,21 @@ export class WorktreeManager {
 
     try {
       const worktrees = await this.listWorktrees();
-      
+
       for (const worktreePath of worktrees) {
         try {
           // Skip the main worktree (current directory)
           if (path.resolve(worktreePath) === path.resolve(process.cwd())) {
             continue;
           }
-          
+
           await this.removeWorktree(worktreePath);
           cleanedCount++;
         } catch (error) {
-          this.logger?.warn?.('Failed to cleanup worktree', { worktreePath, error: (error as Error).message });
+          this.logger?.warn?.('Failed to cleanup worktree', {
+            worktreePath,
+            error: (error as Error).message,
+          });
         }
       }
 
@@ -165,12 +172,7 @@ export class WorktreeManager {
     await fs.promises.mkdir(worktreePath, { recursive: true });
 
     // Copy essential files
-    const filesToCopy = [
-      'package.json',
-      'tsconfig.json',
-      '.gitignore',
-      'README.md'
-    ];
+    const filesToCopy = ['package.json', 'tsconfig.json', '.gitignore', 'README.md'];
 
     for (const file of filesToCopy) {
       const srcPath = path.join(process.cwd(), file);
@@ -194,13 +196,13 @@ export class WorktreeManager {
       const srcStat = await fs.promises.stat(srcDir);
       if (srcStat.isDirectory()) {
         await fs.promises.mkdir(destSrcDir, { recursive: true });
-        
+
         // Copy only key files to avoid large directories
         const keyFiles = ['index.ts', 'server.ts', 'types.ts'];
         for (const file of keyFiles) {
           const srcFile = path.join(srcDir, file);
           const destFile = path.join(destSrcDir, file);
-          
+
           try {
             await fs.promises.copyFile(srcFile, destFile);
           } catch {
@@ -218,9 +220,9 @@ export class WorktreeManager {
    */
   private async executeGitCommand(args: string[]): Promise<string> {
     return new Promise((resolve, reject) => {
-      const childProcess = spawn('git', args, { 
+      const childProcess = spawn('git', args, {
         cwd: this.gitRoot,
-        stdio: ['pipe', 'pipe', 'pipe']
+        stdio: ['pipe', 'pipe', 'pipe'],
       });
 
       let stdout = '';
@@ -258,14 +260,14 @@ export class WorktreeManager {
   private parseWorktreeList(output: string): string[] {
     const worktrees: string[] = [];
     const lines = output.split('\n');
-    
+
     for (const line of lines) {
       if (line.startsWith('worktree ')) {
         const worktreePath = line.substring(9); // Remove 'worktree ' prefix
         worktrees.push(worktreePath);
       }
     }
-    
+
     return worktrees;
   }
 

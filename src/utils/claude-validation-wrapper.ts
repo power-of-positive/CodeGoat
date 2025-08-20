@@ -31,11 +31,11 @@ export interface WrappedExecutorResult extends ClaudeExecutorResult {
 
 /**
  * ClaudeValidationWrapper: Wrapper around ClaudeCodeExecutor that runs validation checks
- * 
+ *
  * This class wraps the Claude Code executor to automatically run validation stages
  * after Claude completes its execution. This provides quality control by ensuring
  * that any changes Claude makes pass the configured validation pipeline.
- * 
+ *
  * Features:
  * - Runs validation pipeline after Claude execution
  * - Configurable validation settings
@@ -54,7 +54,7 @@ export class ClaudeValidationWrapper {
   constructor(options: ValidationWrapperOptions, logger?: WinstonLogger) {
     // Create the underlying Claude executor
     this.executor = new ClaudeCodeExecutor(options, logger);
-    
+
     // Configure validation options
     this.enableValidation = options.enableValidation ?? true;
     this.validationSettings = options.validationSettings;
@@ -67,7 +67,7 @@ export class ClaudeValidationWrapper {
       enableValidation: this.enableValidation,
       validationSettings: this.validationSettings,
       skipValidationOnFailure: this.skipValidationOnFailure,
-      validationTimeout: this.validationTimeout
+      validationTimeout: this.validationTimeout,
     });
   }
 
@@ -77,7 +77,7 @@ export class ClaudeValidationWrapper {
   async execute(prompt: string): Promise<WrappedExecutorResult> {
     this.logger?.info('Starting Claude execution with validation wrapper', {
       enableValidation: this.enableValidation,
-      promptLength: prompt.length
+      promptLength: prompt.length,
     });
 
     // Execute Claude first
@@ -86,7 +86,7 @@ export class ClaudeValidationWrapper {
     this.logger?.info('Claude execution completed', {
       exitCode: claudeResult.exitCode,
       stdoutLength: claudeResult.stdout.length,
-      stderrLength: claudeResult.stderr.length
+      stderrLength: claudeResult.stderr.length,
     });
 
     // Prepare the wrapped result
@@ -94,12 +94,12 @@ export class ClaudeValidationWrapper {
       ...claudeResult,
       validationSkipped: false,
       validationResults: undefined,
-      validationError: undefined
+      validationError: undefined,
     };
 
     // Determine if we should run validation
     const shouldRunValidation = this.shouldRunValidation(claudeResult);
-    
+
     if (!shouldRunValidation.run) {
       result.validationSkipped = true;
       this.logger?.info('Skipping validation', { reason: shouldRunValidation.reason });
@@ -110,27 +110,26 @@ export class ClaudeValidationWrapper {
     try {
       this.logger?.info('Running validation pipeline after Claude execution');
       const validationResults = await this.runValidation();
-      
+
       result.validationResults = {
         success: validationResults.success,
         totalStages: validationResults.totalStages,
         passed: validationResults.passed,
         failed: validationResults.failed,
         totalTime: validationResults.totalTime,
-        stages: validationResults.stages
+        stages: validationResults.stages,
       };
 
       this.logger?.info('Validation pipeline completed', {
         success: validationResults.success,
         passed: validationResults.passed,
         failed: validationResults.failed,
-        totalTime: validationResults.totalTime
+        totalTime: validationResults.totalTime,
       });
-
     } catch (error) {
       const errorMessage = (error as Error).message;
       result.validationError = errorMessage;
-      
+
       this.logger?.error('Validation pipeline failed', error as Error);
     }
 
@@ -140,15 +139,18 @@ export class ClaudeValidationWrapper {
   /**
    * Determine if validation should run based on Claude execution result and configuration
    */
-  private shouldRunValidation(claudeResult: ClaudeExecutorResult): { run: boolean; reason?: string } {
+  private shouldRunValidation(claudeResult: ClaudeExecutorResult): {
+    run: boolean;
+    reason?: string;
+  } {
     if (!this.enableValidation) {
       return { run: false, reason: 'Validation disabled in configuration' };
     }
 
     if (this.skipValidationOnFailure && claudeResult.exitCode !== 0) {
-      return { 
-        run: false, 
-        reason: `Claude execution failed (exit code: ${claudeResult.exitCode}) and skipValidationOnFailure is enabled` 
+      return {
+        run: false,
+        reason: `Claude execution failed (exit code: ${claudeResult.exitCode}) and skipValidationOnFailure is enabled`,
       };
     }
 
@@ -174,7 +176,7 @@ export class ClaudeValidationWrapper {
   }> {
     return new Promise((resolve, reject) => {
       const sessionId = `claude-wrapper-${Date.now()}`;
-      
+
       // Set up timeout for validation
       const timeout = setTimeout(() => {
         reject(new Error(`Validation pipeline timed out after ${this.validationTimeout}ms`));
@@ -184,27 +186,26 @@ export class ClaudeValidationWrapper {
         try {
           const runner = new ValidationRunner({
             sessionId,
-            settingsPath: this.validationSettings
+            settingsPath: this.validationSettings,
           });
 
           const success = await runner.runValidation();
-          
+
           // Get the results from the runner
           const results = runner.getResults();
-          
+
           clearTimeout(timeout);
-          
+
           resolve({
             success,
             totalStages: results.totalStages || 0,
             passed: results.passed || 0,
             failed: results.failed || 0,
             totalTime: results.totalTime || 0,
-            stages: results.stages || []
+            stages: results.stages || [],
           });
 
           await runner.cleanup();
-          
         } catch (error) {
           clearTimeout(timeout);
           reject(error);
@@ -237,7 +238,7 @@ export class ClaudeValidationWrapper {
       enableValidation: this.enableValidation,
       validationSettings: this.validationSettings,
       skipValidationOnFailure: this.skipValidationOnFailure,
-      validationTimeout: this.validationTimeout
+      validationTimeout: this.validationTimeout,
     };
   }
 

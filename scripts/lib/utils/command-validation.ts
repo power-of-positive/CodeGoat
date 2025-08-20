@@ -8,8 +8,8 @@
 function cleanCommandForValidation(command: string): string {
   let cleanCommand = command.trim();
 
-  if (cleanCommand.startsWith("cd scripts && ")) {
-    cleanCommand = cleanCommand.replace("cd scripts && ", "");
+  if (cleanCommand.startsWith('cd scripts && ')) {
+    cleanCommand = cleanCommand.replace('cd scripts && ', '');
   }
 
   const envPrefixes = [
@@ -20,7 +20,7 @@ function cleanCommandForValidation(command: string): string {
   ];
 
   for (const prefix of envPrefixes) {
-    cleanCommand = cleanCommand.replace(prefix, "");
+    cleanCommand = cleanCommand.replace(prefix, '');
   }
 
   return cleanCommand;
@@ -31,20 +31,20 @@ function cleanCommandForValidation(command: string): string {
  */
 function getAllowedCommands(): string[] {
   return [
-    "npm run",
-    "npx eslint",
-    "npx prettier",
-    "npx tsc",
-    "npx vitest",
-    "npx jscpd",
-    "npx unimported",
-    "npx ts-prune",
-    "npm audit",
-    "cargo",
-    "git",
-    "node",
-    "pnpm",
-    "yarn",
+    'npm run',
+    'npx eslint',
+    'npx prettier',
+    'npx tsc',
+    'npx vitest',
+    'npx jscpd',
+    'npx unimported',
+    'npx ts-prune',
+    'npm audit',
+    'cargo',
+    'git',
+    'node',
+    'pnpm',
+    'yarn',
   ];
 }
 
@@ -52,16 +52,14 @@ function getAllowedCommands(): string[] {
  * Enhanced command validation with whitelist approach
  */
 export function validateCommand(command: string): void {
-  if (!command || typeof command !== "string") {
-    throw new Error("Invalid command: must be non-empty string");
+  if (!command || typeof command !== 'string') {
+    throw new Error('Invalid command: must be non-empty string');
   }
 
   const cleanCommand = cleanCommandForValidation(command);
   const allowedCommands = getAllowedCommands();
 
-  const isAllowed = allowedCommands.some((allowed) =>
-    cleanCommand.startsWith(allowed),
-  );
+  const isAllowed = allowedCommands.some(allowed => cleanCommand.startsWith(allowed));
   if (!isAllowed) {
     throw new Error(`Invalid command: '${command}' not in allowed list`);
   }

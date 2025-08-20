@@ -13,7 +13,11 @@ export class LogManager {
   private maxLogAge: number; // in days
   private maxLogSize: number; // in bytes
 
-  constructor(logsDir: string = './logs', maxLogAge: number = 7, maxLogSize: number = 50 * 1024 * 1024) {
+  constructor(
+    logsDir: string = './logs',
+    maxLogAge: number = 7,
+    maxLogSize: number = 50 * 1024 * 1024
+  ) {
     this.logsDir = logsDir;
     this.maxLogAge = maxLogAge;
     this.maxLogSize = maxLogSize;
@@ -28,14 +32,14 @@ export class LogManager {
       await this.ensureDirectory(this.logsDir);
 
       const files = await readdir(this.logsDir);
-      
+
       for (const file of files) {
         const filePath = path.join(this.logsDir, file);
         const fileStat = await stat(filePath);
-        
+
         // Skip directories
         if (fileStat.isDirectory()) continue;
-        
+
         // Skip non-log files
         if (!this.isLogFile(file)) continue;
 
@@ -43,9 +47,9 @@ export class LogManager {
         const fileDate = new Date(fileStat.birthtime);
         const dateFolder = this.formatDateFolder(fileDate);
         const targetDir = path.join(this.logsDir, dateFolder);
-        
+
         await this.ensureDirectory(targetDir);
-        
+
         // Move file to dated folder
         const targetPath = path.join(targetDir, file);
         if (!fs.existsSync(targetPath)) {
@@ -94,13 +98,13 @@ export class LogManager {
 
         // Delete app*.log files that match the problematic pattern
         const fileName = path.basename(filePath);
-        if (this.isProblematicAppLogFile(fileName) && fileStat.size < 1024) { // Less than 1KB
+        if (this.isProblematicAppLogFile(fileName) && fileStat.size < 1024) {
+          // Less than 1KB
           await unlink(filePath);
           emptyFilesDeleted++;
           console.error(`🗑️ Deleted problematic app log file: ${fileName}`);
         }
       });
-
     } catch (error) {
       console.error('Error cleaning up logs:', error);
     }
@@ -168,12 +172,14 @@ export class LogManager {
    */
   scheduleCleanup(intervalHours: number = 24): ReturnType<typeof setInterval> {
     const interval = intervalHours * 60 * 60 * 1000; // Convert to milliseconds
-    
+
     return setInterval(async () => {
       console.error('🧹 Running scheduled log cleanup...');
       await this.organizeLogs();
       const stats = await this.cleanupLogs();
-      console.error(`✅ Log cleanup completed: ${stats.deletedFiles} old files, ${stats.emptyFilesDeleted} empty files deleted`);
+      console.error(
+        `✅ Log cleanup completed: ${stats.deletedFiles} old files, ${stats.emptyFilesDeleted} empty files deleted`
+      );
     }, interval);
   }
 
@@ -204,16 +210,16 @@ export class LogManager {
   }
 
   private async walkDirectory(
-    dirPath: string, 
+    dirPath: string,
     callback: (filePath: string, fileStat: fs.Stats) => Promise<void>
   ): Promise<void> {
     try {
       const entries = await readdir(dirPath);
-      
+
       for (const entry of entries) {
         const fullPath = path.join(dirPath, entry);
         const entryStat = await stat(fullPath);
-        
+
         if (entryStat.isDirectory()) {
           // Recursively walk subdirectories
           await this.walkDirectory(fullPath, callback);

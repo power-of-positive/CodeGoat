@@ -30,7 +30,7 @@ export function useProcessesLogs(
 
   useEffect(() => {
     if (!processes.length) {
-      setEntries(prev => prev.length > 0 ? [] : prev); // Only update if actually different
+      setEntries(prev => (prev.length > 0 ? [] : prev)); // Only update if actually different
       setIsLoading(false);
       return;
     }
@@ -39,10 +39,10 @@ export function useProcessesLogs(
       try {
         // Generate mock unified log entries for demonstration
         const mockEntries: UnifiedLogEntry[] = [];
-        
+
         processes.forEach((process, processIndex) => {
-          const baseTimestamp = Date.now() - (10000 * (processes.length - processIndex));
-          
+          const baseTimestamp = Date.now() - 10000 * (processes.length - processIndex);
+
           // Add process start entry
           mockEntries.push({
             id: `${process.id}-start`,
@@ -54,8 +54,8 @@ export function useProcessesLogs(
               processId: process.id,
               runReason: process.run_reason,
               startedAt: process.started_at,
-              status: process.status
-            } as ProcessStartPayload
+              status: process.status,
+            } as ProcessStartPayload,
           });
 
           // Add some stdout entries
@@ -64,17 +64,17 @@ export function useProcessesLogs(
             'Loading configuration files',
             'Initializing Claude Code session',
             'Running validation checks',
-            'Process completed successfully'
+            'Process completed successfully',
           ];
 
           stdoutMessages.forEach((msg, msgIndex) => {
             mockEntries.push({
               id: `${process.id}-stdout-${msgIndex}`,
-              ts: baseTimestamp + (msgIndex * 1000),
+              ts: baseTimestamp + msgIndex * 1000,
               processId: process.id,
               processName: process.run_reason,
               channel: 'stdout',
-              payload: `[${new Date(baseTimestamp + (msgIndex * 1000)).toLocaleTimeString()}] ${msg}`
+              payload: `[${new Date(baseTimestamp + msgIndex * 1000).toLocaleTimeString()}] ${msg}`,
             });
           });
 
@@ -86,7 +86,7 @@ export function useProcessesLogs(
               processId: process.id,
               processName: process.run_reason,
               channel: 'stderr',
-              payload: `[${new Date(baseTimestamp + 3000).toLocaleTimeString()}] [ERROR] Process execution failed: Command not found`
+              payload: `[${new Date(baseTimestamp + 3000).toLocaleTimeString()}] [ERROR] Process execution failed: Command not found`,
             });
           }
 
@@ -96,32 +96,36 @@ export function useProcessesLogs(
               {
                 timestamp: new Date(baseTimestamp + 1500).toISOString(),
                 entry_type: { type: 'user_message' },
-                content: 'Please help me implement the enhanced logging functionality.'
+                content: 'Please help me implement the enhanced logging functionality.',
               },
               {
                 timestamp: new Date(baseTimestamp + 2000).toISOString(),
-                entry_type: { 
+                entry_type: {
                   type: 'tool_use',
                   tool_name: 'Read',
-                  action_type: { action: 'file_read', path: 'ui/src/components/logs/LogEntryRow.tsx' }
+                  action_type: {
+                    action: 'file_read',
+                    path: 'ui/src/components/logs/LogEntryRow.tsx',
+                  },
                 },
-                content: 'Reading log component file to understand current implementation...'
+                content: 'Reading log component file to understand current implementation...',
               },
               {
                 timestamp: new Date(baseTimestamp + 2500).toISOString(),
                 entry_type: { type: 'assistant_message' },
-                content: 'I\'ll help you implement the enhanced logging functionality. Let me analyze the current log processing system and create improved components based on your requirements.'
-              }
+                content:
+                  "I'll help you implement the enhanced logging functionality. Let me analyze the current log processing system and create improved components based on your requirements.",
+              },
             ];
 
             normalizedEntries.forEach((entry, entryIndex) => {
               mockEntries.push({
                 id: `${process.id}-normalized-${entryIndex}`,
-                ts: baseTimestamp + 1500 + (entryIndex * 500),
+                ts: baseTimestamp + 1500 + entryIndex * 500,
                 processId: process.id,
                 processName: process.run_reason,
                 channel: 'normalized',
-                payload: entry
+                payload: entry,
               });
             });
           }
@@ -151,7 +155,7 @@ export function useProcessesLogs(
           processId: processes[0]?.id || 'unknown',
           processName: processes[0]?.run_reason || 'stream',
           channel: 'stdout',
-          payload: `[${new Date().toLocaleTimeString()}] Streaming log entry at ${new Date().toISOString()}`
+          payload: `[${new Date().toLocaleTimeString()}] Streaming log entry at ${new Date().toISOString()}`,
         };
 
         setEntries(prev => [...prev, newEntry]);

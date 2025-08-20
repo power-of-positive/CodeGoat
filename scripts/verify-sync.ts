@@ -31,12 +31,12 @@ async function loadAndCompareData() {
   // Read todo-list.json
   const todoListPath = path.join(process.cwd(), 'todo-list.json');
   const todoData = JSON.parse(fs.readFileSync(todoListPath, 'utf8')) as TodoTask[];
-  
+
   // Get tasks from database
   const dbTasks = await prisma.todoTask.findMany({
     include: {
-      bddScenarios: true
-    }
+      bddScenarios: true,
+    },
   });
 
   console.log(`📋 Tasks in todo-list.json: ${todoData.length}`);
@@ -49,7 +49,7 @@ function checkTaskConsistency(todoData: TodoTask[], dbTasks: DbTaskWithScenarios
   // Check if all tasks from todo-list.json are in database
   const todoIds = new Set(todoData.map(task => task.id));
   const dbIds = new Set(dbTasks.map(task => task.id));
-  
+
   const missingInDb = todoData.filter(task => !dbIds.has(task.id));
   const extraInDb = dbTasks.filter(task => !todoIds.has(task.id));
 
@@ -95,7 +95,7 @@ function showSampleScenarios(dbTasks: DbTaskWithScenarios[]) {
   // Sample some scenarios
   console.log(`\n📊 Sample BDD scenarios:`);
   const sampleTasks = dbTasks.filter(task => task.bddScenarios.length > 0).slice(0, 3);
-  
+
   for (const task of sampleTasks) {
     console.log(`\n🔹 Task ${task.id}: ${task.content.substring(0, 40)}...`);
     task.bddScenarios.forEach((scenario, index) => {
@@ -110,13 +110,12 @@ async function verifySyncResults() {
     console.log('🔍 Verifying sync results...');
 
     const { todoData, dbTasks } = await loadAndCompareData();
-    
+
     checkTaskConsistency(todoData, dbTasks);
     analyzeBDDScenarios(dbTasks);
     showSampleScenarios(dbTasks);
 
     console.log('\n🎉 Verification completed!');
-
   } catch (error) {
     console.error('❌ Error during verification:', error);
     process.exit(1);

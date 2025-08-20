@@ -3,19 +3,19 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
-import { 
-  ArrowLeft, 
-  TrendingUp, 
-  TrendingDown, 
-  Clock, 
-  Activity, 
+import {
+  ArrowLeft,
+  TrendingUp,
+  TrendingDown,
+  Clock,
+  Activity,
   AlertCircle,
   CheckCircle,
   XCircle,
   BarChart3,
   Calendar,
   Timer,
-  Zap
+  Zap,
 } from 'lucide-react';
 import { analyticsApi } from '../lib/api';
 
@@ -37,11 +37,19 @@ function formatTrendValue(value: number, unit: string): string {
   return `${sign}${absValue.toFixed(1)}${unit}`;
 }
 
-function TrendIndicator({ value, unit, label }: { value: number; unit: string; label: string }) {
+function TrendIndicator({
+  value,
+  unit,
+  label,
+}: {
+  value: number;
+  unit: string;
+  label: string;
+}) {
   const isPositive = value >= 0;
   const Icon = isPositive ? TrendingUp : TrendingDown;
   const colorClass = isPositive ? 'text-green-600' : 'text-red-600';
-  
+
   return (
     <div className="flex items-center gap-2">
       <Icon className={`h-4 w-4 ${colorClass}`} />
@@ -80,7 +88,10 @@ interface StageStatistics {
       p95: number;
       p99: number;
     };
-    successRateByTimeOfDay: Record<string, { attempts: number; successes: number; rate: number }>;
+    successRateByTimeOfDay: Record<
+      string,
+      { attempts: number; successes: number; rate: number }
+    >;
     failureReasons: Record<string, number>;
   };
 }
@@ -105,48 +116,58 @@ interface StageHistory {
 
 function OverviewStats({ statistics }: { statistics: StageStatistics }) {
   const { overview } = statistics;
-  
+
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
       <Card>
         <CardContent className="pt-4">
           <div className="flex items-center gap-2 mb-1">
             <Activity className="h-4 w-4 text-blue-600" />
-            <span className="text-sm font-medium text-gray-600">Total Attempts</span>
+            <span className="text-sm font-medium text-gray-600">
+              Total Attempts
+            </span>
           </div>
-          <div className="text-2xl font-bold text-gray-900">{overview.totalAttempts}</div>
+          <div className="text-2xl font-bold text-gray-900">
+            {overview.totalAttempts}
+          </div>
         </CardContent>
       </Card>
-      
+
       <Card>
         <CardContent className="pt-4">
           <div className="flex items-center gap-2 mb-1">
             <CheckCircle className="h-4 w-4 text-green-600" />
-            <span className="text-sm font-medium text-gray-600">Success Rate</span>
+            <span className="text-sm font-medium text-gray-600">
+              Success Rate
+            </span>
           </div>
           <div className="text-2xl font-bold text-green-600">
             {overview.successRate.toFixed(1)}%
           </div>
         </CardContent>
       </Card>
-      
+
       <Card>
         <CardContent className="pt-4">
           <div className="flex items-center gap-2 mb-1">
             <Timer className="h-4 w-4 text-orange-600" />
-            <span className="text-sm font-medium text-gray-600">Avg Duration</span>
+            <span className="text-sm font-medium text-gray-600">
+              Avg Duration
+            </span>
           </div>
           <div className="text-2xl font-bold text-orange-600">
             {formatDuration(overview.averageDuration)}
           </div>
         </CardContent>
       </Card>
-      
+
       <Card>
         <CardContent className="pt-4">
           <div className="flex items-center gap-2 mb-1">
             <Zap className="h-4 w-4 text-purple-600" />
-            <span className="text-sm font-medium text-gray-600">Median Duration</span>
+            <span className="text-sm font-medium text-gray-600">
+              Median Duration
+            </span>
           </div>
           <div className="text-2xl font-bold text-purple-600">
             {formatDuration(overview.medianDuration)}
@@ -160,9 +181,11 @@ function OverviewStats({ statistics }: { statistics: StageStatistics }) {
 function PerformanceMetrics({ statistics }: { statistics: StageStatistics }) {
   const { performanceMetrics } = statistics;
   const { durationsPercentiles, failureReasons } = performanceMetrics;
-  
-  const failureEntries = Object.entries(failureReasons).sort(([, a], [, b]) => (b as number) - (a as number));
-  
+
+  const failureEntries = Object.entries(failureReasons).sort(
+    ([, a], [, b]) => (b as number) - (a as number)
+  );
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
       <Card>
@@ -175,25 +198,35 @@ function PerformanceMetrics({ statistics }: { statistics: StageStatistics }) {
         <CardContent>
           <div className="space-y-3">
             <div className="flex justify-between">
-              <span className="text-sm text-gray-600">50th percentile (median)</span>
-              <span className="font-medium">{formatDuration(durationsPercentiles.p50)}</span>
+              <span className="text-sm text-gray-600">
+                50th percentile (median)
+              </span>
+              <span className="font-medium">
+                {formatDuration(durationsPercentiles.p50)}
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-gray-600">90th percentile</span>
-              <span className="font-medium">{formatDuration(durationsPercentiles.p90)}</span>
+              <span className="font-medium">
+                {formatDuration(durationsPercentiles.p90)}
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-gray-600">95th percentile</span>
-              <span className="font-medium">{formatDuration(durationsPercentiles.p95)}</span>
+              <span className="font-medium">
+                {formatDuration(durationsPercentiles.p95)}
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-gray-600">99th percentile</span>
-              <span className="font-medium">{formatDuration(durationsPercentiles.p99)}</span>
+              <span className="font-medium">
+                {formatDuration(durationsPercentiles.p99)}
+              </span>
             </div>
           </div>
         </CardContent>
       </Card>
-      
+
       <Card>
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2">
@@ -211,7 +244,9 @@ function PerformanceMetrics({ statistics }: { statistics: StageStatistics }) {
                 </div>
               ))
             ) : (
-              <div className="text-sm text-gray-500 italic">No failure data available</div>
+              <div className="text-sm text-gray-500 italic">
+                No failure data available
+              </div>
             )}
           </div>
         </CardContent>
@@ -222,7 +257,7 @@ function PerformanceMetrics({ statistics }: { statistics: StageStatistics }) {
 
 function RecentRuns({ statistics }: { statistics: StageStatistics }) {
   const { recentRuns } = statistics;
-  
+
   return (
     <Card>
       <CardHeader>
@@ -234,8 +269,8 @@ function RecentRuns({ statistics }: { statistics: StageStatistics }) {
       <CardContent>
         <div className="space-y-2 max-h-96 overflow-y-auto">
           {recentRuns.slice(0, 20).map((run, index: number) => (
-            <div 
-              key={index} 
+            <div
+              key={index}
               className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50"
             >
               <div className="flex items-center gap-3">
@@ -278,7 +313,7 @@ function RecentRuns({ statistics }: { statistics: StageStatistics }) {
 
 function HistoryTrends({ history }: { history: StageHistory }) {
   const { trends } = history;
-  
+
   return (
     <Card className="mb-6">
       <CardHeader>
@@ -295,27 +330,27 @@ function HistoryTrends({ history }: { history: StageHistory }) {
             </div>
             <div className="text-sm text-gray-600">Total Attempts</div>
           </div>
-          
+
           <div className="text-center">
             <div className="text-2xl font-bold text-green-600 mb-1">
               {trends.totalSuccesses}
             </div>
             <div className="text-sm text-gray-600">Total Successes</div>
           </div>
-          
+
           <div className="text-center">
-            <TrendIndicator 
-              value={trends.successRateTrend} 
-              unit="%" 
-              label="Success Rate Trend" 
+            <TrendIndicator
+              value={trends.successRateTrend}
+              unit="%"
+              label="Success Rate Trend"
             />
           </div>
-          
+
           <div className="text-center">
-            <TrendIndicator 
-              value={trends.durationTrend} 
-              unit="ms" 
-              label="Duration Trend" 
+            <TrendIndicator
+              value={trends.durationTrend}
+              unit="ms"
+              label="Duration Trend"
             />
           </div>
         </div>
@@ -324,23 +359,27 @@ function HistoryTrends({ history }: { history: StageHistory }) {
   );
 }
 
-export function StageHistoryView({ stageId, stageName, onBack }: StageHistoryViewProps) {
+export function StageHistoryView({
+  stageId,
+  stageName,
+  onBack,
+}: StageHistoryViewProps) {
   const [timeRange, setTimeRange] = useState(30);
-  
+
   const { data: historyData, isLoading: historyLoading } = useQuery({
     queryKey: ['stage-history', stageId, timeRange],
     queryFn: () => analyticsApi.getStageHistory(stageId, timeRange),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
-  
+
   const { data: statisticsData, isLoading: statisticsLoading } = useQuery({
     queryKey: ['stage-statistics', stageId],
     queryFn: () => analyticsApi.getStageStatistics(stageId),
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
-  
+
   const isLoading = historyLoading || statisticsLoading;
-  
+
   if (isLoading) {
     return (
       <div className="p-6">
@@ -356,7 +395,7 @@ export function StageHistoryView({ stageId, stageName, onBack }: StageHistoryVie
       </div>
     );
   }
-  
+
   return (
     <div className="p-6">
       {/* Header */}
@@ -368,14 +407,16 @@ export function StageHistoryView({ stageId, stageName, onBack }: StageHistoryVie
           </Button>
           <div>
             <h2 className="text-2xl font-bold text-gray-900">{stageName}</h2>
-            <p className="text-gray-600">Detailed stage analytics and history</p>
+            <p className="text-gray-600">
+              Detailed stage analytics and history
+            </p>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-2">
           <Calendar className="h-4 w-4 text-gray-500" />
-          <select 
-            value={timeRange} 
+          <select
+            value={timeRange}
             onChange={(e) => setTimeRange(Number(e.target.value))}
             className="border border-gray-300 rounded px-3 py-1 text-sm"
           >
@@ -385,13 +426,17 @@ export function StageHistoryView({ stageId, stageName, onBack }: StageHistoryVie
           </select>
         </div>
       </div>
-      
-      {statisticsData && <OverviewStats statistics={statisticsData.statistics} />}
-      
+
+      {statisticsData && (
+        <OverviewStats statistics={statisticsData.statistics} />
+      )}
+
       {historyData && <HistoryTrends history={historyData.history} />}
-      
-      {statisticsData && <PerformanceMetrics statistics={statisticsData.statistics} />}
-      
+
+      {statisticsData && (
+        <PerformanceMetrics statistics={statisticsData.statistics} />
+      )}
+
       {statisticsData && <RecentRuns statistics={statisticsData.statistics} />}
     </div>
   );

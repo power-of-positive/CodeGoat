@@ -25,7 +25,9 @@ export function ValidationStage({ stage, onRetry }: ValidationStageProps) {
             <span className="text-lg">{getStatusIcon(stage.success)}</span>
             <span>{stage.name}</span>
           </div>
-          <span className={`text-sm font-medium ${getStatusColor(stage.success)}`}>
+          <span
+            className={`text-sm font-medium ${getStatusColor(stage.success)}`}
+          >
             {(stage.duration / 1000).toFixed(1)}s
           </span>
         </CardTitle>

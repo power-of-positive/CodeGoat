@@ -4,11 +4,11 @@ import { useNavigate } from 'react-router-dom';
 import { VariableSizeList } from 'react-window';
 import type { VariableSizeList as VariableSizeListType } from 'react-window';
 import useMeasure from 'react-use-measure';
-import { 
-  Play, 
-  Square, 
-  RefreshCw, 
-  Clock, 
+import {
+  Play,
+  Square,
+  RefreshCw,
+  Clock,
   Zap,
   CheckCircle,
   XCircle,
@@ -20,7 +20,7 @@ import {
   GitMerge,
   Code2,
   ShieldAlert,
-  FileCheck
+  FileCheck,
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
@@ -85,19 +85,27 @@ interface WorkerCardProps {
   onViewValidationRuns: (workerId: string) => void;
 }
 
-function WorkerCard({ worker, onViewLogs, onStopWorker, onMergeWorktree, onOpenVSCode, onViewBlockedCommands, onViewValidationRuns }: WorkerCardProps) {
+function WorkerCard({
+  worker,
+  onViewLogs,
+  onStopWorker,
+  onMergeWorktree,
+  onOpenVSCode,
+  onViewBlockedCommands,
+  onViewValidationRuns,
+}: WorkerCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const StatusIcon = statusIcons[worker.status];
-  
+
   const formatDuration = (startTime: string, endTime?: string) => {
     const start = new Date(startTime);
     const end = endTime ? new Date(endTime) : new Date();
     const duration = end.getTime() - start.getTime();
-    
+
     const hours = Math.floor(duration / (1000 * 60 * 60));
     const minutes = Math.floor((duration % (1000 * 60 * 60)) / (1000 * 60));
     const seconds = Math.floor((duration % (1000 * 60)) / 1000);
-    
+
     if (hours > 0) return `${hours}h ${minutes}m ${seconds}s`;
     if (minutes > 0) return `${minutes}m ${seconds}s`;
     return `${seconds}s`;
@@ -106,61 +114,70 @@ function WorkerCard({ worker, onViewLogs, onStopWorker, onMergeWorktree, onOpenV
   return (
     <Card className="mb-4">
       <CardHeader className="pb-3">
-        <div 
+        <div
           className="cursor-pointer -m-6 p-6 rounded-lg"
           onClick={() => setIsExpanded(!isExpanded)}
         >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="flex items-center">
-              {isExpanded ? (
-                <ChevronDown className="h-4 w-4 text-gray-500" />
-              ) : (
-                <ChevronRight className="h-4 w-4 text-gray-500" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center">
+                {isExpanded ? (
+                  <ChevronDown className="h-4 w-4 text-gray-500" />
+                ) : (
+                  <ChevronRight className="h-4 w-4 text-gray-500" />
+                )}
+              </div>
+              <StatusIcon className="h-5 w-5 text-gray-600" />
+              <div>
+                <CardTitle className="text-sm font-medium">
+                  Worker {worker.id.split('-').pop()}
+                </CardTitle>
+                <p className="text-xs text-gray-500">{worker.taskId}</p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Badge className={`text-xs ${statusStyles[worker.status]}`}>
+                {worker.status.toUpperCase()}
+              </Badge>
+              {worker.pid && (
+                <Badge variant="outline" className="text-xs">
+                  PID: {worker.pid}
+                </Badge>
+              )}
+              {worker.blockedCommands > 0 && (
+                <Badge variant="outline" className="text-xs bg-red-50 border-red-300 text-red-700">
+                  🚫 {worker.blockedCommands} blocked
+                </Badge>
+              )}
+              {worker.validationPassed === false && worker.status === 'failed' && (
+                <Badge
+                  variant="outline"
+                  className="text-xs bg-orange-50 border-orange-300 text-orange-700"
+                >
+                  ⚠️ Validation Failed
+                </Badge>
+              )}
+              {worker.validationPassed === true && worker.status === 'completed' && (
+                <Badge
+                  variant="outline"
+                  className="text-xs bg-green-50 border-green-300 text-green-700"
+                >
+                  ✅ Validated
+                </Badge>
+              )}
+              {worker.validationRuns && worker.validationRuns > 0 && (
+                <Badge
+                  variant="outline"
+                  className="text-xs bg-purple-50 border-purple-300 text-purple-700"
+                >
+                  🔍 {worker.validationRuns} validation{worker.validationRuns > 1 ? 's' : ''}
+                </Badge>
               )}
             </div>
-            <StatusIcon className="h-5 w-5 text-gray-600" />
-            <div>
-              <CardTitle className="text-sm font-medium">
-                Worker {worker.id.split('-').pop()}
-              </CardTitle>
-              <p className="text-xs text-gray-500">{worker.taskId}</p>
-            </div>
           </div>
-          <div className="flex items-center space-x-2">
-            <Badge className={`text-xs ${statusStyles[worker.status]}`}>
-              {worker.status.toUpperCase()}
-            </Badge>
-            {worker.pid && (
-              <Badge variant="outline" className="text-xs">
-                PID: {worker.pid}
-              </Badge>
-            )}
-            {worker.blockedCommands > 0 && (
-              <Badge variant="outline" className="text-xs bg-red-50 border-red-300 text-red-700">
-                🚫 {worker.blockedCommands} blocked
-              </Badge>
-            )}
-            {worker.validationPassed === false && worker.status === 'failed' && (
-              <Badge variant="outline" className="text-xs bg-orange-50 border-orange-300 text-orange-700">
-                ⚠️ Validation Failed
-              </Badge>
-            )}
-            {worker.validationPassed === true && worker.status === 'completed' && (
-              <Badge variant="outline" className="text-xs bg-green-50 border-green-300 text-green-700">
-                ✅ Validated
-              </Badge>
-            )}
-            {worker.validationRuns && worker.validationRuns > 0 && (
-              <Badge variant="outline" className="text-xs bg-purple-50 border-purple-300 text-purple-700">
-                🔍 {worker.validationRuns} validation{worker.validationRuns > 1 ? 's' : ''}
-              </Badge>
-            )}
-          </div>
-        </div>
         </div>
       </CardHeader>
-      
+
       {isExpanded && (
         <CardContent className="pt-0">
           <div className="space-y-3">
@@ -171,14 +188,12 @@ function WorkerCard({ worker, onViewLogs, onStopWorker, onMergeWorktree, onOpenV
                 {worker.taskContent}
               </p>
             </div>
-            
+
             {/* Timing Info */}
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <p className="font-medium text-gray-700">Started:</p>
-                <p className="text-gray-600">
-                  {new Date(worker.startTime).toLocaleString()}
-                </p>
+                <p className="text-gray-600">{new Date(worker.startTime).toLocaleString()}</p>
               </div>
               <div>
                 <p className="font-medium text-gray-700">Duration:</p>
@@ -190,7 +205,7 @@ function WorkerCard({ worker, onViewLogs, onStopWorker, onMergeWorktree, onOpenV
                 </div>
               </div>
             </div>
-            
+
             {/* Log File Path */}
             <div>
               <p className="text-sm font-medium text-gray-700 mb-1">Log File:</p>
@@ -198,7 +213,7 @@ function WorkerCard({ worker, onViewLogs, onStopWorker, onMergeWorktree, onOpenV
                 {worker.logFile}
               </p>
             </div>
-            
+
             {/* Permission System Status */}
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
@@ -224,7 +239,7 @@ function WorkerCard({ worker, onViewLogs, onStopWorker, onMergeWorktree, onOpenV
                 </p>
               </div>
             </div>
-            
+
             {/* Actions */}
             <div className="flex space-x-2 pt-2 border-t">
               <Button
@@ -236,7 +251,7 @@ function WorkerCard({ worker, onViewLogs, onStopWorker, onMergeWorktree, onOpenV
                 <Terminal className="h-3 w-3" />
                 <span>Details</span>
               </Button>
-              
+
               {worker.status === 'running' && (
                 <Button
                   size="sm"
@@ -248,19 +263,20 @@ function WorkerCard({ worker, onViewLogs, onStopWorker, onMergeWorktree, onOpenV
                   <span>Stop</span>
                 </Button>
               )}
-              
-              {(worker.status === 'completed' || worker.status === 'stopped') && worker.validationPassed && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => onMergeWorktree(worker.id)}
-                  className="flex items-center space-x-1 text-green-600"
-                >
-                  <GitMerge className="h-3 w-3" />
-                  <span>Merge</span>
-                </Button>
-              )}
-              
+
+              {(worker.status === 'completed' || worker.status === 'stopped') &&
+                worker.validationPassed && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => onMergeWorktree(worker.id)}
+                    className="flex items-center space-x-1 text-green-600"
+                  >
+                    <GitMerge className="h-3 w-3" />
+                    <span>Merge</span>
+                  </Button>
+                )}
+
               <Button
                 size="sm"
                 variant="outline"
@@ -270,7 +286,7 @@ function WorkerCard({ worker, onViewLogs, onStopWorker, onMergeWorktree, onOpenV
                 <Code2 className="h-3 w-3" />
                 <span>VSCode</span>
               </Button>
-              
+
               {worker.blockedCommands > 0 && (
                 <Button
                   size="sm"
@@ -282,7 +298,7 @@ function WorkerCard({ worker, onViewLogs, onStopWorker, onMergeWorktree, onOpenV
                   <span>Blocked ({worker.blockedCommands})</span>
                 </Button>
               )}
-              
+
               {worker.validationRuns && worker.validationRuns > 0 && (
                 <Button
                   size="sm"
@@ -323,7 +339,7 @@ function LogViewer({ workerId, onClose }: LogViewerProps) {
   // Process logs into structured format - enhanced to match TaskDetail format
   const processedLogs = React.useMemo(() => {
     if (!logsData?.logs) return [];
-    
+
     const logLines = logsData.logs.split('\n').filter(line => line.trim());
     return logLines.map((line, index) => ({
       id: `log-${workerId}-${index}`,
@@ -379,26 +395,20 @@ function LogViewer({ workerId, onClose }: LogViewerProps) {
     <Card className="h-96">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-sm">
-            Worker Logs - {workerId.split('-').pop()}
-          </CardTitle>
+          <CardTitle className="text-sm">Worker Logs - {workerId.split('-').pop()}</CardTitle>
           <div className="flex items-center space-x-2">
             <Button
               size="sm"
-              variant={autoScroll ? "default" : "outline"}
+              variant={autoScroll ? 'default' : 'outline'}
               onClick={() => setAutoScroll(!autoScroll)}
               className="flex items-center space-x-1"
             >
-              {autoScroll ? (
-                <Play className="h-3 w-3" />
-              ) : (
-                <Pause className="h-3 w-3" />
-              )}
+              {autoScroll ? <Play className="h-3 w-3" /> : <Pause className="h-3 w-3" />}
               <span>{autoScroll ? 'Auto' : 'Manual'}</span>
             </Button>
             <Button
               size="sm"
-              variant={isAutoRefresh ? "default" : "outline"}
+              variant={isAutoRefresh ? 'default' : 'outline'}
               onClick={() => setIsAutoRefresh(!isAutoRefresh)}
               className="flex items-center space-x-1"
             >
@@ -495,9 +505,10 @@ function ValidationRunsViewer({ workerId, onClose }: ValidationRunsViewerProps) 
             {validationData && validationData.validationRuns.length > 0 ? (
               <div className="space-y-4">
                 <div className="text-sm text-gray-600 mb-4">
-                  Total validation runs: <span className="font-semibold text-purple-600">{validationData.totalRuns}</span>
+                  Total validation runs:{' '}
+                  <span className="font-semibold text-purple-600">{validationData.totalRuns}</span>
                 </div>
-                {validationData.validationRuns.map((run) => (
+                {validationData.validationRuns.map(run => (
                   <div key={run.id} className="border rounded-lg p-4 space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -512,33 +523,41 @@ function ValidationRunsViewer({ workerId, onClose }: ValidationRunsViewerProps) 
                         {run.id.split('-').slice(-2).join('-')}
                       </div>
                     </div>
-                    
+
                     {run.stages.length > 0 && (
                       <div className="space-y-2">
                         <div className="text-xs font-medium text-gray-700">Stages:</div>
                         <div className="grid grid-cols-2 gap-2">
                           {run.stages.map((stage, idx) => (
                             <div key={idx} className="flex items-center gap-2 text-xs">
-                              <div className={`w-2 h-2 rounded-full ${
-                                stage.status === 'passed' ? 'bg-green-500' :
-                                stage.status === 'failed' ? 'bg-red-500' :
-                                stage.status === 'running' ? 'bg-blue-500 animate-pulse' :
-                                stage.status === 'skipped' ? 'bg-yellow-500' :
-                                'bg-gray-400'
-                              }`} />
+                              <div
+                                className={`w-2 h-2 rounded-full ${
+                                  stage.status === 'passed'
+                                    ? 'bg-green-500'
+                                    : stage.status === 'failed'
+                                      ? 'bg-red-500'
+                                      : stage.status === 'running'
+                                        ? 'bg-blue-500 animate-pulse'
+                                        : stage.status === 'skipped'
+                                          ? 'bg-yellow-500'
+                                          : 'bg-gray-400'
+                                }`}
+                              />
                               <span className="font-mono">{stage.name}</span>
                               {stage.duration && (
-                                <span className="text-gray-400">({(stage.duration / 1000).toFixed(1)}s)</span>
+                                <span className="text-gray-400">
+                                  ({(stage.duration / 1000).toFixed(1)}s)
+                                </span>
                               )}
                             </div>
                           ))}
                         </div>
                       </div>
                     )}
-                    
+
                     {run.metricsFile && (
                       <div className="text-xs text-gray-500">
-                        <a 
+                        <a
                           href={`/api/claude-workers/${workerId}/validation-runs/${run.id}`}
                           target="_blank"
                           rel="noopener noreferrer"
@@ -602,7 +621,10 @@ function BlockedCommandsViewer({ workerId, onClose }: BlockedCommandsViewerProps
             {blockedData && blockedData.blockedCommandsList.length > 0 ? (
               <div className="space-y-3">
                 <div className="text-sm text-gray-600 mb-4">
-                  Total blocked commands: <span className="font-semibold text-orange-600">{blockedData.blockedCommands}</span>
+                  Total blocked commands:{' '}
+                  <span className="font-semibold text-orange-600">
+                    {blockedData.blockedCommands}
+                  </span>
                   {!blockedData.hasPermissionSystem && (
                     <span className="ml-2 text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
                       Permission system disabled
@@ -655,7 +677,11 @@ export function WorkersDashboard() {
   const queryClient = useQueryClient();
 
   // Fetch workers status
-  const { data: workersData, isLoading, error } = useQuery<WorkersStatusResponse>({
+  const {
+    data: workersData,
+    isLoading,
+    error,
+  } = useQuery<WorkersStatusResponse>({
     queryKey: ['workers-status'],
     queryFn: claudeWorkersApi.getWorkersStatus,
     refetchInterval: 3000, // Refresh every 3 seconds
@@ -667,7 +693,7 @@ export function WorkersDashboard() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['workers-status'] });
     },
-    onError: (error) => {
+    onError: error => {
       console.error('Failed to stop worker:', error);
       alert('Failed to stop worker. Please check the console for details.');
     },
@@ -676,11 +702,13 @@ export function WorkersDashboard() {
   // Merge worktree mutation
   const mergeWorktreeMutation = useMutation({
     mutationFn: claudeWorkersApi.mergeWorktree,
-    onSuccess: (data) => {
-      alert(`Successfully merged changes from ${data.workerId}${data.hasChanges ? ' with changes committed' : ' (no changes to commit)'}`);
+    onSuccess: data => {
+      alert(
+        `Successfully merged changes from ${data.workerId}${data.hasChanges ? ' with changes committed' : ' (no changes to commit)'}`
+      );
       queryClient.invalidateQueries({ queryKey: ['workers-status'] });
     },
-    onError: (error) => {
+    onError: error => {
       console.error('Failed to merge worktree:', error);
       alert('Failed to merge worktree. Please check the console for details.');
     },
@@ -689,14 +717,16 @@ export function WorkersDashboard() {
   // Open VSCode mutation
   const openVSCodeMutation = useMutation({
     mutationFn: claudeWorkersApi.openVSCode,
-    onSuccess: (data) => {
+    onSuccess: data => {
       alert(`VSCode opened for worktree: ${data.worktreePath}`);
     },
-    onError: (error) => {
+    onError: error => {
       console.error('Failed to open VSCode:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       if (errorMessage.includes('VSCode command line tools')) {
-        alert('VSCode command line tools not found. Please install VSCode and enable shell command integration from the Command Palette.');
+        alert(
+          'VSCode command line tools not found. Please install VSCode and enable shell command integration from the Command Palette.'
+        );
       } else {
         alert(`Failed to open VSCode: ${errorMessage}`);
       }
@@ -795,7 +825,7 @@ export function WorkersDashboard() {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center">
@@ -807,7 +837,7 @@ export function WorkersDashboard() {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center">
@@ -815,15 +845,18 @@ export function WorkersDashboard() {
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Success Rate</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {totalCount > 0 
-                    ? Math.round(((workers.filter(w => w.status === 'completed').length) / totalCount) * 100)
-                    : 0}%
+                  {totalCount > 0
+                    ? Math.round(
+                        (workers.filter(w => w.status === 'completed').length / totalCount) * 100
+                      )
+                    : 0}
+                  %
                 </p>
               </div>
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center">
@@ -839,47 +872,43 @@ export function WorkersDashboard() {
 
       {/* Log Viewer */}
       {selectedWorkerId && (
-        <LogViewer 
-          workerId={selectedWorkerId} 
-          onClose={() => setSelectedWorkerId(null)} 
-        />
+        <LogViewer workerId={selectedWorkerId} onClose={() => setSelectedWorkerId(null)} />
       )}
 
       {/* Blocked Commands Viewer */}
       {selectedBlockedWorkerId && (
-        <BlockedCommandsViewer 
-          workerId={selectedBlockedWorkerId} 
-          onClose={() => setSelectedBlockedWorkerId(null)} 
+        <BlockedCommandsViewer
+          workerId={selectedBlockedWorkerId}
+          onClose={() => setSelectedBlockedWorkerId(null)}
         />
       )}
 
       {/* Validation Runs Viewer */}
       {selectedValidationWorkerId && (
-        <ValidationRunsViewer 
-          workerId={selectedValidationWorkerId} 
-          onClose={() => setSelectedValidationWorkerId(null)} 
+        <ValidationRunsViewer
+          workerId={selectedValidationWorkerId}
+          onClose={() => setSelectedValidationWorkerId(null)}
         />
       )}
 
       {/* Workers List */}
       <div>
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">
-          Workers ({workers.length})
-        </h2>
-        
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Workers ({workers.length})</h2>
+
         {workers.length === 0 ? (
           <Card>
             <CardContent className="p-12 text-center">
               <Terminal className="h-12 w-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No Workers</h3>
               <p className="text-gray-600">
-                No Claude Code workers are currently running. Start a worker from the task board to see it here.
+                No Claude Code workers are currently running. Start a worker from the task board to
+                see it here.
               </p>
             </CardContent>
           </Card>
         ) : (
           <div>
-            {workers.map((worker) => (
+            {workers.map(worker => (
               <WorkerCard
                 key={worker.id}
                 worker={worker}

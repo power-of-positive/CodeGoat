@@ -17,22 +17,22 @@ interface Task {
 
 // Status mapping between API and Prisma enum
 const statusMapping: Record<string, TodoStatus> = {
-  'pending': TodoStatus.PENDING,
-  'in_progress': TodoStatus.IN_PROGRESS,
-  'completed': TodoStatus.COMPLETED,
+  pending: TodoStatus.PENDING,
+  in_progress: TodoStatus.IN_PROGRESS,
+  completed: TodoStatus.COMPLETED,
 };
 
 // Priority mapping between API and Prisma enum
 const priorityMapping: Record<string, TodoPriority> = {
-  'low': TodoPriority.LOW,
-  'medium': TodoPriority.MEDIUM,
-  'high': TodoPriority.HIGH,
+  low: TodoPriority.LOW,
+  medium: TodoPriority.MEDIUM,
+  high: TodoPriority.HIGH,
 };
 
 // TaskType mapping between API and Prisma enum
 const taskTypeMapping: Record<string, TaskType> = {
-  'story': TaskType.STORY,
-  'task': TaskType.TASK,
+  story: TaskType.STORY,
+  task: TaskType.TASK,
 };
 
 // Reverse mappings for API responses
@@ -55,10 +55,10 @@ const reverseTaskTypeMapping: Record<TaskType, string> = {
 
 // BDD Scenario status mapping
 const bddStatusMapping: Record<string, BDDScenarioStatus> = {
-  'pending': BDDScenarioStatus.PENDING,
-  'passed': BDDScenarioStatus.PASSED,
-  'failed': BDDScenarioStatus.FAILED,
-  'skipped': BDDScenarioStatus.SKIPPED,
+  pending: BDDScenarioStatus.PENDING,
+  passed: BDDScenarioStatus.PASSED,
+  failed: BDDScenarioStatus.FAILED,
+  skipped: BDDScenarioStatus.SKIPPED,
 };
 
 const reverseBddStatusMapping: Record<BDDScenarioStatus, string> = {
@@ -73,16 +73,16 @@ const reverseBddStatusMapping: Record<BDDScenarioStatus, string> = {
  */
 async function generateNextTaskId(): Promise<string> {
   const db = getDatabaseService();
-  
+
   // Find the highest existing CODEGOAT ID
   const tasks = await db.todoTask.findMany({
     where: {
-      id: { startsWith: 'CODEGOAT-' }
+      id: { startsWith: 'CODEGOAT-' },
     },
     orderBy: { id: 'desc' },
-    take: 1
+    take: 1,
   });
-  
+
   let nextNumber = 1;
   if (tasks.length > 0) {
     const lastId = tasks[0].id; // e.g., "CODEGOAT-042"
@@ -91,7 +91,7 @@ async function generateNextTaskId(): Promise<string> {
       nextNumber = parseInt(numberMatch[1], 10) + 1;
     }
   }
-  
+
   return `CODEGOAT-${nextNumber.toString().padStart(3, '0')}`;
 }
 
@@ -113,14 +113,14 @@ function dbTaskToApiTask(dbTask: TodoTask): Task {
 // Helper function to calculate duration
 function calculateDuration(startTime?: string, endTime?: string): string | undefined {
   if (!startTime || !endTime) return undefined;
-  
+
   const start = new Date(startTime);
   const end = new Date(endTime);
   const diffMs = end.getTime() - start.getTime();
-  
+
   const hours = Math.floor(diffMs / (1000 * 60 * 60));
   const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-  
+
   if (hours > 0) {
     return `${hours}h ${minutes}m`;
   } else {
@@ -136,12 +136,9 @@ export function createTaskRoutes(logger: WinstonLogger) {
     try {
       const db = getDatabaseService();
       const dbTasks = await db.todoTask.findMany({
-        orderBy: [
-          { priority: 'desc' },
-          { createdAt: 'desc' }
-        ]
+        orderBy: [{ priority: 'desc' }, { createdAt: 'desc' }],
       });
-      
+
       const tasks = dbTasks.map(dbTaskToApiTask);
       res.json({ success: true, data: tasks });
     } catch (error) {
@@ -154,38 +151,40 @@ export function createTaskRoutes(logger: WinstonLogger) {
   router.get('/analytics', async (req, res) => {
     try {
       const db = getDatabaseService();
-      
+
       // Get overall statistics
       const totalTasks = await db.todoTask.count();
       const completedTasks = await db.todoTask.count({
-        where: { status: TodoStatus.COMPLETED }
+        where: { status: TodoStatus.COMPLETED },
       });
       const inProgressTasks = await db.todoTask.count({
-        where: { status: TodoStatus.IN_PROGRESS }
+        where: { status: TodoStatus.IN_PROGRESS },
       });
       const pendingTasks = await db.todoTask.count({
-        where: { status: TodoStatus.PENDING }
+        where: { status: TodoStatus.PENDING },
       });
-      
+
       // Get completion rate by priority
       const priorityStats = await Promise.all([
         db.todoTask.count({ where: { priority: TodoPriority.HIGH } }),
         db.todoTask.count({ where: { priority: TodoPriority.HIGH, status: TodoStatus.COMPLETED } }),
         db.todoTask.count({ where: { priority: TodoPriority.MEDIUM } }),
-        db.todoTask.count({ where: { priority: TodoPriority.MEDIUM, status: TodoStatus.COMPLETED } }),
+        db.todoTask.count({
+          where: { priority: TodoPriority.MEDIUM, status: TodoStatus.COMPLETED },
+        }),
         db.todoTask.count({ where: { priority: TodoPriority.LOW } }),
         db.todoTask.count({ where: { priority: TodoPriority.LOW, status: TodoStatus.COMPLETED } }),
       ]);
-      
+
       // Get average completion time for completed tasks with valid durations
       const completedTasksWithDuration = await db.todoTask.findMany({
-        where: { 
+        where: {
           status: TodoStatus.COMPLETED,
           startTime: { not: null },
-          endTime: { not: null }
-        }
+          endTime: { not: null },
+        },
       });
-      
+
       const completionTimes = completedTasksWithDuration
         .filter(task => task.startTime && task.endTime)
         .map(task => {
@@ -193,26 +192,27 @@ export function createTaskRoutes(logger: WinstonLogger) {
           const end = task.endTime!.getTime();
           return (end - start) / (1000 * 60); // Convert to minutes
         });
-      
-      const averageCompletionTime = completionTimes.length > 0 
-        ? completionTimes.reduce((sum, time) => sum + time, 0) / completionTimes.length
-        : 0;
-      
+
+      const averageCompletionTime =
+        completionTimes.length > 0
+          ? completionTimes.reduce((sum, time) => sum + time, 0) / completionTimes.length
+          : 0;
+
       // Get recent completions (last 30 days)
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      
+
       const recentCompletions = await db.todoTask.findMany({
         where: {
           status: TodoStatus.COMPLETED,
           endTime: {
-            gte: thirtyDaysAgo
-          }
+            gte: thirtyDaysAgo,
+          },
         },
         orderBy: { endTime: 'desc' },
-        take: 10
+        take: 10,
       });
-      
+
       // Get daily completion statistics for last 30 days
       const dailyStats = [];
       for (let i = 29; i >= 0; i--) {
@@ -220,23 +220,23 @@ export function createTaskRoutes(logger: WinstonLogger) {
         date.setDate(date.getDate() - i);
         const startOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
         const endOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1);
-        
+
         const completedOnDay = await db.todoTask.count({
           where: {
             status: TodoStatus.COMPLETED,
             endTime: {
               gte: startOfDay,
-              lt: endOfDay
-            }
-          }
+              lt: endOfDay,
+            },
+          },
         });
-        
+
         dailyStats.push({
           date: startOfDay.toISOString().split('T')[0],
-          completed: completedOnDay
+          completed: completedOnDay,
         });
       }
-      
+
       res.json({
         success: true,
         data: {
@@ -245,29 +245,38 @@ export function createTaskRoutes(logger: WinstonLogger) {
             completedTasks,
             inProgressTasks,
             pendingTasks,
-            completionRate: totalTasks > 0 ? (completedTasks / totalTasks * 100).toFixed(1) : '0',
-            averageCompletionTimeMinutes: Math.round(averageCompletionTime)
+            completionRate: totalTasks > 0 ? ((completedTasks / totalTasks) * 100).toFixed(1) : '0',
+            averageCompletionTimeMinutes: Math.round(averageCompletionTime),
           },
           priorityBreakdown: {
             high: {
               total: priorityStats[0],
               completed: priorityStats[1],
-              completionRate: priorityStats[0] > 0 ? (priorityStats[1] / priorityStats[0] * 100).toFixed(1) : '0'
+              completionRate:
+                priorityStats[0] > 0
+                  ? ((priorityStats[1] / priorityStats[0]) * 100).toFixed(1)
+                  : '0',
             },
             medium: {
               total: priorityStats[2],
               completed: priorityStats[3],
-              completionRate: priorityStats[2] > 0 ? (priorityStats[3] / priorityStats[2] * 100).toFixed(1) : '0'
+              completionRate:
+                priorityStats[2] > 0
+                  ? ((priorityStats[3] / priorityStats[2]) * 100).toFixed(1)
+                  : '0',
             },
             low: {
               total: priorityStats[4],
               completed: priorityStats[5],
-              completionRate: priorityStats[4] > 0 ? (priorityStats[5] / priorityStats[4] * 100).toFixed(1) : '0'
-            }
+              completionRate:
+                priorityStats[4] > 0
+                  ? ((priorityStats[5] / priorityStats[4]) * 100).toFixed(1)
+                  : '0',
+            },
           },
           recentCompletions: recentCompletions.map(dbTaskToApiTask),
-          dailyCompletions: dailyStats
-        }
+          dailyCompletions: dailyStats,
+        },
       });
     } catch (error) {
       logger.error('Error fetching task analytics:', error as Error);
@@ -284,20 +293,20 @@ export function createTaskRoutes(logger: WinstonLogger) {
         include: {
           validationRuns: {
             orderBy: { createdAt: 'desc' },
-            take: 10
+            take: 10,
           },
           bddScenarios: {
-            orderBy: { createdAt: 'asc' }
-          }
-        }
+            orderBy: { createdAt: 'asc' },
+          },
+        },
       });
-      
+
       if (!dbTask) {
         return res.status(404).json({ success: false, message: 'Task not found' });
       }
-      
+
       const task = dbTaskToApiTask(dbTask);
-      
+
       // Convert BDD scenarios to API format
       const bddScenarios = dbTask.bddScenarios.map(scenario => ({
         id: scenario.id,
@@ -310,14 +319,14 @@ export function createTaskRoutes(logger: WinstonLogger) {
         executionDuration: scenario.executionDuration,
         errorMessage: scenario.errorMessage,
       }));
-      
-      res.json({ 
-        success: true, 
+
+      res.json({
+        success: true,
         data: {
           ...task,
           validationRuns: dbTask.validationRuns,
-          bddScenarios: bddScenarios
-        }
+          bddScenarios: bddScenarios,
+        },
       });
     } catch (error) {
       logger.error('Error fetching task:', error as Error);
@@ -328,19 +337,25 @@ export function createTaskRoutes(logger: WinstonLogger) {
   // POST /api/tasks - Create new task
   router.post('/', async (req, res) => {
     try {
-      const { content, status = 'pending', priority = 'medium', taskType = 'task', executorId } = req.body;
-      
+      const {
+        content,
+        status = 'pending',
+        priority = 'medium',
+        taskType = 'task',
+        executorId,
+      } = req.body;
+
       if (!content || !content.trim()) {
         return res.status(400).json({ success: false, message: 'Task content is required' });
       }
-      
+
       const db = getDatabaseService();
       const dbStatus = statusMapping[status] || TodoStatus.PENDING;
       const dbPriority = priorityMapping[priority] || TodoPriority.MEDIUM;
       const dbTaskType = taskTypeMapping[taskType] || TaskType.TASK;
-      
+
       const taskId = await generateNextTaskId();
-      
+
       const taskData: {
         id: string;
         content: string;
@@ -359,7 +374,7 @@ export function createTaskRoutes(logger: WinstonLogger) {
         taskType: dbTaskType,
         executorId: executorId || undefined,
       };
-      
+
       // Handle timing based on initial status
       if (status === 'in_progress') {
         taskData.startTime = new Date();
@@ -368,13 +383,13 @@ export function createTaskRoutes(logger: WinstonLogger) {
         taskData.endTime = new Date();
         taskData.duration = '0m';
       }
-      
+
       const dbTask = await db.todoTask.create({
-        data: taskData
+        data: taskData,
       });
-      
+
       const newTask = dbTaskToApiTask(dbTask);
-      
+
       logger.info('Task created:', { taskId: newTask.id, content: newTask.content });
       res.status(201).json({ success: true, data: newTask });
     } catch (error) {
@@ -388,13 +403,13 @@ export function createTaskRoutes(logger: WinstonLogger) {
     try {
       const db = getDatabaseService();
       const existingTask = await db.todoTask.findUnique({
-        where: { id: req.params.id }
+        where: { id: req.params.id },
       });
-      
+
       if (!existingTask) {
         return res.status(404).json({ success: false, message: 'Task not found' });
       }
-      
+
       const updates = req.body;
       const updateData: {
         content?: string;
@@ -406,91 +421,95 @@ export function createTaskRoutes(logger: WinstonLogger) {
         endTime?: Date;
         duration?: string;
       } = {};
-      
+
       // Handle content updates
       if (updates.content !== undefined) {
         updateData.content = updates.content;
       }
-      
+
       // Handle priority updates
       if (updates.priority !== undefined) {
         updateData.priority = priorityMapping[updates.priority] || existingTask.priority;
       }
-      
+
       // Handle taskType updates
       if (updates.taskType !== undefined) {
         updateData.taskType = taskTypeMapping[updates.taskType] || existingTask.taskType;
       }
-      
+
       // Handle executorId updates
       if (updates.executorId !== undefined) {
         updateData.executorId = updates.executorId;
       }
-      
+
       // Handle status changes and timing
       if (updates.status && updates.status !== reverseStatusMapping[existingTask.status]) {
         // Validate story completion requirements
         if (updates.status === 'completed' && existingTask.taskType === TaskType.STORY) {
           // Check if story has BDD scenarios
           const bddScenarios = await db.bDDScenario.findMany({
-            where: { todoTaskId: req.params.id }
+            where: { todoTaskId: req.params.id },
           });
-          
+
           if (bddScenarios.length === 0) {
-            return res.status(400).json({ 
-              success: false, 
-              message: 'Story cannot be completed without at least one BDD scenario. Please add BDD scenarios first.',
-              code: 'STORY_MISSING_BDD_SCENARIOS'
+            return res.status(400).json({
+              success: false,
+              message:
+                'Story cannot be completed without at least one BDD scenario. Please add BDD scenarios first.',
+              code: 'STORY_MISSING_BDD_SCENARIOS',
             });
           }
-          
+
           // Check if scenarios have linked tests
-          const scenariosWithoutTests = bddScenarios.filter(scenario => 
-            !scenario.playwrightTestFile || !scenario.playwrightTestName
+          const scenariosWithoutTests = bddScenarios.filter(
+            scenario => !scenario.playwrightTestFile || !scenario.playwrightTestName
           );
-          
+
           if (scenariosWithoutTests.length > 0) {
             return res.status(400).json({
               success: false,
               message: `Story cannot be completed with ${scenariosWithoutTests.length} BDD scenario(s) that are not linked to E2E tests. Please link all scenarios to Playwright tests.`,
               code: 'STORY_SCENARIOS_NOT_LINKED',
               details: {
-                unlinkedScenarios: scenariosWithoutTests.map(s => ({ id: s.id, title: s.title }))
-              }
+                unlinkedScenarios: scenariosWithoutTests.map(s => ({ id: s.id, title: s.title })),
+              },
             });
           }
-          
+
           // Check if all linked tests have passed
-          const failedOrPendingScenarios = bddScenarios.filter(scenario => 
-            scenario.status !== BDDScenarioStatus.PASSED
+          const failedOrPendingScenarios = bddScenarios.filter(
+            scenario => scenario.status !== BDDScenarioStatus.PASSED
           );
-          
+
           if (failedOrPendingScenarios.length > 0) {
             return res.status(400).json({
               success: false,
               message: `Story cannot be completed with ${failedOrPendingScenarios.length} BDD scenario(s) that have not passed. All scenarios must pass their tests.`,
               code: 'STORY_SCENARIOS_NOT_PASSED',
               details: {
-                nonPassedScenarios: failedOrPendingScenarios.map(s => ({ 
-                  id: s.id, 
-                  title: s.title, 
-                  status: reverseBddStatusMapping[s.status] 
-                }))
-              }
+                nonPassedScenarios: failedOrPendingScenarios.map(s => ({
+                  id: s.id,
+                  title: s.title,
+                  status: reverseBddStatusMapping[s.status],
+                })),
+              },
             });
           }
         }
-        
+
         updateData.status = statusMapping[updates.status];
-        
+
         if (updates.status === 'in_progress' && existingTask.status === TodoStatus.PENDING) {
           updateData.startTime = new Date();
-        } else if (updates.status === 'completed' && existingTask.status === TodoStatus.IN_PROGRESS) {
+        } else if (
+          updates.status === 'completed' &&
+          existingTask.status === TodoStatus.IN_PROGRESS
+        ) {
           const endTime = new Date();
           updateData.endTime = endTime;
           if (existingTask.startTime) {
             updateData.duration = calculateDuration(
-              existingTask.startTime.toISOString(), 
+              existingTask.startTime.toISOString(),
               endTime.toISOString()
             );
           }
@@ -501,14 +520,14 @@ export function createTaskRoutes(logger: WinstonLogger) {
           updateData.duration = '0m';
         }
       }
-      
+
       const updatedDbTask = await db.todoTask.update({
         where: { id: req.params.id },
-        data: updateData
+        data: updateData,
       });
-      
+
       const updatedTask = dbTaskToApiTask(updatedDbTask);
-      
+
       logger.info('Task updated:', { taskId: updatedTask.id, status: updatedTask.status });
       res.json({ success: true, data: updatedTask });
     } catch (error) {
@@ -522,17 +541,17 @@ export function createTaskRoutes(logger: WinstonLogger) {
     try {
       const db = getDatabaseService();
       const existingTask = await db.todoTask.findUnique({
-        where: { id: req.params.id }
+        where: { id: req.params.id },
       });
-      
+
       if (!existingTask) {
         return res.status(404).json({ success: false, message: 'Task not found' });
       }
-      
+
       await db.todoTask.delete({
-        where: { id: req.params.id }
+        where: { id: req.params.id },
       });
-      
+
       logger.info('Task deleted:', { taskId: existingTask.id, content: existingTask.content });
       res.json({ success: true, message: 'Task deleted successfully' });
     } catch (error) {
@@ -542,32 +561,39 @@ export function createTaskRoutes(logger: WinstonLogger) {
   });
 
   // BDD Scenario endpoints
-  
+
   // POST /api/tasks/:id/scenarios - Create new scenario for task
   router.post('/:id/scenarios', async (req, res) => {
     try {
       const { title, feature, description, gherkinContent, status = 'pending' } = req.body;
-      
-      if (!title || !title.trim() || !feature || !feature.trim() || !gherkinContent || !gherkinContent.trim()) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'Title, feature, and gherkin content are required' 
+
+      if (
+        !title ||
+        !title.trim() ||
+        !feature ||
+        !feature.trim() ||
+        !gherkinContent ||
+        !gherkinContent.trim()
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: 'Title, feature, and gherkin content are required',
         });
       }
-      
+
       const db = getDatabaseService();
-      
+
       // Verify task exists
       const existingTask = await db.todoTask.findUnique({
-        where: { id: req.params.id }
+        where: { id: req.params.id },
       });
-      
+
       if (!existingTask) {
         return res.status(404).json({ success: false, message: 'Task not found' });
       }
-      
+
       const dbStatus = bddStatusMapping[status] || BDDScenarioStatus.PENDING;
-      
+
       const scenario = await db.bDDScenario.create({
         data: {
           todoTaskId: req.params.id,
@@ -576,11 +602,11 @@ export function createTaskRoutes(logger: WinstonLogger) {
           description: description?.trim() || '',
           gherkinContent: gherkinContent.trim(),
           status: dbStatus,
-        }
+        },
       });
-      
+
       logger.info('BDD scenario created:', { taskId: req.params.id, scenarioId: scenario.id });
-      
+
       res.status(201).json({
         success: true,
         data: {
@@ -593,40 +619,40 @@ export function createTaskRoutes(logger: WinstonLogger) {
           executedAt: scenario.executedAt?.toISOString(),
           executionDuration: scenario.executionDuration,
           errorMessage: scenario.errorMessage,
-        }
+        },
       });
     } catch (error) {
       logger.error('Error creating BDD scenario:', error as Error);
       res.status(500).json({ success: false, message: 'Failed to create BDD scenario' });
     }
   });
-  
+
   // PUT /api/tasks/:id/scenarios/:scenarioId - Update scenario
   router.put('/:id/scenarios/:scenarioId', async (req, res) => {
     try {
       const db = getDatabaseService();
-      
+
       // Verify task exists
       const existingTask = await db.todoTask.findUnique({
-        where: { id: req.params.id }
+        where: { id: req.params.id },
       });
-      
+
       if (!existingTask) {
         return res.status(404).json({ success: false, message: 'Task not found' });
       }
-      
+
       // Verify scenario exists and belongs to task
       const existingScenario = await db.bDDScenario.findFirst({
         where: {
           id: req.params.scenarioId,
-          todoTaskId: req.params.id
-        }
+          todoTaskId: req.params.id,
+        },
       });
-      
+
       if (!existingScenario) {
         return res.status(404).json({ success: false, message: 'Scenario not found' });
       }
-      
+
       const updates = req.body;
       const updateData: {
         title?: string;
@@ -638,48 +664,53 @@ export function createTaskRoutes(logger: WinstonLogger) {
         executionDuration?: number;
         errorMessage?: string;
       } = {};
-      
+
       if (updates.title !== undefined) {
         updateData.title = updates.title.trim();
       }
-      
+
       if (updates.feature !== undefined) {
         updateData.feature = updates.feature.trim();
       }
-      
+
       if (updates.description !== undefined) {
         updateData.description = updates.description?.trim() || '';
       }
-      
+
       if (updates.gherkinContent !== undefined) {
         updateData.gherkinContent = updates.gherkinContent.trim();
       }
-      
+
       if (updates.status !== undefined) {
         updateData.status = bddStatusMapping[updates.status] || existingScenario.status;
-        
+
         // If status is being set to passed or failed, record execution time
-        if ((updates.status === 'passed' || updates.status === 'failed') && 
-            existingScenario.status === BDDScenarioStatus.PENDING) {
+        if (
+          (updates.status === 'passed' || updates.status === 'failed') &&
+          existingScenario.status === BDDScenarioStatus.PENDING
+        ) {
           updateData.executedAt = new Date();
         }
       }
-      
+
       if (updates.executionDuration !== undefined) {
         updateData.executionDuration = updates.executionDuration;
       }
-      
+
       if (updates.errorMessage !== undefined) {
         updateData.errorMessage = updates.errorMessage;
       }
-      
+
       const updatedScenario = await db.bDDScenario.update({
         where: { id: req.params.scenarioId },
-        data: updateData
+        data: updateData,
       });
-      
-      logger.info('BDD scenario updated:', { taskId: req.params.id, scenarioId: req.params.scenarioId });
-      
+
+      logger.info('BDD scenario updated:', {
+        taskId: req.params.id,
+        scenarioId: req.params.scenarioId,
+      });
+
       res.json({
         success: true,
         data: {
@@ -692,36 +723,39 @@ export function createTaskRoutes(logger: WinstonLogger) {
           executedAt: updatedScenario.executedAt?.toISOString(),
           executionDuration: updatedScenario.executionDuration,
           errorMessage: updatedScenario.errorMessage,
-        }
+        },
       });
     } catch (error) {
       logger.error('Error updating BDD scenario:', error as Error);
       res.status(500).json({ success: false, message: 'Failed to update BDD scenario' });
     }
   });
-  
+
   // DELETE /api/tasks/:id/scenarios/:scenarioId - Delete scenario
   router.delete('/:id/scenarios/:scenarioId', async (req, res) => {
     try {
       const db = getDatabaseService();
-      
+
       // Verify scenario exists and belongs to task
       const existingScenario = await db.bDDScenario.findFirst({
         where: {
           id: req.params.scenarioId,
-          todoTaskId: req.params.id
-        }
+          todoTaskId: req.params.id,
+        },
       });
-      
+
       if (!existingScenario) {
         return res.status(404).json({ success: false, message: 'Scenario not found' });
       }
-      
+
       await db.bDDScenario.delete({
-        where: { id: req.params.scenarioId }
+        where: { id: req.params.scenarioId },
       });
-      
-      logger.info('BDD scenario deleted:', { taskId: req.params.id, scenarioId: req.params.scenarioId });
+
+      logger.info('BDD scenario deleted:', {
+        taskId: req.params.id,
+        scenarioId: req.params.scenarioId,
+      });
       res.json({ success: true, message: 'BDD scenario deleted successfully' });
     } catch (error) {
       logger.error('Error deleting BDD scenario:', error as Error);
@@ -730,32 +764,32 @@ export function createTaskRoutes(logger: WinstonLogger) {
   });
 
   // BDD Scenario Execution History endpoints
-  
+
   // GET /api/tasks/:id/scenarios/:scenarioId/executions - Get execution history for a scenario
   router.get('/:id/scenarios/:scenarioId/executions', async (req, res) => {
     try {
       const db = getDatabaseService();
       const { limit = '50', offset = '0' } = req.query;
-      
+
       // Verify scenario exists and belongs to task
       const existingScenario = await db.bDDScenario.findFirst({
         where: {
           id: req.params.scenarioId,
-          todoTaskId: req.params.id
-        }
+          todoTaskId: req.params.id,
+        },
       });
-      
+
       if (!existingScenario) {
         return res.status(404).json({ success: false, message: 'Scenario not found' });
       }
-      
+
       const executions = await db.bDDScenarioExecution.findMany({
         where: { scenarioId: req.params.scenarioId },
         orderBy: { executedAt: 'desc' },
         take: parseInt(limit as string),
-        skip: parseInt(offset as string)
+        skip: parseInt(offset as string),
       });
-      
+
       const executionsResponse = executions.map(execution => ({
         id: execution.id,
         scenarioId: execution.scenarioId,
@@ -768,49 +802,49 @@ export function createTaskRoutes(logger: WinstonLogger) {
         executedBy: execution.executedBy,
         gherkinSnapshot: execution.gherkinSnapshot,
       }));
-      
+
       res.json({ success: true, data: executionsResponse });
     } catch (error) {
       logger.error('Error fetching execution history:', error as Error);
       res.status(500).json({ success: false, message: 'Failed to fetch execution history' });
     }
   });
-  
+
   // POST /api/tasks/:id/scenarios/:scenarioId/executions - Create new execution record
   router.post('/:id/scenarios/:scenarioId/executions', async (req, res) => {
     try {
-      const { 
-        status, 
-        executionDuration, 
-        errorMessage, 
-        stepResults, 
+      const {
+        status,
+        executionDuration,
+        errorMessage,
+        stepResults,
         environment = 'dev',
-        executedBy = 'system'
+        executedBy = 'system',
       } = req.body;
-      
+
       if (!status) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'Status is required' 
+        return res.status(400).json({
+          success: false,
+          message: 'Status is required',
         });
       }
-      
+
       const db = getDatabaseService();
-      
+
       // Verify scenario exists and belongs to task
       const existingScenario = await db.bDDScenario.findFirst({
         where: {
           id: req.params.scenarioId,
-          todoTaskId: req.params.id
-        }
+          todoTaskId: req.params.id,
+        },
       });
-      
+
       if (!existingScenario) {
         return res.status(404).json({ success: false, message: 'Scenario not found' });
       }
-      
+
       const dbStatus = bddStatusMapping[status] || BDDScenarioStatus.PENDING;
-      
+
       const execution = await db.bDDScenarioExecution.create({
         data: {
           scenarioId: req.params.scenarioId,
@@ -821,9 +855,9 @@ export function createTaskRoutes(logger: WinstonLogger) {
           environment,
           executedBy,
           gherkinSnapshot: existingScenario.gherkinContent, // Save current gherkin
-        }
+        },
       });
-      
+
       // Update the scenario's current status and execution details
       await db.bDDScenario.update({
         where: { id: req.params.scenarioId },
@@ -832,16 +866,16 @@ export function createTaskRoutes(logger: WinstonLogger) {
           executedAt: execution.executedAt,
           executionDuration,
           errorMessage,
-        }
+        },
       });
-      
-      logger.info('BDD execution recorded:', { 
-        taskId: req.params.id, 
+
+      logger.info('BDD execution recorded:', {
+        taskId: req.params.id,
         scenarioId: req.params.scenarioId,
         executionId: execution.id,
-        status: status
+        status: status,
       });
-      
+
       res.status(201).json({
         success: true,
         data: {
@@ -855,7 +889,7 @@ export function createTaskRoutes(logger: WinstonLogger) {
           environment: execution.environment,
           executedBy: execution.executedBy,
           gherkinSnapshot: execution.gherkinSnapshot,
-        }
+        },
       });
     } catch (error) {
       logger.error('Error creating execution record:', error as Error);
@@ -868,42 +902,46 @@ export function createTaskRoutes(logger: WinstonLogger) {
     try {
       const db = getDatabaseService();
       const { days = '30' } = req.query;
-      
+
       // Verify scenario exists and belongs to task
       const existingScenario = await db.bDDScenario.findFirst({
         where: {
           id: req.params.scenarioId,
-          todoTaskId: req.params.id
-        }
+          todoTaskId: req.params.id,
+        },
       });
-      
+
       if (!existingScenario) {
         return res.status(404).json({ success: false, message: 'Scenario not found' });
       }
-      
+
       const daysAgo = new Date();
       daysAgo.setDate(daysAgo.getDate() - parseInt(days as string));
-      
+
       const executions = await db.bDDScenarioExecution.findMany({
-        where: { 
+        where: {
           scenarioId: req.params.scenarioId,
-          executedAt: { gte: daysAgo }
+          executedAt: { gte: daysAgo },
         },
-        orderBy: { executedAt: 'desc' }
+        orderBy: { executedAt: 'desc' },
       });
-      
+
       const totalExecutions = executions.length;
       const passedExecutions = executions.filter(e => e.status === BDDScenarioStatus.PASSED).length;
       const failedExecutions = executions.filter(e => e.status === BDDScenarioStatus.FAILED).length;
-      const skippedExecutions = executions.filter(e => e.status === BDDScenarioStatus.SKIPPED).length;
-      
+      const skippedExecutions = executions.filter(
+        e => e.status === BDDScenarioStatus.SKIPPED
+      ).length;
+
       const successRate = totalExecutions > 0 ? (passedExecutions / totalExecutions) * 100 : 0;
-      
+
       const executionsWithDuration = executions.filter(e => e.executionDuration);
-      const averageDuration = executionsWithDuration.length > 0 
-        ? executionsWithDuration.reduce((sum, e) => sum + (e.executionDuration || 0), 0) / executionsWithDuration.length
-        : 0;
-      
+      const averageDuration =
+        executionsWithDuration.length > 0
+          ? executionsWithDuration.reduce((sum, e) => sum + (e.executionDuration || 0), 0) /
+            executionsWithDuration.length
+          : 0;
+
       // Group executions by day for trend analysis
       interface DailyStats {
         date: string;
@@ -912,19 +950,22 @@ export function createTaskRoutes(logger: WinstonLogger) {
         failed: number;
         skipped: number;
       }
-      
-      const dailyStats = executions.reduce((acc, execution) => {
-        const date = execution.executedAt.toISOString().split('T')[0];
-        if (!acc[date]) {
-          acc[date] = { date, total: 0, passed: 0, failed: 0, skipped: 0 };
-        }
-        acc[date].total++;
-        if (execution.status === BDDScenarioStatus.PASSED) acc[date].passed++;
-        if (execution.status === BDDScenarioStatus.FAILED) acc[date].failed++;
-        if (execution.status === BDDScenarioStatus.SKIPPED) acc[date].skipped++;
-        return acc;
-      }, {} as Record<string, DailyStats>);
-      
+
+      const dailyStats = executions.reduce(
+        (acc, execution) => {
+          const date = execution.executedAt.toISOString().split('T')[0];
+          if (!acc[date]) {
+            acc[date] = { date, total: 0, passed: 0, failed: 0, skipped: 0 };
+          }
+          acc[date].total++;
+          if (execution.status === BDDScenarioStatus.PASSED) acc[date].passed++;
+          if (execution.status === BDDScenarioStatus.FAILED) acc[date].failed++;
+          if (execution.status === BDDScenarioStatus.SKIPPED) acc[date].skipped++;
+          return acc;
+        },
+        {} as Record<string, DailyStats>
+      );
+
       res.json({
         success: true,
         data: {
@@ -934,7 +975,7 @@ export function createTaskRoutes(logger: WinstonLogger) {
             failedExecutions,
             skippedExecutions,
             successRate: Math.round(successRate * 100) / 100,
-            averageDuration: Math.round(averageDuration)
+            averageDuration: Math.round(averageDuration),
           },
           trends: Object.values(dailyStats).sort((a, b) => a.date.localeCompare(b.date)),
           recentExecutions: executions.slice(0, 10).map(execution => ({
@@ -945,8 +986,8 @@ export function createTaskRoutes(logger: WinstonLogger) {
             errorMessage: execution.errorMessage,
             environment: execution.environment,
             executedBy: execution.executedBy,
-          }))
-        }
+          })),
+        },
       });
     } catch (error) {
       logger.error('Error fetching execution analytics:', error as Error);

@@ -2,7 +2,7 @@
 
 /**
  * Example usage of the Claude Validation Wrapper
- * 
+ *
  * This example demonstrates how to use the ClaudeValidationWrapper to
  * execute Claude Code with automatic validation pipeline execution.
  */
@@ -20,11 +20,8 @@ async function demonstrateValidationWrapper() {
   // Example 1: Development setup with full validation
   console.log('📝 Example 1: Development Setup');
   console.log('-------------------------------');
-  
-  const devWrapper = ClaudeValidationFactory.createForDevelopment(
-    process.cwd(),
-    logger
-  );
+
+  const devWrapper = ClaudeValidationFactory.createForDevelopment(process.cwd(), logger);
 
   console.log(`Working directory: ${devWrapper.getWorktreeDir()}`);
   console.log(`Claude command: ${devWrapper.getClaudeCommand()}`);
@@ -36,11 +33,8 @@ async function demonstrateValidationWrapper() {
   // Example 2: Production setup with restrictive permissions
   console.log('📝 Example 2: Production Setup');
   console.log('------------------------------');
-  
-  const prodWrapper = ClaudeValidationFactory.createForProduction(
-    process.cwd(),
-    logger
-  );
+
+  const prodWrapper = ClaudeValidationFactory.createForProduction(process.cwd(), logger);
 
   console.log(`Working directory: ${prodWrapper.getWorktreeDir()}`);
   console.log(`Validation enabled: ${prodWrapper.isValidationEnabled()}`);
@@ -50,7 +44,7 @@ async function demonstrateValidationWrapper() {
   // Example 3: Custom configuration
   console.log('📝 Example 3: Custom Configuration');
   console.log('----------------------------------');
-  
+
   const customWrapper = ClaudeValidationFactory.create({
     worktreeDir: process.cwd(),
     claudeCommand: 'claude-code',
@@ -58,28 +52,30 @@ async function demonstrateValidationWrapper() {
     skipValidationOnFailure: false,
     validationTimeout: 120000, // 2 minutes
     permissionMode: 'development',
-    logger
+    logger,
   });
 
-  console.log(`Custom validation timeout: ${customWrapper.getValidationConfig().validationTimeout}ms`);
+  console.log(
+    `Custom validation timeout: ${customWrapper.getValidationConfig().validationTimeout}ms`
+  );
   console.log();
 
   // Example 4: Validation-only mode
   console.log('📝 Example 4: Manual Validation Only');
   console.log('------------------------------------');
-  
+
   if (devWrapper.isValidationEnabled()) {
     try {
       console.log('Running validation pipeline manually...');
       const validationResults = await devWrapper.runValidationOnly();
-      
+
       if (validationResults) {
         console.log(`✅ Validation completed successfully!`);
         console.log(`   Total stages: ${validationResults.totalStages}`);
         console.log(`   Passed: ${validationResults.passed}`);
         console.log(`   Failed: ${validationResults.failed}`);
         console.log(`   Total time: ${validationResults.totalTime}ms`);
-        
+
         if (validationResults.stages.length > 0) {
           console.log('   Stage details:');
           validationResults.stages.forEach(stage => {
@@ -100,7 +96,7 @@ async function demonstrateValidationWrapper() {
   // Example 5: Simulated Claude execution with validation
   console.log('📝 Example 5: Claude Execution with Validation');
   console.log('----------------------------------------------');
-  
+
   // Note: This would actually execute Claude in a real scenario
   console.log('This would execute Claude with a prompt and then run validation...');
   console.log('For safety, we are not actually executing Claude in this demo.');
@@ -113,13 +109,13 @@ async function demonstrateValidationWrapper() {
   // Example 6: Permission checking
   console.log('📝 Example 6: Permission Checking');
   console.log('---------------------------------');
-  
+
   const permissionManager = devWrapper.getPermissionManager();
   if (permissionManager) {
     // Example permission checks
     const fileReadAllowed = devWrapper.checkPermission('FILE_READ', 'package.json');
     const fileWriteAllowed = devWrapper.checkPermission('FILE_WRITE', 'settings.json');
-    
+
     console.log(`File read permission for package.json: ${fileReadAllowed}`);
     console.log(`File write permission for settings.json: ${fileWriteAllowed}`);
   } else {
@@ -139,7 +135,7 @@ async function demonstrateValidationWrapper() {
 if (require.main === module) {
   demonstrateValidationWrapper()
     .then(() => process.exit(0))
-    .catch((error) => {
+    .catch(error => {
       console.error('❌ Demo failed:', error);
       process.exit(1);
     });

@@ -2,12 +2,12 @@
  * Utility functions for precommit validation
  */
 
-import { existsSync } from "fs";
-import * as path from "path";
-import * as process from "process";
+import { existsSync } from 'fs';
+import * as path from 'path';
+import * as process from 'process';
 
 export interface PrecommitResult {
-  decision: "block" | "approve";
+  decision: 'block' | 'approve';
   reason?: string;
   feedback?: string;
 }
@@ -23,7 +23,7 @@ export function findProjectRoot(): string {
 
   while (currentDir !== root) {
     try {
-      if (existsSync(path.join(currentDir, "package.json"))) {
+      if (existsSync(path.join(currentDir, 'package.json'))) {
         return currentDir;
       }
     } catch (error) {
@@ -34,5 +34,5 @@ export function findProjectRoot(): string {
   }
 
   // Return null if package.json not found instead of process.cwd()
-  throw new Error("Could not find project root with package.json");
+  throw new Error('Could not find project root with package.json');
 }

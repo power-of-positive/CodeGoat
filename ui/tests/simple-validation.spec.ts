@@ -4,7 +4,7 @@ test.describe('Simple Validation Test', () => {
   test('should be able to navigate to a static page', async ({ page }) => {
     // Navigate to a simple static page that doesn't require backend
     await page.goto('about:blank');
-    
+
     // Set basic HTML content for testing
     await page.setContent(`
       <html>
@@ -19,10 +19,12 @@ test.describe('Simple Validation Test', () => {
         </body>
       </html>
     `);
-    
+
     // Test the basic elements
     await expect(page.locator('h2')).toContainText('Validation Analytics');
-    await expect(page.locator('p')).toContainText('Track validation pipeline performance and success rates');
+    await expect(page.locator('p')).toContainText(
+      'Track validation pipeline performance and success rates'
+    );
     await expect(page.locator('button')).toContainText('Refresh');
     await expect(page.locator('div:has-text("Total Runs")')).toBeVisible();
     await expect(page.locator('div:has-text("Success Rate")')).toBeVisible();
@@ -41,11 +43,13 @@ test.describe('Simple Validation Test', () => {
         </body>
       </html>
     `);
-    
+
     await expect(page.locator('h2')).toContainText('Validation Settings');
-    await expect(page.locator('p')).toContainText('Configure validation pipeline stages and settings');
+    await expect(page.locator('p')).toContainText(
+      'Configure validation pipeline stages and settings'
+    );
     await expect(page.locator('#add-stage')).toBeVisible();
-    
+
     // Test button click
     await page.locator('#add-stage').click();
     // Button should still be visible after click

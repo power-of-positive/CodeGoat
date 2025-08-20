@@ -3,7 +3,7 @@
  */
 
 export interface ReviewResult {
-  severity: "low" | "medium" | "high";
+  severity: 'low' | 'medium' | 'high';
   issues: string[];
   suggestions: string[];
   summary: string;

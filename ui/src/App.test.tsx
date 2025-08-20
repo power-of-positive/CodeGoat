@@ -46,7 +46,11 @@ jest.mock('./components/WorkerDetail', () => ({
 }));
 
 jest.mock('./components/Layout', () => ({
-  Layout: ({ children }: { children: React.ReactNode }) => <div data-testid="layout" className="min-h-screen">{children}</div>,
+  Layout: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="layout" className="min-h-screen">
+      {children}
+    </div>
+  ),
 }));
 
 // Mock react-router-dom
@@ -58,7 +62,9 @@ jest.mock('react-router-dom', () => ({
   useLocation: () => ({ pathname: '/analytics' }),
   useParams: () => ({ runId: 'test-run-123' }),
   useNavigate: () => jest.fn(),
-  Link: ({ children, to }: { children: React.ReactNode; to: string }) => <a href={to}>{children}</a>,
+  Link: ({ children, to }: { children: React.ReactNode; to: string }) => (
+    <a href={to}>{children}</a>
+  ),
 }));
 
 describe('App', () => {
@@ -67,7 +73,7 @@ describe('App', () => {
   beforeEach(() => {
     queryClient = new QueryClient({
       defaultOptions: {
-        queries: { 
+        queries: {
           retry: false,
           gcTime: 0,
           staleTime: 0,
@@ -107,7 +113,7 @@ describe('App', () => {
   it('applies correct styling classes', () => {
     const { container } = renderApp();
     const mainDiv = container.querySelector('.min-h-screen');
-    
+
     expect(mainDiv).toBeInTheDocument();
     expect(mainDiv).toHaveClass('min-h-screen');
   });

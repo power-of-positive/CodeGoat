@@ -1,9 +1,9 @@
 /**
  * Test coverage analysis utilities - Vitest coverage validation
  */
-import * as path from "path";
-import * as fs from "fs";
-import { buildCoverageCommand, executeCoverage } from "./coverage-helpers";
+import * as path from 'path';
+import * as fs from 'fs';
+import { buildCoverageCommand, executeCoverage } from './coverage-helpers';
 
 const defaultLogger = { log: console.log, error: console.error };
 
@@ -27,8 +27,8 @@ function validateScriptsDir(scriptsDir: string): void {
  * Get the appropriate vitest command for coverage
  */
 function getCoverageCommand(scriptsDir: string): string {
-  const vitestPath = path.join(scriptsDir, "node_modules", ".bin", "vitest");
-  return fs.existsSync(vitestPath) ? vitestPath : "npx vitest";
+  const vitestPath = path.join(scriptsDir, 'node_modules', '.bin', 'vitest');
+  return fs.existsSync(vitestPath) ? vitestPath : 'npx vitest';
 }
 
 /**
@@ -37,9 +37,7 @@ function getCoverageCommand(scriptsDir: string): string {
 function handleCoverageError(error: unknown, logger: typeof defaultLogger) {
   const errorMsg = error instanceof Error ? error.message : String(error);
   const fullErrorInfo =
-    error instanceof Error && error.stack
-      ? `${errorMsg}\nStack: ${error.stack}`
-      : errorMsg;
+    error instanceof Error && error.stack ? `${errorMsg}\nStack: ${error.stack}` : errorMsg;
   logger.error(`Coverage analysis failed: ${errorMsg}`);
   return {
     failed: true,
@@ -60,31 +58,31 @@ export function runScriptCoverage(options: CoverageOptions = {}) {
   } = options;
 
   // Prevent recursive coverage execution
-  if (process.env.RUNNING_COVERAGE === "true") {
-    logger.log("📊 Coverage already running, skipping to prevent recursion");
+  if (process.env.RUNNING_COVERAGE === 'true') {
+    logger.log('📊 Coverage already running, skipping to prevent recursion');
     return {
       failed: false,
-      output: "Coverage check skipped (already running)",
+      output: 'Coverage check skipped (already running)',
     };
   }
 
-  logger.log("📊 Running full repository coverage analysis...");
+  logger.log('📊 Running full repository coverage analysis...');
 
   try {
-    const scriptsDir = customScriptsDir || path.resolve(__dirname, "..");
+    const scriptsDir = customScriptsDir || path.resolve(__dirname, '..');
     validateScriptsDir(scriptsDir);
     const command = getCoverageCommand(scriptsDir);
     const { command: coverageCommand, shouldSkip } = buildCoverageCommand(
       command,
       changedFiles,
       scriptsDir,
-      logger,
+      logger
     );
 
     if (shouldSkip) {
       return {
         failed: false,
-        output: "Coverage skipped - no test files for changed files",
+        output: 'Coverage skipped - no test files for changed files',
       };
     }
 

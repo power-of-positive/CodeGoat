@@ -1,17 +1,17 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { 
-  Plus, 
-  Edit, 
-  Trash2, 
-  Clock, 
-  AlertCircle, 
-  CheckCircle, 
+import {
+  Plus,
+  Edit,
+  Trash2,
+  Clock,
+  AlertCircle,
+  CheckCircle,
   Play,
   MoreVertical,
   ExternalLink,
-  Bot
+  Bot,
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
@@ -23,7 +23,7 @@ import { Task } from '../../shared/types';
 const priorityColors = {
   low: 'bg-gray-100 text-gray-800 border-gray-300',
   medium: 'bg-yellow-100 text-yellow-800 border-yellow-300',
-  high: 'bg-red-100 text-red-800 border-red-300'
+  high: 'bg-red-100 text-red-800 border-red-300',
 } as const;
 
 // Status column configuration
@@ -33,22 +33,22 @@ const statusColumns = [
     title: 'Pending',
     icon: AlertCircle,
     bgColor: 'bg-gray-50',
-    borderColor: 'border-gray-200'
+    borderColor: 'border-gray-200',
   },
   {
     status: 'in_progress' as const,
     title: 'In Progress',
     icon: Play,
     bgColor: 'bg-blue-50',
-    borderColor: 'border-blue-200'
+    borderColor: 'border-blue-200',
   },
   {
     status: 'completed' as const,
     title: 'Completed',
     icon: CheckCircle,
     bgColor: 'bg-green-50',
-    borderColor: 'border-green-200'
-  }
+    borderColor: 'border-green-200',
+  },
 ];
 
 // Task creation/edit form
@@ -60,10 +60,18 @@ interface TaskFormProps {
 
 function TaskForm({ task, onSave, onCancel }: TaskFormProps) {
   const [content, setContent] = useState(task?.content || '');
-  const [priority, setPriority] = useState<Task['priority']>(task?.priority || 'medium');
-  const [status, setStatus] = useState<Task['status']>(task?.status || 'pending');
-  const [taskType, setTaskType] = useState<Task['taskType']>(task?.taskType || 'task');
-  const [executorId, setExecutorId] = useState(task?.executorId || 'claude_code');
+  const [priority, setPriority] = useState<Task['priority']>(
+    task?.priority || 'medium'
+  );
+  const [status, setStatus] = useState<Task['status']>(
+    task?.status || 'pending'
+  );
+  const [taskType, setTaskType] = useState<Task['taskType']>(
+    task?.taskType || 'task'
+  );
+  const [executorId, setExecutorId] = useState(
+    task?.executorId || 'claude_code'
+  );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,13 +83,13 @@ function TaskForm({ task, onSave, onCancel }: TaskFormProps) {
       status,
       taskType,
       executorId,
-      ...(task && { 
+      ...(task && {
         id: task.id,
         startTime: task.startTime,
         endTime: task.endTime,
         duration: task.duration,
-        bddScenarios: task.bddScenarios
-      })
+        bddScenarios: task.bddScenarios,
+      }),
     };
 
     onSave(taskData);
@@ -109,7 +117,7 @@ function TaskForm({ task, onSave, onCancel }: TaskFormProps) {
               required
             />
           </div>
-          
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -117,7 +125,9 @@ function TaskForm({ task, onSave, onCancel }: TaskFormProps) {
               </label>
               <select
                 value={priority}
-                onChange={(e) => setPriority(e.target.value as Task['priority'])}
+                onChange={(e) =>
+                  setPriority(e.target.value as Task['priority'])
+                }
                 className="w-full p-2 border border-gray-300 rounded-md text-sm"
               >
                 <option value="low">Low</option>
@@ -125,7 +135,7 @@ function TaskForm({ task, onSave, onCancel }: TaskFormProps) {
                 <option value="high">High</option>
               </select>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Status
@@ -141,7 +151,7 @@ function TaskForm({ task, onSave, onCancel }: TaskFormProps) {
               </select>
             </div>
           </div>
-          
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -149,14 +159,16 @@ function TaskForm({ task, onSave, onCancel }: TaskFormProps) {
               </label>
               <select
                 value={taskType}
-                onChange={(e) => setTaskType(e.target.value as Task['taskType'])}
+                onChange={(e) =>
+                  setTaskType(e.target.value as Task['taskType'])
+                }
                 className="w-full p-2 border border-gray-300 rounded-md text-sm"
               >
                 <option value="task">Technical Task</option>
                 <option value="story">User Story</option>
               </select>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Executor
@@ -170,12 +182,17 @@ function TaskForm({ task, onSave, onCancel }: TaskFormProps) {
               />
             </div>
           </div>
-          
+
           <div className="flex gap-2">
             <Button type="submit" size="sm">
               {task ? 'Update' : 'Create'}
             </Button>
-            <Button type="button" variant="outline" size="sm" onClick={onCancel}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onCancel}
+            >
               Cancel
             </Button>
           </div>
@@ -194,7 +211,13 @@ interface TaskCardProps {
   onStartWorker: (task: Task) => void;
 }
 
-function TaskCard({ task, onEdit, onDelete, onStatusChange, onStartWorker }: TaskCardProps) {
+function TaskCard({
+  task,
+  onEdit,
+  onDelete,
+  onStatusChange,
+  onStartWorker,
+}: TaskCardProps) {
   const [showActions, setShowActions] = useState(false);
 
   const formatDuration = (duration?: string) => {
@@ -216,8 +239,8 @@ function TaskCard({ task, onEdit, onDelete, onStatusChange, onStartWorker }: Tas
             <Badge className={`text-xs ${priorityColors[task.priority]}`}>
               {task.priority}
             </Badge>
-            <Badge 
-              variant="outline" 
+            <Badge
+              variant="outline"
               className={`text-xs ${task.taskType === 'story' ? 'border-blue-300 text-blue-700 bg-blue-50' : 'border-gray-300 text-gray-600 bg-gray-50'}`}
             >
               {task.taskType === 'story' ? 'Story' : 'Task'}
@@ -268,35 +291,38 @@ function TaskCard({ task, onEdit, onDelete, onStatusChange, onStartWorker }: Tas
             )}
           </div>
         </div>
-        
-        <Link 
+
+        <Link
           to={`/tasks/${task.id}`}
           className="block mb-3 hover:bg-gray-50 -mx-1 px-1 py-1 rounded"
         >
-          <p className="text-sm text-gray-900 line-clamp-3">
-            {task.content}
-          </p>
+          <p className="text-sm text-gray-900 line-clamp-3">{task.content}</p>
         </Link>
-        
+
         {task.executorId && (
           <div className="mb-2">
-            <Badge variant="outline" className="text-xs bg-purple-50 border-purple-300 text-purple-700">
+            <Badge
+              variant="outline"
+              className="text-xs bg-purple-50 border-purple-300 text-purple-700"
+            >
               👤 {task.executorId}
             </Badge>
           </div>
         )}
-        
+
         {(task.duration || task.startTime) && (
           <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
             <Clock className="h-3 w-3" />
             {task.duration ? (
               <span>Duration: {formatDuration(task.duration)}</span>
             ) : task.startTime ? (
-              <span>Started: {new Date(task.startTime).toLocaleDateString()}</span>
+              <span>
+                Started: {new Date(task.startTime).toLocaleDateString()}
+              </span>
             ) : null}
           </div>
         )}
-        
+
         {/* Status change buttons */}
         <div className="flex gap-1 flex-wrap">
           {task.status !== 'pending' && (
@@ -329,7 +355,7 @@ function TaskCard({ task, onEdit, onDelete, onStatusChange, onStartWorker }: Tas
               Complete
             </Button>
           )}
-          
+
           {/* Start Claude Worker button */}
           {(task.status === 'pending' || task.status === 'in_progress') && (
             <Button
@@ -350,7 +376,7 @@ function TaskCard({ task, onEdit, onDelete, onStatusChange, onStartWorker }: Tas
 
 // Status column component
 interface StatusColumnProps {
-  column: typeof statusColumns[0];
+  column: (typeof statusColumns)[0];
   tasks: Task[];
   onEdit: (task: Task) => void;
   onDelete: (id: string) => void;
@@ -358,11 +384,20 @@ interface StatusColumnProps {
   onStartWorker: (task: Task) => void;
 }
 
-function StatusColumn({ column, tasks, onEdit, onDelete, onStatusChange, onStartWorker }: StatusColumnProps) {
+function StatusColumn({
+  column,
+  tasks,
+  onEdit,
+  onDelete,
+  onStatusChange,
+  onStartWorker,
+}: StatusColumnProps) {
   const Icon = column.icon;
-  
+
   return (
-    <div className={`flex-1 min-w-80 ${column.bgColor} border ${column.borderColor} rounded-lg`}>
+    <div
+      className={`flex-1 min-w-80 ${column.bgColor} border ${column.borderColor} rounded-lg`}
+    >
       <div className="p-4 border-b border-gray-200">
         <div className="flex items-center gap-2">
           <Icon className="h-5 w-5 text-gray-600" />
@@ -372,7 +407,7 @@ function StatusColumn({ column, tasks, onEdit, onDelete, onStatusChange, onStart
           </Badge>
         </div>
       </div>
-      
+
       <div className="p-4 min-h-[200px]">
         {tasks.length === 0 ? (
           <p className="text-sm text-gray-500 text-center py-8">
@@ -404,7 +439,11 @@ export function TaskBoard() {
   const queryClient = useQueryClient();
 
   // Fetch tasks
-  const { data: tasks = [], isLoading, error } = useQuery({
+  const {
+    data: tasks = [],
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ['tasks'],
     queryFn: taskApi.getTasks,
   });
@@ -440,14 +479,18 @@ export function TaskBoard() {
   const startWorkerMutation = useMutation({
     mutationFn: claudeWorkersApi.startWorker,
     onSuccess: (data) => {
-      console.error(`🚀 Started Claude worker ${data.workerId} for task ${data.taskId}`);
+      console.error(
+        `🚀 Started Claude worker ${data.workerId} for task ${data.taskId}`
+      );
       // Show success notification with link to worker monitoring
       const message = `Started Claude Code worker!\nWorker ID: ${data.workerId}\nPID: ${data.pid}\n\nView progress in the Workers dashboard.`;
       alert(message);
     },
     onError: (error) => {
       console.error('Failed to start Claude worker:', error);
-      alert('Failed to start Claude Code worker. Please check the console for details.');
+      alert(
+        'Failed to start Claude Code worker. Please check the console for details.'
+      );
     },
   });
 
@@ -468,19 +511,23 @@ export function TaskBoard() {
 
   const handleStatusChange = (id: string, status: Task['status']) => {
     const updates: Partial<Task> = { status };
-    
+
     // Handle timing updates
     if (status === 'in_progress') {
       updates.startTime = new Date().toISOString();
     } else if (status === 'completed') {
       updates.endTime = new Date().toISOString();
     }
-    
+
     updateTaskMutation.mutate({ id, updates });
   };
 
   const handleStartWorker = (task: Task) => {
-    if (confirm(`Start Claude Code worker for task: "${task.content}"?\n\nThis will spawn a new process and execute the task automatically.`)) {
+    if (
+      confirm(
+        `Start Claude Code worker for task: "${task.content}"?\n\nThis will spawn a new process and execute the task automatically.`
+      )
+    ) {
       startWorkerMutation.mutate({
         taskId: task.id,
         taskContent: task.content,
@@ -490,11 +537,14 @@ export function TaskBoard() {
   };
 
   // Group tasks by status
-  const tasksByStatus = tasks.reduce((acc, task) => {
-    acc[task.status] = acc[task.status] || [];
-    acc[task.status].push(task);
-    return acc;
-  }, {} as Record<Task['status'], Task[]>);
+  const tasksByStatus = tasks.reduce(
+    (acc, task) => {
+      acc[task.status] = acc[task.status] || [];
+      acc[task.status].push(task);
+      return acc;
+    },
+    {} as Record<Task['status'], Task[]>
+  );
 
   if (isLoading) {
     return (
@@ -512,7 +562,9 @@ export function TaskBoard() {
       <div className="flex items-center justify-center min-h-96">
         <div className="text-center">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Failed to Load</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            Failed to Load
+          </h2>
           <p className="text-gray-600">Could not load tasks</p>
         </div>
       </div>
@@ -523,64 +575,72 @@ export function TaskBoard() {
     <div className="p-6">
       <div className="space-y-6">
         {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Task Management</h1>
-          <p className="text-gray-600">Manage your tasks with a kanban-style board</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">
+              Task Management
+            </h1>
+            <p className="text-gray-600">
+              Manage your tasks with a kanban-style board
+            </p>
+          </div>
+          <Button onClick={() => setShowCreateForm(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            Add Task
+          </Button>
         </div>
-        <Button onClick={() => setShowCreateForm(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          Add Task
-        </Button>
-      </div>
 
-      {/* Create/Edit Form */}
-      {(showCreateForm || editingTask) && (
-        <TaskForm
-          task={editingTask || undefined}
-          onSave={editingTask ? handleUpdateTask : handleCreateTask}
-          onCancel={() => {
-            setShowCreateForm(false);
-            setEditingTask(null);
-          }}
-        />
-      )}
-
-      {/* Task Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-gray-900">{tasks.length}</div>
-            <div className="text-sm text-gray-600">Total Tasks</div>
-          </CardContent>
-        </Card>
-        {statusColumns.map((column) => {
-          const count = tasksByStatus[column.status]?.length || 0;
-          return (
-            <Card key={column.status}>
-              <CardContent className="p-4">
-                <div className="text-2xl font-bold text-gray-900">{count}</div>
-                <div className="text-sm text-gray-600">{column.title}</div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
-
-      {/* Kanban Board */}
-      <div className="flex gap-6 overflow-x-auto">
-        {statusColumns.map((column) => (
-          <StatusColumn
-            key={column.status}
-            column={column}
-            tasks={tasksByStatus[column.status] || []}
-            onEdit={setEditingTask}
-            onDelete={handleDeleteTask}
-            onStatusChange={handleStatusChange}
-            onStartWorker={handleStartWorker}
+        {/* Create/Edit Form */}
+        {(showCreateForm || editingTask) && (
+          <TaskForm
+            task={editingTask || undefined}
+            onSave={editingTask ? handleUpdateTask : handleCreateTask}
+            onCancel={() => {
+              setShowCreateForm(false);
+              setEditingTask(null);
+            }}
           />
-        ))}
-      </div>
+        )}
+
+        {/* Task Summary */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold text-gray-900">
+                {tasks.length}
+              </div>
+              <div className="text-sm text-gray-600">Total Tasks</div>
+            </CardContent>
+          </Card>
+          {statusColumns.map((column) => {
+            const count = tasksByStatus[column.status]?.length || 0;
+            return (
+              <Card key={column.status}>
+                <CardContent className="p-4">
+                  <div className="text-2xl font-bold text-gray-900">
+                    {count}
+                  </div>
+                  <div className="text-sm text-gray-600">{column.title}</div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+
+        {/* Kanban Board */}
+        <div className="flex gap-6 overflow-x-auto">
+          {statusColumns.map((column) => (
+            <StatusColumn
+              key={column.status}
+              column={column}
+              tasks={tasksByStatus[column.status] || []}
+              onEdit={setEditingTask}
+              onDelete={handleDeleteTask}
+              onStatusChange={handleStatusChange}
+              onStartWorker={handleStartWorker}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );

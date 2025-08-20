@@ -1,31 +1,31 @@
 import React, { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  Legend, 
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
   ResponsiveContainer,
   PieChart,
   Pie,
   Cell,
   LineChart,
-  Line
+  Line,
 } from 'recharts';
-import { 
-  CheckCircle, 
-  Clock, 
-  AlertCircle, 
+import {
+  CheckCircle,
+  Clock,
+  AlertCircle,
   Play,
   TrendingUp,
   Calendar,
   Users,
   Award,
-  ExternalLink
+  ExternalLink,
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
@@ -37,14 +37,14 @@ import { Task } from '../../shared/types';
 const PRIORITY_COLORS = {
   high: '#EF4444',
   medium: '#F59E0B',
-  low: '#6B7280'
+  low: '#6B7280',
 } as const;
 
 // Status colors
 const STATUS_COLORS = {
   completed: '#10B981',
   in_progress: '#3B82F6',
-  pending: '#6B7280'
+  pending: '#6B7280',
 } as const;
 
 interface MetricCardProps {
@@ -55,12 +55,18 @@ interface MetricCardProps {
   color?: 'green' | 'blue' | 'yellow' | 'gray';
 }
 
-function MetricCard({ title, value, subtitle, icon: Icon, color = 'blue' }: MetricCardProps) {
+function MetricCard({
+  title,
+  value,
+  subtitle,
+  icon: Icon,
+  color = 'blue',
+}: MetricCardProps) {
   const colorClasses = {
     green: 'text-green-600 bg-green-50',
     blue: 'text-blue-600 bg-blue-50',
     yellow: 'text-yellow-600 bg-yellow-50',
-    gray: 'text-gray-600 bg-gray-50'
+    gray: 'text-gray-600 bg-gray-50',
   };
 
   return (
@@ -89,7 +95,7 @@ function TaskRow({ task }: TaskRowProps) {
   const priorityColors = {
     low: 'bg-gray-100 text-gray-800',
     medium: 'bg-yellow-100 text-yellow-800',
-    high: 'bg-red-100 text-red-800'
+    high: 'bg-red-100 text-red-800',
   } as const;
 
   const formatDate = (dateString?: string) => {
@@ -100,7 +106,7 @@ function TaskRow({ task }: TaskRowProps) {
   return (
     <div className="flex items-center justify-between p-4 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-colors">
       <div className="flex-1 min-w-0">
-        <Link 
+        <Link
           to={`/tasks/${task.id}`}
           className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline truncate flex items-center gap-1"
         >
@@ -112,12 +118,17 @@ function TaskRow({ task }: TaskRowProps) {
             {task.priority}
           </Badge>
           {task.executorId && (
-            <Badge variant="outline" className="text-xs bg-purple-50 border-purple-300 text-purple-700">
+            <Badge
+              variant="outline"
+              className="text-xs bg-purple-50 border-purple-300 text-purple-700"
+            >
               👤 {task.executorId}
             </Badge>
           )}
           {task.duration && (
-            <span className="text-xs text-gray-500">Duration: {task.duration}</span>
+            <span className="text-xs text-gray-500">
+              Duration: {task.duration}
+            </span>
           )}
         </div>
       </div>
@@ -129,48 +140,75 @@ function TaskRow({ task }: TaskRowProps) {
 }
 
 export function TaskAnalytics() {
-  const { data: analytics, isLoading, error, refetch } = useQuery({
+  const {
+    data: analytics,
+    isLoading,
+    error,
+    refetch,
+  } = useQuery({
     queryKey: ['task-analytics'],
     queryFn: taskApi.getTaskAnalytics,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   const chartData = useMemo(() => {
-    if (!analytics) return { priorityData: [], completionData: [], dailyData: [] };
+    if (!analytics)
+      return { priorityData: [], completionData: [], dailyData: [] };
 
     const priorityData = [
       {
         name: 'High Priority',
         total: analytics.priorityBreakdown.high.total,
         completed: analytics.priorityBreakdown.high.completed,
-        completionRate: parseFloat(analytics.priorityBreakdown.high.completionRate),
-        fill: PRIORITY_COLORS.high
+        completionRate: parseFloat(
+          analytics.priorityBreakdown.high.completionRate
+        ),
+        fill: PRIORITY_COLORS.high,
       },
       {
         name: 'Medium Priority',
         total: analytics.priorityBreakdown.medium.total,
         completed: analytics.priorityBreakdown.medium.completed,
-        completionRate: parseFloat(analytics.priorityBreakdown.medium.completionRate),
-        fill: PRIORITY_COLORS.medium
+        completionRate: parseFloat(
+          analytics.priorityBreakdown.medium.completionRate
+        ),
+        fill: PRIORITY_COLORS.medium,
       },
       {
         name: 'Low Priority',
         total: analytics.priorityBreakdown.low.total,
         completed: analytics.priorityBreakdown.low.completed,
-        completionRate: parseFloat(analytics.priorityBreakdown.low.completionRate),
-        fill: PRIORITY_COLORS.low
-      }
+        completionRate: parseFloat(
+          analytics.priorityBreakdown.low.completionRate
+        ),
+        fill: PRIORITY_COLORS.low,
+      },
     ];
 
     const completionData = [
-      { name: 'Completed', value: analytics.overview.completedTasks, fill: STATUS_COLORS.completed },
-      { name: 'In Progress', value: analytics.overview.inProgressTasks, fill: STATUS_COLORS.in_progress },
-      { name: 'Pending', value: analytics.overview.pendingTasks, fill: STATUS_COLORS.pending }
+      {
+        name: 'Completed',
+        value: analytics.overview.completedTasks,
+        fill: STATUS_COLORS.completed,
+      },
+      {
+        name: 'In Progress',
+        value: analytics.overview.inProgressTasks,
+        fill: STATUS_COLORS.in_progress,
+      },
+      {
+        name: 'Pending',
+        value: analytics.overview.pendingTasks,
+        fill: STATUS_COLORS.pending,
+      },
     ];
 
-    const dailyData = analytics.dailyCompletions.map(day => ({
-      date: new Date(day.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-      completed: day.completed
+    const dailyData = analytics.dailyCompletions.map((day) => ({
+      date: new Date(day.date).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+      }),
+      completed: day.completed,
     }));
 
     return { priorityData, completionData, dailyData };
@@ -207,9 +245,7 @@ export function TaskAnalytics() {
             <p className="text-gray-600 mb-4">
               There was an error loading the task analytics data.
             </p>
-            <Button onClick={() => refetch()}>
-              Try Again
-            </Button>
+            <Button onClick={() => refetch()}>Try Again</Button>
           </div>
         </div>
       </div>
@@ -224,7 +260,9 @@ export function TaskAnalytics() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Task Analytics</h1>
-          <p className="text-gray-600">Track task completion statistics and performance</p>
+          <p className="text-gray-600">
+            Track task completion statistics and performance
+          </p>
         </div>
         <Button onClick={() => refetch()} variant="outline">
           <TrendingUp className="w-4 h-4 mr-2" />
@@ -278,16 +316,23 @@ export function TaskAnalytics() {
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
                 <YAxis />
-                <Tooltip 
+                <Tooltip
                   formatter={(value, name) => [
                     name === 'completionRate' ? `${value}%` : value,
-                    name === 'completionRate' ? 'Completion Rate' : 
-                    name === 'total' ? 'Total Tasks' : 'Completed Tasks'
+                    name === 'completionRate'
+                      ? 'Completion Rate'
+                      : name === 'total'
+                        ? 'Total Tasks'
+                        : 'Completed Tasks',
                   ]}
                 />
                 <Legend />
                 <Bar dataKey="total" fill="#E5E7EB" name="Total Tasks" />
-                <Bar dataKey="completed" fill="#10B981" name="Completed Tasks" />
+                <Bar
+                  dataKey="completed"
+                  fill="#10B981"
+                  name="Completed Tasks"
+                />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -340,10 +385,10 @@ export function TaskAnalytics() {
               <XAxis dataKey="date" />
               <YAxis />
               <Tooltip />
-              <Line 
-                type="monotone" 
-                dataKey="completed" 
-                stroke="#10B981" 
+              <Line
+                type="monotone"
+                dataKey="completed"
+                stroke="#10B981"
                 strokeWidth={2}
                 dot={{ fill: '#10B981', strokeWidth: 2, r: 4 }}
               />

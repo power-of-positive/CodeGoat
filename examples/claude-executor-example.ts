@@ -1,6 +1,6 @@
 /**
  * Example usage of ClaudeCodeExecutor
- * 
+ *
  * This file demonstrates how to use the ClaudeCodeExecutor to programmatically
  * run Claude agent processes and collect their output.
  */
@@ -14,20 +14,21 @@ async function basicExample() {
   // Create executor with basic configuration
   const executor = new ClaudeCodeExecutor({
     worktreeDir: '/tmp/claude-workspace',
-    claudeCommand: 'npx -y @anthropic-ai/claude-code@latest -p --dangerously-skip-permissions --verbose --output-format=stream-json',
+    claudeCommand:
+      'npx -y @anthropic-ai/claude-code@latest -p --dangerously-skip-permissions --verbose --output-format=stream-json',
   });
 
   try {
     const prompt = 'Write a hello world program in Python and save it to hello.py';
     console.log('Sending prompt to Claude:', prompt);
-    
+
     const result = await executor.spawn(prompt);
-    
+
     console.log('\nExecution completed:');
     console.log('Exit code:', result.exitCode);
     console.log('Stdout length:', result.stdout.length);
     console.log('Stderr length:', result.stderr.length);
-    
+
     if (result.exitCode === 0) {
       console.log('\n--- Claude Output ---');
       console.log(result.stdout);
@@ -47,16 +48,19 @@ async function exampleWithLogging() {
   const logger = new WinstonLogger();
 
   // Create executor with logging
-  const executor = new ClaudeCodeExecutor({
-    worktreeDir: '/tmp/claude-workspace-logged',
-    claudeCommand: 'npx -y @anthropic-ai/claude-code@latest -p --dangerously-skip-permissions',
-  }, logger);
+  const executor = new ClaudeCodeExecutor(
+    {
+      worktreeDir: '/tmp/claude-workspace-logged',
+      claudeCommand: 'npx -y @anthropic-ai/claude-code@latest -p --dangerously-skip-permissions',
+    },
+    logger
+  );
 
   try {
     const prompt = 'Create a simple TypeScript interface for a User with name and email properties';
-    
+
     const result = await executor.spawn(prompt);
-    
+
     console.log('Result:', {
       exitCode: result.exitCode,
       hasOutput: result.stdout.length > 0,
@@ -73,12 +77,13 @@ async function commandParsingExample() {
   // Example with complex command including quoted arguments
   const executor = new ClaudeCodeExecutor({
     worktreeDir: '/tmp/test-workspace',
-    claudeCommand: 'node script.js --config "path/with spaces/config.json" --verbose --flag \'single quotes\'',
+    claudeCommand:
+      'node script.js --config "path/with spaces/config.json" --verbose --flag \'single quotes\'',
   });
 
   console.log('Worktree directory:', executor.getWorktreeDir());
   console.log('Claude command:', executor.getClaudeCommand());
-  
+
   // In a real scenario, this would execute the parsed command
   console.log('Command would be parsed and executed with proper argument handling');
 }
@@ -109,7 +114,7 @@ async function multipleExecutorsExample() {
       claudeCommand: 'echo "Workspace 1 output"',
     }),
     new ClaudeCodeExecutor({
-      worktreeDir: '/tmp/workspace-2',  
+      worktreeDir: '/tmp/workspace-2',
       claudeCommand: 'echo "Workspace 2 output"',
     }),
   ];
@@ -124,7 +129,7 @@ async function multipleExecutorsExample() {
   });
 
   const results = await Promise.all(promises);
-  
+
   results.forEach(({ index, result, error }) => {
     if (error) {
       console.log(`Executor ${index} failed:`, error);

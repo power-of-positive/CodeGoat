@@ -1,14 +1,14 @@
 /**
  * Frontend-specific check runners with improved logging
  */
-import { StagedFiles } from "../files/staged-files";
+import { StagedFiles } from '../files/staged-files';
 import {
   runFrontendLinting,
   runFrontendTests,
   runPlaywrightTests,
-} from "../runners/frontend-runners";
-import { runApiE2eTests as runApiE2eTestsFromRunner } from "../checks/check-runners";
-import { validateStagedFiles } from "../checks/check-utils";
+} from '../runners/frontend-runners';
+import { runApiE2eTests as runApiE2eTestsFromRunner } from '../checks/check-runners';
+import { validateStagedFiles } from '../checks/check-utils';
 
 /**
  * Run synchronous frontend checks (lint, tests, Playwright)
@@ -20,18 +20,18 @@ function runSyncFrontendChecks(projectRoot: string): {
   const syncChecks = [
     {
       runner: runFrontendLinting,
-      name: "FRONTEND LINT FAILURES",
-      label: "Frontend Linting",
+      name: 'FRONTEND LINT FAILURES',
+      label: 'Frontend Linting',
     },
     {
       runner: runFrontendTests,
-      name: "FRONTEND TEST FAILURES",
-      label: "Frontend Unit Tests",
+      name: 'FRONTEND TEST FAILURES',
+      label: 'Frontend Unit Tests',
     },
     {
       runner: runPlaywrightTests,
-      name: "PLAYWRIGHT E2E TEST FAILURES",
-      label: "Playwright E2E Tests",
+      name: 'PLAYWRIGHT E2E TEST FAILURES',
+      label: 'Playwright E2E Tests',
     },
   ];
 
@@ -44,23 +44,21 @@ function runSyncFrontendChecks(projectRoot: string): {
     }
     console.log(`✅ ${label} passed`);
   }
-  return { failed: false, output: "" };
+  return { failed: false, output: '' };
 }
 
 /**
  * Run API E2E tests
  */
-async function runApiE2eTests(
-  projectRoot: string,
-): Promise<{ failed: boolean; output: string }> {
-  console.log("📋 Running API E2E Tests...");
+async function runApiE2eTests(projectRoot: string): Promise<{ failed: boolean; output: string }> {
+  console.log('📋 Running API E2E Tests...');
   const result = await runApiE2eTestsFromRunner(projectRoot);
   if (!result.success) {
-    console.log("❌ API E2E Tests failed");
+    console.log('❌ API E2E Tests failed');
     return { failed: true, output: `API E2E TEST FAILURES:\n${result.output}` };
   }
-  console.log("✅ API E2E Tests passed");
-  return { failed: false, output: "" };
+  console.log('✅ API E2E Tests passed');
+  return { failed: false, output: '' };
 }
 
 /**
@@ -106,7 +104,7 @@ async function runApiE2eTests(
  */
 export async function runFrontendChecks(
   projectRoot: string,
-  stagedFiles: StagedFiles,
+  stagedFiles: StagedFiles
 ): Promise<{ failed: boolean; output: string }> {
   try {
     validateStagedFiles(stagedFiles);
@@ -117,24 +115,24 @@ export async function runFrontendChecks(
     // if (coverageResult.failed) return coverageResult;
 
     // Run API E2E tests second, unless explicitly skipped
-    if (process.env.SKIP_API_E2E_TESTS !== "true") {
+    if (process.env.SKIP_API_E2E_TESTS !== 'true') {
       const apiE2eResult = await runApiE2eTests(projectRoot);
       if (apiE2eResult.failed) return apiE2eResult;
     } else {
-      console.log("⏭️ API E2E tests skipped (SKIP_API_E2E_TESTS=true)");
+      console.log('⏭️ API E2E tests skipped (SKIP_API_E2E_TESTS=true)');
     }
 
     // Skip other frontend checks if no frontend files are staged
     if (stagedFiles.frontendFiles.length === 0) {
-      console.log("ℹ️ No frontend files to check (linting/unit tests)");
-      return { failed: false, output: "" };
+      console.log('ℹ️ No frontend files to check (linting/unit tests)');
+      return { failed: false, output: '' };
     }
 
-    console.log("🔍 Starting frontend checks...");
+    console.log('🔍 Starting frontend checks...');
     const syncResult = runSyncFrontendChecks(projectRoot);
     if (syncResult.failed) return syncResult;
 
-    return { failed: false, output: "" };
+    return { failed: false, output: '' };
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
     console.log(`❌ Frontend check error: ${errorMsg}`);

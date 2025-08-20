@@ -19,21 +19,25 @@ describe('Layout', () => {
 
   it('renders the layout with sidebar and children', () => {
     renderLayout(<div data-testid="test-content">Test Content</div>);
-    
+
     expect(screen.getByTestId('sidebar')).toBeInTheDocument();
     expect(screen.getByTestId('test-content')).toBeInTheDocument();
   });
 
   it('applies correct CSS classes', () => {
     const { container } = renderLayout(<div>Content</div>);
-    
+
     const layoutDiv = container.firstChild;
-    expect(layoutDiv).toHaveClass('min-h-screen', 'bg-gray-50', 'dark:bg-gray-900');
-    
+    expect(layoutDiv).toHaveClass(
+      'min-h-screen',
+      'bg-gray-50',
+      'dark:bg-gray-900'
+    );
+
     const mainContent = container.querySelector('.md\\:ml-64');
     expect(mainContent).toBeInTheDocument();
     expect(mainContent).toHaveClass('transition-all', 'duration-300');
-    
+
     const mainElement = container.querySelector('main');
     expect(mainElement).toHaveClass('min-h-screen');
   });
@@ -46,7 +50,7 @@ describe('Layout', () => {
         <div data-testid="child-3">Child 3</div>
       </>
     );
-    
+
     expect(screen.getByTestId('child-1')).toBeInTheDocument();
     expect(screen.getByTestId('child-2')).toBeInTheDocument();
     expect(screen.getByTestId('child-3')).toBeInTheDocument();
@@ -54,7 +58,7 @@ describe('Layout', () => {
 
   it('renders empty when no children provided', () => {
     renderLayout(null);
-    
+
     expect(screen.getByTestId('sidebar')).toBeInTheDocument();
     const mainElement = screen.getByRole('main');
     expect(mainElement).toBeInTheDocument();

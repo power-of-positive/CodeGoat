@@ -113,10 +113,10 @@ function runCommand(command: string, description: string): void {
 
 async function setupTestDatabase() {
   log('Setting up test database...');
-  
+
   // Ensure test database exists and has correct schema
   const testDbPath = './prisma/kanban-test.db';
-  
+
   // Create directory if it doesn't exist
   const testDbDir = path.dirname(testDbPath);
   if (!fs.existsSync(testDbDir)) {
@@ -129,7 +129,7 @@ async function setupTestDatabase() {
     'KANBAN_DATABASE_URL="file:./prisma/kanban-test.db" npx prisma db push',
     'Push schema to test database'
   );
-  
+
   log('Test database setup complete');
 }
 
@@ -143,7 +143,7 @@ async function main() {
     // 2. Clean up development database
     // await cleanupDatabase(DEV_DATABASE, 'development database');
 
-    // 3. Clean up test database  
+    // 3. Clean up test database
     // await cleanupDatabase(TEST_DATABASE, 'test database');
 
     // 4. Clean up any orphaned tmp directories
@@ -151,12 +151,13 @@ async function main() {
     for (const tmpDir of tmpDirs) {
       if (fs.existsSync(tmpDir)) {
         const entries = fs.readdirSync(tmpDir);
-        const testDirs = entries.filter(entry => 
-          entry.includes('test-') || 
-          entry.includes('Task-Details-Test') ||
-          entry.includes('playwright')
+        const testDirs = entries.filter(
+          entry =>
+            entry.includes('test-') ||
+            entry.includes('Task-Details-Test') ||
+            entry.includes('playwright')
         );
-        
+
         for (const testDir of testDirs) {
           const fullPath = path.join(tmpDir, testDir);
           try {

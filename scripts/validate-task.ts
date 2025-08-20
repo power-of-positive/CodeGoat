@@ -2,7 +2,7 @@
 
 /**
  * Claude Code validation hook script
- * 
+ *
  * This script runs validation stages configured in settings.json when Claude Code attempts to stop/complete a task.
  * It executes user-configured validation stages sequentially and tracks timing and success metrics.
  */
@@ -55,7 +55,6 @@ interface Colors {
   cyan: string;
 }
 
-
 interface ValidationRunnerOptions {
   settingsPath?: string;
   sessionId?: string | null;
@@ -79,7 +78,7 @@ const colors: Colors = {
   yellow: '\x1b[33m',
   blue: '\x1b[34m',
   magenta: '\x1b[35m',
-  cyan: '\x1b[36m'
+  cyan: '\x1b[36m',
 };
 
 class ValidationRunner {
@@ -101,7 +100,7 @@ class ValidationRunner {
       skipped: 0,
       stages: [],
       totalTime: 0,
-      success: false
+      success: false,
     };
   }
 
@@ -149,80 +148,108 @@ class ValidationRunner {
       // Look for a task that's currently in progress
       const inProgressTask = await this.db.todoTask.findFirst({
         where: {
-          status: 'IN_PROGRESS'
+          status: 'IN_PROGRESS',
         },
         orderBy: {
-          updatedAt: 'desc'
-        }
+          updatedAt: 'desc',
+        },
       });
-      
+
       return inProgressTask?.id || null;
     } catch (error) {
-      console.warn(`${colors.yellow}⚠️  Could not find current task: ${(error as Error).message}${colors.reset}`);
+      console.warn(
+        `${colors.yellow}⚠️  Could not find current task: ${(error as Error).message}${colors.reset}`
+      );
       return null;
     }
   }
 
-  async runValidation(): Promise<boolean> {
+  private printValidationHeader(): void {
     console.log(`${colors.blue}${colors.bright}🔍 Running Validation Pipeline${colors.reset}`);
-    console.log(`${colors.blue}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${colors.reset}`);
-    
+    console.log(
+      `${colors.blue}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${colors.reset}`
+    );
+
     if (this.sessionId) {
       console.log(`${colors.cyan}📊 Session ID: ${this.sessionId}${colors.reset}`);
     }
-    
+
     console.log(`${colors.cyan}⏰ Started at: ${new Date().toISOString()}${colors.reset}\n`);
+  }
+
+  private async processStage(
+    stage: ValidationStage,
+    stageNumber: number,
+    totalStages: number
+  ): Promise<boolean> {
+    console.log(
+      `${colors.bright}[${stageNumber}/${totalStages}] ${stage.name}${colors.reset}`
+    );
+    console.log(`${colors.cyan}    Command: ${stage.command}${colors.reset}`);
+
+    const stageResult = await this.runStage(stage);
+    this.results.stages.push(stageResult);
+
+    if (stageResult.success) {
+      this.results.passed++;
+      console.log(`${colors.green}    ✅ Passed (${stageResult.duration}ms)${colors.reset}\n`);
+      return true;
+    } else {
+      this.results.failed++;
+      console.log(`${colors.red}    ❌ Failed (${stageResult.duration}ms)${colors.reset}`);
+      if (stageResult.error) {
+        console.log(`${colors.red}    Error: ${stageResult.error}${colors.reset}`);
+      }
+      console.log('');
+
+      if (!stage.continueOnFailure) {
+        console.log(
+          `${colors.red}🛑 Stage failed and continueOnFailure is false. Stopping pipeline.${colors.reset}\n`
+        );
+        return false;
+      } else {
+        console.log(
+          `${colors.yellow}⚠️  Stage failed but continuing due to continueOnFailure setting${colors.reset}\n`
+        );
+        return true;
+      }
+    }
+  }
+
+  async runValidation(): Promise<boolean> {
+    this.printValidationHeader();
 
     try {
       const settings = await this.loadSettings();
       const validationSettings = settings.validation;
       const stages = validationSettings?.stages || [];
-      
+
       // Filter and sort enabled stages
       const enabledStages = stages
         .filter((stage: ValidationStage) => stage.enabled)
         .sort((a: ValidationStage, b: ValidationStage) => (a.priority || 0) - (b.priority || 0));
 
       if (enabledStages.length === 0) {
-        console.log(`${colors.yellow}⚠️  No validation stages configured or enabled${colors.reset}`);
+        console.log(
+          `${colors.yellow}⚠️  No validation stages configured or enabled${colors.reset}`
+        );
         this.results.success = true;
         this.saveMetrics();
         return true;
       }
 
       this.results.totalStages = enabledStages.length;
-      console.log(`${colors.cyan}🎯 Running ${enabledStages.length} validation stages...\n${colors.reset}`);
+      console.log(
+        `${colors.cyan}🎯 Running ${enabledStages.length} validation stages...\n${colors.reset}`
+      );
 
       let overallSuccess = true;
 
       for (let i = 0; i < enabledStages.length; i++) {
-        const stage = enabledStages[i];
-        const stageNumber = i + 1;
-        
-        console.log(`${colors.bright}[${stageNumber}/${enabledStages.length}] ${stage.name}${colors.reset}`);
-        console.log(`${colors.cyan}    Command: ${stage.command}${colors.reset}`);
-        
-        const stageResult = await this.runStage(stage);
-        this.results.stages.push(stageResult);
-        
-        if (stageResult.success) {
-          this.results.passed++;
-          console.log(`${colors.green}    ✅ Passed (${stageResult.duration}ms)${colors.reset}\n`);
-        } else {
-          this.results.failed++;
-          console.log(`${colors.red}    ❌ Failed (${stageResult.duration}ms)${colors.reset}`);
-          if (stageResult.error) {
-            console.log(`${colors.red}    Error: ${stageResult.error}${colors.reset}`);
-          }
-          console.log('');
-          
-          if (!stage.continueOnFailure) {
-            console.log(`${colors.red}🛑 Stage failed and continueOnFailure is false. Stopping pipeline.${colors.reset}\n`);
-            overallSuccess = false;
-            break;
-          } else {
-            console.log(`${colors.yellow}⚠️  Stage failed but continuing due to continueOnFailure setting${colors.reset}\n`);
-          }
+        const shouldContinue = await this.processStage(enabledStages[i], i + 1, enabledStages.length);
+        if (!shouldContinue) {
+          overallSuccess = false;
+          break;
         }
       }
 
@@ -234,7 +261,9 @@ class ValidationRunner {
 
       return this.results.success;
     } catch (error) {
-      console.error(`${colors.red}💥 Validation pipeline failed: ${(error as Error).message}${colors.reset}`);
+      console.error(
+        `${colors.red}💥 Validation pipeline failed: ${(error as Error).message}${colors.reset}`
+      );
       this.results.success = false;
       this.results.totalTime = Date.now() - this.startTime;
       await this.saveMetrics();
@@ -244,12 +273,12 @@ class ValidationRunner {
 
   private async runStage(stage: ValidationStage): Promise<ValidationStageResult> {
     const startTime = Date.now();
-    
+
     try {
       const options = {
         timeout: stage.timeout || 30000,
         cwd: stage.workingDir || process.cwd(),
-        encoding: 'utf8' as const
+        encoding: 'utf8' as const,
       };
 
       const { stdout, stderr } = await execAsync(stage.command, options);
@@ -260,19 +289,19 @@ class ValidationRunner {
         name: stage.name,
         success: true,
         duration,
-        output: stdout || stderr
+        output: stdout || stderr,
       };
     } catch (error: unknown) {
       const validationError = error as ValidationError;
       const duration = Date.now() - startTime;
-      
+
       return {
         id: stage.id,
         name: stage.name,
         success: false,
         duration,
         error: validationError.message || 'Unknown error',
-        output: validationError.stdout || validationError.stderr
+        output: validationError.stdout || validationError.stderr,
       };
     }
   }
@@ -281,7 +310,7 @@ class ValidationRunner {
     try {
       // Find the current task to associate with this validation run
       const currentTaskId = await this.findCurrentTask();
-      
+
       // Save to database
       try {
         await this.db.validationRun.create({
@@ -290,19 +319,25 @@ class ValidationRunner {
             timestamp: new Date(),
             success: this.results.success,
             duration: this.results.totalTime,
-            stages: JSON.stringify(this.results.stages)
-          }
+            stages: JSON.stringify(this.results.stages),
+          },
         });
-        
+
         if (currentTaskId) {
-          console.log(`${colors.cyan}📊 Validation run saved to database and associated with task ${currentTaskId}${colors.reset}`);
+          console.log(
+            `${colors.cyan}📊 Validation run saved to database and associated with task ${currentTaskId}${colors.reset}`
+          );
         } else {
-          console.log(`${colors.cyan}📊 Validation run saved to database (no associated task)${colors.reset}`);
+          console.log(
+            `${colors.cyan}📊 Validation run saved to database (no associated task)${colors.reset}`
+          );
         }
       } catch (dbError) {
-        console.warn(`${colors.yellow}⚠️  Could not save to database: ${(dbError as Error).message}${colors.reset}`);
+        console.warn(
+          `${colors.yellow}⚠️  Could not save to database: ${(dbError as Error).message}${colors.reset}`
+        );
       }
-      
+
       // Also save to file for backward compatibility
       const metricsPath = path.join(process.cwd(), 'validation-metrics.json');
       let existingMetrics: ValidationMetrics[] = [];
@@ -330,12 +365,12 @@ class ValidationRunner {
           success: stage.success,
           duration: stage.duration,
           output: stage.output,
-          error: stage.error
-        }))
+          error: stage.error,
+        })),
       };
 
       existingMetrics.push(metricsEntry);
-      
+
       // Keep only the last 1000 entries
       if (existingMetrics.length > 1000) {
         existingMetrics = existingMetrics.slice(-1000);
@@ -343,23 +378,29 @@ class ValidationRunner {
 
       await fs.writeFile(metricsPath, JSON.stringify(existingMetrics, null, 2));
     } catch (error) {
-      console.warn(`${colors.yellow}⚠️  Could not save metrics: ${(error as Error).message}${colors.reset}`);
+      console.warn(
+        `${colors.yellow}⚠️  Could not save metrics: ${(error as Error).message}${colors.reset}`
+      );
     }
   }
 
   private printSummary(): void {
     console.log(`${colors.bright}${colors.blue}📊 Validation Summary${colors.reset}`);
-    console.log(`${colors.blue}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${colors.reset}`);
-    
-    const successRate = this.results.totalStages > 0 ? 
-      Math.round((this.results.passed / this.results.totalStages) * 100) : 0;
-    
+    console.log(
+      `${colors.blue}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${colors.reset}`
+    );
+
+    const successRate =
+      this.results.totalStages > 0
+        ? Math.round((this.results.passed / this.results.totalStages) * 100)
+        : 0;
+
     console.log(`${colors.cyan}Total stages: ${this.results.totalStages}${colors.reset}`);
     console.log(`${colors.green}Passed: ${this.results.passed}${colors.reset}`);
     console.log(`${colors.red}Failed: ${this.results.failed}${colors.reset}`);
     console.log(`${colors.cyan}Success rate: ${successRate}%${colors.reset}`);
     console.log(`${colors.cyan}Total time: ${this.results.totalTime}ms${colors.reset}`);
-    
+
     if (this.results.success) {
       console.log(`\n${colors.green}${colors.bright}✅ All validations passed!${colors.reset}`);
     } else {
@@ -387,11 +428,11 @@ class ValidationRunner {
 // CLI execution
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
-  
+
   // Parse arguments: [sessionId] [--settings=path]
   let sessionId: string | null = null;
   let settingsPath: string | undefined = undefined;
-  
+
   for (const arg of args) {
     if (arg.startsWith('--settings=')) {
       settingsPath = arg.split('=')[1];
@@ -399,9 +440,9 @@ async function main(): Promise<void> {
       sessionId = arg;
     }
   }
-  
+
   const runner = new ValidationRunner({ sessionId, settingsPath });
-  
+
   try {
     const success = await runner.runValidation();
     await runner.cleanup();

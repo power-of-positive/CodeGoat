@@ -33,7 +33,13 @@ jest.mock('../hooks/useProcessesLogs', () => ({
 
 // Mock react-window
 jest.mock('react-window', () => ({
-  VariableSizeList: ({ children, itemCount }: { children: any; itemCount: number }) => {
+  VariableSizeList: ({
+    children,
+    itemCount,
+  }: {
+    children: any;
+    itemCount: number;
+  }) => {
     const items = [];
     for (let i = 0; i < itemCount; i++) {
       items.push(
@@ -99,23 +105,27 @@ const renderWithProviders = (workerId: string = 'worker-123') => {
 describe('WorkerDetail', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(mockWorkerStatus);
-    (claudeWorkersApi.getWorkerLogs as jest.Mock).mockResolvedValue(mockWorkerLogs);
+    (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(
+      mockWorkerStatus
+    );
+    (claudeWorkersApi.getWorkerLogs as jest.Mock).mockResolvedValue(
+      mockWorkerLogs
+    );
   });
 
   it('renders worker detail page with loading state', () => {
     (claudeWorkersApi.getWorkerStatus as jest.Mock).mockImplementation(
       () => new Promise(() => {})
     );
-    
+
     renderWithProviders();
-    
+
     expect(screen.getByText('Loading worker details...')).toBeInTheDocument();
   });
 
   it('renders worker details when loaded', async () => {
     renderWithProviders();
-    
+
     await waitFor(() => {
       expect(screen.getByText(/Worker 123/)).toBeInTheDocument();
       expect(screen.getByText('Implement feature X')).toBeInTheDocument();
@@ -125,7 +135,7 @@ describe('WorkerDetail', () => {
 
   it('displays worker status badge', async () => {
     renderWithProviders();
-    
+
     await waitFor(() => {
       expect(screen.getByText('RUNNING')).toBeInTheDocument();
     });
@@ -133,7 +143,7 @@ describe('WorkerDetail', () => {
 
   it('displays process ID when available', async () => {
     renderWithProviders();
-    
+
     await waitFor(() => {
       expect(screen.getByText(/PID:.*12345/)).toBeInTheDocument();
     });
@@ -141,7 +151,7 @@ describe('WorkerDetail', () => {
 
   it('displays blocked commands count', async () => {
     renderWithProviders();
-    
+
     await waitFor(() => {
       expect(screen.getByText('2')).toBeInTheDocument();
     });
@@ -149,7 +159,7 @@ describe('WorkerDetail', () => {
 
   it('shows permission system status', async () => {
     renderWithProviders();
-    
+
     await waitFor(() => {
       expect(screen.getByText(/Permission System/i)).toBeInTheDocument();
       expect(screen.getByText('Active')).toBeInTheDocument();
@@ -160,9 +170,9 @@ describe('WorkerDetail', () => {
     (claudeWorkersApi.getWorkerStatus as jest.Mock).mockRejectedValue(
       new Error('Worker not found')
     );
-    
+
     renderWithProviders();
-    
+
     await waitFor(() => {
       expect(screen.getByText(/Worker Not Found/i)).toBeInTheDocument();
     });
@@ -170,19 +180,23 @@ describe('WorkerDetail', () => {
 
   it('allows starting a stopped worker', async () => {
     const stoppedWorker = { ...mockWorkerStatus, status: 'stopped' as const };
-    (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(stoppedWorker);
-    (claudeWorkersApi.startWorker as jest.Mock).mockResolvedValue({ success: true });
-    
+    (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(
+      stoppedWorker
+    );
+    (claudeWorkersApi.startWorker as jest.Mock).mockResolvedValue({
+      success: true,
+    });
+
     renderWithProviders();
-    
+
     await waitFor(() => {
       const startButton = screen.getByRole('button', { name: /start worker/i });
       expect(startButton).toBeInTheDocument();
     });
-    
+
     const startButton = screen.getByRole('button', { name: /start worker/i });
     fireEvent.click(startButton);
-    
+
     await waitFor(() => {
       expect(claudeWorkersApi.startWorker).toHaveBeenCalledWith({
         taskId: 'task-456',
@@ -192,43 +206,59 @@ describe('WorkerDetail', () => {
   });
 
   it('allows stopping a running worker', async () => {
-    (claudeWorkersApi.stopWorker as jest.Mock).mockResolvedValue({ success: true });
-    
+    (claudeWorkersApi.stopWorker as jest.Mock).mockResolvedValue({
+      success: true,
+    });
+
     renderWithProviders();
-    
+
     await waitFor(() => {
       const stopButton = screen.getByRole('button', { name: /stop worker/i });
       expect(stopButton).toBeInTheDocument();
     });
-    
+
     const stopButton = screen.getByRole('button', { name: /stop worker/i });
     fireEvent.click(stopButton);
-    
+
     await waitFor(() => {
       expect(claudeWorkersApi.stopWorker).toHaveBeenCalledWith('worker-123');
     });
   });
 
   it('allows sending messages to worker', async () => {
-    (claudeWorkersApi.stopWorker as jest.Mock).mockResolvedValue({ success: true });
-    (claudeWorkersApi.sendWorkerMessage as jest.Mock).mockResolvedValue({ success: true });
-    (claudeWorkersApi.startWorker as jest.Mock).mockResolvedValue({ success: true });
-    
-    renderWithProviders();
-    
-    await waitFor(() => {
-      expect(screen.getByPlaceholderText(/Enter additional instructions or corrections/i)).toBeInTheDocument();
+    (claudeWorkersApi.stopWorker as jest.Mock).mockResolvedValue({
+      success: true,
     });
-    
-    const messageInput = screen.getByPlaceholderText(/Enter additional instructions or corrections/i);
-    const sendButton = screen.getByRole('button', { name: /interrupt.*send message/i });
-    
+    (claudeWorkersApi.sendWorkerMessage as jest.Mock).mockResolvedValue({
+      success: true,
+    });
+    (claudeWorkersApi.startWorker as jest.Mock).mockResolvedValue({
+      success: true,
+    });
+
+    renderWithProviders();
+
+    await waitFor(() => {
+      expect(
+        screen.getByPlaceholderText(
+          /Enter additional instructions or corrections/i
+        )
+      ).toBeInTheDocument();
+    });
+
+    const messageInput = screen.getByPlaceholderText(
+      /Enter additional instructions or corrections/i
+    );
+    const sendButton = screen.getByRole('button', {
+      name: /interrupt.*send message/i,
+    });
+
     fireEvent.change(messageInput, { target: { value: 'Test message' } });
     fireEvent.click(sendButton);
-    
+
     // Wait for the async operations with the 1000ms delay
-    await new Promise(resolve => setTimeout(resolve, 1100));
-    
+    await new Promise((resolve) => setTimeout(resolve, 1100));
+
     await waitFor(() => {
       expect(claudeWorkersApi.stopWorker).toHaveBeenCalledWith('worker-123');
       expect(claudeWorkersApi.sendWorkerMessage).toHaveBeenCalledWith(
@@ -244,7 +274,7 @@ describe('WorkerDetail', () => {
 
   it('displays worker logs', async () => {
     renderWithProviders();
-    
+
     await waitFor(() => {
       expect(screen.getByText('Worker Logs')).toBeInTheDocument();
       expect(screen.getByTestId('virtual-list')).toBeInTheDocument();
@@ -253,20 +283,23 @@ describe('WorkerDetail', () => {
 
   it('refreshes worker data when refresh button is clicked', async () => {
     renderWithProviders();
-    
+
     await waitFor(() => {
       const refreshButton = screen.getByRole('button', { name: /refresh/i });
       expect(refreshButton).toBeInTheDocument();
     });
-    
-    const initialCallCount = (claudeWorkersApi.getWorkerStatus as jest.Mock).mock.calls.length;
-    
+
+    const initialCallCount = (claudeWorkersApi.getWorkerStatus as jest.Mock)
+      .mock.calls.length;
+
     const refreshButton = screen.getByRole('button', { name: /refresh/i });
     fireEvent.click(refreshButton);
-    
+
     // Verify API was called again (should be more than initial count)
     await waitFor(() => {
-      expect((claudeWorkersApi.getWorkerStatus as jest.Mock).mock.calls.length).toBeGreaterThan(initialCallCount);
+      expect(
+        (claudeWorkersApi.getWorkerStatus as jest.Mock).mock.calls.length
+      ).toBeGreaterThan(initialCallCount);
     });
   });
 
@@ -277,17 +310,17 @@ describe('WorkerDetail', () => {
       { status: 'failed', expected: 'FAILED' },
       { status: 'validating', expected: 'VALIDATING' },
     ];
-    
+
     for (const { status, expected } of statusTests) {
       const worker = { ...mockWorkerStatus, status: status as any };
       (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(worker);
-      
+
       const { unmount } = renderWithProviders();
-      
+
       await waitFor(() => {
         expect(screen.getByText(expected)).toBeInTheDocument();
       });
-      
+
       unmount();
     }
   });
@@ -299,10 +332,12 @@ describe('WorkerDetail', () => {
       validationPassed: true,
       validationRuns: 3,
     };
-    (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(validatedWorker);
-    
+    (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(
+      validatedWorker
+    );
+
     renderWithProviders();
-    
+
     await waitFor(() => {
       expect(screen.getByText(/Validation Status/i)).toBeInTheDocument();
       expect(screen.getByText(/Passed/i)).toBeInTheDocument();
@@ -316,10 +351,12 @@ describe('WorkerDetail', () => {
       status: 'completed' as const,
       endTime: '2024-01-01T10:30:00Z',
     };
-    (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(completedWorker);
-    
+    (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(
+      completedWorker
+    );
+
     renderWithProviders();
-    
+
     await waitFor(() => {
       expect(screen.getByText(/End Time/i)).toBeInTheDocument();
     });
@@ -330,10 +367,12 @@ describe('WorkerDetail', () => {
       ...mockWorkerStatus,
       hasPermissionSystem: false,
     };
-    (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(workerWithoutPermissions);
-    
+    (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(
+      workerWithoutPermissions
+    );
+
     renderWithProviders();
-    
+
     await waitFor(() => {
       expect(screen.getByText('Inactive')).toBeInTheDocument();
     });
@@ -344,37 +383,53 @@ describe('WorkerDetail', () => {
       ...mockWorkerStatus,
       pid: undefined,
     };
-    (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(workerWithoutPid);
-    
+    (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(
+      workerWithoutPid
+    );
+
     renderWithProviders();
-    
+
     await waitFor(() => {
       expect(screen.getByText(/PID:.*N\/A/)).toBeInTheDocument();
     });
   });
 
   it('clears message input after sending', async () => {
-    (claudeWorkersApi.stopWorker as jest.Mock).mockResolvedValue({ success: true });
-    (claudeWorkersApi.sendWorkerMessage as jest.Mock).mockResolvedValue({ success: true });
-    (claudeWorkersApi.startWorker as jest.Mock).mockResolvedValue({ success: true });
-    
-    renderWithProviders();
-    
-    await waitFor(() => {
-      expect(screen.getByPlaceholderText(/Enter additional instructions or corrections/i)).toBeInTheDocument();
+    (claudeWorkersApi.stopWorker as jest.Mock).mockResolvedValue({
+      success: true,
     });
-    
-    const messageInput = screen.getByPlaceholderText(/Enter additional instructions or corrections/i) as HTMLTextAreaElement;
-    const sendButton = screen.getByRole('button', { name: /interrupt.*send message/i });
-    
+    (claudeWorkersApi.sendWorkerMessage as jest.Mock).mockResolvedValue({
+      success: true,
+    });
+    (claudeWorkersApi.startWorker as jest.Mock).mockResolvedValue({
+      success: true,
+    });
+
+    renderWithProviders();
+
+    await waitFor(() => {
+      expect(
+        screen.getByPlaceholderText(
+          /Enter additional instructions or corrections/i
+        )
+      ).toBeInTheDocument();
+    });
+
+    const messageInput = screen.getByPlaceholderText(
+      /Enter additional instructions or corrections/i
+    ) as HTMLTextAreaElement;
+    const sendButton = screen.getByRole('button', {
+      name: /interrupt.*send message/i,
+    });
+
     fireEvent.change(messageInput, { target: { value: 'Test message' } });
     expect(messageInput.value).toBe('Test message');
-    
+
     fireEvent.click(sendButton);
-    
+
     // Wait for the async operations
-    await new Promise(resolve => setTimeout(resolve, 1100));
-    
+    await new Promise((resolve) => setTimeout(resolve, 1100));
+
     await waitFor(() => {
       expect(messageInput.value).toBe('');
     });
@@ -382,20 +437,26 @@ describe('WorkerDetail', () => {
 
   it('disables send button when message is empty', async () => {
     renderWithProviders();
-    
+
     await waitFor(() => {
-      const sendButton = screen.getByRole('button', { name: /interrupt.*send message/i });
+      const sendButton = screen.getByRole('button', {
+        name: /interrupt.*send message/i,
+      });
       expect(sendButton).toBeDisabled();
     });
   });
 
   it('enables send button when message has content', async () => {
     renderWithProviders();
-    
+
     await waitFor(() => {
-      const messageInput = screen.getByPlaceholderText(/Enter additional instructions or corrections/i);
-      const sendButton = screen.getByRole('button', { name: /interrupt.*send message/i });
-      
+      const messageInput = screen.getByPlaceholderText(
+        /Enter additional instructions or corrections/i
+      );
+      const sendButton = screen.getByRole('button', {
+        name: /interrupt.*send message/i,
+      });
+
       fireEvent.change(messageInput, { target: { value: 'Test' } });
       expect(sendButton).not.toBeDisabled();
     });
@@ -403,7 +464,7 @@ describe('WorkerDetail', () => {
 
   it('shows task ID and content', async () => {
     renderWithProviders();
-    
+
     await waitFor(() => {
       expect(screen.getByText('task-456')).toBeInTheDocument();
       expect(screen.getByText('Implement feature X')).toBeInTheDocument();
@@ -412,7 +473,7 @@ describe('WorkerDetail', () => {
 
   it('formats timestamps correctly', async () => {
     renderWithProviders();
-    
+
     await waitFor(() => {
       // Should format the start time
       expect(screen.getByText(/Started:/i)).toBeInTheDocument();
@@ -423,45 +484,57 @@ describe('WorkerDetail', () => {
     (claudeWorkersApi.getWorkerLogs as jest.Mock).mockRejectedValue(
       new Error('Logs not available')
     );
-    
+
     renderWithProviders();
-    
+
     await waitFor(() => {
       expect(screen.getByText(/Error loading logs/i)).toBeInTheDocument();
     });
   });
 
   it('handles send message error', async () => {
-    (claudeWorkersApi.stopWorker as jest.Mock).mockResolvedValue({ success: true });
+    (claudeWorkersApi.stopWorker as jest.Mock).mockResolvedValue({
+      success: true,
+    });
     (claudeWorkersApi.sendWorkerMessage as jest.Mock).mockRejectedValue(
       new Error('Failed to send')
     );
-    (claudeWorkersApi.startWorker as jest.Mock).mockResolvedValue({ success: true });
-    
+    (claudeWorkersApi.startWorker as jest.Mock).mockResolvedValue({
+      success: true,
+    });
+
     renderWithProviders();
-    
+
     await waitFor(() => {
-      const messageInput = screen.getByPlaceholderText(/Enter additional instructions or corrections/i);
-      const sendButton = screen.getByRole('button', { name: /interrupt.*send message/i });
-      
+      const messageInput = screen.getByPlaceholderText(
+        /Enter additional instructions or corrections/i
+      );
+      const sendButton = screen.getByRole('button', {
+        name: /interrupt.*send message/i,
+      });
+
       fireEvent.change(messageInput, { target: { value: 'Test message' } });
       fireEvent.click(sendButton);
     });
-    
+
     // Error should be handled gracefully (component should continue working)
     await waitFor(() => {
-      expect(screen.getByPlaceholderText(/Enter additional instructions or corrections/i)).toBeInTheDocument();
+      expect(
+        screen.getByPlaceholderText(
+          /Enter additional instructions or corrections/i
+        )
+      ).toBeInTheDocument();
     });
   });
 
   it('navigates back when back button is clicked', async () => {
     renderWithProviders();
-    
+
     await waitFor(() => {
       const backButton = screen.getByRole('button', { name: /back/i });
       expect(backButton).toBeInTheDocument();
     });
-    
+
     // Navigation would be handled by React Router (mocked)
   });
 });

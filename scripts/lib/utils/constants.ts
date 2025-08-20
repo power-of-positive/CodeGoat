@@ -19,8 +19,7 @@ export const MAX_FUNCTION_LINES = process.env.MAX_FUNCTION_LINES
 /**
  * Code review comments file name
  */
-export const REVIEW_FILE_NAME =
-  process.env.CODE_REVIEW_FILE_NAME || "code-review-comments.tmp";
+export const REVIEW_FILE_NAME = process.env.CODE_REVIEW_FILE_NAME || 'code-review-comments.tmp';
 
 /**
  * Get the max lines configuration for ESLint

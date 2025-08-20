@@ -24,7 +24,7 @@ describe('ClaudeCodeExecutor Integration Tests', () => {
     it('should execute echo command and capture output', async () => {
       executor = new ClaudeCodeExecutor({
         worktreeDir: tempDir,
-        claudeCommand: 'echo "Hello from Claude executor"'
+        claudeCommand: 'echo "Hello from Claude executor"',
       });
 
       const result = await executor.spawn('ignored-prompt');
@@ -38,7 +38,7 @@ describe('ClaudeCodeExecutor Integration Tests', () => {
       // Use cat command to echo stdin to stdout
       executor = new ClaudeCodeExecutor({
         worktreeDir: tempDir,
-        claudeCommand: 'cat'
+        claudeCommand: 'cat',
       });
 
       const testInput = 'This is test input from stdin';
@@ -54,7 +54,9 @@ describe('ClaudeCodeExecutor Integration Tests', () => {
     it('should execute node script and capture output', async () => {
       // Create a simple Node.js script
       const scriptPath = join(tempDir, 'test-script.js');
-      await writeFile(scriptPath, `
+      await writeFile(
+        scriptPath,
+        `
         // Read from stdin
         let input = '';
         process.stdin.on('data', (chunk) => {
@@ -66,11 +68,12 @@ describe('ClaudeCodeExecutor Integration Tests', () => {
           console.error('This is stderr output');
           process.exit(0);
         });
-      `);
+      `
+      );
 
       executor = new ClaudeCodeExecutor({
         worktreeDir: tempDir,
-        claudeCommand: `node ${scriptPath}`
+        claudeCommand: `node ${scriptPath}`,
       });
 
       const testPrompt = 'Hello from test';
@@ -84,15 +87,18 @@ describe('ClaudeCodeExecutor Integration Tests', () => {
     it('should handle non-zero exit codes', async () => {
       // Create a script that exits with error code
       const scriptPath = join(tempDir, 'error-script.js');
-      await writeFile(scriptPath, `
+      await writeFile(
+        scriptPath,
+        `
         console.log('Starting script');
         console.error('Something went wrong');
         process.exit(1);
-      `);
+      `
+      );
 
       executor = new ClaudeCodeExecutor({
         worktreeDir: tempDir,
-        claudeCommand: `node ${scriptPath}`
+        claudeCommand: `node ${scriptPath}`,
       });
 
       const result = await executor.spawn('test input');
@@ -108,13 +114,13 @@ describe('ClaudeCodeExecutor Integration Tests', () => {
       // Create a directory with spaces in the name
       const spacedDir = join(tempDir, 'dir with spaces');
       await mkdtemp(spacedDir);
-      
+
       const scriptPath = join(spacedDir, 'script.js');
       await writeFile(scriptPath, 'console.log("Script in spaced directory");');
 
       executor = new ClaudeCodeExecutor({
         worktreeDir: tempDir,
-        claudeCommand: `node "${scriptPath}"`
+        claudeCommand: `node "${scriptPath}"`,
       });
 
       const result = await executor.spawn('test');
@@ -125,13 +131,16 @@ describe('ClaudeCodeExecutor Integration Tests', () => {
 
     it('should handle commands with multiple quoted arguments', async () => {
       const scriptPath = join(tempDir, 'args-script.js');
-      await writeFile(scriptPath, `
+      await writeFile(
+        scriptPath,
+        `
         console.log('Args:', process.argv.slice(2).join(' | '));
-      `);
+      `
+      );
 
       executor = new ClaudeCodeExecutor({
         worktreeDir: tempDir,
-        claudeCommand: `node ${scriptPath} --flag "value with spaces" --other 'single quoted'`
+        claudeCommand: `node ${scriptPath} --flag "value with spaces" --other 'single quoted'`,
       });
 
       const result = await executor.spawn('test');
@@ -149,7 +158,7 @@ describe('ClaudeCodeExecutor Integration Tests', () => {
 
       executor = new ClaudeCodeExecutor({
         worktreeDir: tempDir,
-        claudeCommand: 'ls -la'
+        claudeCommand: 'ls -la',
       });
 
       const result = await executor.spawn('ignored');
@@ -162,17 +171,17 @@ describe('ClaudeCodeExecutor Integration Tests', () => {
       // Create two separate directories
       const dir1 = join(tempDir, 'dir1');
       const dir2 = join(tempDir, 'dir2');
-      
+
       await mkdtemp(dir1);
       await mkdtemp(dir2);
-      
+
       await writeFile(join(dir1, 'file1.txt'), 'content1');
       await writeFile(join(dir2, 'file2.txt'), 'content2');
 
       // Execute in dir1
       const executor1 = new ClaudeCodeExecutor({
         worktreeDir: dir1,
-        claudeCommand: 'ls'
+        claudeCommand: 'ls',
       });
 
       const result1 = await executor1.spawn('test');
@@ -182,7 +191,7 @@ describe('ClaudeCodeExecutor Integration Tests', () => {
       // Execute in dir2
       const executor2 = new ClaudeCodeExecutor({
         worktreeDir: dir2,
-        claudeCommand: 'ls'
+        claudeCommand: 'ls',
       });
 
       const result2 = await executor2.spawn('test');
@@ -195,7 +204,7 @@ describe('ClaudeCodeExecutor Integration Tests', () => {
     it('should handle command not found', async () => {
       executor = new ClaudeCodeExecutor({
         worktreeDir: tempDir,
-        claudeCommand: 'nonexistent-command-12345'
+        claudeCommand: 'nonexistent-command-12345',
       });
 
       await expect(executor.spawn('test')).rejects.toThrow(/Failed to start Claude process/);
@@ -204,7 +213,7 @@ describe('ClaudeCodeExecutor Integration Tests', () => {
     it('should handle invalid working directory', async () => {
       executor = new ClaudeCodeExecutor({
         worktreeDir: '/nonexistent/directory/path',
-        claudeCommand: 'echo test'
+        claudeCommand: 'echo test',
       });
 
       await expect(executor.spawn('test')).rejects.toThrow(/Failed to start Claude process/);

@@ -1,32 +1,29 @@
 /**
  * LLM reviewer helper utilities
  */
-import * as fs from "fs";
-import * as path from "path";
-import { execSync } from "child_process";
-import type { ReviewedFile, LLMReviewOutput } from "./llm-reviewer-types";
-import type { LLMReviewerCore } from "./llm-reviewer-core";
+import * as fs from 'fs';
+import * as path from 'path';
+import { execSync } from 'child_process';
+import type { ReviewedFile, LLMReviewOutput } from './llm-reviewer-types';
+import type { LLMReviewerCore } from './llm-reviewer-core';
 
 /**
  * Validate project root path security
  */
 export function validateProjectRoot(projectRoot: string): void {
-  if (!projectRoot || typeof projectRoot !== "string") {
-    throw new Error("Invalid projectRoot: must be non-empty string");
+  if (!projectRoot || typeof projectRoot !== 'string') {
+    throw new Error('Invalid projectRoot: must be non-empty string');
   }
 
   const resolvedPath = path.resolve(projectRoot);
   const normalizedPath = path.normalize(resolvedPath);
   const patterns = [/\.\.[/\\]/, /[/\\]\.\.[/\\]/, /\0/, /%00/, /%2e%2e/i];
 
-  if (patterns.some((pattern) => pattern.test(normalizedPath))) {
-    throw new Error("Invalid projectRoot: dangerous patterns detected");
+  if (patterns.some(pattern => pattern.test(normalizedPath))) {
+    throw new Error('Invalid projectRoot: dangerous patterns detected');
   }
 
-  if (
-    !fs.existsSync(resolvedPath) ||
-    !fs.statSync(resolvedPath).isDirectory()
-  ) {
+  if (!fs.existsSync(resolvedPath) || !fs.statSync(resolvedPath).isDirectory()) {
     throw new Error(`Invalid projectRoot: ${resolvedPath} not a directory`);
   }
 }
@@ -39,25 +36,25 @@ export function getChangedFiles(projectRoot: string): string[] {
 
   try {
     const resolvedPath = path.resolve(projectRoot);
-    const output = execSync("git diff --cached --name-only", {
+    const output = execSync('git diff --cached --name-only', {
       cwd: resolvedPath,
-      encoding: "utf-8",
+      encoding: 'utf-8',
       timeout: 15000,
       maxBuffer: 1024 * 1024,
     });
 
     const files = output
       .trim()
-      .split("\n")
-      .filter((f) => f && /\.(ts|js|tsx|jsx|mts|cts|mjs|cjs)$/i.test(f));
+      .split('\n')
+      .filter(f => f && /\.(ts|js|tsx|jsx|mts|cts|mjs|cjs)$/i.test(f));
     if (files.length > 0) {
       console.log(`Found ${files.length} changed files for review`);
     }
     return files;
   } catch (error) {
     console.warn(
-      "Failed to get changed files:",
-      error instanceof Error ? error.message : "Unknown error",
+      'Failed to get changed files:',
+      error instanceof Error ? error.message : 'Unknown error'
     );
     return [];
   }
@@ -67,7 +64,7 @@ export function getChangedFiles(projectRoot: string): string[] {
  * Create empty result for no files
  */
 export function createEmptyResult(): LLMReviewOutput {
-  console.log("No changed files to review");
+  console.log('No changed files to review');
   return {
     structuredData: {
       files: [],
@@ -78,7 +75,7 @@ export function createEmptyResult(): LLMReviewOutput {
         totalIssues: 0,
       },
     },
-    textReport: "No files to review",
+    textReport: 'No files to review',
   };
 }
 
@@ -86,7 +83,7 @@ export function createEmptyResult(): LLMReviewOutput {
  * Create error result
  */
 export function createErrorResult(error: unknown): LLMReviewOutput {
-  console.error("LLM review failed:", error);
+  console.error('LLM review failed:', error);
   return {
     structuredData: {
       files: [],
@@ -97,7 +94,7 @@ export function createErrorResult(error: unknown): LLMReviewOutput {
         totalIssues: 0,
       },
     },
-    textReport: `Review failed: ${error instanceof Error ? error.message : "Unknown error"}`,
+    textReport: `Review failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
   };
 }
 
@@ -107,7 +104,7 @@ export function createErrorResult(error: unknown): LLMReviewOutput {
 export async function reviewSingleFile(
   core: LLMReviewerCore,
   projectRoot: string,
-  file: string,
+  file: string
 ): Promise<ReviewedFile | null> {
   const filePath = path.resolve(projectRoot, file);
 
@@ -122,13 +119,13 @@ export async function reviewSingleFile(
   }
 
   try {
-    const content = await fs.promises.readFile(filePath, "utf-8");
+    const content = await fs.promises.readFile(filePath, 'utf-8');
     const result = await core.reviewCode(file, content);
     return { file, result };
   } catch (coreError) {
     console.warn(
       `Review failed for ${file}:`,
-      coreError instanceof Error ? coreError.message : coreError,
+      coreError instanceof Error ? coreError.message : coreError
     );
     return null;
   }

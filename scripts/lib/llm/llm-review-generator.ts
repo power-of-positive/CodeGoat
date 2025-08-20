@@ -2,26 +2,21 @@
  * LLM-powered code review comment generation using OpenAI API
  */
 
-import * as fs from "fs";
-import * as path from "path";
-import { execCommand } from "../utils/command-utils";
-import { getProjectMetrics } from "../utils/project-metrics";
-import { LLMReviewer } from "./llm-reviewer";
+import * as fs from 'fs';
+import * as path from 'path';
+import { execCommand } from '../utils/command-utils';
+import { getProjectMetrics } from '../utils/project-metrics';
+import { LLMReviewer } from './llm-reviewer';
 
 /**
  * Get git status information for staged files
  */
 function getGitInfo(projectRoot: string) {
-  const stagedFilesResult = execCommand(
-    "git diff --cached --name-only",
-    projectRoot,
-  );
-  const stagedFilesList = stagedFilesResult.success
-    ? stagedFilesResult.output
-    : "";
+  const stagedFilesResult = execCommand('git diff --cached --name-only', projectRoot);
+  const stagedFilesList = stagedFilesResult.success ? stagedFilesResult.output : '';
 
-  const gitStatusResult = execCommand("git status --porcelain", projectRoot);
-  const gitStatus = gitStatusResult.success ? gitStatusResult.output : "";
+  const gitStatusResult = execCommand('git status --porcelain', projectRoot);
+  const gitStatus = gitStatusResult.success ? gitStatusResult.output : '';
 
   return { stagedFilesList, gitStatus };
 }
@@ -40,29 +35,26 @@ Generated: ${timestamp}
 /**
  * Build the git status section of the review document
  */
-function buildGitStatusSection(
-  stagedFilesList: string,
-  gitStatus: string,
-): string {
-  let content = "";
+function buildGitStatusSection(stagedFilesList: string, gitStatus: string): string {
+  let content = '';
 
   if (stagedFilesList.trim()) {
-    content += "### Staged Files Being Reviewed:\n";
+    content += '### Staged Files Being Reviewed:\n';
     stagedFilesList
       .trim()
-      .split("\n")
-      .forEach((file) => {
+      .split('\n')
+      .forEach(file => {
         if (file.trim()) {
           content += `- ${file.trim()}\n`;
         }
       });
-    content += "\n";
+    content += '\n';
   }
 
   if (gitStatus.trim()) {
-    content += "### Current Git Status:\n```\n";
+    content += '### Current Git Status:\n```\n';
     content += gitStatus;
-    content += "```\n\n";
+    content += '```\n\n';
   }
 
   return content;
@@ -73,30 +65,28 @@ function buildGitStatusSection(
  */
 function buildProjectMetricsSection(projectRoot: string): string {
   const metrics = getProjectMetrics(projectRoot);
-  return "## Project Metrics\n" + metrics + "\n\n";
+  return '## Project Metrics\n' + metrics + '\n\n';
 }
 
 /**
  * Run the LLM review process and return results
  */
 async function runLLMReview(
-  projectRoot: string,
+  projectRoot: string
 ): Promise<{ reviewContent: string; structuredReviewData: unknown }> {
   let structuredReviewData = null;
-  let reviewContent = "";
+  let reviewContent = '';
 
   try {
     const llmReviewer = new LLMReviewer();
-    const { structuredData, textReport } =
-      await llmReviewer.reviewChangedFiles(projectRoot);
+    const { structuredData, textReport } = await llmReviewer.reviewChangedFiles(projectRoot);
     structuredReviewData = structuredData;
-    reviewContent += textReport + "\n\n";
+    reviewContent += textReport + '\n\n';
   } catch (error) {
-    console.error("Failed to run LLM review:", error);
-    reviewContent += "## AI-Powered Code Review Results\n\n";
-    reviewContent +=
-      "❌ **LLM Review Failed** - Check OpenAI API configuration\n";
-    reviewContent += `Error: ${error instanceof Error ? error.message : "Unknown error"}\n\n`;
+    console.error('Failed to run LLM review:', error);
+    reviewContent += '## AI-Powered Code Review Results\n\n';
+    reviewContent += '❌ **LLM Review Failed** - Check OpenAI API configuration\n';
+    reviewContent += `Error: ${error instanceof Error ? error.message : 'Unknown error'}\n\n`;
   }
 
   return { reviewContent, structuredReviewData };
@@ -119,7 +109,7 @@ Files with critical or medium severity issues will block the commit.
 - Avoid \`any\` types and ensure explicit return types
 
 ---
-*This review was generated using OpenAI ${process.env.LLM_REVIEWER_MODEL || "gpt-4o-mini"} API*
+*This review was generated using OpenAI ${process.env.LLM_REVIEWER_MODEL || 'gpt-4o-mini'} API*
 *Review timestamp: ${timestamp}*`;
 }
 
@@ -130,20 +120,14 @@ function saveReviewFiles(
   reviewFile: string,
   reviewContent: string,
   projectRoot: string,
-  structuredReviewData: unknown,
+  structuredReviewData: unknown
 ): void {
   fs.writeFileSync(reviewFile, reviewContent);
   console.log(`📝 Code review comments saved to: ${reviewFile}`);
 
   if (structuredReviewData) {
-    const structuredReviewFile = path.join(
-      projectRoot,
-      "code-review-structured.json",
-    );
-    fs.writeFileSync(
-      structuredReviewFile,
-      JSON.stringify(structuredReviewData, null, 2),
-    );
+    const structuredReviewFile = path.join(projectRoot, 'code-review-structured.json');
+    fs.writeFileSync(structuredReviewFile, JSON.stringify(structuredReviewData, null, 2));
     console.log(`🔍 Structured review data saved to: ${structuredReviewFile}`);
   }
 }
@@ -153,11 +137,9 @@ function saveReviewFiles(
  *
  * @param projectRoot - Root directory of the project
  */
-export async function generateLlmReviewComments(
-  projectRoot: string,
-): Promise<void> {
-  const reviewFile = path.join(projectRoot, "code-review-comments.tmp");
-  console.log("🤖 Generating LLM code review comments for staged files...");
+export async function generateLlmReviewComments(projectRoot: string): Promise<void> {
+  const reviewFile = path.join(projectRoot, 'code-review-comments.tmp');
+  console.log('🤖 Generating LLM code review comments for staged files...');
 
   const { stagedFilesList, gitStatus } = getGitInfo(projectRoot);
   const timestamp = new Date().toLocaleString();
@@ -166,8 +148,7 @@ export async function generateLlmReviewComments(
   reviewContent += buildGitStatusSection(stagedFilesList, gitStatus);
   reviewContent += buildProjectMetricsSection(projectRoot);
 
-  const { reviewContent: llmContent, structuredReviewData } =
-    await runLLMReview(projectRoot);
+  const { reviewContent: llmContent, structuredReviewData } = await runLLMReview(projectRoot);
   reviewContent += llmContent;
 
   reviewContent += buildReviewSummary(timestamp);

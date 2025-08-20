@@ -165,15 +165,22 @@ export class AnalyticsService {
 
   private calculateAverageTimeToSuccess(successfulSessions: SessionMetrics[]): number {
     if (successfulSessions.length === 0) return 0;
-    return successfulSessions.reduce((sum, s) => sum + (s.totalValidationTime || 0), 0) / successfulSessions.length;
+    return (
+      successfulSessions.reduce((sum, s) => sum + (s.totalValidationTime || 0), 0) /
+      successfulSessions.length
+    );
   }
 
   private calculateAverageAttemptsToSuccess(successfulSessions: SessionMetrics[]): number {
     if (successfulSessions.length === 0) return 0;
-    return successfulSessions.reduce((sum, s) => sum + s.attempts.length, 0) / successfulSessions.length;
+    return (
+      successfulSessions.reduce((sum, s) => sum + s.attempts.length, 0) / successfulSessions.length
+    );
   }
 
-  private calculateStageSuccessRates(sessions: SessionMetrics[]): Record<string, { attempts: number; successes: number; rate: number }> {
+  private calculateStageSuccessRates(
+    sessions: SessionMetrics[]
+  ): Record<string, { attempts: number; successes: number; rate: number }> {
     const stageStats: Record<string, { attempts: number; successes: number }> = {};
 
     sessions.forEach(session => {
@@ -190,7 +197,8 @@ export class AnalyticsService {
       });
     });
 
-    const stageSuccessRates: Record<string, { attempts: number; successes: number; rate: number }> = {};
+    const stageSuccessRates: Record<string, { attempts: number; successes: number; rate: number }> =
+      {};
     Object.entries(stageStats).forEach(([stageId, stats]) => {
       stageSuccessRates[stageId] = {
         ...stats,
@@ -225,12 +233,17 @@ export class AnalyticsService {
   }
 
   private findMostFailedStage(stageSuccessRates: Record<string, { rate: number }>): string {
-    return Object.entries(stageSuccessRates).sort((a, b) => a[1].rate - b[1].rate)[0]?.[0] || 'none';
+    return (
+      Object.entries(stageSuccessRates).sort((a, b) => a[1].rate - b[1].rate)[0]?.[0] || 'none'
+    );
   }
 
-  private calculateDailyStats(sessions: SessionMetrics[]): Record<string, { sessions: number; successes: number; totalTime: number }> {
-    const dailyStats: Record<string, { sessions: number; successes: number; totalTime: number }> = {};
-    
+  private calculateDailyStats(
+    sessions: SessionMetrics[]
+  ): Record<string, { sessions: number; successes: number; totalTime: number }> {
+    const dailyStats: Record<string, { sessions: number; successes: number; totalTime: number }> =
+      {};
+
     sessions.forEach(session => {
       const date = new Date(session.startTime).toISOString().split('T')[0];
       if (!dailyStats[date]) {
@@ -271,7 +284,6 @@ export class AnalyticsService {
 
     return ValidationMetricsConverter.convertToSessions(validationMetrics, limit);
   }
-
 
   /**
    * Clean up old sessions (keep only last N sessions)
@@ -352,7 +364,10 @@ export class AnalyticsService {
   /**
    * Get detailed stage history over time
    */
-  async getStageHistory(stageId: string, days: number = 30): Promise<{
+  async getStageHistory(
+    stageId: string,
+    days: number = 30
+  ): Promise<{
     dailyMetrics: Array<{
       date: string;
       attempts: number;
@@ -371,80 +386,86 @@ export class AnalyticsService {
   }> {
     const sessions = await this.loadAllSessions();
     const validationMetrics = await this.loadValidationMetrics();
-    
+
     // Calculate cutoff date
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - days);
-    
+
     // Collect stage data from sessions
-    const stageData = new Map<string, {
-      attempts: number;
-      successes: number;
-      totalDuration: number;
-      durations: number[];
-    }>();
-    
+    const stageData = new Map<
+      string,
+      {
+        attempts: number;
+        successes: number;
+        totalDuration: number;
+        durations: number[];
+      }
+    >();
+
     // Process sessions data
     sessions.forEach(session => {
       if (session.startTime < cutoffDate.getTime()) return;
-      
+
       session.attempts.forEach(attempt => {
         attempt.stages.forEach(stage => {
           if (stage.id !== stageId) return;
-          
+
           const date = new Date(session.startTime).toISOString().split('T')[0];
           const dayData = stageData.get(date) || {
             attempts: 0,
             successes: 0,
             totalDuration: 0,
-            durations: []
+            durations: [],
           };
-          
+
           dayData.attempts++;
           dayData.totalDuration += stage.duration;
           dayData.durations.push(stage.duration);
-          
+
           if (stage.success) {
             dayData.successes++;
           }
-          
+
           stageData.set(date, dayData);
         });
       });
     });
-    
+
     // Process validation metrics data if no sessions data
     if (sessions.length === 0 && validationMetrics.length > 0) {
-      validationMetrics.forEach((metric) => {
-        const metricRecord = metric as { timestamp: string; stages?: { id: string; success: boolean; duration?: number }[] };
+      validationMetrics.forEach(metric => {
+        const metricRecord = metric as {
+          timestamp: string;
+          stages?: { id: string; success: boolean; duration?: number }[];
+        };
         const metricDate = new Date(metricRecord.timestamp);
         if (metricDate < cutoffDate) return;
-        
+
         const stages = metricRecord.stages || [];
-        const targetStage = stages.find((s) => s.id === stageId);
-        
+        const targetStage = stages.find(s => s.id === stageId);
+
         if (targetStage) {
           const date = metricDate.toISOString().split('T')[0];
           const dayData = stageData.get(date) || {
             attempts: 0,
             successes: 0,
             totalDuration: 0,
-            durations: []
+            durations: [],
           };
-          
+
           dayData.attempts++;
           dayData.totalDuration += targetStage.duration || 0;
           dayData.durations.push(targetStage.duration || 0);
-          
+
           if (targetStage.success) {
             dayData.successes++;
           }
-          
+
           stageData.set(date, dayData);
         }
       });
     }
-    
+
     // Convert to daily metrics array
     const dailyMetrics = Array.from(stageData.entries())
       .map(([date, data]) => ({
@@ -453,36 +474,37 @@ export class AnalyticsService {
         successes: data.successes,
         failures: data.attempts - data.successes,
         successRate: data.attempts > 0 ? (data.successes / data.attempts) * 100 : 0,
-        averageDuration: data.durations.length > 0 
-          ? data.durations.reduce((sum, d) => sum + d, 0) / data.durations.length 
-          : 0,
-        totalDuration: data.totalDuration
+        averageDuration:
+          data.durations.length > 0
+            ? data.durations.reduce((sum, d) => sum + d, 0) / data.durations.length
+            : 0,
+        totalDuration: data.totalDuration,
       }))
       .sort((a, b) => a.date.localeCompare(b.date));
-    
+
     // Calculate trends
     const totalAttempts = dailyMetrics.reduce((sum, day) => sum + day.attempts, 0);
     const totalSuccesses = dailyMetrics.reduce((sum, day) => sum + day.successes, 0);
-    
+
     let successRateTrend = 0;
     let durationTrend = 0;
-    
+
     if (dailyMetrics.length >= 2) {
       const firstDay = dailyMetrics[0];
       const lastDay = dailyMetrics[dailyMetrics.length - 1];
-      
+
       successRateTrend = lastDay.successRate - firstDay.successRate;
       durationTrend = lastDay.averageDuration - firstDay.averageDuration;
     }
-    
+
     return {
       dailyMetrics,
       trends: {
         successRateTrend,
         durationTrend,
         totalAttempts,
-        totalSuccesses
-      }
+        totalSuccesses,
+      },
     };
   }
 
@@ -522,7 +544,7 @@ export class AnalyticsService {
   }> {
     const sessions = await this.loadAllSessions();
     const validationMetrics = await this.loadValidationMetrics();
-    
+
     const allRuns: Array<{
       timestamp: string;
       success: boolean;
@@ -531,141 +553,157 @@ export class AnalyticsService {
       output?: string;
       error?: string;
     }> = [];
-    
+
     // Collect data from sessions
     sessions.forEach(session => {
       session.attempts.forEach(attempt => {
         attempt.stages.forEach(stage => {
           if (stage.id !== stageId) return;
-          
+
           allRuns.push({
             timestamp: new Date(session.startTime).toISOString(),
             success: stage.success,
             duration: stage.duration,
             sessionId: session.sessionId,
             output: stage.output,
-            error: stage.error
+            error: stage.error,
           });
         });
       });
     });
-    
+
     // Collect data from validation metrics if no sessions
     if (sessions.length === 0 && validationMetrics.length > 0) {
-      validationMetrics.forEach((metric) => {
-        const metricRecord = metric as { timestamp: string; stages?: { id: string; success: boolean; duration?: number; output?: string; error?: string }[] };
+      validationMetrics.forEach(metric => {
+        const metricRecord = metric as {
+          timestamp: string;
+          stages?: {
+            id: string;
+            success: boolean;
+            duration?: number;
+            output?: string;
+            error?: string;
+          }[];
+        };
         const stages = metricRecord.stages || [];
-        const targetStage = stages.find((s) => s.id === stageId);
-        
+        const targetStage = stages.find(s => s.id === stageId);
+
         if (targetStage) {
           allRuns.push({
             timestamp: metricRecord.timestamp,
             success: targetStage.success,
             duration: targetStage.duration || 0,
             output: targetStage.output,
-            error: targetStage.error
+            error: targetStage.error,
           });
         }
       });
     }
-    
+
     // Sort runs by timestamp (most recent first)
     allRuns.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-    
+
     // Calculate overview statistics
     const totalAttempts = allRuns.length;
     const totalSuccesses = allRuns.filter(run => run.success).length;
     const totalFailures = totalAttempts - totalSuccesses;
     const successRate = totalAttempts > 0 ? (totalSuccesses / totalAttempts) * 100 : 0;
-    
+
     const durations = allRuns.map(run => run.duration).filter(d => d > 0);
-    const averageDuration = durations.length > 0 ? durations.reduce((sum, d) => sum + d, 0) / durations.length : 0;
-    
+    const averageDuration =
+      durations.length > 0 ? durations.reduce((sum, d) => sum + d, 0) / durations.length : 0;
+
     // Calculate statistical measures
     let medianDuration = 0;
     let minDuration = 0;
     let maxDuration = 0;
     let standardDeviation = 0;
-    
+
     if (durations.length > 0) {
       const sortedDurations = [...durations].sort((a, b) => a - b);
       medianDuration = sortedDurations[Math.floor(sortedDurations.length / 2)];
       minDuration = sortedDurations[0];
       maxDuration = sortedDurations[sortedDurations.length - 1];
-      
+
       // Standard deviation
-      const variance = durations.reduce((sum, d) => sum + Math.pow(d - averageDuration, 2), 0) / durations.length;
+      const variance =
+        durations.reduce((sum, d) => sum + Math.pow(d - averageDuration, 2), 0) / durations.length;
       standardDeviation = Math.sqrt(variance);
     }
-    
+
     // Calculate percentiles
     const durationsPercentiles = {
       p50: medianDuration,
       p90: 0,
       p95: 0,
-      p99: 0
+      p99: 0,
     };
-    
+
     if (durations.length > 0) {
       const sortedDurations = [...durations].sort((a, b) => a - b);
       durationsPercentiles.p90 = sortedDurations[Math.floor(sortedDurations.length * 0.9)];
       durationsPercentiles.p95 = sortedDurations[Math.floor(sortedDurations.length * 0.95)];
       durationsPercentiles.p99 = sortedDurations[Math.floor(sortedDurations.length * 0.99)];
     }
-    
+
     // Success rate by time of day
-    const successRateByTimeOfDay: Record<string, { attempts: number; successes: number; rate: number }> = {};
+    const successRateByTimeOfDay: Record<
+      string,
+      { attempts: number; successes: number; rate: number }
+    > = {};
     allRuns.forEach(run => {
       const hour = new Date(run.timestamp).getHours();
       const timeSlot = `${hour.toString().padStart(2, '0')}:00`;
-      
+
       if (!successRateByTimeOfDay[timeSlot]) {
         successRateByTimeOfDay[timeSlot] = { attempts: 0, successes: 0, rate: 0 };
       }
-      
+
       successRateByTimeOfDay[timeSlot].attempts++;
       if (run.success) {
         successRateByTimeOfDay[timeSlot].successes++;
       }
     });
-    
+
     // Calculate rates
     Object.values(successRateByTimeOfDay).forEach(timeSlot => {
       timeSlot.rate = timeSlot.attempts > 0 ? (timeSlot.successes / timeSlot.attempts) * 100 : 0;
     });
-    
+
     // Analyze failure reasons (simple keyword extraction from error messages)
     const failureReasons: Record<string, number> = {};
-    allRuns.filter(run => !run.success && run.error).forEach(run => {
-      const error = run.error?.toLowerCase() || '';
-      
-      // Common error patterns
-      const patterns = [
-        { keyword: 'timeout', reason: 'Timeout' },
-        { keyword: 'compilation', reason: 'Compilation Error' },
-        { keyword: 'type', reason: 'Type Error' },
-        { keyword: 'test', reason: 'Test Failure' },
-        { keyword: 'lint', reason: 'Linting Error' },
-        { keyword: 'network', reason: 'Network Error' },
-        { keyword: 'permission', reason: 'Permission Error' },
-        { keyword: 'not found', reason: 'File Not Found' },
-        { keyword: 'syntax', reason: 'Syntax Error' }
-      ];
-      
-      let categorized = false;
-      for (const pattern of patterns) {
-        if (error.includes(pattern.keyword)) {
-          failureReasons[pattern.reason] = (failureReasons[pattern.reason] || 0) + 1;
-          categorized = true;
-          break;
+    allRuns
+      .filter(run => !run.success && run.error)
+      .forEach(run => {
+        const error = run.error?.toLowerCase() || '';
+
+        // Common error patterns
+        const patterns = [
+          { keyword: 'timeout', reason: 'Timeout' },
+          { keyword: 'compilation', reason: 'Compilation Error' },
+          { keyword: 'type', reason: 'Type Error' },
+          { keyword: 'test', reason: 'Test Failure' },
+          { keyword: 'lint', reason: 'Linting Error' },
+          { keyword: 'network', reason: 'Network Error' },
+          { keyword: 'permission', reason: 'Permission Error' },
+          { keyword: 'not found', reason: 'File Not Found' },
+          { keyword: 'syntax', reason: 'Syntax Error' },
+        ];
+
+        let categorized = false;
+        for (const pattern of patterns) {
+          if (error.includes(pattern.keyword)) {
+            failureReasons[pattern.reason] = (failureReasons[pattern.reason] || 0) + 1;
+            categorized = true;
+            break;
+          }
         }
-      }
-      
-      if (!categorized) {
-        failureReasons['Other'] = (failureReasons['Other'] || 0) + 1;
-      }
-    });
-    
+
+        if (!categorized) {
+          failureReasons['Other'] = (failureReasons['Other'] || 0) + 1;
+        }
+      });
+
     return {
       overview: {
         totalAttempts,
@@ -676,15 +714,14 @@ export class AnalyticsService {
         medianDuration,
         minDuration,
         maxDuration,
-        standardDeviation
+        standardDeviation,
       },
       recentRuns: allRuns.slice(0, 50), // Last 50 runs
       performanceMetrics: {
         durationsPercentiles,
         successRateByTimeOfDay,
-        failureReasons
-      }
+        failureReasons,
+      },
     };
   }
-
 }

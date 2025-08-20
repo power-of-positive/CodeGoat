@@ -1,6 +1,11 @@
 import fs from 'fs/promises';
 import path from 'path';
-import { Settings, LoggingSettings, ValidationStage, FallbackSettings } from '../types/settings.types';
+import {
+  Settings,
+  LoggingSettings,
+  ValidationStage,
+  FallbackSettings,
+} from '../types/settings.types';
 
 // Default logging configuration
 function getDefaultLogging(): LoggingSettings {
@@ -121,7 +126,7 @@ async function loadDefaultSettings(): Promise<Settings> {
     const configPath = path.join(__dirname, '../config/default-settings.json');
     const content = await fs.readFile(configPath, 'utf-8');
     const jsonSettings = JSON.parse(content);
-    
+
     // Add logging defaults and any missing properties
     return {
       ...jsonSettings,

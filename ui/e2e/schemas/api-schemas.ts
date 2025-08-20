@@ -6,32 +6,32 @@ export const statusResponseSchema = {
   properties: {
     status: {
       type: 'string',
-      enum: ['healthy']
+      enum: ['healthy'],
     },
     uptime: {
       type: 'number',
-      minimum: 0
+      minimum: 0,
     },
     uptimeFormatted: {
-      type: 'string'
+      type: 'string',
     },
     modelsCount: {
-      type: 'number'
+      type: 'number',
     },
     activeModelsCount: {
-      type: 'number'
+      type: 'number',
     },
     memoryUsage: {
-      type: 'object'
+      type: 'object',
     },
     nodeVersion: {
-      type: 'string'
+      type: 'string',
     },
     timestamp: {
-      type: 'string'
-    }
+      type: 'string',
+    },
   },
-  additionalProperties: true
+  additionalProperties: true,
 };
 
 export const modelSchema = {
@@ -40,48 +40,42 @@ export const modelSchema = {
   properties: {
     id: {
       type: 'string',
-      minLength: 1
+      minLength: 1,
     },
     name: {
       type: 'string',
-      minLength: 1
+      minLength: 1,
     },
     model: {
       type: 'string',
-      minLength: 1
+      minLength: 1,
     },
     provider: {
       type: 'string',
-      minLength: 1
+      minLength: 1,
     },
     baseUrl: {
       type: 'string',
-      format: 'uri'
+      format: 'uri',
     },
     apiKey: {
-      type: 'string'
+      type: 'string',
     },
     enabled: {
-      type: 'boolean'
+      type: 'boolean',
     },
     status: {
       type: 'string',
-      enum: ['healthy', 'error', 'untested']
+      enum: ['healthy', 'error', 'untested'],
     },
     lastTested: {
-      oneOf: [
-        { type: 'string' },
-        { type: 'null' }
-      ]
+      oneOf: [{ type: 'string' }, { type: 'null' }],
     },
     responseTime: {
-      oneOf: [
-        { type: 'number' },
-        { type: 'null' }
-      ]
-    }
+      oneOf: [{ type: 'number' }, { type: 'null' }],
+    },
   },
-  additionalProperties: true
+  additionalProperties: true,
 };
 
 export const modelsListResponseSchema = {
@@ -91,10 +85,10 @@ export const modelsListResponseSchema = {
     models: {
       type: 'array',
       minItems: 8,
-      items: modelSchema
-    }
+      items: modelSchema,
+    },
   },
-  additionalProperties: false
+  additionalProperties: false,
 };
 
 export const modelTestResponseSchema = {
@@ -103,32 +97,29 @@ export const modelTestResponseSchema = {
   properties: {
     modelId: {
       type: 'string',
-      minLength: 1
+      minLength: 1,
     },
     status: {
       type: 'string',
-      enum: ['healthy', 'error']
+      enum: ['healthy', 'error'],
     },
     responseTime: {
       type: 'number',
       minimum: 0,
-      maximum: 30000
+      maximum: 30000,
     },
     testedAt: {
-      type: 'string'
+      type: 'string',
     },
     model: {
       type: 'string',
-      minLength: 1
+      minLength: 1,
     },
     error: {
-      oneOf: [
-        { type: 'string' },
-        { type: 'null' }
-      ]
-    }
+      oneOf: [{ type: 'string' }, { type: 'null' }],
+    },
   },
-  additionalProperties: false
+  additionalProperties: false,
 };
 
 export const modelAddResponseSchema = {
@@ -137,11 +128,11 @@ export const modelAddResponseSchema = {
   properties: {
     message: {
       type: 'string',
-      const: 'Model added successfully'
+      const: 'Model added successfully',
     },
-    model: modelSchema
+    model: modelSchema,
   },
-  additionalProperties: true
+  additionalProperties: true,
 };
 
 export const modelDeleteResponseSchema = {
@@ -150,10 +141,10 @@ export const modelDeleteResponseSchema = {
   properties: {
     message: {
       type: 'string',
-      const: 'Model deleted successfully'
-    }
+      const: 'Model deleted successfully',
+    },
   },
-  additionalProperties: false
+  additionalProperties: false,
 };
 
 export const errorResponseSchema = {
@@ -162,10 +153,10 @@ export const errorResponseSchema = {
   properties: {
     error: {
       type: 'string',
-      minLength: 1
-    }
+      minLength: 1,
+    },
   },
-  additionalProperties: false
+  additionalProperties: false,
 };
 
 // Task Management Schemas
@@ -175,45 +166,36 @@ export const taskSchema = {
   properties: {
     id: {
       type: 'string',
-      minLength: 1
+      minLength: 1,
     },
     content: {
       type: 'string',
-      minLength: 1
+      minLength: 1,
     },
     status: {
       type: 'string',
-      enum: ['pending', 'in_progress', 'completed']
+      enum: ['pending', 'in_progress', 'completed'],
     },
     priority: {
-      type: 'string', 
-      enum: ['low', 'medium', 'high']
+      type: 'string',
+      enum: ['low', 'medium', 'high'],
     },
     startTime: {
-      oneOf: [
-        { type: 'string' },
-        { type: 'null' }
-      ]
+      oneOf: [{ type: 'string' }, { type: 'null' }],
     },
     endTime: {
-      oneOf: [
-        { type: 'string' },
-        { type: 'null' }
-      ]
+      oneOf: [{ type: 'string' }, { type: 'null' }],
     },
     duration: {
-      oneOf: [
-        { type: 'string' },
-        { type: 'null' }
-      ]
-    }
+      oneOf: [{ type: 'string' }, { type: 'null' }],
+    },
   },
-  additionalProperties: true
+  additionalProperties: true,
 };
 
 export const tasksListResponseSchema = {
   type: 'array',
-  items: taskSchema
+  items: taskSchema,
 };
 
 export const taskDetailResponseSchema = {
@@ -232,13 +214,13 @@ export const taskDetailResponseSchema = {
               success: { type: 'boolean' },
               duration: { type: 'number' },
               timestamp: { type: 'string' },
-              stages: { type: 'string' }
-            }
-          }
-        }
-      }
-    }
-  ]
+              stages: { type: 'string' },
+            },
+          },
+        },
+      },
+    },
+  ],
 };
 
 // Permissions Management Schemas
@@ -248,10 +230,10 @@ export const permissionRuleSchema = {
   properties: {
     action: {
       type: 'string',
-      enum: ['allow', 'block']
-    }
+      enum: ['allow', 'block'],
+    },
   },
-  additionalProperties: true
+  additionalProperties: true,
 };
 
 export const commandRuleSchema = {
@@ -262,11 +244,11 @@ export const commandRuleSchema = {
       properties: {
         pattern: {
           type: 'string',
-          minLength: 1
-        }
-      }
-    }
-  ]
+          minLength: 1,
+        },
+      },
+    },
+  ],
 };
 
 export const fileRuleSchema = {
@@ -277,11 +259,11 @@ export const fileRuleSchema = {
       properties: {
         path: {
           type: 'string',
-          minLength: 1
-        }
-      }
-    }
-  ]
+          minLength: 1,
+        },
+      },
+    },
+  ],
 };
 
 export const apiRuleSchema = {
@@ -292,11 +274,11 @@ export const apiRuleSchema = {
       properties: {
         endpoint: {
           type: 'string',
-          minLength: 1
-        }
-      }
-    }
-  ]
+          minLength: 1,
+        },
+      },
+    },
+  ],
 };
 
 export const permissionsResponseSchema = {
@@ -305,16 +287,16 @@ export const permissionsResponseSchema = {
   properties: {
     commands: {
       type: 'array',
-      items: commandRuleSchema
+      items: commandRuleSchema,
     },
     files: {
       type: 'array',
-      items: fileRuleSchema
+      items: fileRuleSchema,
     },
     apis: {
       type: 'array',
-      items: apiRuleSchema
-    }
+      items: apiRuleSchema,
+    },
   },
-  additionalProperties: false
+  additionalProperties: false,
 };

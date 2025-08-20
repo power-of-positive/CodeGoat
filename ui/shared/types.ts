@@ -7,12 +7,9 @@
 // Theme and UI types
 export enum ThemeMode {
   LIGHT = 'light',
-  DARK = 'dark', 
-  SYSTEM = 'system'
+  DARK = 'dark',
+  SYSTEM = 'system',
 }
-
-
-
 
 // Config and settings types
 export interface Config {
@@ -80,25 +77,28 @@ export interface ValidationMetrics {
   failedRuns: number;
   successRate: number;
   averageDuration: number;
-  stageMetrics: Record<string, {
-    id: string;
-    name: string;
-    enabled: boolean;
-    attempts: number;
-    successes: number;
-    successRate: number;
-    averageDuration: number;
-    totalRuns: number;
-  }>;
+  stageMetrics: Record<
+    string,
+    {
+      id: string;
+      name: string;
+      enabled: boolean;
+      attempts: number;
+      successes: number;
+      successRate: number;
+      averageDuration: number;
+      totalRuns: number;
+    }
+  >;
 }
 
 // Additional utility types
-export type JSONValue = 
-  | string 
-  | number 
-  | boolean 
-  | null 
-  | JSONValue[] 
+export type JSONValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JSONValue[]
   | { [key: string]: JSONValue };
 
 export type ApiResponse<T = unknown> = {
@@ -277,7 +277,7 @@ export interface NormalizedEntry {
   content: string;
 }
 
-export type NormalizedEntryType = 
+export type NormalizedEntryType =
   | { type: 'user_message' }
   | { type: 'assistant_message' }
   | { type: 'tool_use'; tool_name: string; action_type: ClaudeActionType }
@@ -285,7 +285,7 @@ export type NormalizedEntryType =
   | { type: 'error_message' }
   | { type: 'thinking' };
 
-export type ClaudeActionType = 
+export type ClaudeActionType =
   | { action: 'file_read'; path: string }
   | { action: 'file_write'; path: string }
   | { action: 'command_run'; command: string }
@@ -294,4 +294,3 @@ export type ClaudeActionType =
   | { action: 'task_create'; description: string }
   | { action: 'plan_presentation'; plan: string }
   | { action: 'other'; description: string };
-

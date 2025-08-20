@@ -2,18 +2,18 @@
  * Main validation utilities dispatcher
  */
 
-import { validatePath } from "./path-validation";
-import { validateCommand } from "./command-validation";
+import { validatePath } from './path-validation';
+import { validateCommand } from './command-validation';
 
 /**
  * General input validation dispatcher
  */
-export function validateInput(value: string, type: "path" | "command"): void {
+export function validateInput(value: string, type: 'path' | 'command'): void {
   switch (type) {
-    case "path":
+    case 'path':
       validatePath(value);
       break;
-    case "command":
+    case 'command':
       validateCommand(value);
       break;
     default:
@@ -31,5 +31,5 @@ export function validatePort(port: number): void {
 }
 
 // Re-export from modules for backward compatibility
-export { validatePath, validateDirectoryExists } from "./path-validation";
-export { validateCommand } from "./command-validation";
+export { validatePath, validateDirectoryExists } from './path-validation';
+export { validateCommand } from './command-validation';

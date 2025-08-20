@@ -4,44 +4,77 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Input } from '../components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Label } from '../components/ui/label';
-import { 
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  BarChart, Bar 
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  BarChart,
+  Bar,
 } from 'recharts';
 import { taskApi, e2eTestingApi } from '../lib/api';
-import { 
-  Play, Link, FileText, Clock, CheckCircle, XCircle, 
-  AlertTriangle, RefreshCw,
-  TrendingUp, Activity
+import {
+  Play,
+  Link,
+  FileText,
+  Clock,
+  CheckCircle,
+  XCircle,
+  AlertTriangle,
+  RefreshCw,
+  TrendingUp,
+  Activity,
 } from 'lucide-react';
 
 const BDDTestsDashboard: React.FC = () => {
   const [selectedTaskType, setSelectedTaskType] = useState<'all' | 'story' | 'task'>('all');
-  const [selectedStatus, setSelectedStatus] = useState<'all' | 'pending' | 'passed' | 'failed' | 'skipped'>('all');
+  const [selectedStatus, setSelectedStatus] = useState<
+    'all' | 'pending' | 'passed' | 'failed' | 'skipped'
+  >('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [timeRange, setTimeRange] = useState<number>(30); // days
 
   // Fetch all tasks with BDD scenarios
-  const { data: tasks, isLoading: tasksLoading, refetch: refetchTasks } = useQuery({
+  const {
+    data: tasks,
+    isLoading: tasksLoading,
+    refetch: refetchTasks,
+  } = useQuery({
     queryKey: ['tasks'],
     queryFn: () => taskApi.getTasks(),
   });
 
   // Fetch E2E test analytics
-  const { data: e2eAnalytics, isLoading: analyticsLoading, refetch: refetchAnalytics } = useQuery({
+  const {
+    data: e2eAnalytics,
+    isLoading: analyticsLoading,
+    refetch: refetchAnalytics,
+  } = useQuery({
     queryKey: ['e2e-analytics', timeRange],
     queryFn: () => e2eTestingApi.getAnalytics({ days: timeRange }),
   });
 
   // Fetch recent test suites
-  const { data: testSuites, isLoading: suitesLoading, refetch: refetchSuites } = useQuery({
+  const {
+    data: testSuites,
+    isLoading: suitesLoading,
+    refetch: refetchSuites,
+  } = useQuery({
     queryKey: ['e2e-suites', timeRange],
     queryFn: () => e2eTestingApi.getTestSuites({ limit: 50 }),
   });
-
 
   // Trigger test run mutation
   const triggerTestMutation = useMutation({
@@ -62,41 +95,52 @@ const BDDTestsDashboard: React.FC = () => {
   };
 
   // Filter tasks based on criteria
-  const filteredTasks = tasks?.filter(task => {
-    const matchesType = selectedTaskType === 'all' || task.taskType === selectedTaskType;
-    const matchesSearch = searchTerm === '' || 
-      task.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      task.bddScenarios?.some(scenario => 
-        scenario.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        scenario.feature.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    return matchesType && matchesSearch;
-  }) || [];
+  const filteredTasks =
+    tasks?.filter(task => {
+      const matchesType = selectedTaskType === 'all' || task.taskType === selectedTaskType;
+      const matchesSearch =
+        searchTerm === '' ||
+        task.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        task.bddScenarios?.some(
+          scenario =>
+            scenario.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            scenario.feature.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+      return matchesType && matchesSearch;
+    }) || [];
 
   // Get BDD scenarios with status filter
-  const allScenarios = filteredTasks.flatMap(task => 
-    task.bddScenarios?.map(scenario => ({ ...scenario, task })) || []
+  const allScenarios = filteredTasks.flatMap(
+    task => task.bddScenarios?.map(scenario => ({ ...scenario, task })) || []
   );
 
-  const filteredScenarios = allScenarios.filter(scenario =>
-    selectedStatus === 'all' || scenario.status === selectedStatus
+  const filteredScenarios = allScenarios.filter(
+    scenario => selectedStatus === 'all' || scenario.status === selectedStatus
   );
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'passed': return 'text-green-600';
-      case 'failed': return 'text-red-600';
-      case 'skipped': return 'text-yellow-600';
-      default: return 'text-gray-600';
+      case 'passed':
+        return 'text-green-600';
+      case 'failed':
+        return 'text-red-600';
+      case 'skipped':
+        return 'text-yellow-600';
+      default:
+        return 'text-gray-600';
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'passed': return <CheckCircle className="h-4 w-4" />;
-      case 'failed': return <XCircle className="h-4 w-4" />;
-      case 'skipped': return <AlertTriangle className="h-4 w-4" />;
-      default: return <Clock className="h-4 w-4" />;
+      case 'passed':
+        return <CheckCircle className="h-4 w-4" />;
+      case 'failed':
+        return <XCircle className="h-4 w-4" />;
+      case 'skipped':
+        return <AlertTriangle className="h-4 w-4" />;
+      default:
+        return <Clock className="h-4 w-4" />;
     }
   };
 
@@ -159,9 +203,7 @@ const BDDTestsDashboard: React.FC = () => {
               <div className="text-2xl font-bold">
                 {(e2eAnalytics.overview.successRate * 100).toFixed(1)}%
               </div>
-              <p className="text-xs text-muted-foreground">
-                Last {timeRange} days
-              </p>
+              <p className="text-xs text-muted-foreground">Last {timeRange} days</p>
             </CardContent>
           </Card>
 
@@ -174,9 +216,7 @@ const BDDTestsDashboard: React.FC = () => {
               <div className="text-2xl font-bold">
                 {(e2eAnalytics.overview.averageDuration / 1000).toFixed(1)}s
               </div>
-              <p className="text-xs text-muted-foreground">
-                Per test execution
-              </p>
+              <p className="text-xs text-muted-foreground">Per test execution</p>
             </CardContent>
           </Card>
 
@@ -187,9 +227,7 @@ const BDDTestsDashboard: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{e2eAnalytics.overview.recentRuns}</div>
-              <p className="text-xs text-muted-foreground">
-                Last 24 hours
-              </p>
+              <p className="text-xs text-muted-foreground">Last 24 hours</p>
             </CardContent>
           </Card>
         </div>
@@ -199,7 +237,10 @@ const BDDTestsDashboard: React.FC = () => {
       <div className="flex space-x-4">
         <div className="flex items-center space-x-2">
           <Label htmlFor="time-range">Time Range:</Label>
-          <Select value={timeRange.toString()} onValueChange={(value) => setTimeRange(parseInt(value))}>
+          <Select
+            value={timeRange.toString()}
+            onValueChange={value => setTimeRange(parseInt(value))}
+          >
             <SelectTrigger className="w-32">
               <SelectValue />
             </SelectTrigger>
@@ -219,11 +260,14 @@ const BDDTestsDashboard: React.FC = () => {
           <Input
             placeholder="Search scenarios, features, or tasks..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={e => setSearchTerm(e.target.value)}
             className="max-w-md"
           />
         </div>
-        <Select value={selectedTaskType} onValueChange={(value) => setSelectedTaskType(value as typeof selectedTaskType)}>
+        <Select
+          value={selectedTaskType}
+          onValueChange={value => setSelectedTaskType(value as typeof selectedTaskType)}
+        >
           <SelectTrigger className="w-40">
             <SelectValue placeholder="Task Type" />
           </SelectTrigger>
@@ -233,7 +277,10 @@ const BDDTestsDashboard: React.FC = () => {
             <SelectItem value="task">Technical Tasks</SelectItem>
           </SelectContent>
         </Select>
-        <Select value={selectedStatus} onValueChange={(value) => setSelectedStatus(value as typeof selectedStatus)}>
+        <Select
+          value={selectedStatus}
+          onValueChange={value => setSelectedStatus(value as typeof selectedStatus)}
+        >
           <SelectTrigger className="w-40">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
@@ -261,27 +308,36 @@ const BDDTestsDashboard: React.FC = () => {
             {filteredScenarios.length === 0 ? (
               <Card>
                 <CardContent className="text-center py-8">
-                  <p className="text-gray-500">No BDD scenarios found matching the current filters.</p>
+                  <p className="text-gray-500">
+                    No BDD scenarios found matching the current filters.
+                  </p>
                 </CardContent>
               </Card>
             ) : (
-              filteredScenarios.map((scenario) => (
+              filteredScenarios.map(scenario => (
                 <Card key={scenario.id} className="hover:shadow-md transition-shadow">
                   <CardHeader>
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
                         <CardTitle className="text-lg">{scenario.title}</CardTitle>
                         <CardDescription>
-                          <span className="font-medium">Feature:</span> {scenario.feature} | 
+                          <span className="font-medium">Feature:</span> {scenario.feature} |
                           <span className="font-medium ml-2">Task:</span> {scenario.task?.content}
                         </CardDescription>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <Badge 
-                          variant={scenario.status === 'passed' ? 'default' : 
-                                   scenario.status === 'failed' ? 'destructive' : 'secondary'}
+                        <Badge
+                          variant={
+                            scenario.status === 'passed'
+                              ? 'default'
+                              : scenario.status === 'failed'
+                                ? 'destructive'
+                                : 'secondary'
+                          }
                           className={`${getStatusColor(scenario.status)} flex items-center space-x-1 ${
-                            scenario.status === 'passed' ? 'bg-green-100 text-green-800 border-green-300' : ''
+                            scenario.status === 'passed'
+                              ? 'bg-green-100 text-green-800 border-green-300'
+                              : ''
                           }`}
                         >
                           {getStatusIcon(scenario.status)}
@@ -299,7 +355,7 @@ const BDDTestsDashboard: React.FC = () => {
                   <CardContent>
                     <div className="space-y-3">
                       <p className="text-sm text-gray-600">{scenario.description}</p>
-                      
+
                       {scenario.playwrightTestFile && (
                         <div className="bg-blue-50 p-3 rounded-md">
                           <div className="flex items-center space-x-2 text-sm">
@@ -324,13 +380,15 @@ const BDDTestsDashboard: React.FC = () => {
                           View Details
                         </Button>
                         {scenario.playwrightTestFile && (
-                          <Button 
-                            size="sm" 
+                          <Button
+                            size="sm"
                             variant="outline"
-                            onClick={() => triggerTestMutation.mutate({
-                              testFile: scenario.playwrightTestFile!,
-                              testName: scenario.playwrightTestName
-                            })}
+                            onClick={() =>
+                              triggerTestMutation.mutate({
+                                testFile: scenario.playwrightTestFile!,
+                                testName: scenario.playwrightTestName,
+                              })
+                            }
                             disabled={triggerTestMutation.isPending}
                           >
                             <Play className="h-4 w-4 mr-1" />
@@ -363,7 +421,7 @@ const BDDTestsDashboard: React.FC = () => {
                 </CardContent>
               </Card>
             ) : (
-              testSuites?.map((suite) => (
+              testSuites?.map(suite => (
                 <Card key={suite.id} className="hover:shadow-md transition-shadow">
                   <CardHeader>
                     <div className="flex justify-between items-start">
@@ -400,18 +458,20 @@ const BDDTestsDashboard: React.FC = () => {
                         <div className="text-xs text-gray-600">Failed</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-2xl font-bold text-yellow-600">{suite.skippedTests}</div>
+                        <div className="text-2xl font-bold text-yellow-600">
+                          {suite.skippedTests}
+                        </div>
                         <div className="text-xs text-gray-600">Skipped</div>
                       </div>
                     </div>
-                    
+
                     <div className="flex space-x-2">
                       <Button size="sm" variant="outline">
                         <FileText className="h-4 w-4 mr-1" />
                         View Results
                       </Button>
-                      <Button 
-                        size="sm" 
+                      <Button
+                        size="sm"
                         variant="outline"
                         onClick={() => triggerTestMutation.mutate({ testFile: suite.file })}
                         disabled={triggerTestMutation.isPending}
@@ -443,11 +503,11 @@ const BDDTestsDashboard: React.FC = () => {
                       <XAxis dataKey="date" />
                       <YAxis />
                       <Tooltip />
-                      <Line 
-                        type="monotone" 
-                        dataKey="successRate" 
-                        stroke="#10b981" 
-                        strokeWidth={2} 
+                      <Line
+                        type="monotone"
+                        dataKey="successRate"
+                        stroke="#10b981"
+                        strokeWidth={2}
                       />
                     </LineChart>
                   </ResponsiveContainer>
@@ -482,8 +542,11 @@ const BDDTestsDashboard: React.FC = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {(e2eAnalytics.topFailingTests || []).map((test) => (
-                      <div key={`${test.testFile}-${test.testName}`} className="flex items-center justify-between p-3 bg-red-50 rounded-md">
+                    {(e2eAnalytics.topFailingTests || []).map(test => (
+                      <div
+                        key={`${test.testFile}-${test.testName}`}
+                        className="flex items-center justify-between p-3 bg-red-50 rounded-md"
+                      >
                         <div className="flex-1">
                           <div className="font-medium text-sm">{test.testName}</div>
                           <div className="text-xs text-gray-600">{test.testFile}</div>

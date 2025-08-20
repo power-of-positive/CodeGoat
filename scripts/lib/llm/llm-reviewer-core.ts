@@ -1,9 +1,9 @@
 /**
  * Core OpenAI review functionality
  */
-import OpenAI from "openai";
-import * as path from "path";
-import type { ReviewResult } from "./llm-reviewer-types";
+import OpenAI from 'openai';
+import * as path from 'path';
+import type { ReviewResult } from './llm-reviewer-types';
 
 /**
  * Core LLM reviewer functionality
@@ -14,17 +14,20 @@ export class LLMReviewerCore {
 
   constructor() {
     const apiKey = process.env.OPENAI_API_KEY;
-    console.log("🔍 LLMReviewerCore: Checking for OPENAI_API_KEY...");
-    console.log(`🔍 API Key found: ${apiKey ? "Yes (length: " + apiKey.length + ")" : "No"}`);
-    
+    console.log('🔍 LLMReviewerCore: Checking for OPENAI_API_KEY...');
+    console.log(`🔍 API Key found: ${apiKey ? 'Yes (length: ' + apiKey.length + ')' : 'No'}`);
+
     if (!apiKey) {
-      console.error("❌ OPENAI_API_KEY environment variable is not set!");
-      console.error("Available env vars:", Object.keys(process.env).filter(k => k.includes("API") || k.includes("OPENAI")));
-      throw new Error("OPENAI_API_KEY environment variable is required");
+      console.error('❌ OPENAI_API_KEY environment variable is not set!');
+      console.error(
+        'Available env vars:',
+        Object.keys(process.env).filter(k => k.includes('API') || k.includes('OPENAI'))
+      );
+      throw new Error('OPENAI_API_KEY environment variable is required');
     }
 
     this.openai = new OpenAI({ apiKey });
-    this.model = process.env.LLM_REVIEWER_MODEL || "gpt-4o-mini";
+    this.model = process.env.LLM_REVIEWER_MODEL || 'gpt-4o-mini';
     console.log(`✅ LLMReviewerCore initialized with model: ${this.model}`);
   }
 
@@ -39,16 +42,16 @@ export class LLMReviewerCore {
       // Try structured output first
       const response = await this.openai.chat.completions.create({
         model: this.model,
-        messages: [{ role: "user", content: prompt }],
+        messages: [{ role: 'user', content: prompt }],
         temperature: 0.1,
         max_tokens: 1000,
         response_format: {
-          type: "json_schema",
+          type: 'json_schema',
           json_schema: this.getReviewSchema(),
         },
       });
 
-      const result = JSON.parse(response.choices[0].message.content || "{}");
+      const result = JSON.parse(response.choices[0].message.content || '{}');
       return this.validateAndNormalizeResult(result);
     } catch (error) {
       console.error(`Review failed for ${filePath}:`, error);
@@ -56,11 +59,7 @@ export class LLMReviewerCore {
     }
   }
 
-  private createReviewPrompt(
-    filePath: string,
-    content: string,
-    ext: string,
-  ): string {
+  private createReviewPrompt(filePath: string, content: string, ext: string): string {
     return `You are a senior code reviewer. Review this ${ext} file for quality, bugs, security, performance, and maintainability.
 
 File: ${filePath}
@@ -83,34 +82,34 @@ Use "low" severity for minor style issues or suggestions.`;
 
   private getReviewSchema() {
     return {
-      name: "review_result",
+      name: 'review_result',
       strict: true,
       schema: {
-        type: "object",
+        type: 'object',
         properties: {
           severity: {
-            type: "string",
-            enum: ["low", "medium", "high"],
+            type: 'string',
+            enum: ['low', 'medium', 'high'],
           },
           issues: {
-            type: "array",
-            items: { type: "string" },
+            type: 'array',
+            items: { type: 'string' },
           },
           suggestions: {
-            type: "array",
-            items: { type: "string" },
+            type: 'array',
+            items: { type: 'string' },
           },
-          summary: { type: "string" },
-          hasBlockingIssues: { type: "boolean" },
-          confidence: { type: "number" },
+          summary: { type: 'string' },
+          hasBlockingIssues: { type: 'boolean' },
+          confidence: { type: 'number' },
         },
         required: [
-          "severity",
-          "issues",
-          "suggestions",
-          "summary",
-          "hasBlockingIssues",
-          "confidence",
+          'severity',
+          'issues',
+          'suggestions',
+          'summary',
+          'hasBlockingIssues',
+          'confidence',
         ],
         additionalProperties: false,
       },
@@ -121,14 +120,12 @@ Use "low" severity for minor style issues or suggestions.`;
     const r = result as Record<string, unknown>;
     return {
       severity:
-        typeof r.severity === "string" &&
-        ["low", "medium", "high"].includes(r.severity)
-          ? (r.severity as "low" | "medium" | "high")
-          : "low",
+        typeof r.severity === 'string' && ['low', 'medium', 'high'].includes(r.severity)
+          ? (r.severity as 'low' | 'medium' | 'high')
+          : 'low',
       issues: Array.isArray(r.issues) ? r.issues : [],
       suggestions: Array.isArray(r.suggestions) ? r.suggestions : [],
-      summary:
-        typeof r.summary === "string" ? r.summary : "No summary provided",
+      summary: typeof r.summary === 'string' ? r.summary : 'No summary provided',
       hasBlockingIssues: Boolean(r.hasBlockingIssues),
       confidence: Math.max(0, Math.min(1, Number(r.confidence) || 0.5)),
     };
@@ -136,10 +133,10 @@ Use "low" severity for minor style issues or suggestions.`;
 
   private createErrorResult(): ReviewResult {
     return {
-      severity: "medium",
-      issues: ["Review failed due to API error"],
-      suggestions: ["Manual review recommended"],
-      summary: "Automated review could not be completed",
+      severity: 'medium',
+      issues: ['Review failed due to API error'],
+      suggestions: ['Manual review recommended'],
+      summary: 'Automated review could not be completed',
       hasBlockingIssues: false,
       confidence: 0.1,
     };

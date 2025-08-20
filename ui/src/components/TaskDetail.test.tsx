@@ -87,15 +87,15 @@ describe('TaskDetail', () => {
 
   it('renders task detail page with loading state', () => {
     mockApi.getTask.mockImplementation(() => new Promise(() => {}));
-    
+
     renderWithProviders();
-    
+
     expect(screen.getByText('Loading task details...')).toBeInTheDocument();
   });
 
   it('renders task details when loaded', async () => {
     renderWithProviders();
-    
+
     await waitFor(() => {
       expect(screen.getByText('Test task content')).toBeInTheDocument();
       expect(screen.getByText('task-123')).toBeInTheDocument();
@@ -104,7 +104,7 @@ describe('TaskDetail', () => {
 
   it('displays task status badge', async () => {
     renderWithProviders();
-    
+
     await waitFor(() => {
       expect(screen.getByText('Pending')).toBeInTheDocument();
     });
@@ -112,7 +112,7 @@ describe('TaskDetail', () => {
 
   it('displays task priority', async () => {
     renderWithProviders();
-    
+
     await waitFor(() => {
       expect(screen.getByText('medium')).toBeInTheDocument();
     });
@@ -120,7 +120,7 @@ describe('TaskDetail', () => {
 
   it('displays task information section', async () => {
     renderWithProviders();
-    
+
     await waitFor(() => {
       expect(screen.getByText('Task Information')).toBeInTheDocument();
     });
@@ -128,9 +128,9 @@ describe('TaskDetail', () => {
 
   it('handles error state when task fails to load', async () => {
     mockApi.getTask.mockRejectedValue(new Error('Task not found'));
-    
+
     renderWithProviders();
-    
+
     await waitFor(() => {
       expect(screen.getByText('Task Not Found')).toBeInTheDocument();
     });
@@ -138,11 +138,11 @@ describe('TaskDetail', () => {
 
   it('displays validation runs', async () => {
     renderWithProviders();
-    
+
     await waitFor(() => {
       expect(screen.getByText('Test task content')).toBeInTheDocument();
     });
-    
+
     // Should display validation runs if they exist
     if (mockTask.validationRuns && mockTask.validationRuns.length > 0) {
       expect(screen.getByText('Validation Runs')).toBeInTheDocument();
@@ -154,13 +154,13 @@ describe('TaskDetail', () => {
       ...mockTask,
       status: 'in_progress',
     });
-    
+
     renderWithProviders();
-    
+
     await waitFor(() => {
       expect(screen.getByText('Test task content')).toBeInTheDocument();
     });
-    
+
     // Test that the updateTask API is available for mocking
     // This tests the API integration without relying on specific UI elements
     expect(mockApi.updateTask).toBeDefined();
@@ -168,11 +168,11 @@ describe('TaskDetail', () => {
 
   it('displays BDD scenarios section', async () => {
     renderWithProviders();
-    
+
     await waitFor(() => {
       expect(screen.getByText('Test task content')).toBeInTheDocument();
     });
-    
+
     // The component should render BDD scenarios section
     // This is testing the UI structure rather than specific API calls
   });
@@ -182,13 +182,13 @@ describe('TaskDetail', () => {
       ...mockTask,
       content: 'Updated content',
     });
-    
+
     renderWithProviders();
-    
+
     await waitFor(() => {
       expect(screen.getByText('Test task content')).toBeInTheDocument();
     });
-    
+
     // Test that the component handles content editing
     // This is a basic UI test since we don't know the exact UI structure
     const taskContent = screen.getByText('Test task content');
@@ -200,15 +200,15 @@ describe('TaskDetail', () => {
       ...mockTask,
       executorId: 'executor-123',
     };
-    
+
     mockApi.getTask.mockResolvedValue(taskWithExecutor);
-    
+
     renderWithProviders();
-    
+
     await waitFor(() => {
       expect(screen.getByText('Test task content')).toBeInTheDocument();
     });
-    
+
     // Test that executor ID is handled
     expect(taskWithExecutor.executorId).toBe('executor-123');
   });
@@ -216,13 +216,13 @@ describe('TaskDetail', () => {
   it('handles task deletion', async () => {
     mockApi.deleteTask.mockResolvedValue(undefined);
     window.confirm = jest.fn(() => true);
-    
+
     renderWithProviders();
-    
+
     await waitFor(() => {
       expect(screen.getByText('Test task content')).toBeInTheDocument();
     });
-    
+
     // Look for any delete functionality in the UI
     const buttons = screen.queryAllByRole('button');
     expect(buttons.length).toBeGreaterThan(0);
@@ -230,17 +230,21 @@ describe('TaskDetail', () => {
 
   it('refreshes task data when component remounts', async () => {
     const { rerender } = renderWithProviders();
-    
+
     await waitFor(() => {
       expect(screen.getByText('Test task content')).toBeInTheDocument();
     });
-    
+
     // Verify API was called initially
     expect(mockApi.getTask).toHaveBeenCalledTimes(1);
-    
+
     // Rerender to trigger another API call
     rerender(
-      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+      <QueryClientProvider
+        client={
+          new QueryClient({ defaultOptions: { queries: { retry: false } } })
+        }
+      >
         <MemoryRouter initialEntries={['/tasks/task-123']}>
           <Routes>
             <Route path="/tasks/:taskId" element={<TaskDetail />} />
@@ -248,7 +252,7 @@ describe('TaskDetail', () => {
         </MemoryRouter>
       </QueryClientProvider>
     );
-    
+
     await waitFor(() => {
       expect(screen.getByText('Test task content')).toBeInTheDocument();
     });
@@ -256,42 +260,42 @@ describe('TaskDetail', () => {
 
   it('navigates back when back button is clicked', async () => {
     renderWithProviders();
-    
+
     await waitFor(() => {
       expect(screen.getByText('Test task content')).toBeInTheDocument();
     });
-    
+
     // Check if there are any navigation elements present
     const buttons = screen.queryAllByRole('button');
     expect(buttons.length).toBeGreaterThan(0);
-    
+
     // Navigation should have occurred (mocked router will handle this)
   });
 
   it('displays task timing information', async () => {
     renderWithProviders();
-    
+
     await waitFor(() => {
       expect(screen.getByText('Test task content')).toBeInTheDocument();
     });
-    
+
     // Check that timing information is handled
     if (mockTask.startTime) {
       const startDate = new Date(mockTask.startTime);
       expect(startDate).toBeInstanceOf(Date);
     }
-    
+
     expect(mockTask.endTime).toBeUndefined();
     expect(mockTask.duration).toBeUndefined();
   });
 
   it('displays empty validation runs state', async () => {
     renderWithProviders();
-    
+
     await waitFor(() => {
       expect(screen.getByText('Test task content')).toBeInTheDocument();
     });
-    
+
     // Since mockTask has empty validationRuns array, test this state
     expect(mockTask.validationRuns).toHaveLength(0);
   });

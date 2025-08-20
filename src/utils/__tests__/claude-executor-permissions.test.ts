@@ -1,11 +1,11 @@
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 import { ClaudeCodeExecutor } from '../claude-executor';
-import { 
-  PermissionManager, 
-  PermissionError, 
+import {
+  PermissionManager,
+  PermissionError,
   DefaultPermissions,
   ActionType,
-  PermissionScope 
+  PermissionScope,
 } from '../permissions';
 
 // Mock child_process to avoid actual process spawning
@@ -104,7 +104,10 @@ describe('ClaudeCodeExecutor with Permissions', () => {
         claudeCommand: 'claude --test',
       });
 
-      const isAllowed = executorWithoutPermissions.checkPermission(ActionType.SYSTEM_COMMAND, 'rm -rf /');
+      const isAllowed = executorWithoutPermissions.checkPermission(
+        ActionType.SYSTEM_COMMAND,
+        'rm -rf /'
+      );
       expect(isAllowed).toBe(true);
     });
 
@@ -140,7 +143,7 @@ describe('ClaudeCodeExecutor with Permissions', () => {
     it('should work with development configuration', () => {
       const devConfig = DefaultPermissions.development();
       const devPermissionManager = new PermissionManager(devConfig);
-      
+
       const devExecutor = new ClaudeCodeExecutor({
         worktreeDir: '/test/workspace',
         claudeCommand: 'claude --test',
@@ -151,7 +154,9 @@ describe('ClaudeCodeExecutor with Permissions', () => {
       // In development config, file operations are allowed by default (defaultAllow: true)
       // but restricted outside worktree - however, without explicit context in checkPermission,
       // it uses the more general rules
-      expect(devExecutor.checkPermission(ActionType.FILE_WRITE, '/test/workspace/file.txt')).toBe(true);
+      expect(devExecutor.checkPermission(ActionType.FILE_WRITE, '/test/workspace/file.txt')).toBe(
+        true
+      );
       // This should be denied by the "deny-outside-worktree" rule in development config
       expect(devExecutor.checkPermission(ActionType.FILE_WRITE, '/etc/passwd')).toBe(false);
     });
@@ -159,7 +164,7 @@ describe('ClaudeCodeExecutor with Permissions', () => {
     it('should work with permissive configuration', () => {
       const permissiveConfig = DefaultPermissions.permissive();
       const permissivePermissionManager = new PermissionManager(permissiveConfig);
-      
+
       const permissiveExecutor = new ClaudeCodeExecutor({
         worktreeDir: '/test/workspace',
         claudeCommand: 'claude --test',
@@ -167,7 +172,9 @@ describe('ClaudeCodeExecutor with Permissions', () => {
       });
 
       expect(permissiveExecutor.isExecutionPermitted()).toBe(true);
-      expect(permissiveExecutor.checkPermission(ActionType.NETWORK_REQUEST, 'http://example.com')).toBe(true);
+      expect(
+        permissiveExecutor.checkPermission(ActionType.NETWORK_REQUEST, 'http://example.com')
+      ).toBe(true);
       expect(permissiveExecutor.checkPermission(ActionType.FILE_DELETE, '/any/file')).toBe(false);
     });
 
@@ -191,8 +198,10 @@ describe('ClaudeCodeExecutor with Permissions', () => {
       });
 
       // File write in worktree should be allowed
-      expect(executor.checkPermission(ActionType.FILE_WRITE, '/test/workspace/file.txt')).toBe(true);
-      
+      expect(executor.checkPermission(ActionType.FILE_WRITE, '/test/workspace/file.txt')).toBe(
+        true
+      );
+
       // File write outside worktree should be denied (no worktreeDir context available in this check)
       expect(executor.checkPermission(ActionType.FILE_WRITE, '/etc/passwd')).toBe(false);
     });
@@ -215,7 +224,7 @@ describe('ClaudeCodeExecutor with Permissions', () => {
       } catch (error) {
         expect(error).toBeInstanceOf(PermissionError);
         const permError = error as PermissionError;
-        
+
         expect(permError.message).toContain('Action claude_execute denied');
         expect(permError.context.action).toBe(ActionType.CLAUDE_EXECUTE);
         expect(permError.context.target).toBeUndefined();
@@ -246,7 +255,9 @@ describe('ClaudeCodeExecutor with Permissions', () => {
         priority: 100,
       });
 
-      expect(permissiveExecutor.checkPermission(ActionType.SYSTEM_COMMAND, 'git status')).toBe(true);
+      expect(permissiveExecutor.checkPermission(ActionType.SYSTEM_COMMAND, 'git status')).toBe(
+        true
+      );
       expect(permissiveExecutor.checkPermission(ActionType.SYSTEM_COMMAND, 'git push')).toBe(true);
       expect(permissiveExecutor.checkPermission(ActionType.SYSTEM_COMMAND, 'rm -rf /')).toBe(true); // Allowed by default in permissive mode
     });
@@ -282,10 +293,14 @@ describe('ClaudeCodeExecutor with Permissions', () => {
       });
 
       // HTTP request should be denied due to higher priority rule
-      expect(permissiveExecutor.checkPermission(ActionType.NETWORK_REQUEST, 'http://example.com')).toBe(false);
-      
+      expect(
+        permissiveExecutor.checkPermission(ActionType.NETWORK_REQUEST, 'http://example.com')
+      ).toBe(false);
+
       // HTTPS request should be allowed (only matches low priority rule)
-      expect(permissiveExecutor.checkPermission(ActionType.NETWORK_REQUEST, 'https://example.com')).toBe(true);
+      expect(
+        permissiveExecutor.checkPermission(ActionType.NETWORK_REQUEST, 'https://example.com')
+      ).toBe(true);
     });
 
     it('should handle path-based permissions with subdirectories', () => {

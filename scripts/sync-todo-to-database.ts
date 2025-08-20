@@ -22,15 +22,15 @@ const prisma = new PrismaClient();
 
 // Status mapping
 const statusMapping: Record<string, TodoStatus> = {
-  'pending': TodoStatus.PENDING,
-  'in_progress': TodoStatus.IN_PROGRESS,
-  'completed': TodoStatus.COMPLETED
+  pending: TodoStatus.PENDING,
+  in_progress: TodoStatus.IN_PROGRESS,
+  completed: TodoStatus.COMPLETED,
 };
 
 const priorityMapping: Record<string, TodoPriority> = {
-  'low': TodoPriority.LOW,
-  'medium': TodoPriority.MEDIUM,
-  'high': TodoPriority.HIGH
+  low: TodoPriority.LOW,
+  medium: TodoPriority.MEDIUM,
+  high: TodoPriority.HIGH,
 };
 
 function createBugFixScenario(task: TodoTask) {
@@ -54,7 +54,7 @@ Scenario: Regression testing
   When I run related functionality
   Then existing features should continue to work
   And no performance degradation should occur`,
-    status: task.status === 'completed' ? BDDScenarioStatus.PASSED : BDDScenarioStatus.PENDING
+    status: task.status === 'completed' ? BDDScenarioStatus.PASSED : BDDScenarioStatus.PENDING,
   };
 }
 
@@ -79,7 +79,7 @@ Scenario: Test execution verification
   When I run all tests
   Then all tests should pass
   And no tests should be skipped or ignored`,
-    status: task.status === 'completed' ? BDDScenarioStatus.PASSED : BDDScenarioStatus.PENDING
+    status: task.status === 'completed' ? BDDScenarioStatus.PASSED : BDDScenarioStatus.PENDING,
   };
 }
 
@@ -104,7 +104,7 @@ Scenario: User interaction
   When I interact with the UI elements
   Then the interactions should work as expected
   And the system should respond appropriately`,
-    status: task.status === 'completed' ? BDDScenarioStatus.PASSED : BDDScenarioStatus.PENDING
+    status: task.status === 'completed' ? BDDScenarioStatus.PASSED : BDDScenarioStatus.PENDING,
   };
 }
 
@@ -129,7 +129,7 @@ Scenario: CRUD operations
   When I perform create, read, update, and delete operations
   Then each operation should work correctly
   And data should be persisted appropriately`,
-    status: task.status === 'completed' ? BDDScenarioStatus.PASSED : BDDScenarioStatus.PENDING
+    status: task.status === 'completed' ? BDDScenarioStatus.PASSED : BDDScenarioStatus.PENDING,
   };
 }
 
@@ -154,7 +154,7 @@ Scenario: Error detection
   When I run the validation
   Then issues should be detected and reported
   And the process should fail appropriately`,
-    status: task.status === 'completed' ? BDDScenarioStatus.PASSED : BDDScenarioStatus.PENDING
+    status: task.status === 'completed' ? BDDScenarioStatus.PASSED : BDDScenarioStatus.PENDING,
   };
 }
 
@@ -179,7 +179,7 @@ Scenario: Integration verification
   When it integrates with the existing system
   Then it should work seamlessly
   And not break existing functionality`,
-    status: task.status === 'completed' ? BDDScenarioStatus.PASSED : BDDScenarioStatus.PENDING
+    status: task.status === 'completed' ? BDDScenarioStatus.PASSED : BDDScenarioStatus.PENDING,
   };
 }
 
@@ -202,15 +202,27 @@ function generateBDDScenarios(task: TodoTask): Array<{
     scenarios.push(createTestCoverageScenario(task));
   }
 
-  if (taskContent.includes('ui') || taskContent.includes('page') || taskContent.includes('component')) {
+  if (
+    taskContent.includes('ui') ||
+    taskContent.includes('page') ||
+    taskContent.includes('component')
+  ) {
     scenarios.push(createUIScenario(task));
   }
 
-  if (taskContent.includes('api') || taskContent.includes('endpoint') || taskContent.includes('crud')) {
+  if (
+    taskContent.includes('api') ||
+    taskContent.includes('endpoint') ||
+    taskContent.includes('crud')
+  ) {
     scenarios.push(createAPIScenario(task));
   }
 
-  if (taskContent.includes('validation') || taskContent.includes('check') || taskContent.includes('lint')) {
+  if (
+    taskContent.includes('validation') ||
+    taskContent.includes('check') ||
+    taskContent.includes('lint')
+  ) {
     scenarios.push(createValidationScenario(task));
   }
 
@@ -229,7 +241,11 @@ interface DbTask {
   updatedAt: Date;
 }
 
-async function loadTodoData(): Promise<{ todoData: TodoTask[]; existingTasks: DbTask[]; existingTaskIds: Set<string> }> {
+async function loadTodoData(): Promise<{
+  todoData: TodoTask[];
+  existingTasks: DbTask[];
+  existingTaskIds: Set<string>;
+}> {
   // Read todo-list.json
   const todoListPath = path.join(process.cwd(), 'todo-list.json');
   if (!fs.existsSync(todoListPath)) {
@@ -248,7 +264,9 @@ async function loadTodoData(): Promise<{ todoData: TodoTask[]; existingTasks: Db
   return { todoData, existingTasks, existingTaskIds };
 }
 
-async function syncSingleTask(task: TodoTask): Promise<{ syncedTasks: number; createdScenarios: number }> {
+async function syncSingleTask(
+  task: TodoTask
+): Promise<{ syncedTasks: number; createdScenarios: number }> {
   // Parse start and end times
   let startTime: Date | undefined;
   let endTime: Date | undefined;
@@ -272,8 +290,8 @@ async function syncSingleTask(task: TodoTask): Promise<{ syncedTasks: number; cr
       endTime,
       duration: task.duration,
       createdAt: startTime || new Date(),
-      updatedAt: endTime || new Date()
-    }
+      updatedAt: endTime || new Date(),
+    },
   });
 
   console.log(`✅ Synced task ${task.id}: ${task.content.substring(0, 50)}...`);
@@ -281,7 +299,7 @@ async function syncSingleTask(task: TodoTask): Promise<{ syncedTasks: number; cr
   // Generate and create BDD scenarios
   const scenarios = generateBDDScenarios(task);
   let createdScenarios = 0;
-  
+
   for (const scenarioData of scenarios) {
     await prisma.bDDScenario.create({
       data: {
@@ -292,8 +310,8 @@ async function syncSingleTask(task: TodoTask): Promise<{ syncedTasks: number; cr
         status: scenarioData.status,
         todoTaskId: dbTask.id,
         createdAt: dbTask.createdAt,
-        updatedAt: dbTask.updatedAt
-      }
+        updatedAt: dbTask.updatedAt,
+      },
     });
     createdScenarios++;
   }
@@ -302,7 +320,12 @@ async function syncSingleTask(task: TodoTask): Promise<{ syncedTasks: number; cr
   return { syncedTasks: 1, createdScenarios };
 }
 
-async function printSyncResults(todoData: TodoTask[], existingTasks: DbTask[], syncedTasks: number, createdScenarios: number) {
+async function printSyncResults(
+  todoData: TodoTask[],
+  existingTasks: DbTask[],
+  syncedTasks: number,
+  createdScenarios: number
+) {
   console.log('\n🎉 Sync completed!');
   console.log(`📊 Statistics:`);
   console.log(`  - Total tasks in todo-list.json: ${todoData.length}`);
@@ -313,7 +336,7 @@ async function printSyncResults(todoData: TodoTask[], existingTasks: DbTask[], s
   // Verify the sync
   const finalTaskCount = await prisma.todoTask.count();
   const finalScenarioCount = await prisma.bDDScenario.count();
-  
+
   console.log(`\n✅ Final verification:`);
   console.log(`  - Total tasks in database: ${finalTaskCount}`);
   console.log(`  - Total BDD scenarios in database: ${finalScenarioCount}`);
@@ -340,7 +363,6 @@ async function syncTodoToDatabase() {
     }
 
     await printSyncResults(todoData, existingTasks, syncedTasks, createdScenarios);
-
   } catch (error) {
     console.error('❌ Error during sync:', error);
     process.exit(1);

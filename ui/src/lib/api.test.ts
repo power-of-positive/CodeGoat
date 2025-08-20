@@ -1,5 +1,12 @@
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
-import { settingsApi, analyticsApi, configApi, githubAuthApi, taskApi, claudeWorkersApi } from './api';
+import {
+  settingsApi,
+  analyticsApi,
+  configApi,
+  githubAuthApi,
+  taskApi,
+  claudeWorkersApi,
+} from './api';
 
 // Mock fetch
 global.fetch = jest.fn() as jest.MockedFunction<typeof fetch>;
@@ -27,7 +34,7 @@ describe('API Client', () => {
     it('should update settings', async () => {
       const mockConfig = { enableMetrics: false };
       const updatedConfig = { enableMetrics: false, validation: { stages: [] } };
-      
+
       (fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
         ok: true,
         json: async () => updatedConfig,
@@ -43,7 +50,17 @@ describe('API Client', () => {
     });
 
     it('should get validation stages', async () => {
-      const mockStages = [{ id: '1', name: 'lint', command: 'npm run lint', enabled: true, timeout: 30000, continueOnFailure: false, priority: 1 }];
+      const mockStages = [
+        {
+          id: '1',
+          name: 'lint',
+          command: 'npm run lint',
+          enabled: true,
+          timeout: 30000,
+          continueOnFailure: false,
+          priority: 1,
+        },
+      ];
       (fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
         ok: true,
         json: async () => ({ stages: mockStages }),
@@ -64,10 +81,17 @@ describe('API Client', () => {
         successRate: 80,
         averageTimeToSuccess: 5000,
         stageSuccessRates: { lint: { attempts: 10, successes: 8, rate: 80 } },
-        averageStageTime: { lint: 1500 }
+        averageStageTime: { lint: 1500 },
       };
       const mockStages = [
-        { id: 'lint', name: 'Code Linting', enabled: true, timeout: 30000, continueOnFailure: false, priority: 1 }
+        {
+          id: 'lint',
+          name: 'Code Linting',
+          enabled: true,
+          timeout: 30000,
+          continueOnFailure: false,
+          priority: 1,
+        },
       ];
       const expectedMetrics = {
         totalRuns: 10,
@@ -75,20 +99,20 @@ describe('API Client', () => {
         failedRuns: 2,
         successRate: 0.8,
         averageDuration: 5000,
-        stageMetrics: { 
-          lint: { 
+        stageMetrics: {
+          lint: {
             id: 'lint',
             name: 'Code Linting',
             enabled: true,
-            attempts: 10, 
-            successes: 8, 
-            successRate: 0.8, 
-            averageDuration: 1500, 
-            totalRuns: 10 
-          } 
-        }
+            attempts: 10,
+            successes: 8,
+            successRate: 0.8,
+            averageDuration: 1500,
+            totalRuns: 10,
+          },
+        },
       };
-      
+
       (fetch as jest.MockedFunction<typeof fetch>)
         .mockResolvedValueOnce({
           ok: true,
@@ -117,9 +141,11 @@ describe('API Client', () => {
             startTime: Date.now(),
             finalSuccess: true,
             totalDuration: 5000,
-            attempts: [{ stages: [{ id: 'lint', name: 'Lint', success: true, duration: 1000, attempt: 1 }] }]
-          }
-        ]
+            attempts: [
+              { stages: [{ id: 'lint', name: 'Lint', success: true, duration: 1000, attempt: 1 }] },
+            ],
+          },
+        ],
       };
       const expectedRuns = [
         {
@@ -127,10 +153,10 @@ describe('API Client', () => {
           timestamp: new Date(mockSessions.sessions[0].startTime).toISOString(),
           success: true,
           duration: 5000,
-          stages: [{ id: 'lint', name: 'Lint', success: true, duration: 1000, attempt: 1 }]
-        }
+          stages: [{ id: 'lint', name: 'Lint', success: true, duration: 1000, attempt: 1 }],
+        },
       ];
-      
+
       (fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
         ok: true,
         json: async () => mockSessions,
@@ -152,7 +178,9 @@ describe('API Client', () => {
         statusText: 'Internal Server Error',
       } as Response);
 
-      await expect(settingsApi.getSettings()).rejects.toThrow('API request failed: 500 Internal Server Error');
+      await expect(settingsApi.getSettings()).rejects.toThrow(
+        'API request failed: 500 Internal Server Error'
+      );
     });
 
     it('should handle validation stages API error gracefully', async () => {
@@ -162,38 +190,44 @@ describe('API Client', () => {
         statusText: 'Not Found',
       } as Response);
 
-      await expect(settingsApi.getValidationStages()).rejects.toThrow('API request failed: 404 Not Found');
+      await expect(settingsApi.getValidationStages()).rejects.toThrow(
+        'API request failed: 404 Not Found'
+      );
     });
 
     it('should handle add validation stage API error', async () => {
-      const newStage = { 
-        name: 'Test', 
-        command: 'test', 
-        timeout: 30000, 
-        enabled: true, 
-        continueOnFailure: false, 
-        priority: 1 
+      const newStage = {
+        name: 'Test',
+        command: 'test',
+        timeout: 30000,
+        enabled: true,
+        continueOnFailure: false,
+        priority: 1,
       };
-      
+
       (fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
         ok: false,
         status: 400,
         statusText: 'Bad Request',
       } as Response);
 
-      await expect(settingsApi.addValidationStage(newStage)).rejects.toThrow('API request failed: 400 Bad Request');
+      await expect(settingsApi.addValidationStage(newStage)).rejects.toThrow(
+        'API request failed: 400 Bad Request'
+      );
     });
 
     it('should handle update validation stage API error', async () => {
       const updates = { name: 'Updated' };
-      
+
       (fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
         ok: false,
         status: 403,
         statusText: 'Forbidden',
       } as Response);
 
-      await expect(settingsApi.updateValidationStage('lint', updates)).rejects.toThrow('API request failed: 403 Forbidden');
+      await expect(settingsApi.updateValidationStage('lint', updates)).rejects.toThrow(
+        'API request failed: 403 Forbidden'
+      );
     });
 
     it('should handle remove validation stage API error', async () => {
@@ -203,7 +237,9 @@ describe('API Client', () => {
         statusText: 'Not Found',
       } as Response);
 
-      await expect(settingsApi.removeValidationStage('nonexistent')).rejects.toThrow('API request failed: 404 Not Found');
+      await expect(settingsApi.removeValidationStage('nonexistent')).rejects.toThrow(
+        'API request failed: 404 Not Found'
+      );
     });
 
     it('should handle analytics metrics API error', async () => {
@@ -213,7 +249,9 @@ describe('API Client', () => {
         statusText: 'Internal Server Error',
       } as Response);
 
-      await expect(analyticsApi.getValidationMetrics()).rejects.toThrow('API request failed: 500 Internal Server Error');
+      await expect(analyticsApi.getValidationMetrics()).rejects.toThrow(
+        'API request failed: 500 Internal Server Error'
+      );
     });
 
     it('should handle analytics runs API error', async () => {
@@ -223,7 +261,9 @@ describe('API Client', () => {
         statusText: 'Bad Gateway',
       } as Response);
 
-      await expect(analyticsApi.getValidationRuns()).rejects.toThrow('API request failed: 502 Bad Gateway');
+      await expect(analyticsApi.getValidationRuns()).rejects.toThrow(
+        'API request failed: 502 Bad Gateway'
+      );
     });
 
     it('should handle API responses with success: false', async () => {
@@ -256,7 +296,7 @@ describe('API Client', () => {
 
     it('should save config using settingsApi', async () => {
       const config = { theme: 'dark' as any, enableMetrics: true };
-      
+
       (fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
         ok: true,
         json: async () => config,
@@ -278,7 +318,7 @@ describe('API Client', () => {
     it('should get tasks from API', async () => {
       const mockTasks = [{ id: '1', content: 'Task 1', status: 'pending', priority: 'high' }];
       const mockResponse = { success: true, data: mockTasks };
-      
+
       (fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
         ok: true,
         json: async () => mockResponse,
@@ -286,27 +326,32 @@ describe('API Client', () => {
 
       const result = await taskApi.getTasks();
       expect(result).toEqual(mockTasks);
-      expect(fetch).toHaveBeenCalledWith('/api/tasks', expect.objectContaining({
-        headers: { 'Content-Type': 'application/json' }
-      }));
+      expect(fetch).toHaveBeenCalledWith(
+        '/api/tasks',
+        expect.objectContaining({
+          headers: { 'Content-Type': 'application/json' },
+        })
+      );
     });
 
     it('should handle getTasks error gracefully', async () => {
-      (fetch as jest.MockedFunction<typeof fetch>).mockRejectedValueOnce(new Error('Network error'));
+      (fetch as jest.MockedFunction<typeof fetch>).mockRejectedValueOnce(
+        new Error('Network error')
+      );
 
       await expect(taskApi.getTasks()).rejects.toThrow('Network error');
     });
 
     it('should create task', async () => {
-      const task = { 
-        content: 'New task', 
-        status: 'pending' as const, 
+      const task = {
+        content: 'New task',
+        status: 'pending' as const,
         priority: 'medium' as const,
         taskType: 'task' as const,
-        executorId: 'claude_code'
+        executorId: 'claude_code',
       };
       const responseTask = { ...task, id: 'task-123' };
-      
+
       (fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
         ok: true,
         json: async () => responseTask,
@@ -314,16 +359,24 @@ describe('API Client', () => {
 
       const result = await taskApi.createTask(task);
       expect(result).toEqual(responseTask);
-      expect(fetch).toHaveBeenCalledWith('/api/tasks', expect.objectContaining({
-        method: 'POST',
-        body: JSON.stringify(task)
-      }));
+      expect(fetch).toHaveBeenCalledWith(
+        '/api/tasks',
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify(task),
+        })
+      );
     });
 
     it('should update task', async () => {
       const updates = { status: 'completed' as const };
-      const responseTask = { id: 'task-123', content: 'Task', status: 'completed' as const, priority: 'medium' as const };
-      
+      const responseTask = {
+        id: 'task-123',
+        content: 'Task',
+        status: 'completed' as const,
+        priority: 'medium' as const,
+      };
+
       (fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
         ok: true,
         json: async () => responseTask,
@@ -331,10 +384,13 @@ describe('API Client', () => {
 
       const result = await taskApi.updateTask('task-123', updates);
       expect(result).toEqual(responseTask);
-      expect(fetch).toHaveBeenCalledWith('/api/tasks/task-123', expect.objectContaining({
-        method: 'PUT',
-        body: JSON.stringify(updates)
-      }));
+      expect(fetch).toHaveBeenCalledWith(
+        '/api/tasks/task-123',
+        expect.objectContaining({
+          method: 'PUT',
+          body: JSON.stringify(updates),
+        })
+      );
     });
 
     it('should delete task', async () => {
@@ -344,9 +400,12 @@ describe('API Client', () => {
       } as Response);
 
       await taskApi.deleteTask('task-123');
-      expect(fetch).toHaveBeenCalledWith('/api/tasks/task-123', expect.objectContaining({
-        method: 'DELETE'
-      }));
+      expect(fetch).toHaveBeenCalledWith(
+        '/api/tasks/task-123',
+        expect.objectContaining({
+          method: 'DELETE',
+        })
+      );
     });
 
     it('should handle addValidationStage API call', async () => {
@@ -357,11 +416,11 @@ describe('API Client', () => {
         timeout: 60000,
         continueOnFailure: false,
         order: 1,
-        priority: 1
+        priority: 1,
       };
-      
+
       const responseStage = { ...mockStage, id: 'stage-123' };
-      
+
       (fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
         ok: true,
         json: async () => ({ stage: responseStage }),
@@ -369,16 +428,19 @@ describe('API Client', () => {
 
       const result = await settingsApi.addValidationStage(mockStage);
       expect(result).toEqual(responseStage);
-      expect(fetch).toHaveBeenCalledWith('/api/settings/validation/stages', expect.objectContaining({
-        method: 'POST',
-        body: JSON.stringify(mockStage)
-      }));
+      expect(fetch).toHaveBeenCalledWith(
+        '/api/settings/validation/stages',
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify(mockStage),
+        })
+      );
     });
 
     it('should handle updateValidationStage API call', async () => {
       const updates = { name: 'Updated Stage' };
       const responseStage = { id: 'stage-123', name: 'Updated Stage', enabled: true };
-      
+
       (fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
         ok: true,
         json: async () => ({ stage: responseStage }),
@@ -386,10 +448,13 @@ describe('API Client', () => {
 
       const result = await settingsApi.updateValidationStage('stage-123', updates);
       expect(result).toEqual(responseStage);
-      expect(fetch).toHaveBeenCalledWith('/api/settings/validation/stages/stage-123', expect.objectContaining({
-        method: 'PUT',
-        body: JSON.stringify(updates)
-      }));
+      expect(fetch).toHaveBeenCalledWith(
+        '/api/settings/validation/stages/stage-123',
+        expect.objectContaining({
+          method: 'PUT',
+          body: JSON.stringify(updates),
+        })
+      );
     });
 
     it('should handle removeValidationStage API call', async () => {
@@ -399,9 +464,12 @@ describe('API Client', () => {
       } as Response);
 
       await settingsApi.removeValidationStage('stage-123');
-      expect(fetch).toHaveBeenCalledWith('/api/settings/validation/stages/stage-123', expect.objectContaining({
-        method: 'DELETE'
-      }));
+      expect(fetch).toHaveBeenCalledWith(
+        '/api/settings/validation/stages/stage-123',
+        expect.objectContaining({
+          method: 'DELETE',
+        })
+      );
     });
   });
 
@@ -413,7 +481,7 @@ describe('API Client', () => {
         status: 'running',
         pid: 12345,
         logFile: '/path/to/log.log',
-        startTime: '2023-01-01T00:00:00.000Z'
+        startTime: '2023-01-01T00:00:00.000Z',
       };
       (fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
         ok: true,
@@ -422,7 +490,7 @@ describe('API Client', () => {
 
       const result = await claudeWorkersApi.startWorker({
         taskId: 'task-123',
-        taskContent: 'Test task content'
+        taskContent: 'Test task content',
       });
 
       expect(result).toEqual(mockResponse);
@@ -431,8 +499,8 @@ describe('API Client', () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           taskId: 'task-123',
-          taskContent: 'Test task content'
-        })
+          taskContent: 'Test task content',
+        }),
       });
     });
 
@@ -440,7 +508,7 @@ describe('API Client', () => {
       const mockResponse = {
         workers: [],
         activeCount: 0,
-        totalCount: 0
+        totalCount: 0,
       };
       (fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
         ok: true,
@@ -463,7 +531,7 @@ describe('API Client', () => {
         status: 'running',
         startTime: '2023-01-01T00:00:00.000Z',
         pid: 12345,
-        logFile: '/path/to/log.log'
+        logFile: '/path/to/log.log',
       };
       (fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
         ok: true,
@@ -481,7 +549,7 @@ describe('API Client', () => {
     it('should stop a worker', async () => {
       const mockResponse = {
         workerId: 'worker-123',
-        status: 'stopped'
+        status: 'stopped',
       };
       (fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
         ok: true,
@@ -501,7 +569,7 @@ describe('API Client', () => {
       const mockResponse = {
         workerId: 'worker-123',
         logs: 'Log content here',
-        logFile: '/path/to/log.log'
+        logFile: '/path/to/log.log',
       };
       (fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
         ok: true,
@@ -521,7 +589,7 @@ describe('API Client', () => {
         message: 'Successfully merged changes from worker-123',
         workerId: 'worker-123',
         mergedBranch: 'feature-branch',
-        hasChanges: true
+        hasChanges: true,
       };
       (fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
         ok: true,
@@ -541,7 +609,7 @@ describe('API Client', () => {
       const mockResponse = {
         message: 'Opened worktree in VSCode',
         workerId: 'worker-123',
-        worktreePath: '/path/to/worktree'
+        worktreePath: '/path/to/worktree',
       };
       (fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
         ok: true,

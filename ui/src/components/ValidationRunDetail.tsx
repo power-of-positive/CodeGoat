@@ -1,6 +1,14 @@
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Clock, CheckCircle, AlertCircle, FileText, ChevronDown, ChevronRight } from 'lucide-react';
+import {
+  ArrowLeft,
+  Clock,
+  CheckCircle,
+  AlertCircle,
+  FileText,
+  ChevronDown,
+  ChevronRight,
+} from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
@@ -25,9 +33,13 @@ function StageDetailExpanded({ stage }: { stage: ValidationStageResult }) {
               <AlertCircle className="w-5 h-5 text-red-500" />
             )}
             <div>
-              <h3 className="font-medium text-gray-900">{stage.name || stage.id}</h3>
+              <h3 className="font-medium text-gray-900">
+                {stage.name || stage.id}
+              </h3>
               <div className="flex items-center gap-4 text-sm text-gray-600">
-                <span className={stage.success ? 'text-green-600' : 'text-red-600'}>
+                <span
+                  className={stage.success ? 'text-green-600' : 'text-red-600'}
+                >
                   {stage.success ? 'PASSED' : 'FAILED'}
                 </span>
                 <span className="flex items-center gap-1">
@@ -63,13 +75,15 @@ function StageDetailExpanded({ stage }: { stage: ValidationStageResult }) {
         <CardContent className="pt-0">
           {hasError && (
             <div className="mb-4">
-              <h4 className="text-sm font-medium text-red-700 mb-2">Error Output:</h4>
+              <h4 className="text-sm font-medium text-red-700 mb-2">
+                Error Output:
+              </h4>
               <pre className="text-sm bg-red-50 text-red-800 p-3 rounded border overflow-x-auto whitespace-pre-wrap max-h-96 overflow-y-auto">
                 {stage.error}
               </pre>
             </div>
           )}
-          
+
           {hasOutput && (
             <div>
               <h4 className="text-sm font-medium text-gray-700 mb-2">
@@ -90,7 +104,11 @@ export function ValidationRunDetail() {
   const { runId } = useParams<{ runId: string }>();
   const navigate = useNavigate();
 
-  const { data: runs, isLoading, error } = useQuery<ValidationRun[]>({
+  const {
+    data: runs,
+    isLoading,
+    error,
+  } = useQuery<ValidationRun[]>({
     queryKey: ['validation-runs'],
     queryFn: () => analyticsApi.getValidationRuns(),
   });
@@ -100,7 +118,9 @@ export function ValidationRunDetail() {
       <div className="flex items-center justify-center min-h-96">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-2 text-gray-600">Loading validation run details...</p>
+          <p className="mt-2 text-gray-600">
+            Loading validation run details...
+          </p>
         </div>
       </div>
     );
@@ -111,8 +131,12 @@ export function ValidationRunDetail() {
       <div className="flex items-center justify-center min-h-96">
         <div className="text-center">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Failed to Load</h2>
-          <p className="text-gray-600 mb-4">Could not load validation run details</p>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            Failed to Load
+          </h2>
+          <p className="text-gray-600 mb-4">
+            Could not load validation run details
+          </p>
           <Button onClick={() => navigate('/analytics')} variant="outline">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Analytics
@@ -129,7 +153,9 @@ export function ValidationRunDetail() {
       <div className="flex items-center justify-center min-h-96">
         <div className="text-center">
           <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Run Not Found</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            Run Not Found
+          </h2>
           <p className="text-gray-600 mb-4">
             The validation run with ID "{runId}" could not be found.
           </p>
@@ -142,7 +168,7 @@ export function ValidationRunDetail() {
     );
   }
 
-  const successfulStages = run.stages.filter(stage => stage.success).length;
+  const successfulStages = run.stages.filter((stage) => stage.success).length;
   const failedStages = run.stages.length - successfulStages;
   const runDate = new Date(run.timestamp);
 
@@ -160,7 +186,9 @@ export function ValidationRunDetail() {
             Back to Analytics
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Validation Run Details</h1>
+            <h1 className="text-2xl font-bold text-gray-900">
+              Validation Run Details
+            </h1>
             <p className="text-gray-600">
               Run ID: {run.id} • {runDate.toLocaleString()}
             </p>
@@ -185,15 +213,21 @@ export function ValidationRunDetail() {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="text-center p-4 bg-gray-50 rounded">
-              <div className="text-2xl font-bold text-gray-900">{run.stages.length}</div>
+              <div className="text-2xl font-bold text-gray-900">
+                {run.stages.length}
+              </div>
               <div className="text-sm text-gray-600">Total Stages</div>
             </div>
             <div className="text-center p-4 bg-green-50 rounded">
-              <div className="text-2xl font-bold text-green-600">{successfulStages}</div>
+              <div className="text-2xl font-bold text-green-600">
+                {successfulStages}
+              </div>
               <div className="text-sm text-gray-600">Passed</div>
             </div>
             <div className="text-center p-4 bg-red-50 rounded">
-              <div className="text-2xl font-bold text-red-600">{failedStages}</div>
+              <div className="text-2xl font-bold text-red-600">
+                {failedStages}
+              </div>
               <div className="text-sm text-gray-600">Failed</div>
             </div>
             <div className="text-center p-4 bg-blue-50 rounded">

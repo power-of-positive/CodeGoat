@@ -35,7 +35,7 @@ describe('OpenRouter Stats API', () => {
     expect(response.body).toHaveProperty('averageUptime');
     expect(response.body).toHaveProperty('providerCount');
     expect(response.body.modelSlug).toBe('moonshotai/kimi-k2:free');
-    
+
     if (response.body.endpoints.length > 0) {
       const endpoint = response.body.endpoints[0];
       expect(endpoint).toHaveProperty('provider');

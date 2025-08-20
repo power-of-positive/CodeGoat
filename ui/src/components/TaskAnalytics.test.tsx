@@ -14,17 +14,25 @@ jest.mock('../lib/api', () => ({
 
 // Mock recharts components
 jest.mock('recharts', () => ({
-  LineChart: ({ children }: { children: React.ReactNode }) => <div data-testid="line-chart">{children}</div>,
+  LineChart: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="line-chart">{children}</div>
+  ),
   Line: () => <div data-testid="line" />,
-  BarChart: ({ children }: { children: React.ReactNode }) => <div data-testid="bar-chart">{children}</div>,
+  BarChart: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="bar-chart">{children}</div>
+  ),
   Bar: () => <div data-testid="bar" />,
   XAxis: () => <div data-testid="x-axis" />,
   YAxis: () => <div data-testid="y-axis" />,
   CartesianGrid: () => <div data-testid="cartesian-grid" />,
   Tooltip: () => <div data-testid="tooltip" />,
   Legend: () => <div data-testid="legend" />,
-  ResponsiveContainer: ({ children }: { children: React.ReactNode }) => <div data-testid="responsive-container">{children}</div>,
-  PieChart: ({ children }: { children: React.ReactNode }) => <div data-testid="pie-chart">{children}</div>,
+  ResponsiveContainer: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="responsive-container">{children}</div>
+  ),
+  PieChart: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="pie-chart">{children}</div>
+  ),
   Pie: () => <div data-testid="pie" />,
   Cell: () => <div data-testid="cell" />,
 }));
@@ -35,13 +43,13 @@ const mockTaskAnalytics = {
     completedTasks: 75,
     inProgressTasks: 15,
     pendingTasks: 10,
-    completionRate: "75%",
+    completionRate: '75%',
     averageCompletionTimeMinutes: 60,
   },
   priorityBreakdown: {
-    high: { total: 25, completed: 20, completionRate: "80%" },
-    medium: { total: 50, completed: 40, completionRate: "80%" },
-    low: { total: 25, completed: 15, completionRate: "60%" },
+    high: { total: 25, completed: 20, completionRate: '80%' },
+    medium: { total: 50, completed: 40, completionRate: '80%' },
+    low: { total: 25, completed: 15, completionRate: '60%' },
   },
   recentCompletions: [
     {
@@ -54,7 +62,7 @@ const mockTaskAnalytics = {
       executorId: 'user-1',
     },
     {
-      id: 'task-2', 
+      id: 'task-2',
       content: 'Test Task 2',
       priority: 'medium',
       status: 'completed',
@@ -64,12 +72,11 @@ const mockTaskAnalytics = {
     },
   ],
   dailyCompletions: [
-    { date: "2024-01-01", completed: 5 },
-    { date: "2024-01-02", completed: 8 },
-    { date: "2024-01-03", completed: 6 },
+    { date: '2024-01-01', completed: 5 },
+    { date: '2024-01-02', completed: 8 },
+    { date: '2024-01-03', completed: 6 },
   ],
 };
-
 
 const renderWithProviders = (component: React.ReactElement) => {
   const queryClient = new QueryClient({
@@ -81,9 +88,7 @@ const renderWithProviders = (component: React.ReactElement) => {
 
   return render(
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        {component}
-      </BrowserRouter>
+      <BrowserRouter>{component}</BrowserRouter>
     </QueryClientProvider>
   );
 };
@@ -91,12 +96,14 @@ const renderWithProviders = (component: React.ReactElement) => {
 describe('TaskAnalytics', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    (taskApi.getTaskAnalytics as jest.Mock).mockResolvedValue(mockTaskAnalytics);
+    (taskApi.getTaskAnalytics as jest.Mock).mockResolvedValue(
+      mockTaskAnalytics
+    );
   });
 
   it('renders task analytics page with title', async () => {
     renderWithProviders(<TaskAnalytics />);
-    
+
     await waitFor(() => {
       expect(screen.getByText('Task Analytics')).toBeInTheDocument();
     });
@@ -108,7 +115,7 @@ describe('TaskAnalytics', () => {
     );
 
     renderWithProviders(<TaskAnalytics />);
-    
+
     // Loading state shows skeleton animation
     expect(document.querySelector('.animate-pulse')).toBeInTheDocument();
   });
@@ -119,15 +126,17 @@ describe('TaskAnalytics', () => {
     );
 
     renderWithProviders(<TaskAnalytics />);
-    
+
     await waitFor(() => {
-      expect(screen.getByText(/Failed to load task analytics/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/Failed to load task analytics/i)
+      ).toBeInTheDocument();
     });
   });
 
   it('displays overview statistics', async () => {
     renderWithProviders(<TaskAnalytics />);
-    
+
     await waitFor(() => {
       expect(screen.getByText('100')).toBeInTheDocument(); // Total tasks
       expect(screen.getByText('75')).toBeInTheDocument(); // Completed tasks
@@ -137,7 +146,7 @@ describe('TaskAnalytics', () => {
 
   it('displays task status distribution', async () => {
     renderWithProviders(<TaskAnalytics />);
-    
+
     await waitFor(() => {
       expect(screen.getByText('Task Status Distribution')).toBeInTheDocument();
       expect(screen.getByTestId('pie-chart')).toBeInTheDocument();
@@ -146,16 +155,18 @@ describe('TaskAnalytics', () => {
 
   it('displays task priority breakdown', async () => {
     renderWithProviders(<TaskAnalytics />);
-    
+
     await waitFor(() => {
-      expect(screen.getByText('Completion Rate by Priority')).toBeInTheDocument();
+      expect(
+        screen.getByText('Completion Rate by Priority')
+      ).toBeInTheDocument();
       expect(screen.getByTestId('bar-chart')).toBeInTheDocument();
     });
   });
 
   it('displays recent tasks list', async () => {
     renderWithProviders(<TaskAnalytics />);
-    
+
     await waitFor(() => {
       expect(screen.getByText('Recent Completions')).toBeInTheDocument();
       expect(screen.getByText('Test Task 1')).toBeInTheDocument();
@@ -165,29 +176,35 @@ describe('TaskAnalytics', () => {
 
   it('displays task timeline', async () => {
     renderWithProviders(<TaskAnalytics />);
-    
+
     await waitFor(() => {
-      expect(screen.getByText('Daily Task Completions (Last 30 Days)')).toBeInTheDocument();
+      expect(
+        screen.getByText('Daily Task Completions (Last 30 Days)')
+      ).toBeInTheDocument();
       expect(screen.getByTestId('line-chart')).toBeInTheDocument();
     });
   });
 
   it('toggles between different time ranges', async () => {
     renderWithProviders(<TaskAnalytics />);
-    
+
     // This component doesn't have time range toggles, so let's just verify it renders
     await waitFor(() => {
       expect(screen.getByText('Task Analytics')).toBeInTheDocument();
-      expect(screen.getByText('Daily Task Completions (Last 30 Days)')).toBeInTheDocument();
+      expect(
+        screen.getByText('Daily Task Completions (Last 30 Days)')
+      ).toBeInTheDocument();
     });
   });
 
   it('displays performance metrics', async () => {
     renderWithProviders(<TaskAnalytics />);
-    
+
     await waitFor(() => {
       expect(screen.getByText('Task Analytics')).toBeInTheDocument();
-      expect(screen.getByText('Completion Rate by Priority')).toBeInTheDocument();
+      expect(
+        screen.getByText('Completion Rate by Priority')
+      ).toBeInTheDocument();
       expect(screen.getByText('60m')).toBeInTheDocument(); // Average time formatting
     });
   });
@@ -199,20 +216,20 @@ describe('TaskAnalytics', () => {
         completedTasks: 0,
         inProgressTasks: 0,
         pendingTasks: 0,
-        completionRate: "0%",
+        completionRate: '0%',
         averageCompletionTimeMinutes: 0,
       },
       priorityBreakdown: {
-        high: { total: 0, completed: 0, completionRate: "0%" },
-        medium: { total: 0, completed: 0, completionRate: "0%" },
-        low: { total: 0, completed: 0, completionRate: "0%" },
+        high: { total: 0, completed: 0, completionRate: '0%' },
+        medium: { total: 0, completed: 0, completionRate: '0%' },
+        low: { total: 0, completed: 0, completionRate: '0%' },
       },
       recentCompletions: [],
       dailyCompletions: [],
     });
 
     renderWithProviders(<TaskAnalytics />);
-    
+
     await waitFor(() => {
       expect(screen.getByText('No completed tasks found')).toBeInTheDocument();
     });
@@ -220,7 +237,7 @@ describe('TaskAnalytics', () => {
 
   it('formats time durations correctly', async () => {
     renderWithProviders(<TaskAnalytics />);
-    
+
     await waitFor(() => {
       // Should format 60 minutes as "60m"
       expect(screen.getByText(/60m/)).toBeInTheDocument();
@@ -229,7 +246,7 @@ describe('TaskAnalytics', () => {
 
   it('refreshes data when refresh button is clicked', async () => {
     renderWithProviders(<TaskAnalytics />);
-    
+
     await waitFor(() => {
       const refreshButton = screen.getByRole('button', { name: /refresh/i });
       expect(refreshButton).toBeInTheDocument();
@@ -237,7 +254,7 @@ describe('TaskAnalytics', () => {
 
     const refreshButton = screen.getByRole('button', { name: /refresh/i });
     fireEvent.click(refreshButton);
-    
+
     // Verify API was called again
     expect(taskApi.getTaskAnalytics).toHaveBeenCalledTimes(2);
   });

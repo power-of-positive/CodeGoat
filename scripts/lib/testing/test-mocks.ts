@@ -1,17 +1,15 @@
 /**
  * Common mock utilities and base mocks for test files
  */
-import { vi } from "vitest";
-import type { MockResult } from "./test-types";
+import { vi } from 'vitest';
+import type { MockResult } from './test-types';
 
 /**
  * Base mock result structure
  */
-export const createMockResult = (
-  overrides: Partial<MockResult> = {},
-): MockResult => ({
+export const createMockResult = (overrides: Partial<MockResult> = {}): MockResult => ({
   failed: false,
-  output: "",
+  output: '',
   ...overrides,
 });
 
@@ -28,7 +26,7 @@ export const createFileFilteringMock = () => ({
  * Common mock setup for review utils
  */
 export const createReviewUtilsMock = () => ({
-  execCommand: vi.fn().mockReturnValue(""),
+  execCommand: vi.fn().mockReturnValue(''),
   runCommand: vi.fn().mockReturnValue(createMockResult()),
 });
 
@@ -37,7 +35,7 @@ export const createReviewUtilsMock = () => ({
  */
 export const createFsMock = () => ({
   existsSync: vi.fn().mockReturnValue(false),
-  readFileSync: vi.fn().mockReturnValue(""),
+  readFileSync: vi.fn().mockReturnValue(''),
   writeFileSync: vi.fn(),
   mkdirSync: vi.fn(),
 });
@@ -76,26 +74,26 @@ export const createExtendedTestSetup = () => {
  * Common test scenarios for file operations
  */
 export const createFileTestScenarios = () => [
-  { files: [], desc: "empty file array" },
-  { files: ["test.ts"], desc: "single TypeScript file" },
-  { files: ["test.js"], desc: "single JavaScript file" },
-  { files: ["test.tsx"], desc: "single React TypeScript file" },
-  { files: ["test.test.ts"], desc: "test file only" },
-  { files: ["test.spec.ts"], desc: "spec file only" },
-  { files: ["utils.ts"], desc: "regular source file" },
-  { files: ["test.test.ts", "utils.ts"], desc: "mixed files" },
-  { files: ["nonexistent.ts"], desc: "non-existent file" },
+  { files: [], desc: 'empty file array' },
+  { files: ['test.ts'], desc: 'single TypeScript file' },
+  { files: ['test.js'], desc: 'single JavaScript file' },
+  { files: ['test.tsx'], desc: 'single React TypeScript file' },
+  { files: ['test.test.ts'], desc: 'test file only' },
+  { files: ['test.spec.ts'], desc: 'spec file only' },
+  { files: ['utils.ts'], desc: 'regular source file' },
+  { files: ['test.test.ts', 'utils.ts'], desc: 'mixed files' },
+  { files: ['nonexistent.ts'], desc: 'non-existent file' },
 ];
 
 /**
  * Common test scenarios for error handling
  */
 export const createErrorTestScenarios = () => [
-  { project: "/tmp", files: [] },
-  { project: "/tmp", files: ["test.ts"] },
-  { project: "/nonexistent", files: ["file.ts"] },
-  { project: "/definitely-nonexistent-path-12345", files: ["test.ts"] },
-  { project: "/tmp", files: ["multiple.ts", "files.ts"] },
+  { project: '/tmp', files: [] },
+  { project: '/tmp', files: ['test.ts'] },
+  { project: '/nonexistent', files: ['file.ts'] },
+  { project: '/definitely-nonexistent-path-12345', files: ['test.ts'] },
+  { project: '/tmp', files: ['multiple.ts', 'files.ts'] },
 ];
 
 /**
@@ -109,10 +107,10 @@ interface ReviewOverrides {
 }
 
 const createMockReviewResult = (overrides?: Record<string, unknown>) => ({
-  severity: "low" as const,
+  severity: 'low' as const,
   issues: [],
-  suggestions: ["Minor style improvement"],
-  summary: "Clean code",
+  suggestions: ['Minor style improvement'],
+  summary: 'Clean code',
   hasBlockingIssues: false,
   confidence: 0.9,
   ...(overrides || {}),
@@ -126,12 +124,10 @@ const createMockSummary = (overrides?: Record<string, unknown>) => ({
   ...(overrides || {}),
 });
 
-export const createStructuredReviewMock = (
-  overrides: ReviewOverrides = {},
-) => ({
+export const createStructuredReviewMock = (overrides: ReviewOverrides = {}) => ({
   files: [
     {
-      file: "test.ts",
+      file: 'test.ts',
       result: createMockReviewResult(overrides.result),
       ...(overrides.file || {}),
     },
@@ -143,8 +139,8 @@ export const createStructuredReviewMock = (
 export const createHighSeverityReviewMock = () =>
   createStructuredReviewMock({
     result: {
-      severity: "high" as const,
-      issues: ["Critical security vulnerability"],
+      severity: 'high' as const,
+      issues: ['Critical security vulnerability'],
       hasBlockingIssues: true,
       confidence: 0.95,
     },

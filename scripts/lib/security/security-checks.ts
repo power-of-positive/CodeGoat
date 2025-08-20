@@ -6,7 +6,7 @@ import {
   runDuplicateCodeDetection,
   runDeadCodeDetection,
   runDependencyVulnerabilityCheck,
-} from "./security-runners";
+} from './security-runners';
 
 export interface SecurityCheckResult {
   securityFailure: boolean;
@@ -17,15 +17,15 @@ export interface SecurityCheckResult {
  * Run all security checks and collect results
  */
 export function runSecurityChecks(projectRoot: string): SecurityCheckResult {
-  console.log("🔒 Running security checks...");
+  console.log('🔒 Running security checks...');
   const results: string[] = [];
   let hasFailure = false;
 
   const securityChecks = [
-    { name: "Duplicate Code Detection", runner: runDuplicateCodeDetection },
-    { name: "Dead Code Detection", runner: runDeadCodeDetection },
+    { name: 'Duplicate Code Detection', runner: runDuplicateCodeDetection },
+    { name: 'Dead Code Detection', runner: runDeadCodeDetection },
     {
-      name: "Dependency Vulnerabilities",
+      name: 'Dependency Vulnerabilities',
       runner: runDependencyVulnerabilityCheck,
     },
   ];
@@ -49,8 +49,7 @@ export function runSecurityChecks(projectRoot: string): SecurityCheckResult {
     }
   }
 
-  const securityOutput =
-    results.length > 0 ? `\nSECURITY CHECKS:\n${results.join("\n")}\n` : "";
+  const securityOutput = results.length > 0 ? `\nSECURITY CHECKS:\n${results.join('\n')}\n` : '';
 
   return { securityFailure: hasFailure, securityOutput };
 }

@@ -34,10 +34,11 @@ function useAnalyticsData(agentFilter?: string) {
   };
 }
 
-
 export function Analytics() {
   const [selectedAgent, setSelectedAgent] = useState<string>('');
-  const { metrics, runs, isLoading, error, refetch } = useAnalyticsData(selectedAgent || undefined);
+  const { metrics, runs, isLoading, error, refetch } = useAnalyticsData(
+    selectedAgent || undefined
+  );
 
   // Extract unique agent IDs from runs for filter options
   // For now, we'll use common agent IDs until the backend provides them
@@ -72,9 +73,7 @@ export function Analytics() {
             <p className="text-gray-600 mb-4">
               There was an error loading the validation analytics data.
             </p>
-            <Button onClick={() => refetch()}>
-              Try Again
-            </Button>
+            <Button onClick={() => refetch()}>Try Again</Button>
           </div>
         </div>
       </div>
@@ -84,7 +83,7 @@ export function Analytics() {
   return (
     <div className="p-6">
       <AnalyticsHeader refetch={refetch} />
-      
+
       {/* Agent Filter */}
       <div className="mb-6">
         <div className="flex items-center gap-4">
@@ -105,14 +104,14 @@ export function Analytics() {
           </Select>
         </div>
       </div>
-      
+
       {metrics && <MetricsSummary metrics={metrics} />}
-      
+
       {/* Time Series Charts */}
       <div className="mb-6">
         <TimeSeriesCharts runs={runs} />
       </div>
-      
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <RecentRuns runs={runs} />
         {metrics && <ValidationChart metrics={metrics} />}

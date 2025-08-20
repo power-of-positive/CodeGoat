@@ -32,7 +32,7 @@ describe('Validation Analytics Integration Tests', () => {
       info: jest.fn(),
       error: jest.fn(),
       warn: jest.fn(),
-      debug: jest.fn()
+      debug: jest.fn(),
     };
 
     settingsService = new SettingsService(mockLogger, testSettingsPath);
@@ -57,7 +57,7 @@ describe('Validation Analytics Integration Tests', () => {
         timeout: 30000,
         enabled: true,
         continueOnFailure: false,
-        priority: 1
+        priority: 1,
       };
 
       // Add stage through settings
@@ -71,7 +71,7 @@ describe('Validation Analytics Integration Tests', () => {
     it('should track validation sessions in analytics', async () => {
       // Record a validation session
       const sessionId = await analyticsService.startSession('Test task', 'Integration test task');
-      
+
       await analyticsService.recordValidationAttempt(sessionId, {
         attempt: 1,
         timestamp: new Date().toISOString(),
@@ -81,13 +81,15 @@ describe('Validation Analytics Integration Tests', () => {
         passed: 1,
         failed: 0,
         success: true,
-        stages: [{
-          id: 'test-stage',
-          name: 'Test Stage',
-          success: true,
-          duration: 1000,
-          attempt: 1
-        }]
+        stages: [
+          {
+            id: 'test-stage',
+            name: 'Test Stage',
+            success: true,
+            duration: 1000,
+            attempt: 1,
+          },
+        ],
       });
 
       await analyticsService.endSession(sessionId, true);
@@ -99,7 +101,10 @@ describe('Validation Analytics Integration Tests', () => {
     });
 
     it('should calculate stage metrics correctly', async () => {
-      const sessionId = await analyticsService.startSession('Multi-stage task', 'Test with multiple stages');
+      const sessionId = await analyticsService.startSession(
+        'Multi-stage task',
+        'Test with multiple stages'
+      );
 
       // Record validation attempt with multiple stages
       await analyticsService.recordValidationAttempt(sessionId, {
@@ -117,16 +122,16 @@ describe('Validation Analytics Integration Tests', () => {
             name: 'Lint',
             success: true,
             duration: 500,
-            attempt: 1
+            attempt: 1,
           },
           {
             id: 'test',
             name: 'Test',
             success: false,
             duration: 2000,
-            attempt: 1
-          }
-        ]
+            attempt: 1,
+          },
+        ],
       });
 
       await analyticsService.endSession(sessionId, false);

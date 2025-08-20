@@ -2,10 +2,10 @@
  * Individual precommit check functions
  */
 
-import { StagedFiles } from "../files/staged-files";
-import { runCodeAnalysis } from "../analysis/code-analysis";
-import { collectCodeResults } from "../analysis/code-results";
-import { runSecurityChecks } from "../security/security-checks";
+import { StagedFiles } from '../files/staged-files';
+import { runCodeAnalysis } from '../analysis/code-analysis';
+import { collectCodeResults } from '../analysis/code-results';
+import { runSecurityChecks } from '../security/security-checks';
 
 /**
  * Run code analysis checks
@@ -28,17 +28,15 @@ async function runCodeAnalysisWithHandling(criticalFailure: boolean): Promise<{
     return {
       analysisResult: {
         blocked: false,
-        details: "Code analysis skipped due to failed quality checks",
+        details: 'Code analysis skipped due to failed quality checks',
       },
-      outputSuffix: "",
+      outputSuffix: '',
     };
   }
 
   try {
     const analysisResult = await runCodeAnalysis();
-    const outputSuffix = analysisResult.blocked
-      ? `\n${analysisResult.details}\n`
-      : "";
+    const outputSuffix = analysisResult.blocked ? `\n${analysisResult.details}\n` : '';
     return { analysisResult, outputSuffix };
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
@@ -56,15 +54,14 @@ async function runCodeAnalysisWithHandling(criticalFailure: boolean): Promise<{
  */
 export async function runAllChecks(
   projectRoot: string,
-  stagedFiles: StagedFiles,
+  stagedFiles: StagedFiles
 ): Promise<CheckResults> {
   const codeResult = await collectCodeResults(projectRoot, stagedFiles);
   const criticalFailure = codeResult.failed;
 
   let allOutput = codeResult.output;
 
-  const { analysisResult, outputSuffix } =
-    await runCodeAnalysisWithHandling(criticalFailure);
+  const { analysisResult, outputSuffix } = await runCodeAnalysisWithHandling(criticalFailure);
   allOutput += outputSuffix;
 
   const { securityFailure, securityOutput } = runSecurityChecks(projectRoot);

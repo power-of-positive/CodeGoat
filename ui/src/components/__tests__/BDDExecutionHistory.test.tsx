@@ -17,8 +17,12 @@ const mockTaskApi = taskApi as jest.Mocked<typeof taskApi>;
 
 // Mock chart components
 jest.mock('recharts', () => ({
-  ResponsiveContainer: ({ children }: any) => <div data-testid="responsive-container">{children}</div>,
-  BarChart: ({ children }: any) => <div data-testid="bar-chart">{children}</div>,
+  ResponsiveContainer: ({ children }: any) => (
+    <div data-testid="responsive-container">{children}</div>
+  ),
+  BarChart: ({ children }: any) => (
+    <div data-testid="bar-chart">{children}</div>
+  ),
   Bar: () => <div data-testid="bar" />,
   XAxis: () => <div data-testid="x-axis" />,
   YAxis: () => <div data-testid="y-axis" />,
@@ -41,9 +45,7 @@ const renderWithProviders = (ui: React.ReactElement) => {
   const queryClient = createTestQueryClient();
   return render(
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        {ui}
-      </BrowserRouter>
+      <BrowserRouter>{ui}</BrowserRouter>
     </QueryClientProvider>
   );
 };
@@ -57,13 +59,21 @@ const mockExecutions = [
     executionDuration: 1500,
     errorMessage: null,
     stepResults: [
-      { step: 'Given user is logged in', status: 'passed' as const, duration: 500 },
-      { step: 'When user clicks button', status: 'passed' as const, duration: 300 },
-      { step: 'Then page loads', status: 'passed' as const, duration: 700 }
+      {
+        step: 'Given user is logged in',
+        status: 'passed' as const,
+        duration: 500,
+      },
+      {
+        step: 'When user clicks button',
+        status: 'passed' as const,
+        duration: 300,
+      },
+      { step: 'Then page loads', status: 'passed' as const, duration: 700 },
     ],
     environment: 'staging',
     executedBy: 'alice',
-    gherkinSnapshot: 'Feature: Test'
+    gherkinSnapshot: 'Feature: Test',
   },
   {
     id: 'exec2',
@@ -73,13 +83,22 @@ const mockExecutions = [
     executionDuration: 800,
     errorMessage: 'Element not found',
     stepResults: [
-      { step: 'Given user is logged in', status: 'passed' as const, duration: 500 },
-      { step: 'When user clicks button', status: 'failed' as const, duration: 300, error: 'Button not found' }
+      {
+        step: 'Given user is logged in',
+        status: 'passed' as const,
+        duration: 500,
+      },
+      {
+        step: 'When user clicks button',
+        status: 'failed' as const,
+        duration: 300,
+        error: 'Button not found',
+      },
     ],
     environment: 'dev',
     executedBy: 'bob',
-    gherkinSnapshot: 'Feature: Test'
-  }
+    gherkinSnapshot: 'Feature: Test',
+  },
 ];
 
 const mockAnalytics = {
@@ -89,7 +108,7 @@ const mockAnalytics = {
     failedExecutions: 1,
     skippedExecutions: 0,
     successRate: 50,
-    averageDuration: 1150
+    averageDuration: 1150,
   },
   trends: [
     {
@@ -97,8 +116,8 @@ const mockAnalytics = {
       total: 2,
       passed: 1,
       failed: 1,
-      skipped: 0
-    }
+      skipped: 0,
+    },
   ],
   recentExecutions: [
     {
@@ -107,9 +126,9 @@ const mockAnalytics = {
       executedAt: '2023-01-01T10:00:00Z',
       executionDuration: 1500,
       environment: 'staging',
-      executedBy: 'alice'
-    }
-  ]
+      executedBy: 'alice',
+    },
+  ],
 };
 
 describe('BDDExecutionHistory', () => {
@@ -123,8 +142,12 @@ describe('BDDExecutionHistory', () => {
   });
 
   test('renders execution history with loading state', async () => {
-    mockTaskApi.getScenarioExecutions.mockImplementation(() => new Promise(() => {})); // Never resolves
-    mockTaskApi.getScenarioAnalytics.mockImplementation(() => new Promise(() => {})); // Never resolves
+    mockTaskApi.getScenarioExecutions.mockImplementation(
+      () => new Promise(() => {})
+    ); // Never resolves
+    mockTaskApi.getScenarioAnalytics.mockImplementation(
+      () => new Promise(() => {})
+    ); // Never resolves
 
     renderWithProviders(
       <BDDExecutionHistory taskId="task1" scenarioId="scenario1" />
@@ -199,10 +222,10 @@ describe('BDDExecutionHistory', () => {
         failedExecutions: 0,
         skippedExecutions: 0,
         successRate: 0,
-        averageDuration: 0
+        averageDuration: 0,
       },
       trends: [],
-      recentExecutions: []
+      recentExecutions: [],
     });
 
     renderWithProviders(
@@ -210,8 +233,12 @@ describe('BDDExecutionHistory', () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText('No execution history found')).toBeInTheDocument();
-      expect(screen.getByText('Executions will appear here once the scenario is run')).toBeInTheDocument();
+      expect(
+        screen.getByText('No execution history found')
+      ).toBeInTheDocument();
+      expect(
+        screen.getByText('Executions will appear here once the scenario is run')
+      ).toBeInTheDocument();
     });
   });
 
@@ -221,8 +248,16 @@ describe('BDDExecutionHistory', () => {
     );
 
     await waitFor(() => {
-      expect(mockTaskApi.getScenarioExecutions).toHaveBeenCalledWith('task123', 'scenario456', { limit: 50 });
-      expect(mockTaskApi.getScenarioAnalytics).toHaveBeenCalledWith('task123', 'scenario456', 30);
+      expect(mockTaskApi.getScenarioExecutions).toHaveBeenCalledWith(
+        'task123',
+        'scenario456',
+        { limit: 50 }
+      );
+      expect(mockTaskApi.getScenarioAnalytics).toHaveBeenCalledWith(
+        'task123',
+        'scenario456',
+        30
+      );
     });
   });
 
@@ -241,7 +276,11 @@ describe('BDDExecutionHistory', () => {
     dropdown.blur();
 
     // The component should re-query with the new period
-    expect(mockTaskApi.getScenarioAnalytics).toHaveBeenCalledWith('task1', 'scenario1', 30);
+    expect(mockTaskApi.getScenarioAnalytics).toHaveBeenCalledWith(
+      'task1',
+      'scenario1',
+      30
+    );
   });
 
   test('refresh button triggers data refetch', async () => {
@@ -249,7 +288,9 @@ describe('BDDExecutionHistory', () => {
       <BDDExecutionHistory taskId="task1" scenarioId="scenario1" />
     );
 
-    const refreshButton = await screen.findByRole('button', { name: /refresh/i });
+    const refreshButton = await screen.findByRole('button', {
+      name: /refresh/i,
+    });
     refreshButton.click();
 
     await waitFor(() => {

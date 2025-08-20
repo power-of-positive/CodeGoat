@@ -43,7 +43,11 @@ function updateSettingsHandler(settingsService: SettingsService, logger: ILogger
   };
 }
 
-async function handleGetFallback(context: SettingsContext, req: Request, res: Response): Promise<void> {
+async function handleGetFallback(
+  context: SettingsContext,
+  req: Request,
+  res: Response
+): Promise<void> {
   try {
     const fallbackSettings = await context.settingsService.getFallbackSettings();
     res.json(fallbackSettings);
@@ -53,7 +57,11 @@ async function handleGetFallback(context: SettingsContext, req: Request, res: Re
   }
 }
 
-async function handleUpdateFallback(context: SettingsContext, req: Request, res: Response): Promise<void> {
+async function handleUpdateFallback(
+  context: SettingsContext,
+  req: Request,
+  res: Response
+): Promise<void> {
   try {
     const fallbackSettings = await context.settingsService.updateFallbackSettings(req.body);
     res.json({
@@ -73,18 +81,24 @@ async function handleUpdateFallback(context: SettingsContext, req: Request, res:
   }
 }
 
-function createFallbackHandlers(settingsService: SettingsService, logger: ILogger): {
+function createFallbackHandlers(
+  settingsService: SettingsService,
+  logger: ILogger
+): {
   getFallback: (req: Request, res: Response) => Promise<void>;
   updateFallback: (req: Request, res: Response) => Promise<void>;
 } {
   const context: SettingsContext = { settingsService, logger };
-  return { 
+  return {
     getFallback: (req, res) => handleGetFallback(context, req, res),
-    updateFallback: (req, res) => handleUpdateFallback(context, req, res)
+    updateFallback: (req, res) => handleUpdateFallback(context, req, res),
   };
 }
 
-function createValidationHandlers(settingsService: SettingsService, logger: ILogger): {
+function createValidationHandlers(
+  settingsService: SettingsService,
+  logger: ILogger
+): {
   getValidation: (req: Request, res: Response) => Promise<void>;
   updateValidation: (req: Request, res: Response) => Promise<void>;
 } {
@@ -121,7 +135,10 @@ function createValidationHandlers(settingsService: SettingsService, logger: ILog
   return { getValidation, updateValidation };
 }
 
-function createStageHandlers(settingsService: SettingsService, logger: ILogger): {
+function createStageHandlers(
+  settingsService: SettingsService,
+  logger: ILogger
+): {
   addStage: (req: Request, res: Response) => Promise<void>;
   updateStage: (req: Request, res: Response) => Promise<void>;
   removeStage: (req: Request, res: Response) => Promise<void>;

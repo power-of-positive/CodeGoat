@@ -10,13 +10,13 @@ const prisma = new PrismaClient();
 
 async function assignTaskNumbers() {
   console.log('🔄 Task number migration script (legacy - taskNumber field not in current schema)');
-  
+
   try {
     // NOTE: taskNumber field doesn't exist in current Prisma schema
     // This script is kept for reference but disabled to prevent TypeScript errors
     console.log('⚠️ This script is disabled because taskNumber field is not in current schema');
     console.log('📋 Current TodoTask schema uses UUID id field instead');
-    
+
     // Get all tasks to show current state
     const allTasks = await prisma.todoTask.findMany({
       orderBy: { createdAt: 'asc' },
@@ -24,18 +24,20 @@ async function assignTaskNumbers() {
         id: true,
         content: true,
         status: true,
-        createdAt: true
-      }
+        createdAt: true,
+      },
     });
-    
+
     console.log(`📊 Current tasks in database: ${allTasks.length}`);
     if (allTasks.length > 0) {
       console.log('✅ Tasks are identified by UUID id field');
       allTasks.slice(0, 3).forEach((task, index) => {
-        console.log(`  ${index + 1}. ${task.id.substring(0, 8)}: ${task.content.substring(0, 60)}...`);
+        console.log(
+          `  ${index + 1}. ${task.id.substring(0, 8)}: ${task.content.substring(0, 60)}...`
+        );
       });
     }
-    
+
     /*
     // COMMENTED OUT: Original migration code for taskNumber field
     // This would need schema changes to work
@@ -63,7 +65,6 @@ async function assignTaskNumbers() {
       });
     }
     */
-    
   } catch (error) {
     console.error('❌ Error in migration script:', error);
     throw error;
@@ -74,11 +75,10 @@ async function assignTaskNumbers() {
 
 // Run the migration if called directly
 if (require.main === module) {
-  assignTaskNumbers()
-    .catch((error) => {
-      console.error('Migration failed:', error);
-      process.exit(1);
-    });
+  assignTaskNumbers().catch(error => {
+    console.error('Migration failed:', error);
+    process.exit(1);
+  });
 }
 
 export { assignTaskNumbers };

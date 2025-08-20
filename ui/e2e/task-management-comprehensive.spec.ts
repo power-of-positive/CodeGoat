@@ -4,7 +4,7 @@ test.describe('Task Management UI', () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to the task management page
     await page.goto('/tasks');
-    
+
     // Wait for the page to load and be ready
     await page.waitForSelector('h1:has-text("Task Management")', { timeout: 10000 });
   });
@@ -12,10 +12,10 @@ test.describe('Task Management UI', () => {
   test('should navigate to task management page from sidebar', async ({ page }) => {
     // Start from home page
     await page.goto('/');
-    
+
     // Click on Tasks in the sidebar
     await page.click('nav a[href="/tasks"]');
-    
+
     // Should be on the tasks page
     await expect(page).toHaveURL(/.*\/tasks$/);
     await expect(page.locator('h1')).toContainText('Task Management');
@@ -26,16 +26,16 @@ test.describe('Task Management UI', () => {
     // Check main page elements
     await expect(page.locator('h1')).toContainText('Task Management');
     await expect(page.locator('p')).toContainText('Manage your tasks with a kanban-style board');
-    
+
     // Check Add Task button
     await expect(page.locator('button:has-text("Add Task")')).toBeVisible();
-    
+
     // Check summary cards section
     await expect(page.locator('text=Total Tasks')).toBeVisible();
     await expect(page.locator('text=Pending')).toBeVisible();
     await expect(page.locator('text=In Progress')).toBeVisible();
     await expect(page.locator('text=Completed')).toBeVisible();
-    
+
     // Check kanban columns
     await expect(page.locator('.bg-gray-50:has-text("Pending")')).toBeVisible();
     await expect(page.locator('.bg-blue-50:has-text("In Progress")')).toBeVisible();
@@ -45,14 +45,14 @@ test.describe('Task Management UI', () => {
   test('should show loading state initially', async ({ page }) => {
     // This test should be run on a fresh page load to catch the loading state
     await page.goto('/tasks');
-    
+
     // The loading state might be very brief, so we'll accept if we see it or if it's already loaded
     const loadingText = page.locator('text=Loading tasks...');
     const mainContent = page.locator('h1:has-text("Task Management")');
-    
+
     // Wait for either loading state or main content
     await expect(loadingText.or(mainContent)).toBeVisible({ timeout: 5000 });
-    
+
     // Eventually main content should be visible
     await expect(mainContent).toBeVisible({ timeout: 10000 });
   });
@@ -63,12 +63,12 @@ test.describe('Task Management UI', () => {
       route.fulfill({
         status: 500,
         contentType: 'application/json',
-        body: JSON.stringify({ error: 'Internal Server Error' })
+        body: JSON.stringify({ error: 'Internal Server Error' }),
       });
     });
 
     await page.goto('/tasks');
-    
+
     // Should show error state
     await expect(page.locator('text=Failed to Load')).toBeVisible({ timeout: 10000 });
     await expect(page.locator('text=Could not load tasks')).toBeVisible();
@@ -77,7 +77,7 @@ test.describe('Task Management UI', () => {
   test('should open task creation form when Add Task is clicked', async ({ page }) => {
     // Click Add Task button
     await page.click('button:has-text("Add Task")');
-    
+
     // Check that the form appears
     await expect(page.locator('text=Create New Task')).toBeVisible();
     await expect(page.locator('textarea[placeholder*="Describe the task"]')).toBeVisible();
@@ -97,29 +97,29 @@ test.describe('Task Management UI', () => {
             id: 'test-task-1',
             content: 'Test task description',
             priority: 'high',
-            status: 'pending'
-          })
+            status: 'pending',
+          }),
         });
       } else {
         // For GET requests, return empty array initially
         route.fulfill({
           status: 200,
           contentType: 'application/json',
-          body: JSON.stringify([])
+          body: JSON.stringify([]),
         });
       }
     });
 
     // Click Add Task button
     await page.click('button:has-text("Add Task")');
-    
+
     // Fill in the form
     await page.fill('textarea[placeholder*="Describe the task"]', 'Test task description');
     await page.selectOption('select', 'high'); // Priority dropdown
-    
+
     // Submit the form
     await page.click('button:has-text("Create")');
-    
+
     // Form should disappear
     await expect(page.locator('text=Create New Task')).not.toBeVisible();
   });
@@ -127,13 +127,13 @@ test.describe('Task Management UI', () => {
   test('should cancel task creation', async ({ page }) => {
     // Click Add Task button
     await page.click('button:has-text("Add Task")');
-    
+
     // Form should be visible
     await expect(page.locator('text=Create New Task')).toBeVisible();
-    
+
     // Click Cancel
     await page.click('button:has-text("Cancel")');
-    
+
     // Form should disappear
     await expect(page.locator('text=Create New Task')).not.toBeVisible();
   });
@@ -141,13 +141,13 @@ test.describe('Task Management UI', () => {
   test('should validate required fields in task creation', async ({ page }) => {
     // Click Add Task button
     await page.click('button:has-text("Add Task")');
-    
+
     // Try to submit empty form
     await page.click('button:has-text("Create")');
-    
+
     // Form should still be visible (validation prevents submission)
     await expect(page.locator('text=Create New Task')).toBeVisible();
-    
+
     // HTML5 validation should prevent submission
     const textarea = page.locator('textarea[placeholder*="Describe the task"]');
     await expect(textarea).toHaveAttribute('required');
@@ -163,7 +163,7 @@ test.describe('Task Management UI', () => {
         status: 'pending',
         startTime: null,
         endTime: null,
-        duration: null
+        duration: null,
       },
       {
         id: 'task-2',
@@ -172,7 +172,7 @@ test.describe('Task Management UI', () => {
         status: 'in_progress',
         startTime: '2025-08-18T08:00:00.000Z',
         endTime: null,
-        duration: null
+        duration: null,
       },
       {
         id: 'task-3',
@@ -181,15 +181,15 @@ test.describe('Task Management UI', () => {
         status: 'completed',
         startTime: '2025-08-18T08:00:00.000Z',
         endTime: '2025-08-18T09:00:00.000Z',
-        duration: '1h 0m'
-      }
+        duration: '1h 0m',
+      },
     ];
 
     await page.route('**/api/tasks', route => {
       route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify(mockTasks)
+        body: JSON.stringify(mockTasks),
       });
     });
 
@@ -219,18 +219,20 @@ test.describe('Task Management UI', () => {
 
   test('should open task actions menu and show options', async ({ page }) => {
     // Mock a single task
-    const mockTasks = [{
-      id: 'task-1',
-      content: 'Test task for menu',
-      priority: 'medium',
-      status: 'pending'
-    }];
+    const mockTasks = [
+      {
+        id: 'task-1',
+        content: 'Test task for menu',
+        priority: 'medium',
+        status: 'pending',
+      },
+    ];
 
     await page.route('**/api/tasks', route => {
       route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify(mockTasks)
+        body: JSON.stringify(mockTasks),
       });
     });
 
@@ -252,7 +254,7 @@ test.describe('Task Management UI', () => {
       id: 'task-1',
       content: 'Test status change task',
       priority: 'medium',
-      status: 'pending'
+      status: 'pending',
     };
 
     await page.route('**/api/tasks', route => {
@@ -260,7 +262,7 @@ test.describe('Task Management UI', () => {
         route.fulfill({
           status: 200,
           contentType: 'application/json',
-          body: JSON.stringify([mockTask])
+          body: JSON.stringify([mockTask]),
         });
       }
     });
@@ -270,7 +272,7 @@ test.describe('Task Management UI', () => {
         route.fulfill({
           status: 200,
           contentType: 'application/json',
-          body: JSON.stringify({ ...mockTask, status: 'in_progress' })
+          body: JSON.stringify({ ...mockTask, status: 'in_progress' }),
         });
       }
     });
@@ -290,14 +292,14 @@ test.describe('Task Management UI', () => {
       id: 'task-1',
       content: 'Task to edit',
       priority: 'high',
-      status: 'pending'
+      status: 'pending',
     };
 
     await page.route('**/api/tasks', route => {
       route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify([mockTask])
+        body: JSON.stringify([mockTask]),
       });
     });
 
@@ -320,14 +322,14 @@ test.describe('Task Management UI', () => {
       id: 'task-1',
       content: 'Task to delete',
       priority: 'low',
-      status: 'pending'
+      status: 'pending',
     };
 
     await page.route('**/api/tasks', route => {
       route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify([mockTask])
+        body: JSON.stringify([mockTask]),
       });
     });
 
@@ -353,14 +355,14 @@ test.describe('Task Management UI', () => {
       id: 'task-1',
       content: 'Task with details',
       priority: 'medium',
-      status: 'pending'
+      status: 'pending',
     };
 
     await page.route('**/api/tasks', route => {
       route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify([mockTask])
+        body: JSON.stringify([mockTask]),
       });
     });
 
@@ -381,7 +383,7 @@ test.describe('Task Management UI', () => {
     // The page should still be functional
     await expect(page.locator('h1:has-text("Task Management")')).toBeVisible();
     await expect(page.locator('button:has-text("Add Task")')).toBeVisible();
-    
+
     // Kanban columns should be horizontally scrollable
     const kanbanContainer = page.locator('.flex.gap-6.overflow-x-auto');
     await expect(kanbanContainer).toBeVisible();
@@ -391,7 +393,7 @@ test.describe('Task Management UI', () => {
     // Tab to Add Task button and activate it
     await page.keyboard.press('Tab');
     await page.keyboard.press('Tab'); // May need multiple tabs to reach the button
-    
+
     // Find and focus the Add Task button specifically
     await page.focus('button:has-text("Add Task")');
     await page.keyboard.press('Enter');
@@ -425,7 +427,8 @@ test.describe('Task Detail Page', () => {
         contentType: 'application/json',
         body: JSON.stringify({
           id: testTaskId,
-          content: 'This is a detailed test task description that spans multiple lines and provides comprehensive information about what needs to be done.',
+          content:
+            'This is a detailed test task description that spans multiple lines and provides comprehensive information about what needs to be done.',
           priority: 'high',
           status: 'in_progress',
           startTime: '2025-08-18T08:00:00.000Z',
@@ -440,8 +443,8 @@ test.describe('Task Detail Page', () => {
               stages: JSON.stringify([
                 { id: 'lint', name: 'Code Linting', success: true, duration: 5000 },
                 { id: 'test', name: 'Unit Tests', success: true, duration: 8000 },
-                { id: 'build', name: 'Build', success: true, duration: 2000 }
-              ])
+                { id: 'build', name: 'Build', success: true, duration: 2000 },
+              ]),
             },
             {
               id: 'run-2',
@@ -450,11 +453,11 @@ test.describe('Task Detail Page', () => {
               timestamp: '2025-08-18T08:30:00.000Z',
               stages: JSON.stringify([
                 { id: 'lint', name: 'Code Linting', success: true, duration: 5000 },
-                { id: 'test', name: 'Unit Tests', success: false, duration: 3000 }
-              ])
-            }
-          ]
-        })
+                { id: 'test', name: 'Unit Tests', success: false, duration: 3000 },
+              ]),
+            },
+          ],
+        }),
       });
     });
 
@@ -471,7 +474,7 @@ test.describe('Task Detail Page', () => {
     // Check task information card
     await expect(page.locator('text=Task Information')).toBeVisible();
     await expect(page.locator('text=This is a detailed test task description')).toBeVisible();
-    
+
     // Check badges
     await expect(page.locator('.bg-red-100:has-text("high")')).toBeVisible(); // Priority badge
     await expect(page.locator('.bg-blue-100:has-text("In Progress")')).toBeVisible(); // Status badge
@@ -489,42 +492,42 @@ test.describe('Task Detail Page', () => {
   test('should show loading state initially', async ({ page }) => {
     // Navigate to a fresh page to catch loading state
     await page.goto(`/tasks/${testTaskId}`);
-    
+
     // The loading state might be brief
     const loadingText = page.locator('text=Loading task details...');
     const mainContent = page.locator('h1:has-text("Task Details")');
-    
+
     // Wait for either loading state or main content
     await expect(loadingText.or(mainContent)).toBeVisible({ timeout: 5000 });
-    
+
     // Eventually main content should be visible
     await expect(mainContent).toBeVisible({ timeout: 10000 });
   });
 
   test('should handle task not found error', async ({ page }) => {
     const invalidTaskId = 'non-existent-task';
-    
+
     // Mock 404 response
     await page.route(`**/api/tasks/${invalidTaskId}`, route => {
       route.fulfill({
         status: 404,
         contentType: 'application/json',
-        body: JSON.stringify({ error: 'Task not found' })
+        body: JSON.stringify({ error: 'Task not found' }),
       });
     });
 
     await page.goto(`/tasks/${invalidTaskId}`);
-    
+
     // Should show error state
     await expect(page.locator('text=Task Not Found')).toBeVisible({ timeout: 10000 });
-    await expect(page.locator('text=The task you\'re looking for doesn\'t exist')).toBeVisible();
+    await expect(page.locator("text=The task you're looking for doesn't exist")).toBeVisible();
     await expect(page.locator('button:has-text("Back to Tasks")')).toBeVisible();
   });
 
   test('should navigate back to tasks when back button is clicked', async ({ page }) => {
     // Click the back button
     await page.click('button:has-text("Back to Tasks")');
-    
+
     // Should navigate back to tasks page
     await expect(page).toHaveURL(/.*\/tasks$/);
   });
@@ -564,8 +567,8 @@ test.describe('Task Detail Page', () => {
           content: 'Task with no validation runs',
           priority: 'medium',
           status: 'pending',
-          validationRuns: []
-        })
+          validationRuns: [],
+        }),
       });
     });
 
@@ -574,7 +577,7 @@ test.describe('Task Detail Page', () => {
 
     // Should show empty state for validation runs
     await expect(page.locator('text=No Validation Runs')).toBeVisible();
-    await expect(page.locator('text=This task hasn\'t had any validation runs yet')).toBeVisible();
+    await expect(page.locator("text=This task hasn't had any validation runs yet")).toBeVisible();
     await expect(page.locator('text=0')).toBeVisible(); // Run count badge should show 0
   });
 
@@ -589,8 +592,8 @@ test.describe('Task Detail Page', () => {
           content: 'Pending task',
           priority: 'low',
           status: 'pending',
-          validationRuns: []
-        })
+          validationRuns: [],
+        }),
       });
     });
 
@@ -616,8 +619,8 @@ test.describe('Task Detail Page', () => {
           startTime: '2025-08-18T08:00:00.000Z',
           endTime: '2025-08-18T10:00:00.000Z',
           duration: '2h 0m',
-          validationRuns: []
-        })
+          validationRuns: [],
+        }),
       });
     });
 
@@ -629,7 +632,7 @@ test.describe('Task Detail Page', () => {
     await expect(page.locator('text=Completed')).toBeVisible();
     await expect(page.locator('text=Duration')).toBeVisible();
     await expect(page.locator('text=2h 0m')).toBeVisible();
-    
+
     // Check completed status badge
     await expect(page.locator('.bg-green-100:has-text("Completed")')).toBeVisible();
   });
@@ -652,10 +655,10 @@ test.describe('Task Detail Page', () => {
     // Tab to the back button and activate it
     await page.keyboard.press('Tab');
     await page.focus('button:has-text("Back to Tasks")');
-    
+
     // Press Enter to click the button
     await page.keyboard.press('Enter');
-    
+
     // Should navigate back to tasks
     await expect(page).toHaveURL(/.*\/tasks$/);
   });

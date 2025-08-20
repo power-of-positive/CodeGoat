@@ -1,5 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { BarChart3, Activity, ChevronDown, ChevronRight, FileText, Loader2, CheckCircle } from 'lucide-react';
+import {
+  BarChart3,
+  Activity,
+  ChevronDown,
+  ChevronRight,
+  FileText,
+  Loader2,
+  CheckCircle,
+} from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { ValidationMetrics, ValidationStageResult } from '../../shared/types';
@@ -21,16 +29,16 @@ export function AnalyticsHeader({ refetch }: { refetch: () => void }) {
   const handleRefresh = async () => {
     setIsLoading(true);
     setShowSuccess(false);
-    
+
     // Clear any existing timeout
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
-    
+
     try {
       await refetch();
       setShowSuccess(true);
-      
+
       // Hide success notification after 2 seconds
       timeoutRef.current = setTimeout(() => {
         setShowSuccess(false);
@@ -48,7 +56,9 @@ export function AnalyticsHeader({ refetch }: { refetch: () => void }) {
       <div className="flex items-center gap-3">
         <BarChart3 className="h-6 w-6 text-blue-600" />
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Validation Analytics</h1>
+          <h1 className="text-2xl font-bold text-gray-900">
+            Validation Analytics
+          </h1>
           <p className="text-gray-600">
             Track validation pipeline performance and success rates
           </p>
@@ -61,9 +71,9 @@ export function AnalyticsHeader({ refetch }: { refetch: () => void }) {
             Updated
           </div>
         )}
-        <Button 
-          onClick={handleRefresh} 
-          variant="outline" 
+        <Button
+          onClick={handleRefresh}
+          variant="outline"
           size="sm"
           disabled={isLoading}
         >
@@ -83,21 +93,25 @@ export function MetricsSummary({ metrics }: { metrics: ValidationMetrics }) {
   const totalRuns = metrics.totalRuns || 0;
   const successRate = metrics.successRate || 0;
   const averageDuration = metrics.averageDuration || 0;
-  
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-gray-700">Total Runs</CardTitle>
+          <CardTitle className="text-sm font-medium text-gray-700">
+            Total Runs
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-gray-900">{totalRuns}</div>
         </CardContent>
       </Card>
-      
+
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-gray-700">Success Rate</CardTitle>
+          <CardTitle className="text-sm font-medium text-gray-700">
+            Success Rate
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-green-600">
@@ -105,10 +119,12 @@ export function MetricsSummary({ metrics }: { metrics: ValidationMetrics }) {
           </div>
         </CardContent>
       </Card>
-      
+
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-gray-700">Avg Duration</CardTitle>
+          <CardTitle className="text-sm font-medium text-gray-700">
+            Avg Duration
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-gray-900">
@@ -128,7 +144,7 @@ export function StageDetail({ stage }: { stage: ValidationStageResult }) {
 
   return (
     <div className="border border-gray-200 rounded">
-      <div 
+      <div
         className="flex justify-between items-center py-2 px-3 cursor-pointer hover:bg-gray-50"
         onClick={() => hasLogs && setShowLogs(!showLogs)}
       >
@@ -141,9 +157,7 @@ export function StageDetail({ stage }: { stage: ValidationStageResult }) {
           <span className="text-sm text-gray-900">
             {stage.name || stage.id}
           </span>
-          {hasLogs && (
-            <FileText className="w-3 h-3 text-gray-400" />
-          )}
+          {hasLogs && <FileText className="w-3 h-3 text-gray-400" />}
         </div>
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-2 text-xs">
@@ -154,27 +168,34 @@ export function StageDetail({ stage }: { stage: ValidationStageResult }) {
               {(stage.duration / 1000).toFixed(1)}s
             </span>
           </div>
-          {hasLogs && (
-            showLogs ? (
-              <ChevronDown className="w-4 h-4 text-gray-400" data-testid="chevron-down" />
+          {hasLogs &&
+            (showLogs ? (
+              <ChevronDown
+                className="w-4 h-4 text-gray-400"
+                data-testid="chevron-down"
+              />
             ) : (
-              <ChevronRight className="w-4 h-4 text-gray-400" data-testid="chevron-right" />
-            )
-          )}
+              <ChevronRight
+                className="w-4 h-4 text-gray-400"
+                data-testid="chevron-right"
+              />
+            ))}
         </div>
       </div>
-      
+
       {showLogs && hasLogs && (
         <div className="border-t border-gray-200 p-3 bg-gray-50">
           {hasError && (
             <div className="mb-3">
-              <div className="text-xs font-medium text-red-700 mb-1">Error Output:</div>
+              <div className="text-xs font-medium text-red-700 mb-1">
+                Error Output:
+              </div>
               <pre className="text-xs bg-red-50 text-red-800 p-2 rounded border overflow-x-auto whitespace-pre-wrap">
                 {stage.error}
               </pre>
             </div>
           )}
-          
+
           {hasOutput && (
             <div>
               <div className="text-xs font-medium text-gray-700 mb-1">

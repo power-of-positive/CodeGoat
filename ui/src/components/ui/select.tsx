@@ -24,7 +24,11 @@ interface SelectContentProps {
   setIsOpen?: (open: boolean) => void;
 }
 
-interface SelectItemProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'onClick' | 'type' | 'onSelect'> {
+interface SelectItemProps
+  extends Omit<
+    React.ButtonHTMLAttributes<HTMLButtonElement>,
+    'onClick' | 'type' | 'onSelect'
+  > {
   children: React.ReactNode;
   value: string;
   className?: string;
@@ -38,26 +42,34 @@ interface SelectValueProps {
   value?: string;
 }
 
-export function Select({ children, value, onValueChange, className = '' }: SelectProps) {
+export function Select({
+  children,
+  value,
+  onValueChange,
+  className = '',
+}: SelectProps) {
   const [isOpen, setIsOpen] = useState(false);
-  
+
   return (
     <div className={`relative ${className}`}>
       {React.Children.map(children, (child) => {
         if (React.isValidElement(child)) {
-          return React.cloneElement(child as React.ReactElement<{
-            value?: string;
-            onValueChange?: (value: string) => void;
-            isOpen?: boolean;
-            setIsOpen?: (open: boolean) => void;
-            currentValue?: string;
-            onSelect?: (value: string) => void;
-          }>, { 
-            value, 
-            onValueChange, 
-            isOpen, 
-            setIsOpen 
-          });
+          return React.cloneElement(
+            child as React.ReactElement<{
+              value?: string;
+              onValueChange?: (value: string) => void;
+              isOpen?: boolean;
+              setIsOpen?: (open: boolean) => void;
+              currentValue?: string;
+              onSelect?: (value: string) => void;
+            }>,
+            {
+              value,
+              onValueChange,
+              isOpen,
+              setIsOpen,
+            }
+          );
         }
         return child;
       })}
@@ -65,8 +77,12 @@ export function Select({ children, value, onValueChange, className = '' }: Selec
   );
 }
 
-export function SelectTrigger({ children, className = '', isOpen, setIsOpen }: SelectTriggerProps) {
-  
+export function SelectTrigger({
+  children,
+  className = '',
+  isOpen,
+  setIsOpen,
+}: SelectTriggerProps) {
   return (
     <button
       type="button"
@@ -86,52 +102,80 @@ export function SelectTrigger({ children, className = '', isOpen, setIsOpen }: S
   );
 }
 
-export function SelectContent({ children, className = '', isOpen, value, onValueChange, setIsOpen }: SelectContentProps) {
-  
+export function SelectContent({
+  children,
+  className = '',
+  isOpen,
+  value,
+  onValueChange,
+  setIsOpen,
+}: SelectContentProps) {
   if (!isOpen) return null;
-  
+
   return (
-    <div className={`
+    <div
+      className={`
       absolute top-full left-0 z-50 w-full mt-1 rounded-md border border-gray-300 dark:border-gray-600
       bg-white dark:bg-gray-700 shadow-lg max-h-60 overflow-auto
       ${className}
-    `}>
+    `}
+    >
       {React.Children.map(children, (child) => {
         if (React.isValidElement(child)) {
           // Only pass select props to SelectItem components
-          if (child.type === SelectItem || (child.type as React.ComponentType)?.displayName === 'SelectItem') {
-            return React.cloneElement(child as React.ReactElement<{
-              value?: string;
-              onValueChange?: (value: string) => void;
-              isOpen?: boolean;
-              setIsOpen?: (open: boolean) => void;
-              currentValue?: string;
-              onSelect?: (value: string) => void;
-            }>, { 
-              currentValue: value,
-              onSelect: (selectedValue: string) => {
-                onValueChange?.(selectedValue);
-                setIsOpen?.(false);
+          if (
+            child.type === SelectItem ||
+            (child.type as React.ComponentType)?.displayName === 'SelectItem'
+          ) {
+            return React.cloneElement(
+              child as React.ReactElement<{
+                value?: string;
+                onValueChange?: (value: string) => void;
+                isOpen?: boolean;
+                setIsOpen?: (open: boolean) => void;
+                currentValue?: string;
+                onSelect?: (value: string) => void;
+              }>,
+              {
+                currentValue: value,
+                onSelect: (selectedValue: string) => {
+                  onValueChange?.(selectedValue);
+                  setIsOpen?.(false);
+                },
               }
-            });
+            );
           } else {
             // For other elements, recursively process their children
-            const childElement = child as React.ReactElement<Record<string, unknown>>;
+            const childElement = child as React.ReactElement<
+              Record<string, unknown>
+            >;
             return React.cloneElement(childElement, {
               ...childElement.props,
-              children: React.Children.map(childElement.props.children, (nestedChild) => {
-                if (React.isValidElement(nestedChild) && 
-                    (nestedChild.type === SelectItem || (nestedChild.type as React.ComponentType)?.displayName === 'SelectItem')) {
-                  return React.cloneElement(nestedChild as React.ReactElement<Record<string, unknown>>, {
-                    currentValue: value,
-                    onSelect: (selectedValue: string) => {
-                      onValueChange?.(selectedValue);
-                      setIsOpen?.(false);
-                    }
-                  });
+              children: React.Children.map(
+                childElement.props.children,
+                (nestedChild) => {
+                  if (
+                    React.isValidElement(nestedChild) &&
+                    (nestedChild.type === SelectItem ||
+                      (nestedChild.type as React.ComponentType)?.displayName ===
+                        'SelectItem')
+                  ) {
+                    return React.cloneElement(
+                      nestedChild as React.ReactElement<
+                        Record<string, unknown>
+                      >,
+                      {
+                        currentValue: value,
+                        onSelect: (selectedValue: string) => {
+                          onValueChange?.(selectedValue);
+                          setIsOpen?.(false);
+                        },
+                      }
+                    );
+                  }
+                  return nestedChild;
                 }
-                return nestedChild;
-              })
+              ),
             });
           }
         }
@@ -141,14 +185,21 @@ export function SelectContent({ children, className = '', isOpen, value, onValue
   );
 }
 
-export function SelectItem({ children, value, className = '', currentValue, onSelect, ...buttonProps }: SelectItemProps) {
+export function SelectItem({
+  children,
+  value,
+  className = '',
+  currentValue,
+  onSelect,
+  ...buttonProps
+}: SelectItemProps) {
   const isSelected = currentValue === value;
-  
+
   // Remove custom props from buttonProps to avoid React warnings
   const cleanButtonProps = { ...buttonProps };
   delete (cleanButtonProps as Record<string, unknown>).currentValue;
   delete (cleanButtonProps as Record<string, unknown>).onSelect;
-  
+
   return (
     <button
       type="button"
@@ -166,16 +217,12 @@ export function SelectItem({ children, value, className = '', currentValue, onSe
 }
 
 export function SelectValue({ placeholder, value }: SelectValueProps) {
-  
-  return (
-    <span className="block truncate">
-      {value || placeholder}
-    </span>
-  );
+  return <span className="block truncate">{value || placeholder}</span>;
 }
 
 // Keep the original simple components for backward compatibility
-interface SimpleSelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
+interface SimpleSelectProps
+  extends React.SelectHTMLAttributes<HTMLSelectElement> {
   children: React.ReactNode;
 }
 
@@ -200,9 +247,5 @@ export function SimpleSelect({ className = '', ...props }: SimpleSelectProps) {
 }
 
 export function Option({ children, ...props }: OptionProps) {
-  return (
-    <option {...props}>
-      {children}
-    </option>
-  );
+  return <option {...props}>{children}</option>;
 }

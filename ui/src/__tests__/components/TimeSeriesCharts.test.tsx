@@ -5,9 +5,15 @@ import { ValidationRun } from '../../../shared/types';
 
 // Mock Recharts components
 jest.mock('recharts', () => ({
-  ResponsiveContainer: ({ children }: { children: React.ReactNode }) => <div data-testid="responsive-container">{children}</div>,
-  LineChart: ({ children }: { children: React.ReactNode }) => <div data-testid="line-chart">{children}</div>,
-  AreaChart: ({ children }: { children: React.ReactNode }) => <div data-testid="area-chart">{children}</div>,
+  ResponsiveContainer: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="responsive-container">{children}</div>
+  ),
+  LineChart: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="line-chart">{children}</div>
+  ),
+  AreaChart: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="area-chart">{children}</div>
+  ),
   Line: () => <div data-testid="line" />,
   Area: () => <div data-testid="area" />,
   XAxis: () => <div data-testid="x-axis" />,
@@ -43,7 +49,7 @@ const mockRuns: ValidationRun[] = [
 describe('TimeSeriesCharts', () => {
   it('should render granularity selector buttons', () => {
     render(<TimeSeriesCharts runs={mockRuns} />);
-    
+
     expect(screen.getByText('Time Range:')).toBeInTheDocument();
     expect(screen.getByText('Today')).toBeInTheDocument();
     expect(screen.getByText('Last 3 Days')).toBeInTheDocument();
@@ -55,7 +61,7 @@ describe('TimeSeriesCharts', () => {
 
   it('should have "Last 7 Days" selected by default', () => {
     render(<TimeSeriesCharts runs={mockRuns} />);
-    
+
     const sevenDaysButton = screen.getByText('Last 7 Days');
     // Check for default button styling (blue background)
     expect(sevenDaysButton).toHaveClass('bg-blue-600');
@@ -63,17 +69,17 @@ describe('TimeSeriesCharts', () => {
 
   it('should change granularity when button is clicked', () => {
     render(<TimeSeriesCharts runs={mockRuns} />);
-    
+
     const todayButton = screen.getByText('Today');
     fireEvent.click(todayButton);
-    
+
     // The button should now have the active styling (blue background)
     expect(todayButton).toHaveClass('bg-blue-600');
   });
 
   it('should render chart headers when component loads', () => {
     render(<TimeSeriesCharts runs={mockRuns} />);
-    
+
     expect(screen.getByText('Success Rate Over Time')).toBeInTheDocument();
     expect(screen.getByText('Average Duration Over Time')).toBeInTheDocument();
   });
@@ -89,20 +95,20 @@ describe('TimeSeriesCharts', () => {
         stages: [],
       },
     ];
-    
+
     render(<TimeSeriesCharts runs={oldRuns} />);
-    
+
     // Click "Today" to filter to today's data
     const todayButton = screen.getByText('Today');
     fireEvent.click(todayButton);
-    
+
     // Should show empty state for today (appears twice in two charts)
     expect(screen.getAllByText('No data available for today')).toHaveLength(2);
   });
 
   it('should render without errors when runs array is empty', () => {
     render(<TimeSeriesCharts runs={[]} />);
-    
+
     expect(screen.getByText('Time Range:')).toBeInTheDocument();
     expect(screen.getAllByText('No data available for last 7 days')).toHaveLength(2); // Two charts showing empty state
   });

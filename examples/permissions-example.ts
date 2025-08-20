@@ -1,17 +1,17 @@
 /**
  * Permission System Examples
- * 
+ *
  * This file demonstrates how to use the permission system to control
  * what actions the ClaudeCodeExecutor can perform.
  */
 
 import { ClaudeCodeExecutor } from '../src/utils/claude-executor';
-import { 
-  PermissionManager, 
-  DefaultPermissions, 
-  ActionType, 
+import {
+  PermissionManager,
+  DefaultPermissions,
+  ActionType,
   PermissionScope,
-  PermissionRule 
+  PermissionRule,
 } from '../src/utils/permissions';
 import { WinstonLogger } from '../src/logger-winston';
 
@@ -34,8 +34,14 @@ async function basicPermissionExample() {
 
   // Check specific permissions
   console.log('File read permitted:', executor.checkPermission(ActionType.FILE_READ));
-  console.log('System command permitted:', executor.checkPermission(ActionType.SYSTEM_COMMAND, 'rm -rf /'));
-  console.log('Network request permitted:', executor.checkPermission(ActionType.NETWORK_REQUEST, 'http://malicious.com'));
+  console.log(
+    'System command permitted:',
+    executor.checkPermission(ActionType.SYSTEM_COMMAND, 'rm -rf /')
+  );
+  console.log(
+    'Network request permitted:',
+    executor.checkPermission(ActionType.NETWORK_REQUEST, 'http://malicious.com')
+  );
 
   try {
     await executor.spawn('Write a hello world program');
@@ -101,10 +107,22 @@ async function customPermissionRulesExample() {
   });
 
   // Test various permissions
-  console.log('Git status allowed:', executor.checkPermission(ActionType.SYSTEM_COMMAND, 'git status'));
-  console.log('File deletion allowed:', executor.checkPermission(ActionType.SYSTEM_COMMAND, 'rm important-file.txt'));
-  console.log('HTTP request allowed:', executor.checkPermission(ActionType.NETWORK_REQUEST, 'http://insecure.com'));
-  console.log('HTTPS request allowed:', executor.checkPermission(ActionType.NETWORK_REQUEST, 'https://secure.com'));
+  console.log(
+    'Git status allowed:',
+    executor.checkPermission(ActionType.SYSTEM_COMMAND, 'git status')
+  );
+  console.log(
+    'File deletion allowed:',
+    executor.checkPermission(ActionType.SYSTEM_COMMAND, 'rm important-file.txt')
+  );
+  console.log(
+    'HTTP request allowed:',
+    executor.checkPermission(ActionType.NETWORK_REQUEST, 'http://insecure.com')
+  );
+  console.log(
+    'HTTPS request allowed:',
+    executor.checkPermission(ActionType.NETWORK_REQUEST, 'https://secure.com')
+  );
 
   try {
     await executor.spawn('Create a new feature with git integration');
@@ -118,7 +136,7 @@ async function workspaceIsolationExample() {
   console.log('\n=== Workspace Isolation Example ===\n');
 
   const logger = new WinstonLogger();
-  
+
   // Create development configuration that restricts operations outside worktree
   const config = DefaultPermissions.development();
   const permissionManager = new PermissionManager(config, logger);
@@ -144,17 +162,29 @@ async function workspaceIsolationExample() {
     priority: 250,
   });
 
-  const executor = new ClaudeCodeExecutor({
-    worktreeDir: '/tmp/isolated-workspace',
-    claudeCommand: 'echo "Isolated Claude execution"',
-    permissionManager,
-  }, logger);
+  const executor = new ClaudeCodeExecutor(
+    {
+      worktreeDir: '/tmp/isolated-workspace',
+      claudeCommand: 'echo "Isolated Claude execution"',
+      permissionManager,
+    },
+    logger
+  );
 
   // Test workspace isolation
-  console.log('Write to worktree:', executor.checkPermission(ActionType.FILE_WRITE, '/tmp/isolated-workspace/file.txt'));
+  console.log(
+    'Write to worktree:',
+    executor.checkPermission(ActionType.FILE_WRITE, '/tmp/isolated-workspace/file.txt')
+  );
   console.log('Write to /etc:', executor.checkPermission(ActionType.FILE_WRITE, '/etc/passwd'));
-  console.log('Write to /home:', executor.checkPermission(ActionType.FILE_WRITE, '/home/user/file.txt'));
-  console.log('Write to /tmp:', executor.checkPermission(ActionType.FILE_WRITE, '/tmp/other-file.txt'));
+  console.log(
+    'Write to /home:',
+    executor.checkPermission(ActionType.FILE_WRITE, '/home/user/file.txt')
+  );
+  console.log(
+    'Write to /tmp:',
+    executor.checkPermission(ActionType.FILE_WRITE, '/tmp/other-file.txt')
+  );
 
   try {
     await executor.spawn('Refactor code within workspace boundaries');
@@ -176,7 +206,10 @@ async function dynamicPermissionManagementExample() {
     permissionManager,
   });
 
-  console.log('Initial network permission:', executor.checkPermission(ActionType.NETWORK_REQUEST, 'https://api.example.com'));
+  console.log(
+    'Initial network permission:',
+    executor.checkPermission(ActionType.NETWORK_REQUEST, 'https://api.example.com')
+  );
 
   // Dynamically add a restriction during runtime
   console.log('\n--- Adding network restriction ---');
@@ -189,18 +222,27 @@ async function dynamicPermissionManagementExample() {
     priority: 500,
   });
 
-  console.log('Network permission after restriction:', executor.checkPermission(ActionType.NETWORK_REQUEST, 'https://api.example.com'));
+  console.log(
+    'Network permission after restriction:',
+    executor.checkPermission(ActionType.NETWORK_REQUEST, 'https://api.example.com')
+  );
 
   // Remove the restriction
   console.log('\n--- Removing network restriction ---');
   const removed = permissionManager.removeRule('emergency-network-block');
   console.log('Rule removed:', removed);
-  console.log('Network permission after removal:', executor.checkPermission(ActionType.NETWORK_REQUEST, 'https://api.example.com'));
+  console.log(
+    'Network permission after removal:',
+    executor.checkPermission(ActionType.NETWORK_REQUEST, 'https://api.example.com')
+  );
 
   // Update configuration
   console.log('\n--- Updating base configuration ---');
   permissionManager.updateConfig({ defaultAllow: false });
-  console.log('Unknown action permitted:', executor.checkPermission(ActionType.ENVIRONMENT_WRITE, 'PATH'));
+  console.log(
+    'Unknown action permitted:',
+    executor.checkPermission(ActionType.ENVIRONMENT_WRITE, 'PATH')
+  );
 }
 
 async function securityScenarioExample() {
@@ -266,7 +308,10 @@ async function securityScenarioExample() {
   console.log('Claude execution:', secureExecutor.isExecutionPermitted());
   console.log('File read:', secureExecutor.checkPermission(ActionType.FILE_READ));
   console.log('File write:', secureExecutor.checkPermission(ActionType.FILE_WRITE));
-  console.log('Network access:', secureExecutor.checkPermission(ActionType.NETWORK_REQUEST, 'https://trusted.com'));
+  console.log(
+    'Network access:',
+    secureExecutor.checkPermission(ActionType.NETWORK_REQUEST, 'https://trusted.com')
+  );
   console.log('System commands:', secureExecutor.checkPermission(ActionType.SYSTEM_COMMAND, 'ls'));
 
   try {

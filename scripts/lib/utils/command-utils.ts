@@ -2,10 +2,10 @@
  * Safe command execution utilities
  */
 
-import { execSync } from "child_process";
-import { validateInput, validateDirectoryExists } from "./validation-utils";
-import { CheckResult, CommandError } from "./types";
-import { createSuccessResult, createFailureResult } from "./result-utils";
+import { execSync } from 'child_process';
+import { validateInput, validateDirectoryExists } from './validation-utils';
+import { CheckResult, CommandError } from './types';
+import { createSuccessResult, createFailureResult } from './result-utils';
 
 /**
  * Execute a command safely with comprehensive validation and error handling
@@ -14,19 +14,19 @@ export function execCommand(
   command: string,
   cwd?: string,
   timeout = 120000,
-  env?: Record<string, string>,
+  env?: Record<string, string>
 ): CheckResult {
   try {
-    validateInput(command, "command");
+    validateInput(command, 'command');
     if (cwd) {
-      validateInput(cwd, "path");
+      validateInput(cwd, 'path');
       validateDirectoryExists(cwd);
     }
 
     const output = execSync(command, {
       cwd: cwd || process.cwd(),
-      encoding: "utf-8",
-      stdio: "pipe",
+      encoding: 'utf-8',
+      stdio: 'pipe',
       timeout,
       env: env ? { ...process.env, ...env } : process.env,
     });
@@ -44,20 +44,18 @@ function sanitizeError(errorText: string): string {
   return (
     errorText
       // Remove API keys
-      .replace(/OPENAI_API_KEY=[\w-]+/g, "OPENAI_API_KEY=***")
-      .replace(/API_KEY=[\w-]+/g, "API_KEY=***")
+      .replace(/OPENAI_API_KEY=[\w-]+/g, 'OPENAI_API_KEY=***')
+      .replace(/API_KEY=[\w-]+/g, 'API_KEY=***')
       // Remove user paths
-      .replace(/\/Users\/[^/\s]+/g, "/Users/***")
-      .replace(/\/home\/[^/\s]+/g, "/home/***")
+      .replace(/\/Users\/[^/\s]+/g, '/Users/***')
+      .replace(/\/home\/[^/\s]+/g, '/home/***')
       // Remove potential tokens and secrets
-      .replace(/[a-zA-Z0-9_-]{32,}/g, (match) =>
-        match.length > 8
-          ? match.substring(0, 4) + "***" + match.substring(match.length - 4)
-          : match,
+      .replace(/[a-zA-Z0-9_-]{32,}/g, match =>
+        match.length > 8 ? match.substring(0, 4) + '***' + match.substring(match.length - 4) : match
       )
       // Remove environment variable assignments
-      .replace(/\b[A-Z_]+=[^\s]+/g, (match) => {
-        const [key] = match.split("=");
+      .replace(/\b[A-Z_]+=[^\s]+/g, match => {
+        const [key] = match.split('=');
         return `${key}=***`;
       })
   );
@@ -75,14 +73,14 @@ function formatError(error: unknown): string {
       error.code ? `Exit code: ${error.code}` : null,
     ].filter(Boolean);
 
-    return parts.length > 0 ? parts.join("\n") : "Unknown error";
+    return parts.length > 0 ? parts.join('\n') : 'Unknown error';
   }
 
   if (error instanceof Error) {
     return sanitizeError(error.message);
   }
 
-  return sanitizeError(String(error)) || "Unknown error";
+  return sanitizeError(String(error)) || 'Unknown error';
 }
 
 /**
@@ -90,11 +88,8 @@ function formatError(error: unknown): string {
  */
 function isCommandError(error: unknown): error is CommandError {
   return (
-    typeof error === "object" &&
+    typeof error === 'object' &&
     error !== null &&
-    ("stdout" in error ||
-      "stderr" in error ||
-      "message" in error ||
-      "code" in error)
+    ('stdout' in error || 'stderr' in error || 'message' in error || 'code' in error)
   );
 }

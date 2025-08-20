@@ -14,13 +14,9 @@ describe('cn utility function', () => {
   it('handles conditional classes', () => {
     const isActive = true;
     const isDisabled = false;
-    
-    const result = cn(
-      'base-class',
-      isActive && 'active-class',
-      isDisabled && 'disabled-class'
-    );
-    
+
+    const result = cn('base-class', isActive && 'active-class', isDisabled && 'disabled-class');
+
     expect(result).toBe('base-class active-class');
   });
 
@@ -50,7 +46,7 @@ describe('cn utility function', () => {
       'bg-blue-200': false,
       'p-4': true,
     });
-    
+
     expect(result).toBe('text-red-500 p-4');
   });
 
@@ -63,7 +59,7 @@ describe('cn utility function', () => {
   it('handles complex combinations', () => {
     const isLarge = true;
     const theme = 'dark';
-    
+
     const result = cn(
       'base-button',
       {
@@ -73,7 +69,7 @@ describe('cn utility function', () => {
       theme === 'dark' && 'bg-gray-800 text-white',
       ['hover:bg-gray-700', 'focus:outline-none']
     );
-    
+
     expect(result).toContain('base-button');
     expect(result).toContain('text-lg');
     expect(result).toContain('bg-gray-800');

@@ -3,14 +3,14 @@ import fs from 'fs/promises';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { WinstonLogger } from '../logger-winston';
-import { 
-  PermissionManager, 
-  DefaultPermissions, 
-  ActionType, 
+import {
+  PermissionManager,
+  DefaultPermissions,
+  ActionType,
   PermissionScope,
   PermissionRule,
   PermissionConfig,
-  PermissionContext
+  PermissionContext,
 } from '../utils/permissions';
 
 const PERMISSIONS_CONFIG_PATH = path.join(process.cwd(), 'permissions-config.json');
@@ -46,7 +46,9 @@ export function createPermissionRoutes(logger: WinstonLogger) {
       res.json({ success: true, data: config });
     } catch (error) {
       logger.error('Error fetching permissions config:', error as Error);
-      res.status(500).json({ success: false, message: 'Failed to fetch permissions configuration' });
+      res
+        .status(500)
+        .json({ success: false, message: 'Failed to fetch permissions configuration' });
     }
   });
 
@@ -55,19 +57,21 @@ export function createPermissionRoutes(logger: WinstonLogger) {
     try {
       const currentConfig = await readPermissionsConfig();
       const updates = req.body;
-      
+
       const newConfig = {
         ...currentConfig,
-        ...updates
+        ...updates,
       };
-      
+
       await writePermissionsConfig(newConfig);
       logger.info('Updated permissions configuration', updates);
-      
+
       res.json({ success: true, data: newConfig });
     } catch (error) {
       logger.error('Error updating permissions config:', error as Error);
-      res.status(500).json({ success: false, message: 'Failed to update permissions configuration' });
+      res
+        .status(500)
+        .json({ success: false, message: 'Failed to update permissions configuration' });
     }
   });
 
@@ -86,14 +90,14 @@ export function createPermissionRoutes(logger: WinstonLogger) {
   router.post('/rules', async (req, res) => {
     try {
       const { action, scope, target, allowed, reason, priority } = req.body;
-      
+
       if (!action || !scope || typeof allowed !== 'boolean' || typeof priority !== 'number') {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'Missing required fields: action, scope, allowed, priority' 
+        return res.status(400).json({
+          success: false,
+          message: 'Missing required fields: action, scope, allowed, priority',
         });
       }
-      
+
       const config = await readPermissionsConfig();
       const newRule: PermissionRule = {
         id: uuidv4(),
@@ -102,16 +106,16 @@ export function createPermissionRoutes(logger: WinstonLogger) {
         target,
         allowed,
         reason,
-        priority
+        priority,
       };
-      
+
       config.rules.push(newRule);
       // Sort rules by priority (highest first)
       config.rules.sort((a, b) => b.priority - a.priority);
-      
+
       await writePermissionsConfig(config);
       logger.info('Created permission rule:', { ruleId: newRule.id, action, scope, allowed });
-      
+
       res.status(201).json({ success: true, data: newRule });
     } catch (error) {
       logger.error('Error creating permission rule:', error as Error);
@@ -124,27 +128,27 @@ export function createPermissionRoutes(logger: WinstonLogger) {
     try {
       const { id } = req.params;
       const updates = req.body;
-      
+
       const config = await readPermissionsConfig();
       const ruleIndex = config.rules.findIndex(rule => rule.id === id);
-      
+
       if (ruleIndex === -1) {
         return res.status(404).json({ success: false, message: 'Permission rule not found' });
       }
-      
+
       const updatedRule = {
         ...config.rules[ruleIndex],
         ...updates,
-        id // Ensure ID cannot be changed
+        id, // Ensure ID cannot be changed
       };
-      
+
       config.rules[ruleIndex] = updatedRule;
       // Re-sort rules by priority
       config.rules.sort((a, b) => b.priority - a.priority);
-      
+
       await writePermissionsConfig(config);
       logger.info('Updated permission rule:', { ruleId: id, updates });
-      
+
       res.json({ success: true, data: updatedRule });
     } catch (error) {
       logger.error('Error updating permission rule:', error as Error);
@@ -156,20 +160,20 @@ export function createPermissionRoutes(logger: WinstonLogger) {
   router.delete('/rules/:id', async (req, res) => {
     try {
       const { id } = req.params;
-      
+
       const config = await readPermissionsConfig();
       const ruleIndex = config.rules.findIndex(rule => rule.id === id);
-      
+
       if (ruleIndex === -1) {
         return res.status(404).json({ success: false, message: 'Permission rule not found' });
       }
-      
+
       const deletedRule = config.rules[ruleIndex];
       config.rules.splice(ruleIndex, 1);
-      
+
       await writePermissionsConfig(config);
       logger.info('Deleted permission rule:', { ruleId: id, action: deletedRule.action });
-      
+
       res.json({ success: true, message: 'Permission rule deleted successfully' });
     } catch (error) {
       logger.error('Error deleting permission rule:', error as Error);
@@ -181,25 +185,25 @@ export function createPermissionRoutes(logger: WinstonLogger) {
   router.post('/test', async (req, res) => {
     try {
       const { action, target, worktreeDir } = req.body;
-      
+
       if (!action) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'Action is required for permission testing' 
+        return res.status(400).json({
+          success: false,
+          message: 'Action is required for permission testing',
         });
       }
-      
+
       const config = await readPermissionsConfig();
       const permissionManager = new PermissionManager(config, logger);
-      
+
       const context: PermissionContext = {
         action,
         target,
-        worktreeDir
+        worktreeDir,
       };
-      
+
       const result = permissionManager.checkPermission(context);
-      
+
       res.json({ success: true, data: result });
     } catch (error) {
       logger.error('Error testing permission:', error as Error);
@@ -213,9 +217,9 @@ export function createPermissionRoutes(logger: WinstonLogger) {
       const defaults = {
         restrictive: DefaultPermissions.restrictive(),
         permissive: DefaultPermissions.permissive(),
-        development: DefaultPermissions.development()
+        development: DefaultPermissions.development(),
       };
-      
+
       res.json({ success: true, data: defaults });
     } catch (error) {
       logger.error('Error fetching default permissions:', error as Error);
@@ -249,38 +253,38 @@ export function createPermissionRoutes(logger: WinstonLogger) {
   router.post('/import-claude-settings', async (req, res) => {
     try {
       const claudeSettingsPath = path.join(process.cwd(), '.claude/settings.json');
-      
+
       let claudeSettings;
       try {
         const data = await fs.readFile(claudeSettingsPath, 'utf-8');
         claudeSettings = JSON.parse(data);
       } catch {
-        return res.status(404).json({ 
-          success: false, 
-          message: '.claude/settings.json not found or invalid JSON' 
+        return res.status(404).json({
+          success: false,
+          message: '.claude/settings.json not found or invalid JSON',
         });
       }
-      
+
       if (!claudeSettings.permissions?.deny || !Array.isArray(claudeSettings.permissions.deny)) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'No permissions.deny array found in .claude/settings.json' 
+        return res.status(400).json({
+          success: false,
+          message: 'No permissions.deny array found in .claude/settings.json',
         });
       }
-      
+
       // Convert .claude/settings deny list to permission rules
       const currentConfig = await readPermissionsConfig();
       const importedRules: PermissionRule[] = [];
-      
+
       claudeSettings.permissions.deny.forEach((denyPattern: string, index: number) => {
         // Parse the deny pattern to extract action and target
         const match = denyPattern.match(/^(\w+)\((.+)\)$/);
         if (match) {
           const [, action, target] = match;
-          
+
           let actionType: ActionType;
           let scope: PermissionScope;
-          
+
           // Map Claude settings actions to our ActionType enum
           switch (action.toLowerCase()) {
             case 'update':
@@ -302,7 +306,7 @@ export function createPermissionRoutes(logger: WinstonLogger) {
             default:
               actionType = ActionType.FILE_WRITE; // Default fallback
           }
-          
+
           // Determine scope based on target pattern
           if (target.includes('*') || target.includes('?')) {
             scope = PermissionScope.PATTERN;
@@ -311,7 +315,7 @@ export function createPermissionRoutes(logger: WinstonLogger) {
           } else {
             scope = PermissionScope.PATTERN;
           }
-          
+
           const rule: PermissionRule = {
             id: uuidv4(),
             action: actionType,
@@ -319,9 +323,9 @@ export function createPermissionRoutes(logger: WinstonLogger) {
             target,
             allowed: false, // Claude settings deny list = not allowed
             reason: `Imported from .claude/settings.json deny list: ${denyPattern}`,
-            priority: 900 + index // High priority for imported rules
+            priority: 900 + index, // High priority for imported rules
           };
-          
+
           importedRules.push(rule);
         } else {
           // Handle patterns that don't match the expected format
@@ -332,42 +336,44 @@ export function createPermissionRoutes(logger: WinstonLogger) {
             target: denyPattern,
             allowed: false,
             reason: `Imported from .claude/settings.json deny list: ${denyPattern}`,
-            priority: 900 + index
+            priority: 900 + index,
           };
-          
+
           importedRules.push(rule);
         }
       });
-      
+
       // Remove existing imported rules (those with reason containing "Imported from .claude/settings.json")
-      currentConfig.rules = currentConfig.rules.filter(rule => 
-        !rule.reason?.includes('Imported from .claude/settings.json')
+      currentConfig.rules = currentConfig.rules.filter(
+        rule => !rule.reason?.includes('Imported from .claude/settings.json')
       );
-      
+
       // Add new imported rules
       currentConfig.rules.push(...importedRules);
-      
+
       // Sort by priority
       currentConfig.rules.sort((a, b) => b.priority - a.priority);
-      
+
       await writePermissionsConfig(currentConfig);
-      
-      logger.info('Imported permissions from .claude/settings.json:', { 
+
+      logger.info('Imported permissions from .claude/settings.json:', {
         importedCount: importedRules.length,
-        totalRules: currentConfig.rules.length 
+        totalRules: currentConfig.rules.length,
       });
-      
-      res.json({ 
-        success: true, 
+
+      res.json({
+        success: true,
         data: {
           importedRules: importedRules.length,
           totalRules: currentConfig.rules.length,
-          config: currentConfig
-        }
+          config: currentConfig,
+        },
       });
     } catch (error) {
       logger.error('Error importing Claude settings permissions:', error as Error);
-      res.status(500).json({ success: false, message: 'Failed to import Claude settings permissions' });
+      res
+        .status(500)
+        .json({ success: false, message: 'Failed to import Claude settings permissions' });
     }
   });
 

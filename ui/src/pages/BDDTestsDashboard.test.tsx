@@ -19,15 +19,21 @@ jest.mock('../lib/api', () => ({
 
 // Mock recharts components
 jest.mock('recharts', () => ({
-  LineChart: ({ children }: { children: React.ReactNode }) => <div data-testid="line-chart">{children}</div>,
+  LineChart: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="line-chart">{children}</div>
+  ),
   Line: () => <div data-testid="line" />,
-  BarChart: ({ children }: { children: React.ReactNode }) => <div data-testid="bar-chart">{children}</div>,
+  BarChart: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="bar-chart">{children}</div>
+  ),
   Bar: () => <div data-testid="bar" />,
   XAxis: () => <div data-testid="x-axis" />,
   YAxis: () => <div data-testid="y-axis" />,
   CartesianGrid: () => <div data-testid="cartesian-grid" />,
   Tooltip: () => <div data-testid="tooltip" />,
-  ResponsiveContainer: ({ children }: { children: React.ReactNode }) => <div data-testid="responsive-container">{children}</div>,
+  ResponsiveContainer: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="responsive-container">{children}</div>
+  ),
 }));
 
 const mockTasks = [
@@ -187,9 +193,7 @@ const renderWithProviders = (component: React.ReactElement) => {
 
   return render(
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        {component}
-      </BrowserRouter>
+      <BrowserRouter>{component}</BrowserRouter>
     </QueryClientProvider>
   );
 };
@@ -204,7 +208,7 @@ describe('BDDTestsDashboard', () => {
 
   it('renders BDD tests dashboard with title', async () => {
     renderWithProviders(<BDDTestsDashboard />);
-    
+
     await waitFor(() => {
       expect(screen.getByText('BDD Tests Dashboard')).toBeInTheDocument();
     });
@@ -212,18 +216,16 @@ describe('BDDTestsDashboard', () => {
   });
 
   it('displays loading state initially', () => {
-    (taskApi.getTasks as jest.Mock).mockImplementation(
-      () => new Promise(() => {})
-    );
+    (taskApi.getTasks as jest.Mock).mockImplementation(() => new Promise(() => {}));
 
     renderWithProviders(<BDDTestsDashboard />);
-    
+
     expect(document.querySelector('.animate-spin')).toBeInTheDocument();
   });
 
   it('displays overview statistics', async () => {
     renderWithProviders(<BDDTestsDashboard />);
-    
+
     await waitFor(() => {
       expect(screen.getByText('150')).toBeInTheDocument(); // Total tests
       expect(screen.getByText(/10.*test suites/)).toBeInTheDocument(); // Test suites
@@ -234,67 +236,76 @@ describe('BDDTestsDashboard', () => {
   it.skip('displays test trends chart', async () => {
     // Skipping due to Radix UI tabs not rendering content properly in test environment
     renderWithProviders(<BDDTestsDashboard />);
-    
+
     // Wait for component to load completely with data
     await waitFor(() => {
       expect(screen.getByText('BDD Tests Dashboard')).toBeInTheDocument();
       expect(screen.getByText('150')).toBeInTheDocument(); // Ensure data loaded
     });
-    
+
     // Find and click Analytics tab
     const analyticsTab = screen.getByText('Analytics');
     expect(analyticsTab).toBeInTheDocument();
     fireEvent.click(analyticsTab);
-    
+
     // Wait for tab content to render
-    await waitFor(() => {
-      expect(screen.getByText('Success Rate Trend')).toBeInTheDocument();
-      expect(screen.getByTestId('line-chart')).toBeInTheDocument();
-    }, { timeout: 3000 });
+    await waitFor(
+      () => {
+        expect(screen.getByText('Success Rate Trend')).toBeInTheDocument();
+        expect(screen.getByTestId('line-chart')).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
   });
 
   it.skip('displays failure reasons chart', async () => {
     // Skipping due to Radix UI tabs not rendering content properly in test environment
     renderWithProviders(<BDDTestsDashboard />);
-    
+
     // Wait for component to load, then click on Analytics tab
     await waitFor(() => {
       expect(screen.getByText('BDD Tests Dashboard')).toBeInTheDocument();
     });
-    
+
     // Find and click Analytics tab
     const analyticsTab = screen.getByText('Analytics');
     fireEvent.click(analyticsTab);
-    
-    await waitFor(() => {
-      expect(screen.getByText('Top Failing Tests')).toBeInTheDocument();
-      expect(screen.getByTestId('bar-chart')).toBeInTheDocument();
-    }, { timeout: 3000 });
+
+    await waitFor(
+      () => {
+        expect(screen.getByText('Top Failing Tests')).toBeInTheDocument();
+        expect(screen.getByTestId('bar-chart')).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
   });
 
   it.skip('displays recent test suites', async () => {
     // Skipping due to Radix UI tabs not rendering content properly in test environment
     renderWithProviders(<BDDTestsDashboard />);
-    
+
     // Wait for component to load, then click on E2E Tests tab
     await waitFor(() => {
       expect(screen.getByText('BDD Tests Dashboard')).toBeInTheDocument();
     });
-    
+
     // Find and click E2E Tests tab
     const e2eTab = screen.getByText('E2E Tests');
     fireEvent.click(e2eTab);
-    
-    await waitFor(() => {
-      expect(screen.getByText('Authentication Tests')).toBeInTheDocument();
-      expect(screen.getByText('User Management Tests')).toBeInTheDocument();
-    }, { timeout: 3000 });
+
+    await waitFor(
+      () => {
+        expect(screen.getByText('Authentication Tests')).toBeInTheDocument();
+        expect(screen.getByText('User Management Tests')).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
   });
 
   it.skip('displays tasks with BDD scenarios', async () => {
     // Skipping due to mock data structure issues
     renderWithProviders(<BDDTestsDashboard />);
-    
+
     await waitFor(() => {
       expect(screen.getByText('User Login Feature')).toBeInTheDocument();
       expect(screen.getByText('Password Reset')).toBeInTheDocument();
@@ -306,7 +317,7 @@ describe('BDDTestsDashboard', () => {
   it.skip('filters tasks by status', async () => {
     // Skipping due to custom Select components not working properly in test environment
     renderWithProviders(<BDDTestsDashboard />);
-    
+
     await waitFor(() => {
       expect(screen.getByText('User Login Feature')).toBeInTheDocument();
     });
@@ -314,10 +325,10 @@ describe('BDDTestsDashboard', () => {
     // Open status filter - looking for the select trigger by placeholder text
     const statusSelect = screen.getByText('All Status');
     fireEvent.click(statusSelect);
-    
+
     // Select 'passed' (which matches our scenario status)
     fireEvent.click(screen.getByText('Passed'));
-    
+
     await waitFor(() => {
       // Should still show passed scenario task
       expect(screen.getByText('User Login Feature')).toBeInTheDocument();
@@ -327,18 +338,18 @@ describe('BDDTestsDashboard', () => {
   it.skip('filters tasks by type', async () => {
     // Skipping due to custom Select components not working properly in test environment
     renderWithProviders(<BDDTestsDashboard />);
-    
+
     await waitFor(() => {
       expect(screen.getByText('User Login Feature')).toBeInTheDocument();
     });
 
-    // Open task type filter  
+    // Open task type filter
     const typeSelect = screen.getByText('All Types');
     fireEvent.click(typeSelect);
-    
+
     // Select 'Stories Only'
     fireEvent.click(screen.getByText('Stories Only'));
-    
+
     // Filter should apply, story task should still be visible
     await waitFor(() => {
       expect(screen.getByText('User Login Feature')).toBeInTheDocument();
@@ -348,14 +359,14 @@ describe('BDDTestsDashboard', () => {
   it.skip('searches tasks by term', async () => {
     // Skipping due to search functionality issues in test environment
     renderWithProviders(<BDDTestsDashboard />);
-    
+
     await waitFor(() => {
       expect(screen.getByText('User Login Feature')).toBeInTheDocument();
     });
 
     const searchInput = screen.getByPlaceholderText(/Search scenarios, features, or tasks/i);
     fireEvent.change(searchInput, { target: { value: 'login' } });
-    
+
     // Search should filter results
     await waitFor(() => {
       expect(screen.getByText('User Login Feature')).toBeInTheDocument();
@@ -364,17 +375,17 @@ describe('BDDTestsDashboard', () => {
 
   it('triggers test run', async () => {
     (e2eTestingApi.triggerTestRun as jest.Mock).mockResolvedValue({ success: true });
-    
+
     renderWithProviders(<BDDTestsDashboard />);
-    
+
     await waitFor(() => {
       const runButton = screen.getByRole('button', { name: /run all tests/i });
       expect(runButton).toBeInTheDocument();
     });
-    
+
     const runButton = screen.getByRole('button', { name: /run all tests/i });
     fireEvent.click(runButton);
-    
+
     await waitFor(() => {
       expect(e2eTestingApi.triggerTestRun).toHaveBeenCalled();
     });
@@ -382,15 +393,15 @@ describe('BDDTestsDashboard', () => {
 
   it('refreshes data when refresh button is clicked', async () => {
     renderWithProviders(<BDDTestsDashboard />);
-    
+
     await waitFor(() => {
       const refreshButton = screen.getByRole('button', { name: /refresh/i });
       expect(refreshButton).toBeInTheDocument();
     });
-    
+
     const refreshButton = screen.getByRole('button', { name: /refresh/i });
     fireEvent.click(refreshButton);
-    
+
     // Verify APIs were called again
     expect(taskApi.getTasks).toHaveBeenCalledTimes(2);
     expect(e2eTestingApi.getAnalytics).toHaveBeenCalledTimes(2);
@@ -399,7 +410,7 @@ describe('BDDTestsDashboard', () => {
   it.skip('changes time range for analytics', async () => {
     // Skipping due to Radix UI tabs not rendering content properly in test environment
     renderWithProviders(<BDDTestsDashboard />);
-    
+
     await waitFor(() => {
       expect(screen.getByDisplayValue('30')).toBeInTheDocument();
     });
@@ -407,10 +418,10 @@ describe('BDDTestsDashboard', () => {
     // Open time range selector
     const timeRangeSelect = screen.getByDisplayValue('30');
     fireEvent.click(timeRangeSelect);
-    
+
     // Select 7 days
     fireEvent.click(screen.getByText('7 days'));
-    
+
     // Verify API was called with new time range
     await waitFor(() => {
       expect(e2eTestingApi.getAnalytics).toHaveBeenCalledWith({ days: 7 });
@@ -419,7 +430,7 @@ describe('BDDTestsDashboard', () => {
 
   it('displays scenario status badges correctly', async () => {
     renderWithProviders(<BDDTestsDashboard />);
-    
+
     await waitFor(() => {
       expect(screen.getByText('passed')).toBeInTheDocument();
       expect(screen.getByText('failed')).toBeInTheDocument();
@@ -428,12 +439,12 @@ describe('BDDTestsDashboard', () => {
 
   it('shows test suite status badges', async () => {
     renderWithProviders(<BDDTestsDashboard />);
-    
+
     await waitFor(() => {
       // Check for suite status badges
       const passedBadges = screen.getAllByText('passed');
       const failedBadges = screen.getAllByText('failed');
-      
+
       expect(passedBadges.length).toBeGreaterThan(0);
       expect(failedBadges.length).toBeGreaterThan(0);
     });
@@ -441,7 +452,7 @@ describe('BDDTestsDashboard', () => {
 
   it('formats durations correctly', async () => {
     renderWithProviders(<BDDTestsDashboard />);
-    
+
     await waitFor(() => {
       // Should format average duration (45000ms = 45.0s)
       expect(screen.getByText('45.0s')).toBeInTheDocument();
@@ -450,9 +461,9 @@ describe('BDDTestsDashboard', () => {
 
   it('handles API errors gracefully', async () => {
     (taskApi.getTasks as jest.Mock).mockRejectedValue(new Error('API Error'));
-    
+
     renderWithProviders(<BDDTestsDashboard />);
-    
+
     await waitFor(() => {
       // Component should still render basic structure even on error
       expect(screen.getByText('BDD Tests Dashboard')).toBeInTheDocument();
@@ -473,34 +484,36 @@ describe('BDDTestsDashboard', () => {
       topFailingTests: [],
     });
     (e2eTestingApi.getTestSuites as jest.Mock).mockResolvedValue([]);
-    
+
     renderWithProviders(<BDDTestsDashboard />);
-    
+
     await waitFor(() => {
-      expect(screen.getByText('No BDD scenarios found matching the current filters.')).toBeInTheDocument();
+      expect(
+        screen.getByText('No BDD scenarios found matching the current filters.')
+      ).toBeInTheDocument();
     });
   });
 
   it.skip('displays tabs for different views', async () => {
     // Skipping due to Radix UI tabs not rendering content properly in test environment
     renderWithProviders(<BDDTestsDashboard />);
-    
+
     // Wait for data to load and component to render fully
     await waitFor(() => {
       expect(screen.getByText('BDD Tests Dashboard')).toBeInTheDocument();
       expect(screen.getByText('150')).toBeInTheDocument(); // Ensure data loaded
     });
-    
+
     await waitFor(() => {
       expect(screen.getByText('BDD Scenarios')).toBeInTheDocument();
       expect(screen.getByText('E2E Tests')).toBeInTheDocument();
       expect(screen.getByText('Analytics')).toBeInTheDocument();
     });
-    
+
     // Click on E2E Tests tab
     const e2eTab = screen.getByText('E2E Tests');
     fireEvent.click(e2eTab);
-    
+
     // Should show test suites content
     await waitFor(() => {
       expect(screen.getByText('Authentication Tests')).toBeInTheDocument();
@@ -509,18 +522,18 @@ describe('BDDTestsDashboard', () => {
 
   it('triggers individual scenario tests', async () => {
     (e2eTestingApi.triggerTestRun as jest.Mock).mockResolvedValue({ success: true });
-    
+
     renderWithProviders(<BDDTestsDashboard />);
-    
+
     await waitFor(() => {
       const runButtons = screen.getAllByRole('button', { name: /run/i });
       expect(runButtons.length).toBeGreaterThan(0);
     });
-    
+
     // Click first run button (should be for individual scenario)
     const runButtons = screen.getAllByRole('button', { name: /run/i });
     fireEvent.click(runButtons[0]);
-    
+
     await waitFor(() => {
       expect(e2eTestingApi.triggerTestRun).toHaveBeenCalled();
     });
@@ -528,7 +541,7 @@ describe('BDDTestsDashboard', () => {
 
   it('shows scenario details and steps', async () => {
     renderWithProviders(<BDDTestsDashboard />);
-    
+
     await waitFor(() => {
       expect(screen.getByText('Successful login')).toBeInTheDocument();
       expect(screen.getByText('Reset password flow')).toBeInTheDocument();
@@ -538,7 +551,7 @@ describe('BDDTestsDashboard', () => {
   it.skip('shows error messages for failed scenarios', async () => {
     // Skipping due to component rendering issues
     renderWithProviders(<BDDTestsDashboard />);
-    
+
     await waitFor(() => {
       expect(screen.getByText('Email service down')).toBeInTheDocument();
     });
@@ -546,7 +559,7 @@ describe('BDDTestsDashboard', () => {
 
   it('displays test statistics correctly', async () => {
     renderWithProviders(<BDDTestsDashboard />);
-    
+
     await waitFor(() => {
       expect(screen.getByText('150')).toBeInTheDocument(); // Total tests
       expect(screen.getByText(/10.*test suites/)).toBeInTheDocument(); // Test suites
@@ -557,25 +570,25 @@ describe('BDDTestsDashboard', () => {
 
   it('handles mutation loading states', async () => {
     let resolveMutation: (value: any) => void;
-    const mutationPromise = new Promise((resolve) => {
+    const mutationPromise = new Promise(resolve => {
       resolveMutation = resolve;
     });
     (e2eTestingApi.triggerTestRun as jest.Mock).mockReturnValue(mutationPromise);
-    
+
     renderWithProviders(<BDDTestsDashboard />);
-    
+
     await waitFor(() => {
       const runButton = screen.getByRole('button', { name: /run all tests/i });
       fireEvent.click(runButton);
     });
-    
+
     // Button should be disabled during loading
     const runButton = screen.getByRole('button', { name: /run all tests/i });
     expect(runButton).toBeDisabled();
-    
+
     // Resolve the mutation
     resolveMutation!({ success: true });
-    
+
     await waitFor(() => {
       expect(runButton).not.toBeDisabled();
     });

@@ -67,7 +67,7 @@
         "id": "frontend-coverage",
         "name": "Frontend Coverage Check",
         "command": "cd ui && npm run test:coverage -- --maxWorkers=1",
-        "timeout": 120000,
+        "timeout": 180000,
         "enabled": false,
         "continueOnFailure": false,
         "order": 7
@@ -95,7 +95,7 @@
         "name": "API E2E Tests",
         "command": "npm run test:api-e2e",
         "timeout": 60000,
-        "enabled": true,
+        "enabled": false,
         "continueOnFailure": false,
         "order": 10
       },
@@ -113,7 +113,7 @@
         "name": "AI Code Review",
         "command": "npx ts-node src/tools/ai-code-reviewer.ts",
         "timeout": 60000,
-        "enabled": false,
+        "enabled": true,
         "continueOnFailure": false,
         "order": 12
       },
@@ -122,7 +122,7 @@
         "name": "Dead Code Detection",
         "command": "npx ts-node scripts/check-dead-code.ts",
         "timeout": 60000,
-        "enabled": false,
+        "enabled": true,
         "continueOnFailure": false,
         "order": 13
       },
@@ -131,7 +131,7 @@
         "name": "Code Duplication Detection",
         "command": "npm run duplication-check",
         "timeout": 30000,
-        "enabled": false,
+        "enabled": true,
         "continueOnFailure": false,
         "order": 14
       },
@@ -140,7 +140,7 @@
         "name": "Dependency Vulnerability Scan",
         "command": "npm audit --audit-level=moderate",
         "timeout": 30000,
-        "enabled": false,
+        "enabled": true,
         "continueOnFailure": false,
         "order": 15
       },

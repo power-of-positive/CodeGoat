@@ -1,6 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AlertCircle, ChevronDown, ChevronRight, FileText, ExternalLink } from 'lucide-react';
+import {
+  AlertCircle,
+  ChevronDown,
+  ChevronRight,
+  FileText,
+  ExternalLink,
+} from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { ValidationRun, ValidationStageResult } from '../../shared/types';
@@ -14,7 +20,7 @@ function StageDetail({ stage }: { stage: ValidationStageResult }) {
 
   return (
     <div className="border border-gray-200 rounded" data-testid="stage-detail">
-      <div 
+      <div
         className="flex justify-between items-center py-2 px-3 cursor-pointer hover:bg-gray-50"
         onClick={() => hasLogs && setShowLogs(!showLogs)}
       >
@@ -28,7 +34,10 @@ function StageDetail({ stage }: { stage: ValidationStageResult }) {
             {stage.name || stage.id}
           </span>
           {hasLogs && (
-            <FileText className="w-3 h-3 text-gray-400" data-testid="file-icon" />
+            <FileText
+              className="w-3 h-3 text-gray-400"
+              data-testid="file-icon"
+            />
           )}
         </div>
         <div className="flex items-center gap-2">
@@ -40,33 +49,49 @@ function StageDetail({ stage }: { stage: ValidationStageResult }) {
               {(stage.duration / 1000).toFixed(1)}s
             </span>
           </div>
-          {hasLogs && (
-            showLogs ? (
-              <ChevronDown className="w-4 h-4 text-gray-400" data-testid="chevron-down" />
+          {hasLogs &&
+            (showLogs ? (
+              <ChevronDown
+                className="w-4 h-4 text-gray-400"
+                data-testid="chevron-down"
+              />
             ) : (
-              <ChevronRight className="w-4 h-4 text-gray-400" data-testid="chevron-right" />
-            )
-          )}
+              <ChevronRight
+                className="w-4 h-4 text-gray-400"
+                data-testid="chevron-right"
+              />
+            ))}
         </div>
       </div>
-      
+
       {showLogs && hasLogs && (
-        <div className="border-t border-gray-200 p-3 bg-gray-50" data-testid="stage-logs">
+        <div
+          className="border-t border-gray-200 p-3 bg-gray-50"
+          data-testid="stage-logs"
+        >
           {hasError && (
             <div className="mb-3">
-              <div className="text-xs font-medium text-red-700 mb-1">Error Output:</div>
-              <pre className="text-xs bg-red-50 text-red-800 p-2 rounded border overflow-x-auto whitespace-pre-wrap" data-testid="error-output">
+              <div className="text-xs font-medium text-red-700 mb-1">
+                Error Output:
+              </div>
+              <pre
+                className="text-xs bg-red-50 text-red-800 p-2 rounded border overflow-x-auto whitespace-pre-wrap"
+                data-testid="error-output"
+              >
                 {stage.error}
               </pre>
             </div>
           )}
-          
+
           {hasOutput && (
             <div>
               <div className="text-xs font-medium text-gray-700 mb-1">
                 {hasError ? 'Standard Output:' : 'Output:'}
               </div>
-              <pre className="text-xs bg-white text-gray-800 p-2 rounded border overflow-x-auto whitespace-pre-wrap" data-testid="standard-output">
+              <pre
+                className="text-xs bg-white text-gray-800 p-2 rounded border overflow-x-auto whitespace-pre-wrap"
+                data-testid="standard-output"
+              >
                 {stage.output}
               </pre>
             </div>
@@ -81,7 +106,7 @@ function StageDetail({ stage }: { stage: ValidationStageResult }) {
 function getPageNumbers(currentPage: number, totalPages: number): number[] {
   const pages = [];
   const maxVisiblePages = 5;
-  
+
   if (totalPages <= maxVisiblePages) {
     // Show all pages if total is small
     for (let i = 0; i < totalPages; i++) {
@@ -91,31 +116,31 @@ function getPageNumbers(currentPage: number, totalPages: number): number[] {
     // Show ellipsis pagination for large numbers
     const start = Math.max(0, currentPage - 2);
     const end = Math.min(totalPages - 1, currentPage + 2);
-    
+
     if (start > 0) {
       pages.push(0);
       if (start > 1) pages.push(-1); // Ellipsis marker
     }
-    
+
     for (let i = start; i <= end; i++) {
       pages.push(i);
     }
-    
+
     if (end < totalPages - 1) {
       if (end < totalPages - 2) pages.push(-1); // Ellipsis marker
       pages.push(totalPages - 1);
     }
   }
-  
+
   return pages;
 }
 
 // Component for the runs per page selector
-function RunsPerPageSelector({ 
-  runsPerPage, 
-  setRunsPerPage, 
-  totalRuns 
-}: { 
+function RunsPerPageSelector({
+  runsPerPage,
+  setRunsPerPage,
+  totalRuns,
+}: {
   runsPerPage: number;
   setRunsPerPage: (value: number) => void;
   totalRuns: number;
@@ -147,7 +172,7 @@ function PaginationControls({
   onPageChange,
   startIndex,
   runsPerPage,
-  totalRuns
+  totalRuns,
 }: {
   currentPage: number;
   totalPages: number;
@@ -163,7 +188,10 @@ function PaginationControls({
   }
 
   return (
-    <div className="flex items-center justify-between" data-testid="pagination-controls">
+    <div
+      className="flex items-center justify-between"
+      data-testid="pagination-controls"
+    >
       <div className="flex items-center gap-1">
         {/* First and Previous buttons */}
         <Button
@@ -183,16 +211,18 @@ function PaginationControls({
         >
           Previous
         </Button>
-        
+
         {/* Page numbers */}
         <div className="flex items-center gap-1 mx-2">
-          {pageNumbers.map((pageNum, index) => (
+          {pageNumbers.map((pageNum, index) =>
             pageNum === -1 ? (
-              <span key={`ellipsis-${index}`} className="px-2 text-gray-400">...</span>
+              <span key={`ellipsis-${index}`} className="px-2 text-gray-400">
+                ...
+              </span>
             ) : (
               <Button
                 key={pageNum}
-                variant={currentPage === pageNum ? "default" : "outline"}
+                variant={currentPage === pageNum ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => onPageChange(pageNum)}
                 className="min-w-[2rem] px-2"
@@ -200,14 +230,16 @@ function PaginationControls({
                 {pageNum + 1}
               </Button>
             )
-          ))}
+          )}
         </div>
-        
+
         {/* Next and Last buttons */}
         <Button
           variant="outline"
           size="sm"
-          onClick={() => onPageChange(Math.min(totalPages - 1, currentPage + 1))}
+          onClick={() =>
+            onPageChange(Math.min(totalPages - 1, currentPage + 1))
+          }
           disabled={currentPage === totalPages - 1}
         >
           Next
@@ -222,10 +254,11 @@ function PaginationControls({
           ⟩⟩
         </Button>
       </div>
-      
+
       <div className="flex items-center gap-2 text-sm text-gray-600">
         <span>
-          Showing {startIndex + 1}-{Math.min(startIndex + runsPerPage, totalRuns)} of {totalRuns}
+          Showing {startIndex + 1}-
+          {Math.min(startIndex + runsPerPage, totalRuns)} of {totalRuns}
         </span>
       </div>
     </div>
@@ -236,22 +269,22 @@ function PaginationControls({
 function ValidationRunItem({
   run,
   isExpanded,
-  onToggleExpand
+  onToggleExpand,
 }: {
   run: ValidationRun;
   isExpanded: boolean;
   onToggleExpand: () => void;
 }) {
   const navigate = useNavigate();
-  const successfulStages = run.stages.filter(stage => stage.success).length;
+  const successfulStages = run.stages.filter((stage) => stage.success).length;
   const failedStages = run.stages.length - successfulStages;
-  
+
   return (
     <div data-testid="validation-run-item">
       <div
         className={`p-3 rounded border-l-4 cursor-pointer transition-colors hover:bg-gray-50 ${
-          run.success 
-            ? 'border-green-500 bg-green-50' 
+          run.success
+            ? 'border-green-500 bg-green-50'
             : 'border-red-500 bg-red-50'
         }`}
         onClick={onToggleExpand}
@@ -296,7 +329,7 @@ function ValidationRunItem({
           </div>
         </div>
       </div>
-      
+
       {isExpanded && (
         <div className="mt-2 ml-4 p-3 bg-gray-50 rounded border">
           <h4 className="font-medium text-gray-900 mb-2">Stage Details</h4>
@@ -315,7 +348,7 @@ function ValidationRunItem({
 function ValidationRunsList({
   runs,
   expandedRun,
-  onToggleExpand
+  onToggleExpand,
 }: {
   runs: ValidationRun[];
   expandedRun: string | null;
@@ -343,33 +376,35 @@ export function RecentRuns({ runs }: { runs: ValidationRun[] }) {
   const [currentPage, setCurrentPage] = useState(0);
   const [expandedRun, setExpandedRun] = useState<string | null>(null);
   const [runsPerPage, setRunsPerPage] = useState(5);
-  
+
   const totalPages = Math.ceil(runs.length / runsPerPage);
   const startIndex = currentPage * runsPerPage;
   const currentRuns = runs.slice(startIndex, startIndex + runsPerPage);
-  
+
   // Reset to first page when runs per page changes
   React.useEffect(() => {
     setCurrentPage(0);
   }, [runsPerPage]);
-  
+
   const handleToggleExpand = (runId: string) => {
     setExpandedRun(expandedRun === runId ? null : runId);
   };
-  
+
   return (
     <Card>
       <CardHeader>
         <div className="flex flex-col gap-3">
           <div className="flex justify-between items-center">
-            <CardTitle className="text-gray-900">Recent Validation Runs</CardTitle>
+            <CardTitle className="text-gray-900">
+              Recent Validation Runs
+            </CardTitle>
             <RunsPerPageSelector
               runsPerPage={runsPerPage}
               setRunsPerPage={setRunsPerPage}
               totalRuns={runs.length}
             />
           </div>
-          
+
           <PaginationControls
             currentPage={currentPage}
             totalPages={totalPages}

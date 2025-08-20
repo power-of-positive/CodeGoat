@@ -40,11 +40,13 @@ const TASKS_ENDPOINT = `${API_BASE_URL}/tasks`;
 async function loadTasksFromDatabase(): Promise<TodoItem[]> {
   try {
     const response = await fetch(TASKS_ENDPOINT, {
-      signal: AbortSignal.timeout(5000) // 5 second timeout
+      signal: AbortSignal.timeout(5000), // 5 second timeout
     });
 
     if (!response.ok) {
-      console.warn(`⚠️ Failed to load tasks from database: ${response.status} ${response.statusText}`);
+      console.warn(
+        `⚠️ Failed to load tasks from database: ${response.status} ${response.statusText}`
+      );
       return [];
     }
 
@@ -81,9 +83,11 @@ function getCommitInfo(commitRef: string = 'HEAD'): CommitInfo {
   try {
     const hash = execSync(`git rev-parse ${commitRef}`, { encoding: 'utf-8' }).trim();
     const message = execSync(`git log -1 --pretty=%B ${commitRef}`, { encoding: 'utf-8' }).trim();
-    const timestamp = execSync(`git log -1 --pretty=%aI ${commitRef}`, { encoding: 'utf-8' }).trim();
+    const timestamp = execSync(`git log -1 --pretty=%aI ${commitRef}`, {
+      encoding: 'utf-8',
+    }).trim();
     const author = execSync(`git log -1 --pretty=%an ${commitRef}`, { encoding: 'utf-8' }).trim();
-    
+
     return { hash, message, timestamp, author };
   } catch (error) {
     console.error(`❌ Failed to get commit info: ${(error as Error).message}`);
@@ -100,14 +104,14 @@ function calculateDuration(startTime: string, endTime: string): string {
   const start = new Date(startTime).getTime();
   const end = new Date(endTime).getTime();
   const durationMs = end - start;
-  
+
   if (durationMs < 0) return 'Invalid duration';
-  
+
   const seconds = Math.floor(durationMs / 1000);
   const minutes = Math.floor(seconds / 60);
   const hours = Math.floor(minutes / 60);
   const days = Math.floor(hours / 24);
-  
+
   if (days > 0) {
     return `${days}d ${hours % 24}h ${minutes % 60}m`;
   } else if (hours > 0) {
@@ -126,7 +130,7 @@ function findTaskStartTime(taskId: string): string | null {
       `git log --grep="task.*#?${taskId}" --grep="#${taskId}" --pretty="%aI" --reverse`,
       { encoding: 'utf-8' }
     ).trim();
-    
+
     const timestamps = logOutput.split('\n').filter(Boolean);
     return timestamps.length > 0 ? timestamps[0] : null;
   } catch {
@@ -145,11 +149,13 @@ async function updateTaskInDatabase(taskId: string, updates: Partial<TodoItem>):
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(updates),
-      signal: AbortSignal.timeout(5000) // 5 second timeout
+      signal: AbortSignal.timeout(5000), // 5 second timeout
     });
 
     if (!response.ok) {
-      console.warn(`⚠️ Failed to update task ${taskId} in database: ${response.status} ${response.statusText}`);
+      console.warn(
+        `⚠️ Failed to update task ${taskId} in database: ${response.status} ${response.statusText}`
+      );
       return false;
     }
 
@@ -167,7 +173,7 @@ async function updateTaskInDatabase(taskId: string, updates: Partial<TodoItem>):
 async function isApiServerAvailable(): Promise<boolean> {
   try {
     const response = await fetch(`${API_BASE_URL}/health`, {
-      signal: AbortSignal.timeout(2000) // 2 second timeout
+      signal: AbortSignal.timeout(2000), // 2 second timeout
     });
     return response.ok;
   } catch {
@@ -179,9 +185,9 @@ async function isApiServerAvailable(): Promise<boolean> {
  * Process task completion based on commit message
  */
 async function processTaskCompletion(
-  todos: TodoItem[], 
-  commit: CommitInfo, 
-  taskId: string, 
+  todos: TodoItem[],
+  commit: CommitInfo,
+  taskId: string,
   apiAvailable: boolean
 ): Promise<void> {
   const task = todos.find(t => t.id === taskId);
@@ -189,13 +195,13 @@ async function processTaskCompletion(
     console.error(`❌ Task ${taskId} not found`);
     return;
   }
-  
+
   // Prepare task updates
   const updates: Partial<TodoItem> = {
     status: 'completed',
     endTime: commit.timestamp,
   };
-  
+
   // Try to find start time
   if (!task.startTime) {
     const startTime = findTaskStartTime(taskId);
@@ -208,21 +214,21 @@ async function processTaskCompletion(
       updates.startTime = endDate.toISOString();
     }
   }
-  
+
   // Calculate duration
   if (updates.startTime && updates.endTime) {
     updates.duration = calculateDuration(updates.startTime, updates.endTime);
   }
-  
+
   console.log(`✅ Marking task ${taskId} as completed`);
   console.log(`   Content: ${task.content.substring(0, 60)}...`);
   console.log(`   Duration: ${updates.duration || 'Unknown'}`);
-  
+
   // Update via API if available, otherwise update local file
   if (apiAvailable) {
     console.log(`🔄 Updating task ${taskId} in database...`);
     const dbUpdateSuccess = await updateTaskInDatabase(taskId, updates);
-    
+
     if (dbUpdateSuccess) {
       console.log(`✅ Task ${taskId} completed successfully in database`);
     } else {
@@ -254,19 +260,19 @@ async function updateTaskFromCommit(commitRef: string = 'HEAD'): Promise<void> {
     const todoListPath = path.join(process.cwd(), 'todo-list.json');
     todos = loadTodoList(todoListPath);
   }
-  
+
   if (todos.length === 0) {
     console.log('⚠️  No todos found');
     return;
   }
-  
+
   const commit = getCommitInfo(commitRef);
   console.log(`🔍 Processing commit: ${commit.hash.substring(0, 7)}`);
   console.log(`📝 Message: ${commit.message.split('\n')[0]}`);
-  
+
   // Check if commit has CODEGOAT prefix
   const codegoatTaskId = extractTaskId(commit.message, CODEGOAT_PATTERN);
-  
+
   if (codegoatTaskId) {
     console.log(`🐐 Found CODEGOAT task reference: ${codegoatTaskId}`);
     await processTaskCompletion(todos, commit, codegoatTaskId, apiAvailable);
@@ -279,7 +285,7 @@ async function updateTaskFromCommit(commitRef: string = 'HEAD'): Promise<void> {
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
   const commitRef = args[0] || 'HEAD';
-  
+
   try {
     await updateTaskFromCommit(commitRef);
   } catch (error) {

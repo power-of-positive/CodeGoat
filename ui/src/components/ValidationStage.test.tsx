@@ -26,7 +26,7 @@ describe('ValidationStage', () => {
 
   it('renders successful stage correctly', () => {
     render(<ValidationStage stage={mockSuccessStage} />);
-    
+
     expect(screen.getByText('lint')).toBeInTheDocument();
     expect(screen.getByText('2.0s')).toBeInTheDocument();
     expect(screen.getByText('✅')).toBeInTheDocument();
@@ -35,7 +35,7 @@ describe('ValidationStage', () => {
 
   it('renders failed stage correctly', () => {
     render(<ValidationStage stage={mockFailedStage} />);
-    
+
     expect(screen.getByText('test')).toBeInTheDocument();
     expect(screen.getByText('5.0s')).toBeInTheDocument();
     expect(screen.getByText('❌')).toBeInTheDocument();
@@ -46,10 +46,10 @@ describe('ValidationStage', () => {
   it('shows retry button for failed stage when onRetry provided', () => {
     const mockRetry = jest.fn();
     render(<ValidationStage stage={mockFailedStage} onRetry={mockRetry} />);
-    
+
     const retryButton = screen.getByText('Retry Stage');
     expect(retryButton).toBeInTheDocument();
-    
+
     fireEvent.click(retryButton);
     expect(mockRetry).toHaveBeenCalledTimes(1);
   });
@@ -57,13 +57,13 @@ describe('ValidationStage', () => {
   it('does not show retry button for successful stage', () => {
     const mockRetry = jest.fn();
     render(<ValidationStage stage={mockSuccessStage} onRetry={mockRetry} />);
-    
+
     expect(screen.queryByText('Retry Stage')).not.toBeInTheDocument();
   });
 
   it('does not show retry button when onRetry not provided', () => {
     render(<ValidationStage stage={mockFailedStage} />);
-    
+
     expect(screen.queryByText('Retry Stage')).not.toBeInTheDocument();
   });
 });

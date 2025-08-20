@@ -1,24 +1,16 @@
 /**
  * LLM code reviewer - modular version
  */
-import { LLMReviewerCore } from "./llm-reviewer-core";
-import type { ReviewedFile, LLMReviewOutput } from "./llm-reviewer-types";
-import {
-  generateReport,
-  generateStructuredData,
-  shouldBlockCommit,
-} from "./llm-reviewer-utils";
-import {
-  getChangedFiles,
-  createEmptyResult,
-  createErrorResult,
-} from "./llm-reviewer-helpers";
-import { processFiles } from "./llm-reviewer-processor";
-import { loadProjectEnvSync } from "../utils/env-config";
+import { LLMReviewerCore } from './llm-reviewer-core';
+import type { ReviewedFile, LLMReviewOutput } from './llm-reviewer-types';
+import { generateReport, generateStructuredData, shouldBlockCommit } from './llm-reviewer-utils';
+import { getChangedFiles, createEmptyResult, createErrorResult } from './llm-reviewer-helpers';
+import { processFiles } from './llm-reviewer-processor';
+import { loadProjectEnvSync } from '../utils/env-config';
 
 // Load environment variables synchronously
 loadProjectEnvSync(3);
-export type { LLMReviewOutput } from "./llm-reviewer-types";
+export type { LLMReviewOutput } from './llm-reviewer-types';
 
 /**
  * Main LLM reviewer class
@@ -39,11 +31,11 @@ export class LLMReviewer {
    * Review a single file with input validation
    */
   async reviewCode(filePath: string, content: string) {
-    if (!filePath || typeof filePath !== "string") {
-      throw new Error("Invalid filePath: must be non-empty string");
+    if (!filePath || typeof filePath !== 'string') {
+      throw new Error('Invalid filePath: must be non-empty string');
     }
-    if (typeof content !== "string") {
-      throw new Error("Invalid content: must be string");
+    if (typeof content !== 'string') {
+      throw new Error('Invalid content: must be string');
     }
     return this.core.reviewCode(filePath, content);
   }
@@ -52,8 +44,8 @@ export class LLMReviewer {
    * Review all changed files in a project
    */
   async reviewChangedFiles(projectRoot: string): Promise<LLMReviewOutput> {
-    if (!projectRoot || typeof projectRoot !== "string") {
-      throw new Error("Invalid projectRoot: must be non-empty string");
+    if (!projectRoot || typeof projectRoot !== 'string') {
+      throw new Error('Invalid projectRoot: must be non-empty string');
     }
 
     try {

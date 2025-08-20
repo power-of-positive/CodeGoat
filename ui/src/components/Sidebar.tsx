@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { 
-  ChartColumn, 
-  Settings, 
-  Menu, 
+import {
+  ChartColumn,
+  Settings,
+  Menu,
   X,
   Activity,
   CheckSquare,
   Shield,
   BarChart3,
   TestTube,
-  Zap
+  Zap,
 } from 'lucide-react';
 import { Button } from './ui/button';
 
@@ -30,52 +30,58 @@ const navItems: NavItem[] = [
     href: '/analytics',
     icon: ChartColumn,
     label: 'Analytics',
-    description: 'View validation metrics and performance data'
+    description: 'View validation metrics and performance data',
   },
   {
     href: '/tasks',
     icon: CheckSquare,
     label: 'Tasks',
-    description: 'Manage tasks with kanban-style board'
+    description: 'Manage tasks with kanban-style board',
   },
   {
     href: '/task-analytics',
     icon: BarChart3,
     label: 'Task Analytics',
-    description: 'View task completion statistics and trends'
+    description: 'View task completion statistics and trends',
   },
   {
     href: '/bdd-tests',
     icon: TestTube,
     label: 'BDD Tests',
-    description: 'View BDD scenarios and E2E test execution status'
+    description: 'View BDD scenarios and E2E test execution status',
   },
   {
     href: '/workers',
     icon: Zap,
     label: 'Workers',
-    description: 'Monitor Claude Code worker processes and logs'
+    description: 'Monitor Claude Code worker processes and logs',
   },
   {
     href: '/permissions',
     icon: Shield,
     label: 'Permissions',
-    description: 'Configure executor security permissions'
+    description: 'Configure executor security permissions',
   },
   {
     href: '/settings',
     icon: Settings,
     label: 'Settings',
-    description: 'Configure validation pipeline stages'
-  }
+    description: 'Configure validation pipeline stages',
+  },
 ];
 
 // Mobile overlay component
-function MobileOverlay({ isCollapsed, onToggle }: { isCollapsed: boolean; onToggle: () => void }) {
+function MobileOverlay({
+  isCollapsed,
+  onToggle,
+}: {
+  isCollapsed: boolean;
+  onToggle: () => void;
+}) {
   if (isCollapsed) return null;
-  
+
   return (
-    <div 
+    <div
       className="fixed inset-0 bg-gray-600 bg-opacity-50 z-40 md:hidden"
       onClick={onToggle}
     />
@@ -83,7 +89,13 @@ function MobileOverlay({ isCollapsed, onToggle }: { isCollapsed: boolean; onTogg
 }
 
 // Sidebar header component
-function SidebarHeader({ isCollapsed, onToggle }: { isCollapsed: boolean; onToggle: () => void }) {
+function SidebarHeader({
+  isCollapsed,
+  onToggle,
+}: {
+  isCollapsed: boolean;
+  onToggle: () => void;
+}) {
   return (
     <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
       {!isCollapsed && (
@@ -100,11 +112,7 @@ function SidebarHeader({ isCollapsed, onToggle }: { isCollapsed: boolean; onTogg
         onClick={onToggle}
         className="hidden md:flex h-8 w-8 p-0"
       >
-        {isCollapsed ? (
-          <Menu className="h-4 w-4" />
-        ) : (
-          <X className="h-4 w-4" />
-        )}
+        {isCollapsed ? <Menu className="h-4 w-4" /> : <X className="h-4 w-4" />}
       </Button>
       {/* Mobile close button */}
       <Button
@@ -120,33 +128,36 @@ function SidebarHeader({ isCollapsed, onToggle }: { isCollapsed: boolean; onTogg
 }
 
 // Navigation item component
-function NavigationItem({ 
-  item, 
-  isActive, 
-  isCollapsed, 
-  onMobileClick 
-}: { 
-  item: NavItem; 
-  isActive: boolean; 
-  isCollapsed: boolean; 
+function NavigationItem({
+  item,
+  isActive,
+  isCollapsed,
+  onMobileClick,
+}: {
+  item: NavItem;
+  isActive: boolean;
+  isCollapsed: boolean;
   onMobileClick: () => void;
 }) {
   const Icon = item.icon;
-  
+
   return (
     <li>
       <Link
         to={item.href}
         className={`
           flex items-center gap-3 px-3 py-2 rounded-lg transition-colors
-          ${isActive 
-            ? 'bg-blue-50 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300' 
-            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+          ${
+            isActive
+              ? 'bg-blue-50 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300'
+              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
           }
         `}
         onClick={onMobileClick}
       >
-        <Icon className={`h-5 w-5 flex-shrink-0 ${isActive ? 'text-blue-600' : ''}`} />
+        <Icon
+          className={`h-5 w-5 flex-shrink-0 ${isActive ? 'text-blue-600' : ''}`}
+        />
         {!isCollapsed && (
           <div className="flex-1 min-w-0">
             <div className="font-medium text-sm">{item.label}</div>
@@ -161,21 +172,21 @@ function NavigationItem({
 }
 
 // Navigation component
-function SidebarNavigation({ 
-  isCollapsed, 
-  onMobileNavigate 
-}: { 
-  isCollapsed: boolean; 
+function SidebarNavigation({
+  isCollapsed,
+  onMobileNavigate,
+}: {
+  isCollapsed: boolean;
   onMobileNavigate: () => void;
 }) {
   const location = useLocation();
-  
+
   return (
     <nav className="flex-1 p-4">
       <ul className="space-y-2">
         {navItems.map((item) => {
           const isActive = location.pathname === item.href;
-          
+
           return (
             <NavigationItem
               key={item.href}
@@ -205,7 +216,13 @@ function SidebarFooter({ isCollapsed }: { isCollapsed: boolean }) {
 }
 
 // Mobile menu button component
-function MobileMenuButton({ isCollapsed, onToggle }: { isCollapsed: boolean; onToggle: () => void }) {
+function MobileMenuButton({
+  isCollapsed,
+  onToggle,
+}: {
+  isCollapsed: boolean;
+  onToggle: () => void;
+}) {
   return (
     <Button
       variant="outline"
@@ -238,17 +255,22 @@ export function Sidebar({ className = '' }: SidebarProps) {
   return (
     <>
       <MobileOverlay isCollapsed={isCollapsed} onToggle={toggleSidebar} />
-      
+
       {/* Sidebar */}
-      <div className={`
+      <div
+        className={`
         fixed left-0 top-0 z-50 h-full bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 
         transition-transform duration-300 ease-in-out transform
         ${isCollapsed ? '-translate-x-full md:translate-x-0' : 'translate-x-0'}
         ${isCollapsed ? 'md:w-16' : 'w-64'}
         ${className}
-      `}>
+      `}
+      >
         <SidebarHeader isCollapsed={isCollapsed} onToggle={toggleSidebar} />
-        <SidebarNavigation isCollapsed={isCollapsed} onMobileNavigate={handleMobileNavigate} />
+        <SidebarNavigation
+          isCollapsed={isCollapsed}
+          onMobileNavigate={handleMobileNavigate}
+        />
         <SidebarFooter isCollapsed={isCollapsed} />
       </div>
 

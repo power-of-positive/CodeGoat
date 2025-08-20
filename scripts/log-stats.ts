@@ -2,7 +2,7 @@
 
 /**
  * Log Statistics Script
- * 
+ *
  * Provides detailed analysis of log directory without performing cleanup.
  */
 
@@ -24,26 +24,35 @@ function displayOverallStats(stats: LogStats): void {
   console.log(`  Total log files: ${stats.totalFiles}`);
   console.log(`  Total size: ${(stats.totalSize / 1024 / 1024).toFixed(2)} MB`);
   console.log(`  Average file size: ${(stats.averageFileSize / 1024).toFixed(2)} KB`);
-  
+
   if (stats.oldestFile && stats.newestFile) {
     const ageInDays = (Date.now() - stats.oldestFile.getTime()) / (24 * 60 * 60 * 1000);
-    console.log(`  Oldest file: ${stats.oldestFile.toLocaleDateString()} (${Math.floor(ageInDays)} days ago)`);
+    console.log(
+      `  Oldest file: ${stats.oldestFile.toLocaleDateString()} (${Math.floor(ageInDays)} days ago)`
+    );
     console.log(`  Newest file: ${stats.newestFile.toLocaleDateString()}`);
   }
 }
 
 function displaySizeByLevel(stats: LogStats): void {
   console.log('\n📋 Size by Log Level:');
-  const totalSizeForPercentage = Object.values(stats.sizeByLevel).reduce((a: number, b: number) => a + b, 0);
-  for (const [level, size] of Object.entries(stats.sizeByLevel).sort(([,a]: [string, number], [,b]: [string, number]) => b - a)) {
+  const totalSizeForPercentage = Object.values(stats.sizeByLevel).reduce(
+    (a: number, b: number) => a + b,
+    0
+  );
+  for (const [level, size] of Object.entries(stats.sizeByLevel).sort(
+    ([, a]: [string, number], [, b]: [string, number]) => b - a
+  )) {
     const percentage = (((size as number) / totalSizeForPercentage) * 100).toFixed(1);
-    console.log(`  ${level.padEnd(8)}: ${((size as number) / 1024 / 1024).toFixed(2).padStart(8)} MB (${percentage.padStart(5)}%)`);
+    console.log(
+      `  ${level.padEnd(8)}: ${((size as number) / 1024 / 1024).toFixed(2).padStart(8)} MB (${percentage.padStart(5)}%)`
+    );
   }
 }
 
 function performHealthAssessment(stats: LogStats): void {
   console.log('\n🔍 Health Assessment:');
-  
+
   if (stats.totalFiles > 100) {
     console.log('  ⚠️  High number of log files - consider cleanup');
   } else if (stats.totalFiles > 50) {
@@ -52,17 +61,21 @@ function performHealthAssessment(stats: LogStats): void {
     console.log('  ✅ Log file count is healthy');
   }
 
-  if (stats.totalSize > 500 * 1024 * 1024) { // 500MB
+  if (stats.totalSize > 500 * 1024 * 1024) {
+    // 500MB
     console.log('  ⚠️  Large log directory size - cleanup recommended');
-  } else if (stats.totalSize > 100 * 1024 * 1024) { // 100MB
+  } else if (stats.totalSize > 100 * 1024 * 1024) {
+    // 100MB
     console.log('  ⚠️  Moderate log directory size - monitoring recommended');
   } else {
     console.log('  ✅ Log directory size is healthy');
   }
 
-  if (stats.averageFileSize > 50 * 1024 * 1024) { // 50MB
+  if (stats.averageFileSize > 50 * 1024 * 1024) {
+    // 50MB
     console.log('  ⚠️  Large average file size - consider log rotation');
-  } else if (stats.averageFileSize > 10 * 1024 * 1024) { // 10MB
+  } else if (stats.averageFileSize > 10 * 1024 * 1024) {
+    // 10MB
     console.log('  ⚠️  Moderate average file size - monitoring recommended');
   } else {
     console.log('  ✅ Average file size is healthy');
@@ -105,7 +118,7 @@ async function main() {
   console.log('📊 Log Directory Analysis\n');
 
   const logsDir = join(process.cwd(), 'logs');
-  
+
   const logger = new WinstonLogger({
     level: 'error',
     logsDir,
@@ -125,12 +138,11 @@ async function main() {
 
   try {
     const stats = await cleaner.getLogStats();
-    
+
     displayOverallStats(stats);
     displaySizeByLevel(stats);
     performHealthAssessment(stats);
     displayRecommendations(stats);
-
   } catch (error) {
     console.error('❌ Analysis failed:', error);
     process.exit(1);
@@ -139,7 +151,7 @@ async function main() {
 
 // Handle script execution
 if (require.main === module) {
-  main().catch((error) => {
+  main().catch(error => {
     console.error('❌ Script failed:', error);
     process.exit(1);
   });

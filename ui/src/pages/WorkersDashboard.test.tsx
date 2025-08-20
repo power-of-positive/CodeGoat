@@ -43,9 +43,7 @@ const createWrapper = () => {
 
   return ({ children }: { children: React.ReactNode }) => (
     <MemoryRouter>
-      <QueryClientProvider client={queryClient}>
-        {children}
-      </QueryClientProvider>
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
     </MemoryRouter>
   );
 };
@@ -95,7 +93,11 @@ describe('WorkersDashboard', () => {
 
     await waitFor(() => {
       expect(screen.getByText('No Workers')).toBeInTheDocument();
-      expect(screen.getByText('No Claude Code workers are currently running. Start a worker from the task board to see it here.')).toBeInTheDocument();
+      expect(
+        screen.getByText(
+          'No Claude Code workers are currently running. Start a worker from the task board to see it here.'
+        )
+      ).toBeInTheDocument();
     });
   });
 
@@ -209,9 +211,9 @@ describe('WorkersDashboard', () => {
       totalCount: 1,
       totalBlockedCommands: 0,
     });
-    mockWorkersApi.stopWorker.mockResolvedValue({ 
-      workerId: 'worker-123-abc', 
-      status: 'stopped' 
+    mockWorkersApi.stopWorker.mockResolvedValue({
+      workerId: 'worker-123-abc',
+      status: 'stopped',
     });
 
     // Mock window.confirm to always return true
@@ -235,7 +237,7 @@ describe('WorkersDashboard', () => {
     fireEvent.click(stopButton);
 
     expect(window.confirm).toHaveBeenCalledWith('Are you sure you want to stop this worker?');
-    
+
     await waitFor(() => {
       expect(mockWorkersApi.stopWorker).toHaveBeenCalledWith('worker-123-abc');
     });

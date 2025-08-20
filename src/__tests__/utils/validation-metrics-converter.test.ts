@@ -14,8 +14,8 @@ describe('ValidationMetricsConverter', () => {
           stages: [
             { id: 'lint', name: 'Lint', success: true, duration: 200 },
             { id: 'test', name: 'Test', success: true, duration: 500 },
-            { id: 'build', name: 'Build', success: true, duration: 300 }
-          ]
+            { id: 'build', name: 'Build', success: true, duration: 300 },
+          ],
         },
         {
           timestamp: '2023-10-01T09:00:00Z',
@@ -26,15 +26,15 @@ describe('ValidationMetricsConverter', () => {
           failed: 1,
           stages: [
             { id: 'lint', name: 'Lint', success: true, duration: 300 },
-            { id: 'test', name: 'Test', success: false, duration: 500 }
-          ]
-        }
+            { id: 'test', name: 'Test', success: false, duration: 500 },
+          ],
+        },
       ];
 
       const sessions = ValidationMetricsConverter.convertToSessions(metrics, 10);
 
       expect(sessions).toHaveLength(2);
-      
+
       // Check first session (most recent)
       const firstSession = sessions[0];
       expect(firstSession.sessionId).toMatch(/^validation_\d+_0$/);
@@ -45,14 +45,14 @@ describe('ValidationMetricsConverter', () => {
       expect(firstSession.finalSuccess).toBe(true);
       expect(firstSession.totalValidationTime).toBe(1000);
       expect(firstSession.averageStageTime).toBe(1000 / 3);
-      
+
       expect(firstSession.attempts).toHaveLength(1);
       expect(firstSession.attempts[0].totalStages).toBe(3);
       expect(firstSession.attempts[0].passed).toBe(3);
       expect(firstSession.attempts[0].failed).toBe(0);
       expect(firstSession.attempts[0].success).toBe(true);
       expect(firstSession.attempts[0].stages).toHaveLength(3);
-      
+
       // Check second session
       const secondSession = sessions[1];
       expect(secondSession.taskDescription).toBe('Validation pipeline execution (Failed)');
@@ -71,7 +71,7 @@ describe('ValidationMetricsConverter', () => {
         timestamp: `2023-10-01T${String(i).padStart(2, '0')}:00:00Z`,
         totalTime: 1000,
         totalStages: 1,
-        success: true
+        success: true,
       }));
 
       const sessions = ValidationMetricsConverter.convertToSessions(metrics, 3);
@@ -81,7 +81,7 @@ describe('ValidationMetricsConverter', () => {
     it('should handle metrics with missing fields', () => {
       const metrics = [
         {
-          timestamp: '2023-10-01T10:00:00Z'
+          timestamp: '2023-10-01T10:00:00Z',
           // Missing other fields
         },
         {
@@ -89,14 +89,14 @@ describe('ValidationMetricsConverter', () => {
           totalTime: null,
           totalStages: undefined,
           success: false, // Boolean false
-          stages: 'not-an-array' // Wrong type
-        }
+          stages: 'not-an-array', // Wrong type
+        },
       ];
 
       const sessions = ValidationMetricsConverter.convertToSessions(metrics, 10);
-      
+
       expect(sessions).toHaveLength(2);
-      
+
       // First session with missing fields
       expect(sessions[0].totalDuration).toBe(0);
       expect(sessions[0].finalSuccess).toBe(false);
@@ -105,7 +105,7 @@ describe('ValidationMetricsConverter', () => {
       expect(sessions[0].attempts[0].passed).toBe(0);
       expect(sessions[0].attempts[0].failed).toBe(0);
       expect(sessions[0].attempts[0].stages).toHaveLength(0);
-      
+
       // Second session with wrong types
       expect(sessions[1].totalDuration).toBe(0);
       expect(sessions[1].finalSuccess).toBe(false);
@@ -122,28 +122,28 @@ describe('ValidationMetricsConverter', () => {
           stages: [
             { id: 'lint', success: true, duration: 200 }, // Missing name
             { name: 'Test', success: false }, // Missing id and duration
-            {} // Completely empty stage
-          ]
-        }
+            {}, // Completely empty stage
+          ],
+        },
       ];
 
       const sessions = ValidationMetricsConverter.convertToSessions(metrics, 10);
       const stages = sessions[0].attempts[0].stages;
-      
+
       expect(stages).toHaveLength(3);
-      
+
       // First stage
       expect(stages[0].id).toBe('lint');
       expect(stages[0].name).toBe('lint'); // Falls back to id
       expect(stages[0].success).toBe(true);
       expect(stages[0].duration).toBe(200);
-      
+
       // Second stage
       expect(stages[1].id).toBe('unknown'); // Default fallback
       expect(stages[1].name).toBe('Test');
       expect(stages[1].success).toBe(false);
       expect(stages[1].duration).toBe(0);
-      
+
       // Third stage (empty)
       expect(stages[2].id).toBe('unknown');
       expect(stages[2].name).toBe('Unknown Stage');
@@ -155,7 +155,7 @@ describe('ValidationMetricsConverter', () => {
   describe('calculateAnalytics', () => {
     it('should return empty analytics for empty metrics', () => {
       const analytics = ValidationMetricsConverter.calculateAnalytics([]);
-      
+
       expect(analytics).toEqual({
         totalSessions: 0,
         successRate: 0,
@@ -176,8 +176,8 @@ describe('ValidationMetricsConverter', () => {
           success: true,
           stages: [
             { id: 'lint', success: true, duration: 400 },
-            { id: 'test', success: true, duration: 600 }
-          ]
+            { id: 'test', success: true, duration: 600 },
+          ],
         },
         {
           timestamp: '2023-10-01T11:00:00Z',
@@ -185,8 +185,8 @@ describe('ValidationMetricsConverter', () => {
           success: true,
           stages: [
             { id: 'lint', success: true, duration: 500 },
-            { id: 'test', success: false, duration: 1000 }
-          ]
+            { id: 'test', success: false, duration: 1000 },
+          ],
         },
         {
           timestamp: '2023-10-01T12:00:00Z',
@@ -194,40 +194,40 @@ describe('ValidationMetricsConverter', () => {
           success: false,
           stages: [
             { id: 'lint', success: false, duration: 300 },
-            { id: 'test', success: false, duration: 500 }
-          ]
-        }
+            { id: 'test', success: false, duration: 500 },
+          ],
+        },
       ];
 
       const analytics = ValidationMetricsConverter.calculateAnalytics(metrics);
-      
+
       expect(analytics.totalSessions).toBe(3);
       expect(analytics.successRate).toBe((2 / 3) * 100); // 2 successful out of 3
       expect(analytics.averageTimeToSuccess).toBe((1000 + 1500) / 2); // Average of successful attempts
       expect(analytics.averageAttemptsToSuccess).toBe(1); // Always 1 for validation metrics
-      
+
       // Stage success rates
       expect(analytics.stageSuccessRates).toEqual({
         lint: { attempts: 3, successes: 2, rate: (2 / 3) * 100 },
-        test: { attempts: 3, successes: 1, rate: (1 / 3) * 100 }
+        test: { attempts: 3, successes: 1, rate: (1 / 3) * 100 },
       });
-      
+
       // Most failed stage should be 'test' with lower success rate
       expect(analytics.mostFailedStage).toBe('test');
-      
+
       // Average stage time
       expect(analytics.averageStageTime).toEqual({
         lint: Math.round((400 + 500 + 300) / 3), // 400ms average
-        test: Math.round((600 + 1000 + 500) / 3) // 700ms average
+        test: Math.round((600 + 1000 + 500) / 3), // 700ms average
       });
-      
+
       // Daily stats
       expect(analytics.dailyStats).toEqual({
         '2023-10-01': {
           sessions: 3,
           successes: 2,
-          totalTime: 3300
-        }
+          totalTime: 3300,
+        },
       });
     });
 
@@ -236,19 +236,19 @@ describe('ValidationMetricsConverter', () => {
         {
           timestamp: '2023-10-01T10:00:00Z',
           totalTime: 1000,
-          success: true
+          success: true,
           // No stages
         },
         {
           timestamp: '2023-10-01T11:00:00Z',
           totalTime: 500,
           success: false,
-          stages: null // Null stages
-        }
+          stages: null, // Null stages
+        },
       ];
 
       const analytics = ValidationMetricsConverter.calculateAnalytics(metrics);
-      
+
       expect(analytics.totalSessions).toBe(2);
       expect(analytics.successRate).toBe(50);
       expect(analytics.stageSuccessRates).toEqual({});
@@ -260,22 +260,22 @@ describe('ValidationMetricsConverter', () => {
         {
           timestamp: 'invalid-date',
           totalTime: 1000,
-          success: true
+          success: true,
         },
         {
           // No timestamp
           totalTime: 500,
-          success: false
+          success: false,
         },
         {
           timestamp: null,
           totalTime: 800,
-          success: true
-        }
+          success: true,
+        },
       ];
 
       const analytics = ValidationMetricsConverter.calculateAnalytics(metrics);
-      
+
       expect(analytics.totalSessions).toBe(3);
       expect(analytics.dailyStats).toEqual({}); // No valid dates
     });
@@ -284,18 +284,18 @@ describe('ValidationMetricsConverter', () => {
       const metrics = [
         {
           timestamp: '2023-10-01T10:00:00Z',
-          success: true
+          success: true,
           // Missing totalTime
         },
         {
           timestamp: '2023-10-01T11:00:00Z',
           totalTime: null,
-          success: true
-        }
+          success: true,
+        },
       ];
 
       const analytics = ValidationMetricsConverter.calculateAnalytics(metrics);
-      
+
       expect(analytics.averageTimeToSuccess).toBe(0); // Should handle missing times
       expect(analytics.dailyStats['2023-10-01'].totalTime).toBe(0);
     });
@@ -303,11 +303,11 @@ describe('ValidationMetricsConverter', () => {
     it('should handle all failed attempts', () => {
       const metrics = [
         { timestamp: '2023-10-01T10:00:00Z', success: false },
-        { timestamp: '2023-10-01T11:00:00Z', success: false }
+        { timestamp: '2023-10-01T11:00:00Z', success: false },
       ];
 
       const analytics = ValidationMetricsConverter.calculateAnalytics(metrics);
-      
+
       expect(analytics.successRate).toBe(0);
       expect(analytics.averageTimeToSuccess).toBe(0);
       expect(analytics.averageAttemptsToSuccess).toBe(0);
@@ -319,43 +319,43 @@ describe('ValidationMetricsConverter', () => {
           stages: [
             { id: 'lint', success: true },
             { id: 'test', success: true },
-            { id: 'build', success: false }
-          ]
+            { id: 'build', success: false },
+          ],
         },
         {
           stages: [
             { id: 'lint', success: false },
             { id: 'test', success: true },
-            { id: 'build', success: true }
-          ]
+            { id: 'build', success: true },
+          ],
         },
         {
           stages: [
             { id: 'lint', success: true },
-            { id: 'test', success: false }
+            { id: 'test', success: false },
             // Build stage missing
-          ]
-        }
+          ],
+        },
       ];
 
       const analytics = ValidationMetricsConverter.calculateAnalytics(metrics);
-      
+
       expect(analytics.stageSuccessRates.lint).toEqual({
         attempts: 3,
         successes: 2,
-        rate: (2 / 3) * 100
+        rate: (2 / 3) * 100,
       });
-      
+
       expect(analytics.stageSuccessRates.test).toEqual({
         attempts: 3,
         successes: 2,
-        rate: (2 / 3) * 100
+        rate: (2 / 3) * 100,
       });
-      
+
       expect(analytics.stageSuccessRates.build).toEqual({
         attempts: 2,
         successes: 1,
-        rate: 50
+        rate: 50,
       });
     });
 
@@ -364,33 +364,33 @@ describe('ValidationMetricsConverter', () => {
         {
           timestamp: '2023-10-01T10:00:00Z',
           totalTime: 1000,
-          success: true
+          success: true,
         },
         {
           timestamp: '2023-10-01T14:00:00Z',
           totalTime: 800,
-          success: false
+          success: false,
         },
         {
           timestamp: '2023-10-02T10:00:00Z',
           totalTime: 1200,
-          success: true
-        }
+          success: true,
+        },
       ];
 
       const analytics = ValidationMetricsConverter.calculateAnalytics(metrics);
-      
+
       expect(analytics.dailyStats).toEqual({
         '2023-10-01': {
           sessions: 2,
           successes: 1,
-          totalTime: 1800
+          totalTime: 1800,
         },
         '2023-10-02': {
           sessions: 1,
           successes: 1,
-          totalTime: 1200
-        }
+          totalTime: 1200,
+        },
       });
     });
   });

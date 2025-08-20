@@ -34,7 +34,9 @@ describe('Analytics Routes', () => {
     } as jest.Mocked<ILogger>;
 
     // Mock the constructor to return our mock service
-    (AnalyticsService as jest.MockedClass<typeof AnalyticsService>).mockImplementation(() => mockAnalyticsService);
+    (AnalyticsService as jest.MockedClass<typeof AnalyticsService>).mockImplementation(
+      () => mockAnalyticsService
+    );
 
     // Create Express app with the routes
     app = express();
@@ -56,16 +58,14 @@ describe('Analytics Routes', () => {
         mostFailedStage: 'test',
         stageSuccessRates: {
           lint: { attempts: 10, successes: 9, rate: 90 },
-          test: { attempts: 10, successes: 6, rate: 60 }
+          test: { attempts: 10, successes: 6, rate: 60 },
         },
-        dailyStats: {}
+        dailyStats: {},
       };
 
       mockAnalyticsService.getAnalytics.mockResolvedValue(mockAnalytics);
 
-      const response = await request(app)
-        .get('/api/analytics/')
-        .expect(200);
+      const response = await request(app).get('/api/analytics/').expect(200);
 
       expect(response.body).toEqual(mockAnalytics);
       expect(mockAnalyticsService.getAnalytics).toHaveBeenCalledTimes(1);
@@ -76,49 +76,42 @@ describe('Analytics Routes', () => {
       const error = new Error('Analytics service error');
       mockAnalyticsService.getAnalytics.mockRejectedValue(error);
 
-      const response = await request(app)
-        .get('/api/analytics/')
-        .expect(500);
+      const response = await request(app).get('/api/analytics/').expect(500);
 
       expect(response.body).toEqual({
-        error: 'Failed to get analytics'
+        error: 'Failed to get analytics',
       });
 
-      expect(mockLogger.error).toHaveBeenCalledWith(
-        'Failed to get analytics',
-        error
-      );
+      expect(mockLogger.error).toHaveBeenCalledWith('Failed to get analytics', error);
     });
   });
 
   describe('GET /api/analytics/sessions', () => {
     it('should return sessions with default limit', async () => {
       const mockSessions = [
-        { 
-          sessionId: '1', 
-          startTime: 1000, 
+        {
+          sessionId: '1',
+          startTime: 1000,
           endTime: 2000,
           attempts: [],
           finalSuccess: true,
           totalValidationTime: 1000,
-          averageStageTime: 500
+          averageStageTime: 500,
         },
-        { 
-          sessionId: '2', 
-          startTime: 2000, 
+        {
+          sessionId: '2',
+          startTime: 2000,
           endTime: 3000,
           attempts: [],
           finalSuccess: false,
           totalValidationTime: 1000,
-          averageStageTime: 500
-        }
+          averageStageTime: 500,
+        },
       ];
 
       mockAnalyticsService.getRecentSessions.mockResolvedValue(mockSessions);
 
-      const response = await request(app)
-        .get('/api/analytics/sessions')
-        .expect(200);
+      const response = await request(app).get('/api/analytics/sessions').expect(200);
 
       expect(response.body).toEqual({ sessions: mockSessions });
       expect(mockAnalyticsService.getRecentSessions).toHaveBeenCalledWith(10);
@@ -126,22 +119,20 @@ describe('Analytics Routes', () => {
 
     it('should return sessions with custom limit', async () => {
       const mockSessions = [
-        { 
-          sessionId: '1', 
-          startTime: 1000, 
+        {
+          sessionId: '1',
+          startTime: 1000,
           endTime: 2000,
           attempts: [],
           finalSuccess: true,
           totalValidationTime: 1000,
-          averageStageTime: 500
-        }
+          averageStageTime: 500,
+        },
       ];
 
       mockAnalyticsService.getRecentSessions.mockResolvedValue(mockSessions);
 
-      const response = await request(app)
-        .get('/api/analytics/sessions?limit=5')
-        .expect(200);
+      const response = await request(app).get('/api/analytics/sessions?limit=5').expect(200);
 
       expect(response.body).toEqual({ sessions: mockSessions });
       expect(mockAnalyticsService.getRecentSessions).toHaveBeenCalledWith(5);
@@ -151,9 +142,7 @@ describe('Analytics Routes', () => {
       const mockSessions: any[] = [];
       mockAnalyticsService.getRecentSessions.mockResolvedValue(mockSessions);
 
-      await request(app)
-        .get('/api/analytics/sessions?limit=invalid')
-        .expect(200);
+      await request(app).get('/api/analytics/sessions?limit=invalid').expect(200);
 
       expect(mockAnalyticsService.getRecentSessions).toHaveBeenCalledWith(10);
     });
@@ -162,18 +151,13 @@ describe('Analytics Routes', () => {
       const error = new Error('Sessions service error');
       mockAnalyticsService.getRecentSessions.mockRejectedValue(error);
 
-      const response = await request(app)
-        .get('/api/analytics/sessions')
-        .expect(500);
+      const response = await request(app).get('/api/analytics/sessions').expect(500);
 
       expect(response.body).toEqual({
-        error: 'Failed to get sessions'
+        error: 'Failed to get sessions',
       });
 
-      expect(mockLogger.error).toHaveBeenCalledWith(
-        'Failed to get sessions',
-        error
-      );
+      expect(mockLogger.error).toHaveBeenCalledWith('Failed to get sessions', error);
     });
   });
 
@@ -186,14 +170,12 @@ describe('Analytics Routes', () => {
         attempts: [],
         finalSuccess: true,
         totalValidationTime: 1000,
-        averageStageTime: 500
+        averageStageTime: 500,
       };
 
       mockAnalyticsService.getSession.mockResolvedValue(mockSession);
 
-      const response = await request(app)
-        .get('/api/analytics/sessions/test-session')
-        .expect(200);
+      const response = await request(app).get('/api/analytics/sessions/test-session').expect(200);
 
       expect(response.body).toEqual(mockSession);
       expect(mockAnalyticsService.getSession).toHaveBeenCalledWith('test-session');
@@ -202,12 +184,10 @@ describe('Analytics Routes', () => {
     it('should return 404 when session not found', async () => {
       mockAnalyticsService.getSession.mockResolvedValue(null);
 
-      const response = await request(app)
-        .get('/api/analytics/sessions/non-existent')
-        .expect(404);
+      const response = await request(app).get('/api/analytics/sessions/non-existent').expect(404);
 
       expect(response.body).toEqual({
-        error: 'Session not found'
+        error: 'Session not found',
       });
     });
 
@@ -215,18 +195,13 @@ describe('Analytics Routes', () => {
       const error = new Error('Service error');
       mockAnalyticsService.getSession.mockRejectedValue(error);
 
-      const response = await request(app)
-        .get('/api/analytics/sessions/test-session')
-        .expect(500);
+      const response = await request(app).get('/api/analytics/sessions/test-session').expect(500);
 
       expect(response.body).toEqual({
-        error: 'Failed to get session'
+        error: 'Failed to get session',
       });
 
-      expect(mockLogger.error).toHaveBeenCalledWith(
-        'Failed to get session',
-        error
-      );
+      expect(mockLogger.error).toHaveBeenCalledWith('Failed to get session', error);
     });
   });
 
@@ -239,58 +214,43 @@ describe('Analytics Routes', () => {
         .post('/api/analytics/sessions')
         .send({
           userPrompt: 'Test prompt',
-          taskDescription: 'Test task'
+          taskDescription: 'Test task',
         })
         .expect(201);
 
       expect(response.body).toEqual({
         message: 'Session started successfully',
-        sessionId
+        sessionId,
       });
 
-      expect(mockAnalyticsService.startSession).toHaveBeenCalledWith(
-        'Test prompt',
-        'Test task'
-      );
+      expect(mockAnalyticsService.startSession).toHaveBeenCalledWith('Test prompt', 'Test task');
     });
 
     it('should start session without prompt and description', async () => {
       const sessionId = 'new-session-id';
       mockAnalyticsService.startSession.mockResolvedValue(sessionId);
 
-      const response = await request(app)
-        .post('/api/analytics/sessions')
-        .send({})
-        .expect(201);
+      const response = await request(app).post('/api/analytics/sessions').send({}).expect(201);
 
       expect(response.body).toEqual({
         message: 'Session started successfully',
-        sessionId
+        sessionId,
       });
 
-      expect(mockAnalyticsService.startSession).toHaveBeenCalledWith(
-        undefined,
-        undefined
-      );
+      expect(mockAnalyticsService.startSession).toHaveBeenCalledWith(undefined, undefined);
     });
 
     it('should handle errors when starting session', async () => {
       const error = new Error('Start session error');
       mockAnalyticsService.startSession.mockRejectedValue(error);
 
-      const response = await request(app)
-        .post('/api/analytics/sessions')
-        .send({})
-        .expect(500);
+      const response = await request(app).post('/api/analytics/sessions').send({}).expect(500);
 
       expect(response.body).toEqual({
-        error: 'Failed to start session'
+        error: 'Failed to start session',
       });
 
-      expect(mockLogger.error).toHaveBeenCalledWith(
-        'Failed to start session',
-        error
-      );
+      expect(mockLogger.error).toHaveBeenCalledWith('Failed to start session', error);
     });
   });
 
@@ -305,13 +265,10 @@ describe('Analytics Routes', () => {
 
       expect(response.body).toEqual({
         message: 'Session ended successfully',
-        sessionId: 'test-session'
+        sessionId: 'test-session',
       });
 
-      expect(mockAnalyticsService.endSession).toHaveBeenCalledWith(
-        'test-session',
-        true
-      );
+      expect(mockAnalyticsService.endSession).toHaveBeenCalledWith('test-session', true);
     });
 
     it('should handle success false value', async () => {
@@ -322,24 +279,15 @@ describe('Analytics Routes', () => {
         .send({ success: false })
         .expect(200);
 
-      expect(mockAnalyticsService.endSession).toHaveBeenCalledWith(
-        'test-session',
-        false
-      );
+      expect(mockAnalyticsService.endSession).toHaveBeenCalledWith('test-session', false);
     });
 
     it('should handle missing success value', async () => {
       mockAnalyticsService.endSession.mockResolvedValue(undefined);
 
-      await request(app)
-        .put('/api/analytics/sessions/test-session/end')
-        .send({})
-        .expect(200);
+      await request(app).put('/api/analytics/sessions/test-session/end').send({}).expect(200);
 
-      expect(mockAnalyticsService.endSession).toHaveBeenCalledWith(
-        'test-session',
-        false
-      );
+      expect(mockAnalyticsService.endSession).toHaveBeenCalledWith('test-session', false);
     });
 
     it('should return 404 when session not found', async () => {
@@ -352,7 +300,7 @@ describe('Analytics Routes', () => {
         .expect(404);
 
       expect(response.body).toEqual({
-        error: 'Session not found'
+        error: 'Session not found',
       });
     });
 
@@ -366,13 +314,10 @@ describe('Analytics Routes', () => {
         .expect(500);
 
       expect(response.body).toEqual({
-        error: 'Failed to end session'
+        error: 'Failed to end session',
       });
 
-      expect(mockLogger.error).toHaveBeenCalledWith(
-        'Failed to end session',
-        error
-      );
+      expect(mockLogger.error).toHaveBeenCalledWith('Failed to end session', error);
     });
   });
 
@@ -381,9 +326,7 @@ describe('Analytics Routes', () => {
       const attemptData = {
         attempt: 1,
         timestamp: '2023-10-01T10:00:00Z',
-        stages: [
-          { id: 'lint', success: true, duration: 200 }
-        ]
+        stages: [{ id: 'lint', success: true, duration: 200 }],
       };
 
       mockAnalyticsService.recordValidationAttempt.mockResolvedValue(undefined);
@@ -396,7 +339,7 @@ describe('Analytics Routes', () => {
       expect(response.body).toEqual({
         message: 'Validation attempt recorded successfully',
         sessionId: 'test-session',
-        attempt: 1
+        attempt: 1,
       });
 
       expect(mockAnalyticsService.recordValidationAttempt).toHaveBeenCalledWith(
@@ -415,7 +358,7 @@ describe('Analytics Routes', () => {
         .expect(404);
 
       expect(response.body).toEqual({
-        error: 'Session not found'
+        error: 'Session not found',
       });
     });
 
@@ -429,13 +372,10 @@ describe('Analytics Routes', () => {
         .expect(500);
 
       expect(response.body).toEqual({
-        error: 'Failed to record validation attempt'
+        error: 'Failed to record validation attempt',
       });
 
-      expect(mockLogger.error).toHaveBeenCalledWith(
-        'Failed to record validation attempt',
-        error
-      );
+      expect(mockLogger.error).toHaveBeenCalledWith('Failed to record validation attempt', error);
     });
   });
 
@@ -443,13 +383,11 @@ describe('Analytics Routes', () => {
     it('should cleanup sessions with default keepLast value', async () => {
       mockAnalyticsService.cleanupSessions.mockResolvedValue(undefined);
 
-      const response = await request(app)
-        .delete('/api/analytics/cleanup')
-        .expect(200);
+      const response = await request(app).delete('/api/analytics/cleanup').expect(200);
 
       expect(response.body).toEqual({
         message: 'Sessions cleaned up successfully',
-        keepLast: 100
+        keepLast: 100,
       });
 
       expect(mockAnalyticsService.cleanupSessions).toHaveBeenCalledWith(100);
@@ -458,13 +396,11 @@ describe('Analytics Routes', () => {
     it('should cleanup sessions with custom keepLast value', async () => {
       mockAnalyticsService.cleanupSessions.mockResolvedValue(undefined);
 
-      const response = await request(app)
-        .delete('/api/analytics/cleanup?keepLast=50')
-        .expect(200);
+      const response = await request(app).delete('/api/analytics/cleanup?keepLast=50').expect(200);
 
       expect(response.body).toEqual({
         message: 'Sessions cleaned up successfully',
-        keepLast: 50
+        keepLast: 50,
       });
 
       expect(mockAnalyticsService.cleanupSessions).toHaveBeenCalledWith(50);
@@ -473,9 +409,7 @@ describe('Analytics Routes', () => {
     it('should handle invalid keepLast parameter by using default', async () => {
       mockAnalyticsService.cleanupSessions.mockResolvedValue(undefined);
 
-      await request(app)
-        .delete('/api/analytics/cleanup?keepLast=invalid')
-        .expect(200);
+      await request(app).delete('/api/analytics/cleanup?keepLast=invalid').expect(200);
 
       expect(mockAnalyticsService.cleanupSessions).toHaveBeenCalledWith(100);
     });
@@ -484,18 +418,13 @@ describe('Analytics Routes', () => {
       const error = new Error('Cleanup error');
       mockAnalyticsService.cleanupSessions.mockRejectedValue(error);
 
-      const response = await request(app)
-        .delete('/api/analytics/cleanup')
-        .expect(500);
+      const response = await request(app).delete('/api/analytics/cleanup').expect(500);
 
       expect(response.body).toEqual({
-        error: 'Failed to cleanup sessions'
+        error: 'Failed to cleanup sessions',
       });
 
-      expect(mockLogger.error).toHaveBeenCalledWith(
-        'Failed to cleanup sessions',
-        error
-      );
+      expect(mockLogger.error).toHaveBeenCalledWith('Failed to cleanup sessions', error);
     });
   });
 
@@ -504,7 +433,7 @@ describe('Analytics Routes', () => {
       // This test verifies that all routes are properly registered
       const routes = createAnalyticsRoutes(mockLogger);
       expect(routes).toBeDefined();
-      
+
       // The router should have the expected stack of routes
       expect(routes.stack).toHaveLength(9); // 9 routes defined (added 2 new stage routes)
     });
@@ -516,9 +445,7 @@ describe('Analytics Routes', () => {
     });
 
     it('should return 404 for unknown routes', async () => {
-      await request(app)
-        .get('/api/analytics/unknown')
-        .expect(404);
+      await request(app).get('/api/analytics/unknown').expect(404);
     });
   });
 });

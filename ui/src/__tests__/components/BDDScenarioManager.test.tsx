@@ -63,12 +63,7 @@ describe('BDDScenarioManager', () => {
   });
 
   it('renders empty state when no scenarios exist', () => {
-    render(
-      <BDDScenarioManager
-        {...defaultProps}
-        scenarios={[]}
-      />
-    );
+    render(<BDDScenarioManager {...defaultProps} scenarios={[]} />);
 
     expect(screen.getByText('No BDD Scenarios')).toBeInTheDocument();
     expect(screen.getByText(/Add BDD scenarios to document and test/)).toBeInTheDocument();
@@ -76,12 +71,7 @@ describe('BDDScenarioManager', () => {
   });
 
   it('renders scenarios when they exist', () => {
-    render(
-      <BDDScenarioManager
-        {...defaultProps}
-        scenarios={mockScenarios}
-      />
-    );
+    render(<BDDScenarioManager {...defaultProps} scenarios={mockScenarios} />);
 
     expect(screen.getByText('User creates a new task')).toBeInTheDocument();
     expect(screen.getByText('User updates task status')).toBeInTheDocument();
@@ -89,36 +79,21 @@ describe('BDDScenarioManager', () => {
   });
 
   it('displays scenario status badges correctly', () => {
-    render(
-      <BDDScenarioManager
-        {...defaultProps}
-        scenarios={mockScenarios}
-      />
-    );
+    render(<BDDScenarioManager {...defaultProps} scenarios={mockScenarios} />);
 
     expect(screen.getByText('Pending')).toBeInTheDocument();
     expect(screen.getByText('Passed')).toBeInTheDocument();
   });
 
   it('shows scenario statistics', () => {
-    render(
-      <BDDScenarioManager
-        {...defaultProps}
-        scenarios={mockScenarios}
-      />
-    );
+    render(<BDDScenarioManager {...defaultProps} scenarios={mockScenarios} />);
 
     expect(screen.getByText('Pending: 1')).toBeInTheDocument();
     expect(screen.getByText('Passed: 1')).toBeInTheDocument();
   });
 
   it('opens form when "Add Scenario" button is clicked', () => {
-    render(
-      <BDDScenarioManager
-        {...defaultProps}
-        scenarios={[]}
-      />
-    );
+    render(<BDDScenarioManager {...defaultProps} scenarios={[]} />);
 
     const addButton = screen.getByRole('button', { name: /Add First Scenario/ });
     fireEvent.click(addButton);
@@ -129,29 +104,19 @@ describe('BDDScenarioManager', () => {
   });
 
   it('can expand and collapse gherkin content', () => {
-    render(
-      <BDDScenarioManager
-        {...defaultProps}
-        scenarios={mockScenarios}
-      />
-    );
+    render(<BDDScenarioManager {...defaultProps} scenarios={mockScenarios} />);
 
     const showGherkinButtons = screen.getAllByText('Show Gherkin Content');
     expect(showGherkinButtons).toHaveLength(2);
 
     fireEvent.click(showGherkinButtons[0]);
-    
+
     expect(screen.getByText('Hide Gherkin Content')).toBeInTheDocument();
     expect(screen.getByText(/Given I am on the task board/)).toBeInTheDocument();
   });
 
   it('calls onAddScenario when form is submitted', async () => {
-    render(
-      <BDDScenarioManager
-        {...defaultProps}
-        scenarios={[]}
-      />
-    );
+    render(<BDDScenarioManager {...defaultProps} scenarios={[]} />);
 
     const addButton = screen.getByRole('button', { name: /Add First Scenario/ });
     fireEvent.click(addButton);
@@ -174,10 +139,8 @@ describe('BDDScenarioManager', () => {
 
     // Find and click the submit button
     const addScenarioButtons = screen.getAllByText('Add Scenario');
-    const submitButton = addScenarioButtons.find(button => 
-      (button as HTMLElement).closest('form')
-    );
-    
+    const submitButton = addScenarioButtons.find(button => (button as HTMLElement).closest('form'));
+
     expect(submitButton).toBeDefined();
     if (submitButton) {
       fireEvent.click(submitButton);
@@ -195,19 +158,14 @@ describe('BDDScenarioManager', () => {
   });
 
   it('calls onDeleteScenario when delete button is clicked', () => {
-    render(
-      <BDDScenarioManager
-        {...defaultProps}
-        scenarios={mockScenarios}
-      />
-    );
+    render(<BDDScenarioManager {...defaultProps} scenarios={mockScenarios} />);
 
     // Find buttons by their specific class patterns or data attributes
     const allButtons = screen.getAllByRole('button');
-    const deleteButtons = allButtons.filter(button => 
-      button.innerHTML.includes('trash-2') || button.className.includes('destructive')
+    const deleteButtons = allButtons.filter(
+      button => button.innerHTML.includes('trash-2') || button.className.includes('destructive')
     );
-    
+
     if (deleteButtons.length > 0) {
       fireEvent.click(deleteButtons[0]);
       expect(mockHandlers.onDeleteScenario).toHaveBeenCalledWith('1');
@@ -218,59 +176,43 @@ describe('BDDScenarioManager', () => {
   });
 
   it('disables actions when readonly is true', () => {
-    render(
-      <BDDScenarioManager
-        {...defaultProps}
-        scenarios={mockScenarios}
-        readonly={true}
-      />
-    );
+    render(<BDDScenarioManager {...defaultProps} scenarios={mockScenarios} readonly={true} />);
 
     expect(screen.queryByText('Add Scenario')).not.toBeInTheDocument();
-    
+
     // Check that edit and delete buttons are not present by looking for their characteristic classes
     const allButtons = screen.queryAllByRole('button');
-    const editButtons = allButtons.filter(button =>
-      button.innerHTML.includes('edit') || button.className.includes('outline')
+    const editButtons = allButtons.filter(
+      button => button.innerHTML.includes('edit') || button.className.includes('outline')
     );
-    const deleteButtons = allButtons.filter(button =>
-      button.innerHTML.includes('trash-2') || button.className.includes('destructive')
+    const deleteButtons = allButtons.filter(
+      button => button.innerHTML.includes('trash-2') || button.className.includes('destructive')
     );
-    
+
     // In readonly mode, there should be no edit/delete buttons
     expect(editButtons.filter(btn => btn.innerHTML.includes('edit'))).toHaveLength(0);
     expect(deleteButtons.filter(btn => btn.innerHTML.includes('trash-2'))).toHaveLength(0);
   });
 
   it('shows execution details for completed scenarios', () => {
-    render(
-      <BDDScenarioManager
-        {...defaultProps}
-        scenarios={mockScenarios}
-      />
-    );
+    render(<BDDScenarioManager {...defaultProps} scenarios={mockScenarios} />);
 
     expect(screen.getByText(/Executed:/)).toBeInTheDocument();
     expect(screen.getByText(/Duration: 1500ms/)).toBeInTheDocument();
   });
 
   it('provides Gherkin template in form placeholder', () => {
-    render(
-      <BDDScenarioManager
-        {...defaultProps}
-        scenarios={[]}
-      />
-    );
+    render(<BDDScenarioManager {...defaultProps} scenarios={[]} />);
 
     const addButton = screen.getByRole('button', { name: /Add First Scenario/ });
     fireEvent.click(addButton);
 
     // Wait for form to appear and find textarea
     const gherkinTextareas = screen.getAllByRole('textbox');
-    const gherkinTextarea = gherkinTextareas.find(textarea => 
+    const gherkinTextarea = gherkinTextareas.find(textarea =>
       textarea.getAttribute('placeholder')?.includes('Feature:')
     );
-    
+
     expect(gherkinTextarea).toBeDefined();
     if (gherkinTextarea) {
       expect(gherkinTextarea.getAttribute('placeholder')).toContain('Feature:');

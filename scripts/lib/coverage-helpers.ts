@@ -1,22 +1,19 @@
 /**
  * Coverage analysis helper functions
  */
-import { execSync } from "child_process";
-import * as path from "path";
-import * as fs from "fs";
+import { execSync } from 'child_process';
+import * as path from 'path';
+import * as fs from 'fs';
 
 type Logger = { log: (...args: unknown[]) => void; error: (...args: unknown[]) => void };
 
 /**
  * Find test files for given changed files
  */
-export function findTestFiles(
-  changedFiles: string[],
-  scriptsDir: string,
-): string[] {
+export function findTestFiles(changedFiles: string[], scriptsDir: string): string[] {
   return changedFiles
-    .map((f) => {
-      const baseName = path.basename(f, ".ts");
+    .map(f => {
+      const baseName = path.basename(f, '.ts');
       const testFile = path.join(path.dirname(f), `${baseName}.test.ts`);
       const specFile = path.join(path.dirname(f), `${baseName}.spec.ts`);
       if (fs.existsSync(testFile)) return path.relative(scriptsDir, testFile);
@@ -33,7 +30,7 @@ export function buildCoverageCommand(
   command: string,
   changedFiles: string[],
   scriptsDir: string,
-  logger: Logger,
+  logger: Logger
 ): { command: string; shouldSkip: boolean } {
   let coverageCommand = `NODE_OPTIONS='--max-old-space-size=4096' ${command} run --coverage`;
 
@@ -41,12 +38,12 @@ export function buildCoverageCommand(
     const testFiles = findTestFiles(changedFiles, scriptsDir);
 
     if (testFiles.length > 0) {
-      coverageCommand = `NODE_OPTIONS='--max-old-space-size=4096' ${command} run --coverage ${testFiles.join(" ")}`;
+      coverageCommand = `NODE_OPTIONS='--max-old-space-size=4096' ${command} run --coverage ${testFiles.join(' ')}`;
       logger.log(`🎯 Running coverage for ${testFiles.length} test file(s)`);
       return { command: coverageCommand, shouldSkip: false };
     } else {
-      logger.log("⚡ No test files found for changed files, skipping coverage");
-      return { command: "", shouldSkip: true };
+      logger.log('⚡ No test files found for changed files, skipping coverage');
+      return { command: '', shouldSkip: true };
     }
   }
 
@@ -60,15 +57,15 @@ export function executeCoverage(
   coverageCommand: string,
   scriptsDir: string,
   timeout: number,
-  logger: Logger,
+  logger: Logger
 ): { failed: boolean; output: string; debug?: string } {
   try {
     const output = execSync(coverageCommand, {
-      stdio: "pipe",
+      stdio: 'pipe',
       cwd: scriptsDir,
-      env: { ...process.env, RUNNING_COVERAGE: "true", NODE_ENV: "test" },
+      env: { ...process.env, RUNNING_COVERAGE: 'true', NODE_ENV: 'test' },
       timeout,
-      encoding: "utf8",
+      encoding: 'utf8',
     });
 
     // Ensure vitest processes are cleaned up
@@ -90,41 +87,30 @@ export function executeCoverage(
  */
 function hasTestFailureMarkers(output: string): boolean {
   const failureMarkers = [
-    "FAIL",
-    "failed",
-    "× ", // vitest failure marker
-    "✗ ", // alternative failure marker
-    "Test Files  0 passed",
-    "Tests  0 passed",
-    "exiting with code 1",
+    'FAIL',
+    'failed',
+    '× ', // vitest failure marker
+    '✗ ', // alternative failure marker
+    'Test Files  0 passed',
+    'Tests  0 passed',
+    'exiting with code 1',
   ];
-  return failureMarkers.some((marker) => output.includes(marker));
+  return failureMarkers.some(marker => output.includes(marker));
 }
 
 /**
  * Check if output contains coverage success markers
  */
 function hasCoverageSuccessMarkers(output: string): boolean {
-  const successMarkers = [
-    "Coverage report generated",
-    "% Coverage report",
-    "All files",
-  ];
-  return successMarkers.some((marker) => output.includes(marker));
+  const successMarkers = ['Coverage report generated', '% Coverage report', 'All files'];
+  return successMarkers.some(marker => output.includes(marker));
 }
 
 /**
  * Type guard for exec error with output
  */
-function isExecErrorWithOutput(
-  error: unknown,
-): error is { stdout: unknown; stderr?: unknown } {
-  return (
-    error !== null &&
-    typeof error === "object" &&
-    "status" in error &&
-    "stdout" in error
-  );
+function isExecErrorWithOutput(error: unknown): error is { stdout: unknown; stderr?: unknown } {
+  return error !== null && typeof error === 'object' && 'status' in error && 'stdout' in error;
 }
 
 /**
@@ -133,14 +119,14 @@ function isExecErrorWithOutput(
 export function handleCoverageWithWarnings(
   execError: unknown,
   timeout: number,
-  logger: Logger,
+  logger: Logger
 ): { failed: boolean; output: string; debug?: string } {
   if (!isExecErrorWithOutput(execError)) {
     throw execError;
   }
 
   const output = String(execError.stdout);
-  const stderr = String(execError.stderr || "");
+  const stderr = String(execError.stderr || '');
   const fullOutput = output + stderr;
 
   // Check for actual test failures first - these should always block
@@ -168,10 +154,10 @@ export function handleCoverageWithWarnings(
 function cleanupVitestProcesses(logger: Logger): void {
   try {
     // Kill any hanging vitest processes (only if they exist)
-    execSync("pkill -f vitest || true", { stdio: "pipe" });
-    logger.log("🧹 Cleaned up vitest processes");
+    execSync('pkill -f vitest || true', { stdio: 'pipe' });
+    logger.log('🧹 Cleaned up vitest processes');
   } catch {
     // Ignore cleanup errors - they're not critical
-    logger.log("ℹ️ No vitest processes to cleanup");
+    logger.log('ℹ️ No vitest processes to cleanup');
   }
 }

@@ -436,18 +436,11 @@ describe('Settings Routes', () => {
       (fs.readFile as jest.Mock).mockResolvedValue(JSON.stringify({}));
       (fs.writeFile as jest.Mock).mockRejectedValue(new Error('Write permission denied'));
 
-      await request(app)
-        .put('/settings')
-        .send(newSettings)
-        .expect(500)
-        .expect({
-          error: 'Failed to update settings',
-        });
+      await request(app).put('/settings').send(newSettings).expect(500).expect({
+        error: 'Failed to update settings',
+      });
 
-      expect(mockLogger.error).toHaveBeenCalledWith(
-        'Failed to update settings',
-        expect.any(Error)
-      );
+      expect(mockLogger.error).toHaveBeenCalledWith('Failed to update settings', expect.any(Error));
     });
 
     it('should handle file write errors in fallback update', async () => {
@@ -456,13 +449,9 @@ describe('Settings Routes', () => {
       (fs.readFile as jest.Mock).mockResolvedValue(JSON.stringify({}));
       (fs.writeFile as jest.Mock).mockRejectedValue(new Error('Write permission denied'));
 
-      await request(app)
-        .put('/settings/fallback')
-        .send(newFallbackSettings)
-        .expect(500)
-        .expect({
-          error: 'Failed to update fallback settings',
-        });
+      await request(app).put('/settings/fallback').send(newFallbackSettings).expect(500).expect({
+        error: 'Failed to update fallback settings',
+      });
     });
 
     it('should handle file write errors in stage addition', async () => {
@@ -482,13 +471,9 @@ describe('Settings Routes', () => {
       (fs.readFile as jest.Mock).mockResolvedValue(JSON.stringify(existingSettings));
       (fs.writeFile as jest.Mock).mockRejectedValue(new Error('Write permission denied'));
 
-      await request(app)
-        .post('/settings/validation/stages')
-        .send(newStage)
-        .expect(500)
-        .expect({
-          error: 'Failed to add validation stage',
-        });
+      await request(app).post('/settings/validation/stages').send(newStage).expect(500).expect({
+        error: 'Failed to add validation stage',
+      });
 
       expect(mockLogger.error).toHaveBeenCalledWith(
         'Failed to add validation stage',
@@ -500,7 +485,7 @@ describe('Settings Routes', () => {
       (fs.readFile as jest.Mock).mockRejectedValue(new Error('Read permission denied'));
 
       const response = await request(app).get('/settings/fallback').expect(200);
-      
+
       // Should return default fallback settings even when file read fails
       expect(response.body).toEqual({
         maxRetries: 3,

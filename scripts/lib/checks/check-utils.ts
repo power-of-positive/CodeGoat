@@ -2,16 +2,14 @@
  * Utility functions for running checks
  */
 
-import { StagedFiles } from "../files/staged-files";
+import { StagedFiles } from '../files/staged-files';
 
 /**
  * Validate staged files object structure
  */
-export function validateStagedFiles(
-  stagedFiles: unknown,
-): asserts stagedFiles is StagedFiles {
-  if (!stagedFiles || typeof stagedFiles !== "object")
-    throw new Error("Invalid stagedFiles: must be object");
+export function validateStagedFiles(stagedFiles: unknown): asserts stagedFiles is StagedFiles {
+  if (!stagedFiles || typeof stagedFiles !== 'object')
+    throw new Error('Invalid stagedFiles: must be object');
   const files = stagedFiles as Record<string, unknown>;
   if (
     !Array.isArray(files.frontendFiles) ||
@@ -19,7 +17,7 @@ export function validateStagedFiles(
     !Array.isArray(files.scriptFiles) ||
     !Array.isArray(files.allFiles)
   ) {
-    throw new Error("Invalid stagedFiles: missing required arrays");
+    throw new Error('Invalid stagedFiles: missing required arrays');
   }
 }
 
@@ -27,7 +25,6 @@ export function validateStagedFiles(
  * Check runner type definition
  */
 export interface CheckRunner {
-   
   (projectRoot: string): {
     success: boolean;
     output: string;
@@ -42,12 +39,11 @@ export function runChecks(
   stagedFiles: StagedFiles,
   fileArray: keyof StagedFiles,
   checks: Array<{ runner: CheckRunner; name: string }>,
-  errorPrefix: string,
+  errorPrefix: string
 ) {
   try {
     validateStagedFiles(stagedFiles);
-    if (stagedFiles[fileArray].length === 0)
-      return { failed: false, output: "" };
+    if (stagedFiles[fileArray].length === 0) return { failed: false, output: '' };
 
     const results: string[] = [];
     let hasFailure = false;
@@ -61,7 +57,7 @@ export function runChecks(
       }
     }
 
-    return { failed: hasFailure, output: results.join("\n\n") };
+    return { failed: hasFailure, output: results.join('\n\n') };
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
     return { failed: true, output: `${errorPrefix} error: ${errorMsg}` };

@@ -87,7 +87,7 @@ const mockStageStatistics = {
         '18:00': { attempts: 8, successes: 7, rate: 0.875 },
       },
       failureReasons: {
-        'Timeout': 5,
+        Timeout: 5,
         'Assertion failed': 8,
         'Network error': 2,
       },
@@ -104,9 +104,7 @@ const renderWithProviders = (component: React.ReactElement) => {
   });
 
   return render(
-    <QueryClientProvider client={queryClient}>
-      {component}
-    </QueryClientProvider>
+    <QueryClientProvider client={queryClient}>{component}</QueryClientProvider>
   );
 };
 
@@ -115,15 +113,19 @@ describe('StageHistoryView', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    (analyticsApi.getStageHistory as jest.Mock).mockResolvedValue(mockStageHistory);
-    (analyticsApi.getStageStatistics as jest.Mock).mockResolvedValue(mockStageStatistics);
+    (analyticsApi.getStageHistory as jest.Mock).mockResolvedValue(
+      mockStageHistory
+    );
+    (analyticsApi.getStageStatistics as jest.Mock).mockResolvedValue(
+      mockStageStatistics
+    );
   });
 
   it('renders stage history view with title and back button', async () => {
     renderWithProviders(
-      <StageHistoryView 
-        stageId="lint" 
-        stageName="Code Linting" 
+      <StageHistoryView
+        stageId="lint"
+        stageName="Code Linting"
         onBack={mockOnBack}
       />
     );
@@ -136,9 +138,9 @@ describe('StageHistoryView', () => {
 
   it('calls onBack when back button is clicked', async () => {
     renderWithProviders(
-      <StageHistoryView 
-        stageId="lint" 
-        stageName="Code Linting" 
+      <StageHistoryView
+        stageId="lint"
+        stageName="Code Linting"
         onBack={mockOnBack}
       />
     );
@@ -160,9 +162,9 @@ describe('StageHistoryView', () => {
     );
 
     renderWithProviders(
-      <StageHistoryView 
-        stageId="lint" 
-        stageName="Code Linting" 
+      <StageHistoryView
+        stageId="lint"
+        stageName="Code Linting"
         onBack={mockOnBack}
       />
     );
@@ -179,9 +181,9 @@ describe('StageHistoryView', () => {
     );
 
     renderWithProviders(
-      <StageHistoryView 
-        stageId="lint" 
-        stageName="Code Linting" 
+      <StageHistoryView
+        stageId="lint"
+        stageName="Code Linting"
         onBack={mockOnBack}
       />
     );
@@ -195,9 +197,9 @@ describe('StageHistoryView', () => {
 
   it('displays overview statistics', async () => {
     renderWithProviders(
-      <StageHistoryView 
-        stageId="lint" 
-        stageName="Code Linting" 
+      <StageHistoryView
+        stageId="lint"
+        stageName="Code Linting"
         onBack={mockOnBack}
       />
     );
@@ -211,9 +213,9 @@ describe('StageHistoryView', () => {
 
   it('displays performance trends', async () => {
     renderWithProviders(
-      <StageHistoryView 
-        stageId="lint" 
-        stageName="Code Linting" 
+      <StageHistoryView
+        stageId="lint"
+        stageName="Code Linting"
         onBack={mockOnBack}
       />
     );
@@ -227,9 +229,9 @@ describe('StageHistoryView', () => {
 
   it('displays recent runs', async () => {
     renderWithProviders(
-      <StageHistoryView 
-        stageId="lint" 
-        stageName="Code Linting" 
+      <StageHistoryView
+        stageId="lint"
+        stageName="Code Linting"
         onBack={mockOnBack}
       />
     );
@@ -245,9 +247,9 @@ describe('StageHistoryView', () => {
 
   it('displays duration percentiles', async () => {
     renderWithProviders(
-      <StageHistoryView 
-        stageId="lint" 
-        stageName="Code Linting" 
+      <StageHistoryView
+        stageId="lint"
+        stageName="Code Linting"
         onBack={mockOnBack}
       />
     );
@@ -261,9 +263,9 @@ describe('StageHistoryView', () => {
 
   it('displays failure reasons when there are failures', async () => {
     renderWithProviders(
-      <StageHistoryView 
-        stageId="lint" 
-        stageName="Code Linting" 
+      <StageHistoryView
+        stageId="lint"
+        stageName="Code Linting"
         onBack={mockOnBack}
       />
     );
@@ -279,9 +281,9 @@ describe('StageHistoryView', () => {
 
   it('toggles between daily and hourly views', async () => {
     renderWithProviders(
-      <StageHistoryView 
-        stageId="lint" 
-        stageName="Code Linting" 
+      <StageHistoryView
+        stageId="lint"
+        stageName="Code Linting"
         onBack={mockOnBack}
       />
     );
@@ -306,7 +308,7 @@ describe('StageHistoryView', () => {
         },
       },
     });
-    
+
     (analyticsApi.getStageStatistics as jest.Mock).mockResolvedValue({
       stageId: 'lint',
       statistics: {
@@ -336,9 +338,9 @@ describe('StageHistoryView', () => {
     });
 
     renderWithProviders(
-      <StageHistoryView 
-        stageId="lint" 
-        stageName="Code Linting" 
+      <StageHistoryView
+        stageId="lint"
+        stageName="Code Linting"
         onBack={mockOnBack}
       />
     );

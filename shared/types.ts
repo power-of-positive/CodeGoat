@@ -6,7 +6,7 @@ export interface NormalizedEntry {
   content: string;
 }
 
-export type NormalizedEntryType = 
+export type NormalizedEntryType =
   | { type: 'user_message' }
   | { type: 'assistant_message' }
   | { type: 'tool_use'; tool_name: string; action_type: ActionType }
@@ -14,7 +14,7 @@ export type NormalizedEntryType =
   | { type: 'error_message' }
   | { type: 'thinking' };
 
-export type ActionType = 
+export type ActionType =
   | { action: 'file_read'; path: string }
   | { action: 'file_write'; path: string }
   | { action: 'command_run'; command: string }

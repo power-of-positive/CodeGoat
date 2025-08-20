@@ -168,7 +168,7 @@ export function createAnalyticsRoutes(logger: ILogger): Router {
   router.put('/sessions/:sessionId/end', endSession(analyticsService, logger));
   router.post('/sessions/:sessionId/attempts', recordAttempt(analyticsService, logger));
   router.delete('/cleanup', cleanupSessions(analyticsService, logger));
-  
+
   // Stage-specific analytics
   router.get('/stages/:stageId/history', getStageHistory(analyticsService, logger));
   router.get('/stages/:stageId/statistics', getStageStatistics(analyticsService, logger));

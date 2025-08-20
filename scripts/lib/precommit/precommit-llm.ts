@@ -1,42 +1,36 @@
 /**
  * LLM review functionality for precommit checks - modular version
  */
-import { PrecommitResult } from "../utils/utils";
-import { REVIEW_FILE_NAME } from "../utils/constants";
+import { PrecommitResult } from '../utils/utils';
+import { REVIEW_FILE_NAME } from '../utils/constants';
 import {
   LlmReviewResult,
   validateInputs,
   processReviewResult,
   handleReviewError,
-} from "./precommit-llm-helpers";
-import {
-  handleReviewGeneration,
-  handleReviewCheck,
-} from "./precommit-llm-handlers";
+} from './precommit-llm-helpers';
+import { handleReviewGeneration, handleReviewCheck } from './precommit-llm-handlers';
 
 /**
  * Run LLM review process with comprehensive error handling and validation
  */
 export async function runLlmReviewProcess(
   projectRoot: string,
-  allOutput: string,
+  allOutput: string
 ): Promise<PrecommitResult | null> {
-  const reviewResult = await runLlmReviewProcessInternal(
-    projectRoot,
-    allOutput,
-  );
+  const reviewResult = await runLlmReviewProcessInternal(projectRoot, allOutput);
 
   switch (reviewResult.status) {
-    case "skipped":
+    case 'skipped':
       console.log(`ℹ️ LLM review skipped: ${reviewResult.reason}`);
       return null;
-    case "success":
+    case 'success':
       return null;
-    case "blocked":
-    case "error":
+    case 'blocked':
+    case 'error':
       return reviewResult.result;
     default:
-      throw new Error("Unexpected LLM review result status");
+      throw new Error('Unexpected LLM review result status');
   }
 }
 
@@ -45,23 +39,21 @@ export async function runLlmReviewProcess(
  */
 async function runLlmReviewProcessInternal(
   projectRoot: string,
-  allOutput: string,
+  allOutput: string
 ): Promise<LlmReviewResult> {
   // Check if LLM review is disabled
-  if (process.env.SKIP_LLM_REVIEW === "true") {
-    console.log(
-      "⚡ LLM review disabled via SKIP_LLM_REVIEW environment variable",
-    );
+  if (process.env.SKIP_LLM_REVIEW === 'true') {
+    console.log('⚡ LLM review disabled via SKIP_LLM_REVIEW environment variable');
     return {
-      status: "skipped",
-      reason: "LLM review disabled via SKIP_LLM_REVIEW environment variable",
+      status: 'skipped',
+      reason: 'LLM review disabled via SKIP_LLM_REVIEW environment variable',
     };
   }
 
-  if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY.trim() === "") {
+  if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY.trim() === '') {
     return {
-      status: "skipped",
-      reason: "Required API key environment variable is not configured",
+      status: 'skipped',
+      reason: 'Required API key environment variable is not configured',
     };
   }
 
@@ -70,10 +62,10 @@ async function runLlmReviewProcessInternal(
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
     return {
-      status: "error",
+      status: 'error',
       error: errorMsg,
       result: {
-        decision: "block",
+        decision: 'block',
         reason: `LLM review validation failed: ${errorMsg}`,
       },
     };

@@ -27,18 +27,19 @@ export class ClaudeValidationFactory {
 
     // Set up default Claude command if not provided
     const claudeCommand = options.claudeCommand || this.detectClaudeCommand(logger);
-    
+
     // Set up permission manager based on mode
     let permissionManager: PermissionManager | undefined;
     if (options.permissionMode && options.permissionMode !== 'disabled') {
       const permissionConfig = this.getPermissionConfigByMode(options.permissionMode);
       permissionManager = new PermissionManager(permissionConfig, logger);
-      
+
       logger?.info('Permission manager initialized', { mode: options.permissionMode });
     }
 
     // Determine validation settings path
-    const validationSettings = options.validationSettings || this.findValidationSettings(options.worktreeDir);
+    const validationSettings =
+      options.validationSettings || this.findValidationSettings(options.worktreeDir);
 
     // Create wrapper options
     const wrapperOptions: ValidationWrapperOptions = {
@@ -48,7 +49,7 @@ export class ClaudeValidationFactory {
       enableValidation: options.enableValidation ?? true,
       validationSettings,
       skipValidationOnFailure: options.skipValidationOnFailure ?? false,
-      validationTimeout: options.validationTimeout ?? 180000 // 3 minutes
+      validationTimeout: options.validationTimeout ?? 180000, // 3 minutes
     };
 
     logger?.info('Creating Claude Validation Wrapper', {
@@ -56,7 +57,7 @@ export class ClaudeValidationFactory {
       claudeCommand,
       enableValidation: wrapperOptions.enableValidation,
       validationSettings,
-      permissionMode: options.permissionMode || 'disabled'
+      permissionMode: options.permissionMode || 'disabled',
     });
 
     return new ClaudeValidationWrapper(wrapperOptions, logger);
@@ -65,14 +66,17 @@ export class ClaudeValidationFactory {
   /**
    * Create a wrapper with development-friendly defaults
    */
-  static createForDevelopment(worktreeDir: string, logger?: WinstonLogger): ClaudeValidationWrapper {
+  static createForDevelopment(
+    worktreeDir: string,
+    logger?: WinstonLogger
+  ): ClaudeValidationWrapper {
     return this.create({
       worktreeDir,
       enableValidation: true,
       skipValidationOnFailure: false,
       permissionMode: 'development',
       validationTimeout: 300000, // 5 minutes for development
-      logger
+      logger,
     });
   }
 
@@ -86,19 +90,22 @@ export class ClaudeValidationFactory {
       skipValidationOnFailure: true,
       permissionMode: 'restrictive',
       validationTimeout: 180000, // 3 minutes
-      logger
+      logger,
     });
   }
 
   /**
    * Create a wrapper with validation disabled (Claude executor only)
    */
-  static createWithoutValidation(worktreeDir: string, logger?: WinstonLogger): ClaudeValidationWrapper {
+  static createWithoutValidation(
+    worktreeDir: string,
+    logger?: WinstonLogger
+  ): ClaudeValidationWrapper {
     return this.create({
       worktreeDir,
       enableValidation: false,
       permissionMode: 'disabled',
-      logger
+      logger,
     });
   }
 
@@ -111,7 +118,7 @@ export class ClaudeValidationFactory {
       'claude',
       'npx claude-code',
       '/usr/local/bin/claude-code',
-      '/opt/homebrew/bin/claude-code'
+      '/opt/homebrew/bin/claude-code',
     ];
 
     // Try to find claude command in PATH
@@ -139,7 +146,7 @@ export class ClaudeValidationFactory {
       path.join(worktreeDir, 'settings.json'),
       path.join(worktreeDir, 'claude-settings.json'),
       path.join(worktreeDir, '.claude', 'validation.json'),
-      path.join(process.cwd(), 'settings.json') // fallback to project root
+      path.join(process.cwd(), 'settings.json'), // fallback to project root
     ];
 
     for (const settingsPath of possiblePaths) {

@@ -1,13 +1,13 @@
 import { describe, it, expect, beforeEach } from '@jest/globals';
-import { 
-  PermissionManager, 
-  PermissionError, 
+import {
+  PermissionManager,
+  PermissionError,
   DefaultPermissions,
-  ActionType, 
+  ActionType,
   PermissionScope,
   PermissionRule,
   PermissionConfig,
-  PermissionContext 
+  PermissionContext,
 } from '../permissions';
 
 describe('PermissionManager', () => {
@@ -422,8 +422,8 @@ describe('DefaultPermissions', () => {
       expect(config.strictMode).toBe(false);
 
       // Should allow worktree operations but restrict outside access
-      const worktreeRules = config.rules.filter(rule => 
-        rule.scope === PermissionScope.WORKTREE && rule.allowed
+      const worktreeRules = config.rules.filter(
+        rule => rule.scope === PermissionScope.WORKTREE && rule.allowed
       );
       expect(worktreeRules.length).toBeGreaterThan(0);
     });

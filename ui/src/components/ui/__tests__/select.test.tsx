@@ -6,7 +6,7 @@ import {
   SelectItem,
   SelectValue,
   SimpleSelect,
-  Option
+  Option,
 } from '../select';
 
 describe('Select Components', () => {
@@ -48,15 +48,15 @@ describe('Select Components', () => {
       );
 
       const trigger = screen.getByRole('button');
-      
+
       // Initially closed - content should not be visible
       expect(screen.queryByText('Option 1')).not.toBeInTheDocument();
-      
+
       // Click to open
       fireEvent.click(trigger);
       expect(screen.getByText('Option 1')).toBeInTheDocument();
       expect(screen.getByText('Option 2')).toBeInTheDocument();
-      
+
       // Click to close
       fireEvent.click(trigger);
       expect(screen.queryByText('Option 1')).not.toBeInTheDocument();
@@ -77,16 +77,20 @@ describe('Select Components', () => {
 
       // Open dropdown
       fireEvent.click(screen.getByRole('button'));
-      
+
       // Select an option
       fireEvent.click(screen.getByText('Option 2'));
-      
+
       expect(mockOnValueChange).toHaveBeenCalledWith('option2');
     });
 
     it('should apply custom className', () => {
       render(
-        <Select value="" onValueChange={mockOnValueChange} className="custom-select">
+        <Select
+          value=""
+          onValueChange={mockOnValueChange}
+          className="custom-select"
+        >
           <SelectTrigger>
             <SelectValue placeholder="Select" />
           </SelectTrigger>
@@ -128,7 +132,7 @@ describe('Select Components', () => {
 
     it('should call setIsOpen when clicked', () => {
       const mockSetIsOpen = jest.fn();
-      
+
       render(
         <SelectTrigger isOpen={false} setIsOpen={mockSetIsOpen}>
           <span>Click me</span>
@@ -198,11 +202,11 @@ describe('Select Components', () => {
     it('should pass props to child items', () => {
       const mockOnValueChange = jest.fn();
       const mockSetIsOpen = jest.fn();
-      
+
       render(
-        <SelectContent 
-          isOpen={true} 
-          value="option1" 
+        <SelectContent
+          isOpen={true}
+          value="option1"
           onValueChange={mockOnValueChange}
           setIsOpen={mockSetIsOpen}
         >
@@ -213,7 +217,7 @@ describe('Select Components', () => {
 
       // Click on option 2
       fireEvent.click(screen.getByText('Option 2'));
-      
+
       expect(mockOnValueChange).toHaveBeenCalledWith('option2');
       expect(mockSetIsOpen).toHaveBeenCalledWith(false);
     });
@@ -255,7 +259,7 @@ describe('Select Components', () => {
 
     it('should call onSelect when clicked', () => {
       const mockOnSelect = jest.fn();
-      
+
       render(
         <SelectItem value="clickable" onSelect={mockOnSelect}>
           Clickable Item
@@ -277,11 +281,7 @@ describe('Select Components', () => {
     });
 
     it('should handle missing onSelect gracefully', () => {
-      render(
-        <SelectItem value="safe">
-          Safe Item
-        </SelectItem>
-      );
+      render(<SelectItem value="safe">Safe Item</SelectItem>);
 
       // Should not crash when clicked without onSelect
       expect(() => {
@@ -293,26 +293,26 @@ describe('Select Components', () => {
   describe('SelectValue', () => {
     it('should display value when provided', () => {
       render(<SelectValue value="test value" placeholder="placeholder" />);
-      
+
       expect(screen.getByText('test value')).toBeInTheDocument();
       expect(screen.queryByText('placeholder')).not.toBeInTheDocument();
     });
 
     it('should display placeholder when value is not provided', () => {
       render(<SelectValue placeholder="Select something" />);
-      
+
       expect(screen.getByText('Select something')).toBeInTheDocument();
     });
 
     it('should display placeholder when value is empty', () => {
       render(<SelectValue value="" placeholder="Empty value" />);
-      
+
       expect(screen.getByText('Empty value')).toBeInTheDocument();
     });
 
     it('should apply truncate class for long values', () => {
       render(<SelectValue value="Very long value that should be truncated" />);
-      
+
       const span = screen.getByText('Very long value that should be truncated');
       expect(span).toHaveClass('truncate');
     });
@@ -344,7 +344,7 @@ describe('Select Components', () => {
 
     it('should forward props to select element', () => {
       const mockOnChange = jest.fn();
-      
+
       render(
         <SimpleSelect value="option1" onChange={mockOnChange}>
           <Option value="option1">Option 1</Option>
@@ -354,7 +354,7 @@ describe('Select Components', () => {
 
       const select = screen.getByRole('combobox') as HTMLSelectElement;
       expect(select.value).toBe('option1');
-      
+
       fireEvent.change(select, { target: { value: 'option2' } });
       expect(mockOnChange).toHaveBeenCalled();
     });
@@ -367,7 +367,10 @@ describe('Select Components', () => {
       );
 
       expect(screen.getByRole('combobox')).toBeDisabled();
-      expect(screen.getByRole('combobox')).toHaveClass('disabled:cursor-not-allowed', 'disabled:opacity-50');
+      expect(screen.getByRole('combobox')).toHaveClass(
+        'disabled:cursor-not-allowed',
+        'disabled:opacity-50'
+      );
     });
   });
 
@@ -401,7 +404,7 @@ describe('Select Components', () => {
   describe('Integration tests', () => {
     it('should work as complete select component', () => {
       const mockOnValueChange = jest.fn();
-      
+
       render(
         <Select value="" onValueChange={mockOnValueChange}>
           <SelectTrigger>
@@ -417,18 +420,18 @@ describe('Select Components', () => {
 
       // Should show placeholder initially
       expect(screen.getByText('Choose an option')).toBeInTheDocument();
-      
+
       // Open dropdown
       fireEvent.click(screen.getByRole('button'));
-      
+
       // Should show all options
       expect(screen.getByText('Red')).toBeInTheDocument();
       expect(screen.getByText('Green')).toBeInTheDocument();
       expect(screen.getByText('Blue')).toBeInTheDocument();
-      
+
       // Select green
       fireEvent.click(screen.getByText('Green'));
-      
+
       // Should call onChange and close dropdown
       expect(mockOnValueChange).toHaveBeenCalledWith('green');
     });
@@ -467,7 +470,7 @@ describe('Select Components', () => {
       );
 
       expect(screen.getByText('Complex trigger')).toBeInTheDocument();
-      
+
       fireEvent.click(screen.getByRole('button'));
       expect(screen.getByText('Nested Item')).toBeInTheDocument();
     });

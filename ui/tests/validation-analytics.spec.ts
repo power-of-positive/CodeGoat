@@ -9,9 +9,11 @@ test.describe('Validation Analytics E2E Tests', () => {
   test('should display validation analytics page', async ({ page }) => {
     // Check that the main analytics heading is visible
     await expect(page.locator('h2')).toContainText('Validation Analytics');
-    
+
     // Check that the description is present using more specific selector
-    await expect(page.locator('p').first()).toContainText('Track validation pipeline performance and success rates');
+    await expect(page.locator('p').first()).toContainText(
+      'Track validation pipeline performance and success rates'
+    );
   });
 
   test('should display metrics summary cards', async ({ page }) => {
@@ -25,7 +27,7 @@ test.describe('Validation Analytics E2E Tests', () => {
     // Check that refresh button is present and clickable
     const refreshButton = page.locator('button:has-text("Refresh")');
     await expect(refreshButton).toBeVisible();
-    
+
     // Click refresh button
     await refreshButton.click();
   });
@@ -43,17 +45,17 @@ test.describe('Validation Analytics E2E Tests', () => {
   test('should navigate to settings page', async ({ page }) => {
     // Navigate to settings
     await page.goto('/settings');
-    
+
     // Check settings page loads
     await expect(page.locator('h2')).toContainText('Settings');
   });
 
   test('should display validation stages management', async ({ page }) => {
     await page.goto('/settings');
-    
+
     // Check for validation stages section
     await expect(page.locator('text=Validation Stages')).toBeVisible();
-    
+
     // Check for add stage button
     await expect(page.locator('button:has-text("Add Stage")')).toBeVisible();
   });
@@ -61,10 +63,10 @@ test.describe('Validation Analytics E2E Tests', () => {
   test('should handle loading states gracefully', async ({ page }) => {
     // Check that loading states are handled (page doesn't crash)
     await page.goto('/analytics');
-    
+
     // Wait for content to load
     await page.waitForLoadState('networkidle');
-    
+
     // Ensure no error messages are displayed
     await expect(page.locator('text=Failed to load')).not.toBeVisible();
   });
@@ -73,10 +75,10 @@ test.describe('Validation Analytics E2E Tests', () => {
     // Set mobile viewport
     await page.setViewportSize({ width: 375, height: 667 });
     await page.goto('/analytics');
-    
+
     // Check that main content is still visible
     await expect(page.locator('h2')).toContainText('Validation Analytics');
-    
+
     // Check that cards are stacked vertically (responsive design)
     const cards = page.locator('[class*="grid"]').first();
     await expect(cards).toBeVisible();
@@ -86,11 +88,11 @@ test.describe('Validation Analytics E2E Tests', () => {
     // Start at analytics
     await page.goto('/analytics');
     await expect(page.locator('h2')).toContainText('Validation Analytics');
-    
+
     // Navigate to settings
     await page.goto('/settings');
     await expect(page.locator('h2')).toContainText('Settings');
-    
+
     // Navigate back to analytics
     await page.goto('/analytics');
     await expect(page.locator('h2')).toContainText('Validation Analytics');
@@ -99,7 +101,7 @@ test.describe('Validation Analytics E2E Tests', () => {
   test('should redirect root path to analytics', async ({ page }) => {
     // Navigate to root
     await page.goto('/');
-    
+
     // Should redirect to analytics
     await expect(page).toHaveURL(/.*\/analytics/);
     await expect(page.locator('h2')).toContainText('Validation Analytics');

@@ -10,20 +10,20 @@ export enum ActionType {
   FILE_DELETE = 'file_delete',
   DIRECTORY_CREATE = 'directory_create',
   DIRECTORY_DELETE = 'directory_delete',
-  
+
   // Network operations
   NETWORK_REQUEST = 'network_request',
   NETWORK_LISTEN = 'network_listen',
-  
+
   // Process operations
   PROCESS_SPAWN = 'process_spawn',
   PROCESS_KILL = 'process_kill',
-  
+
   // System operations
   SYSTEM_COMMAND = 'system_command',
   ENVIRONMENT_READ = 'environment_read',
   ENVIRONMENT_WRITE = 'environment_write',
-  
+
   // Claude-specific operations
   CLAUDE_EXECUTE = 'claude_execute',
   CLAUDE_PROMPT = 'claude_prompt',
@@ -92,7 +92,7 @@ export class PermissionManager {
   constructor(config: PermissionConfig, logger?: WinstonLogger) {
     this.config = config;
     this.logger = logger;
-    
+
     // Sort rules by priority (highest first)
     this.config.rules.sort((a, b) => b.priority - a.priority);
   }
@@ -109,14 +109,16 @@ export class PermissionManager {
 
     // Find the highest priority matching rule
     const matchingRule = this.findMatchingRule(context);
-    
+
     if (matchingRule) {
       const result: PermissionResult = {
         allowed: matchingRule.allowed,
-        reason: matchingRule.reason || `Rule ${matchingRule.id}: ${matchingRule.allowed ? 'allowed' : 'denied'}`,
+        reason:
+          matchingRule.reason ||
+          `Rule ${matchingRule.id}: ${matchingRule.allowed ? 'allowed' : 'denied'}`,
         matchingRule,
       };
-      
+
       if (this.config.enableLogging) {
         this.logger?.info('Permission check result', {
           action: context.action,
@@ -126,7 +128,7 @@ export class PermissionManager {
           reason: result.reason,
         });
       }
-      
+
       return result;
     }
 
@@ -187,14 +189,18 @@ export class PermissionManager {
         return this.pathMatches(context.worktreeDir, context.target);
 
       case PermissionScope.SPECIFIC_PATH:
-        return rule.target !== undefined && 
-               context.target !== undefined && 
-               this.pathMatches(rule.target, context.target);
+        return (
+          rule.target !== undefined &&
+          context.target !== undefined &&
+          this.pathMatches(rule.target, context.target)
+        );
 
       case PermissionScope.PATTERN:
-        return rule.target !== undefined && 
-               context.target !== undefined && 
-               this.patternMatches(rule.target, context.target);
+        return (
+          rule.target !== undefined &&
+          context.target !== undefined &&
+          this.patternMatches(rule.target, context.target)
+        );
 
       default:
         return false;
@@ -216,10 +222,8 @@ export class PermissionManager {
    */
   private patternMatches(pattern: string, target: string): boolean {
     // Convert simple glob patterns to regex
-    const regexPattern = pattern
-      .replace(/\*/g, '.*')
-      .replace(/\?/g, '.');
-    
+    const regexPattern = pattern.replace(/\*/g, '.*').replace(/\?/g, '.');
+
     try {
       const regex = new RegExp(`^${regexPattern}$`);
       return regex.test(target);
@@ -239,7 +243,7 @@ export class PermissionManager {
     this.config.rules.push(rule);
     // Re-sort by priority
     this.config.rules.sort((a, b) => b.priority - a.priority);
-    
+
     this.logger?.info('Added permission rule', {
       ruleId: rule.id,
       action: rule.action,
@@ -254,12 +258,12 @@ export class PermissionManager {
   removeRule(ruleId: string): boolean {
     const initialLength = this.config.rules.length;
     this.config.rules = this.config.rules.filter(rule => rule.id !== ruleId);
-    
+
     const removed = this.config.rules.length < initialLength;
     if (removed) {
       this.logger?.info('Removed permission rule', { ruleId });
     }
-    
+
     return removed;
   }
 
@@ -268,12 +272,12 @@ export class PermissionManager {
    */
   updateConfig(newConfig: Partial<PermissionConfig>): void {
     this.config = { ...this.config, ...newConfig };
-    
+
     if (newConfig.rules) {
       // Re-sort by priority
       this.config.rules.sort((a, b) => b.priority - a.priority);
     }
-    
+
     this.logger?.info('Updated permission configuration', newConfig);
   }
 

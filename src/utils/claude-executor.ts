@@ -24,9 +24,9 @@ interface ClaudeSettings {
 
 /**
  * ClaudeCodeExecutor: TypeScript Executor for running Claude CLI agent
- * 
- * Provides a programmatic interface for running the Claude CLI agent in a specified 
- * worktree directory, sending it a prompt, and collecting its output. Designed to 
+ *
+ * Provides a programmatic interface for running the Claude CLI agent in a specified
+ * worktree directory, sending it a prompt, and collecting its output. Designed to
  * mirror the behavior of the Rust-based executor in the original backend.
  */
 export class ClaudeCodeExecutor {
@@ -51,9 +51,9 @@ export class ClaudeCodeExecutor {
       const context: PermissionContext = {
         action: ActionType.CLAUDE_EXECUTE,
         worktreeDir: this.worktreeDir,
-        additionalData: { prompt, command: this.claudeCommand }
+        additionalData: { prompt, command: this.claudeCommand },
       };
-      
+
       this.permissionManager.requirePermission(context);
     }
 
@@ -65,14 +65,14 @@ export class ClaudeCodeExecutor {
 
     this.logger?.info('Starting Claude executor', {
       worktreeDir: this.worktreeDir,
-      command: this.claudeCommand
+      command: this.claudeCommand,
     });
 
     return new Promise((resolve, reject) => {
       try {
         // Parse the command into executable and arguments
         const [executable, ...args] = this.parseShellCommand(this.claudeCommand);
-        
+
         this.logger?.debug('Parsed command', { executable, args });
 
         // Spawn the process
@@ -112,18 +112,18 @@ export class ClaudeCodeExecutor {
         // Handle process exit
         childProcess.on('close', (code: number | null, signal: string | null) => {
           const exitCode = code ?? -1;
-          
+
           this.logger?.info('Claude process completed', {
             exitCode,
             signal,
             stdoutLength: stdout.length,
-            stderrLength: stderr.length
+            stderrLength: stderr.length,
           });
 
           resolve({
             stdout,
             stderr,
-            exitCode
+            exitCode,
           });
         });
 
@@ -135,7 +135,6 @@ export class ClaudeCodeExecutor {
         } else {
           reject(new Error('Failed to access Claude process stdin'));
         }
-
       } catch (error) {
         this.logger?.error('Error spawning Claude process', error as Error);
         reject(error);
@@ -152,10 +151,10 @@ export class ClaudeCodeExecutor {
     let current = '';
     let inQuotes = false;
     let quoteChar = '';
-    
+
     for (let i = 0; i < cmd.length; i++) {
       const char = cmd[i];
-      
+
       if (!inQuotes && (char === '"' || char === "'")) {
         // Start of quoted string
         inQuotes = true;
@@ -179,12 +178,12 @@ export class ClaudeCodeExecutor {
         current += char;
       }
     }
-    
+
     // Add the last argument if any
     if (current.length > 0) {
       result.push(current);
     }
-    
+
     return result;
   }
 
@@ -241,17 +240,19 @@ export class ClaudeCodeExecutor {
   private loadClaudeSettingsDenyPatterns(): string[] {
     try {
       const claudeSettingsPath = path.join(process.cwd(), '.claude/settings.json');
-      
+
       if (!fs.existsSync(claudeSettingsPath)) {
         return [];
       }
-      
+
       const settingsContent = fs.readFileSync(claudeSettingsPath, 'utf-8');
       const settings: ClaudeSettings = JSON.parse(settingsContent);
-      
+
       return settings.permissions?.deny || [];
     } catch (error) {
-      this.logger?.warn('Failed to load .claude/settings.json deny patterns', { error: (error as Error).message });
+      this.logger?.warn('Failed to load .claude/settings.json deny patterns', {
+        error: (error as Error).message,
+      });
       return [];
     }
   }
@@ -259,24 +260,28 @@ export class ClaudeCodeExecutor {
   /**
    * Check if a command or file operation matches any .claude/settings deny pattern
    */
-  private isCommandDeniedByClaudeSettings(action: string, target: string): { denied: boolean; matchedPattern?: string } {
+  private isCommandDeniedByClaudeSettings(
+    action: string,
+    target: string
+  ): { denied: boolean; matchedPattern?: string } {
     const denyPatterns = this.loadClaudeSettingsDenyPatterns();
-    
+
     for (const pattern of denyPatterns) {
       // Parse pattern format like "Update(settings.json)" or "Edit(*.ts)"
       const match = pattern.match(/^(\w+)\((.+)\)$/);
       if (match) {
         const [, patternAction, patternTarget] = match;
-        
+
         // Check if action matches (case-insensitive)
-        const actionMatches = action.toLowerCase() === patternAction.toLowerCase() || 
-                             (action.toLowerCase() === 'write' && patternAction.toLowerCase() === 'update') ||
-                             (action.toLowerCase() === 'write' && patternAction.toLowerCase() === 'edit');
-        
+        const actionMatches =
+          action.toLowerCase() === patternAction.toLowerCase() ||
+          (action.toLowerCase() === 'write' && patternAction.toLowerCase() === 'update') ||
+          (action.toLowerCase() === 'write' && patternAction.toLowerCase() === 'edit');
+
         if (actionMatches) {
           // Check if target matches (supports basic wildcards)
           const targetMatches = this.matchesPattern(target, patternTarget);
-          
+
           if (targetMatches) {
             return { denied: true, matchedPattern: pattern };
           }
@@ -288,7 +293,7 @@ export class ClaudeCodeExecutor {
         }
       }
     }
-    
+
     return { denied: false };
   }
 
@@ -297,14 +302,11 @@ export class ClaudeCodeExecutor {
    */
   private matchesPattern(target: string, pattern: string): boolean {
     // Convert glob pattern to regex
-    let regexPattern = pattern
-      .replace(/\./g, '\\.')
-      .replace(/\*/g, '.*')
-      .replace(/\?/g, '.');
-    
+    let regexPattern = pattern.replace(/\./g, '\\.').replace(/\*/g, '.*').replace(/\?/g, '.');
+
     // Add anchors for exact matching
     regexPattern = '^' + regexPattern + '$';
-    
+
     try {
       const regex = new RegExp(regexPattern, 'i'); // Case-insensitive
       return regex.test(target);
@@ -317,18 +319,21 @@ export class ClaudeCodeExecutor {
   /**
    * Validate a potential file operation against .claude/settings deny patterns
    */
-  validateFileOperation(action: 'read' | 'write' | 'delete' | 'update' | 'edit', filePath: string): void {
+  validateFileOperation(
+    action: 'read' | 'write' | 'delete' | 'update' | 'edit',
+    filePath: string
+  ): void {
     const result = this.isCommandDeniedByClaudeSettings(action, filePath);
-    
+
     if (result.denied) {
       const error = new Error(
         `File operation denied by .claude/settings.json: ${action}(${filePath}) ` +
-        `matches deny pattern "${result.matchedPattern}"`
+          `matches deny pattern "${result.matchedPattern}"`
       );
       this.logger?.warn('File operation blocked by Claude settings', {
         action,
         filePath,
-        matchedPattern: result.matchedPattern
+        matchedPattern: result.matchedPattern,
       });
       throw error;
     }
@@ -341,34 +346,34 @@ export class ClaudeCodeExecutor {
     // Extract command name and potential file targets from the command
     const parts = command.split(' ');
     const baseCommand = parts[0];
-    
+
     // Check common file operation patterns
     const fileOperationPatterns = [
       { commands: ['update', 'edit', 'write', 'modify'], action: 'update' },
       { commands: ['read', 'cat', 'less', 'view'], action: 'read' },
       { commands: ['delete', 'rm', 'remove'], action: 'delete' },
     ];
-    
+
     for (const opPattern of fileOperationPatterns) {
       if (opPattern.commands.includes(baseCommand.toLowerCase())) {
         // Check if any arguments could be file paths
         for (let i = 1; i < parts.length; i++) {
           const arg = parts[i];
-          
+
           // Skip flags/options starting with -
           if (arg.startsWith('-')) continue;
-          
+
           // Check this argument as potential file target
           const result = this.isCommandDeniedByClaudeSettings(opPattern.action, arg);
-          
+
           if (result.denied) {
             const error = new Error(
               `Command denied by .claude/settings.json: ${command} ` +
-              `matches deny pattern "${result.matchedPattern}"`
+                `matches deny pattern "${result.matchedPattern}"`
             );
             this.logger?.warn('Command blocked by Claude settings', {
               command,
-              matchedPattern: result.matchedPattern
+              matchedPattern: result.matchedPattern,
             });
             throw error;
           }
@@ -387,38 +392,38 @@ export class ClaudeCodeExecutor {
       /(?:read|view|open)\s+([^\s]+\.[a-zA-Z0-9]+)/gi, // "read file.ext"
       /(?:delete|remove)\s+([^\s]+\.[a-zA-Z0-9]+)/gi, // "delete file.ext"
     ];
-    
+
     const actionMap = {
-      'update': 'update',
-      'edit': 'update',
-      'modify': 'update',
-      'write': 'update',
-      'read': 'read',
-      'view': 'read',
-      'open': 'read',
-      'delete': 'delete',
-      'remove': 'delete'
+      update: 'update',
+      edit: 'update',
+      modify: 'update',
+      write: 'update',
+      read: 'read',
+      view: 'read',
+      open: 'read',
+      delete: 'delete',
+      remove: 'delete',
     };
-    
+
     for (const regex of fileOperationRegexes) {
       let match;
       while ((match = regex.exec(prompt)) !== null) {
         const [fullMatch, fileName] = match;
         const action = fullMatch.toLowerCase().split(' ')[0];
         const mappedAction = actionMap[action as keyof typeof actionMap];
-        
+
         if (mappedAction) {
           const result = this.isCommandDeniedByClaudeSettings(mappedAction, fileName);
-          
+
           if (result.denied) {
             const error = new Error(
               `Prompt contains denied file operation: ${action} ${fileName} ` +
-              `matches deny pattern "${result.matchedPattern}"`
+                `matches deny pattern "${result.matchedPattern}"`
             );
             this.logger?.warn('Prompt blocked by Claude settings', {
               action,
               fileName,
-              matchedPattern: result.matchedPattern
+              matchedPattern: result.matchedPattern,
             });
             throw error;
           }

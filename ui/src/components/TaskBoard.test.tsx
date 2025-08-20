@@ -1,5 +1,11 @@
 import React from 'react';
-import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
+import {
+  render,
+  screen,
+  waitFor,
+  fireEvent,
+  act,
+} from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
 import '@testing-library/jest-dom';
@@ -34,7 +40,7 @@ const mockTasks: Task[] = [
     executorId: 'claude_code',
   },
   {
-    id: '2', 
+    id: '2',
     content: 'Test in progress task',
     status: 'in_progress',
     priority: 'medium',
@@ -91,9 +97,7 @@ describe('TaskBoard', () => {
   });
 
   it('should render error state when API fails', async () => {
-    (taskApi.getTasks as jest.Mock).mockRejectedValue(
-      new Error('API Error')
-    );
+    (taskApi.getTasks as jest.Mock).mockRejectedValue(new Error('API Error'));
 
     renderWithProviders(<TaskBoard />);
 
@@ -110,18 +114,20 @@ describe('TaskBoard', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Task Management')).toBeInTheDocument();
-      expect(screen.getByText('Manage your tasks with a kanban-style board')).toBeInTheDocument();
+      expect(
+        screen.getByText('Manage your tasks with a kanban-style board')
+      ).toBeInTheDocument();
     });
 
     // Check task summary
     expect(screen.getByText('3')).toBeInTheDocument(); // Total tasks
     expect(screen.getByText('Total Tasks')).toBeInTheDocument();
-    
+
     // Check kanban columns exist (there may be multiple instances)
     expect(screen.getAllByText('Pending').length).toBeGreaterThan(0);
     expect(screen.getAllByText('In Progress').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Completed').length).toBeGreaterThan(0);
-    
+
     // Check tasks are displayed
     expect(screen.getByText('Test pending task')).toBeInTheDocument();
     expect(screen.getByText('Test in progress task')).toBeInTheDocument();
@@ -140,7 +146,9 @@ describe('TaskBoard', () => {
     fireEvent.click(screen.getByText('Add Task'));
 
     expect(screen.getByText('Create New Task')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('Describe the task...')).toBeInTheDocument();
+    expect(
+      screen.getByPlaceholderText('Describe the task...')
+    ).toBeInTheDocument();
   });
 
   it('should display priority badges correctly', async () => {
@@ -221,7 +229,7 @@ describe('TaskBoard', () => {
       id: '4',
       content: 'New test task',
       status: 'pending',
-      priority: 'high'
+      priority: 'high',
     });
 
     renderWithProviders(<TaskBoard />);
@@ -246,7 +254,7 @@ describe('TaskBoard', () => {
         priority: 'medium', // default value
         status: 'pending',
         taskType: 'task', // default value
-        executorId: 'claude_code' // default value
+        executorId: 'claude_code', // default value
       });
     });
   });
@@ -283,11 +291,13 @@ describe('TaskBoard', () => {
     // Check that action buttons are rendered
     const allButtons = screen.getAllByRole('button');
     expect(allButtons.length).toBeGreaterThan(0);
-    
+
     // Should have task status change buttons
-    expect(screen.getAllByText('To Pending').length + 
-           screen.getAllByText('Start').length + 
-           screen.getAllByText('Complete').length).toBeGreaterThan(0);
+    expect(
+      screen.getAllByText('To Pending').length +
+        screen.getAllByText('Start').length +
+        screen.getAllByText('Complete').length
+    ).toBeGreaterThan(0);
   });
 
   it('should handle task deletion function', async () => {
@@ -337,10 +347,10 @@ describe('TaskBoard', () => {
 
   it('should handle task mutations loading states', async () => {
     (taskApi.getTasks as jest.Mock).mockResolvedValue(mockTasks);
-    
+
     // Mock a slow mutation
     (taskApi.createTask as jest.Mock).mockReturnValue(
-      new Promise(resolve => setTimeout(resolve, 1000))
+      new Promise((resolve) => setTimeout(resolve, 1000))
     );
 
     renderWithProviders(<TaskBoard />);
@@ -360,7 +370,7 @@ describe('TaskBoard', () => {
       content: 'Test pending task',
       status: 'in_progress',
       priority: 'high',
-      startTime: '2024-01-15T10:00:00.000Z'
+      startTime: '2024-01-15T10:00:00.000Z',
     });
 
     renderWithProviders(<TaskBoard />);
@@ -374,10 +384,13 @@ describe('TaskBoard', () => {
     fireEvent.click(startButtons[0]);
 
     await waitFor(() => {
-      expect(taskApi.updateTask).toHaveBeenCalledWith('1', expect.objectContaining({
-        status: 'in_progress',
-        startTime: expect.any(String)
-      }));
+      expect(taskApi.updateTask).toHaveBeenCalledWith(
+        '1',
+        expect.objectContaining({
+          status: 'in_progress',
+          startTime: expect.any(String),
+        })
+      );
     });
   });
 
@@ -389,7 +402,7 @@ describe('TaskBoard', () => {
       status: 'completed',
       priority: 'medium',
       startTime: '2024-01-15T10:00:00.000Z',
-      endTime: '2024-01-15T11:00:00.000Z'
+      endTime: '2024-01-15T11:00:00.000Z',
     });
 
     renderWithProviders(<TaskBoard />);
@@ -406,7 +419,7 @@ describe('TaskBoard', () => {
     (taskApi.getTasks as jest.Mock).mockResolvedValue(mockTasks);
     (taskApi.updateTask as jest.Mock).mockResolvedValue({
       ...mockTasks[0],
-      content: 'Updated task content'
+      content: 'Updated task content',
     });
 
     renderWithProviders(<TaskBoard />);
@@ -417,8 +430,10 @@ describe('TaskBoard', () => {
 
     // Find and click the first task's menu button - look for MoreVertical icon
     const moreButtons = screen.getAllByRole('button');
-    const menuButton = moreButtons.find(button => 
-      button.querySelector('svg') && button.getAttribute('class')?.includes('opacity-0')
+    const menuButton = moreButtons.find(
+      (button) =>
+        button.querySelector('svg') &&
+        button.getAttribute('class')?.includes('opacity-0')
     );
     expect(menuButton).toBeTruthy();
     fireEvent.click(menuButton!);
@@ -431,25 +446,30 @@ describe('TaskBoard', () => {
 
     // Verify edit form appears
     expect(screen.getByText('Edit Task')).toBeInTheDocument();
-    
+
     // Update content
     const contentInput = screen.getByDisplayValue('Test pending task');
-    fireEvent.change(contentInput, { target: { value: 'Updated task content' } });
-    
+    fireEvent.change(contentInput, {
+      target: { value: 'Updated task content' },
+    });
+
     // Submit form
     fireEvent.click(screen.getByText('Update'));
 
     await waitFor(() => {
-      expect(taskApi.updateTask).toHaveBeenCalledWith('1', expect.objectContaining({
-        content: 'Updated task content'
-      }));
+      expect(taskApi.updateTask).toHaveBeenCalledWith(
+        '1',
+        expect.objectContaining({
+          content: 'Updated task content',
+        })
+      );
     });
   });
 
   it('should handle task deletion with confirmation', async () => {
     (taskApi.getTasks as jest.Mock).mockResolvedValue(mockTasks);
     (taskApi.deleteTask as jest.Mock).mockResolvedValue({ success: true });
-    
+
     // Mock window.confirm to return true
     window.confirm = jest.fn(() => true);
 
@@ -461,8 +481,10 @@ describe('TaskBoard', () => {
 
     // Find and click the first task's menu button - look for MoreVertical icon
     const moreButtons = screen.getAllByRole('button');
-    const menuButton = moreButtons.find(button => 
-      button.querySelector('svg') && button.getAttribute('class')?.includes('opacity-0')
+    const menuButton = moreButtons.find(
+      (button) =>
+        button.querySelector('svg') &&
+        button.getAttribute('class')?.includes('opacity-0')
     );
     expect(menuButton).toBeTruthy();
     fireEvent.click(menuButton!);
@@ -474,8 +496,10 @@ describe('TaskBoard', () => {
     });
 
     // Verify confirmation was shown and API was called
-    expect(window.confirm).toHaveBeenCalledWith('Are you sure you want to delete this task?');
-    
+    expect(window.confirm).toHaveBeenCalledWith(
+      'Are you sure you want to delete this task?'
+    );
+
     await waitFor(() => {
       expect(taskApi.deleteTask).toHaveBeenCalledWith('1');
     });
@@ -483,7 +507,7 @@ describe('TaskBoard', () => {
 
   it('should cancel task deletion when user declines confirmation', async () => {
     (taskApi.getTasks as jest.Mock).mockResolvedValue(mockTasks);
-    
+
     // Mock window.confirm to return false
     window.confirm = jest.fn(() => false);
 
@@ -495,8 +519,10 @@ describe('TaskBoard', () => {
 
     // Find and click the first task's menu button - look for MoreVertical icon
     const moreButtons = screen.getAllByRole('button');
-    const menuButton = moreButtons.find(button => 
-      button.querySelector('svg') && button.getAttribute('class')?.includes('opacity-0')
+    const menuButton = moreButtons.find(
+      (button) =>
+        button.querySelector('svg') &&
+        button.getAttribute('class')?.includes('opacity-0')
     );
     expect(menuButton).toBeTruthy();
     fireEvent.click(menuButton!);
@@ -508,7 +534,9 @@ describe('TaskBoard', () => {
     });
 
     // Verify confirmation was shown but API was not called
-    expect(window.confirm).toHaveBeenCalledWith('Are you sure you want to delete this task?');
+    expect(window.confirm).toHaveBeenCalledWith(
+      'Are you sure you want to delete this task?'
+    );
     expect(taskApi.deleteTask).not.toHaveBeenCalled();
   });
 
@@ -523,8 +551,10 @@ describe('TaskBoard', () => {
 
     // Find and click the first task's menu button - look for MoreVertical icon
     const moreButtons = screen.getAllByRole('button');
-    const menuButton = moreButtons.find(button => 
-      button.querySelector('svg') && button.getAttribute('class')?.includes('opacity-0')
+    const menuButton = moreButtons.find(
+      (button) =>
+        button.querySelector('svg') &&
+        button.getAttribute('class')?.includes('opacity-0')
     );
     expect(menuButton).toBeTruthy();
     fireEvent.click(menuButton!);
@@ -537,7 +567,7 @@ describe('TaskBoard', () => {
 
     // Verify edit form appears
     expect(screen.getByText('Edit Task')).toBeInTheDocument();
-    
+
     // Cancel edit
     fireEvent.click(screen.getByText('Cancel'));
 
@@ -559,11 +589,14 @@ describe('TaskBoard', () => {
     const toPendingButtons = screen.getAllByText('To Pending');
     if (toPendingButtons.length > 0) {
       fireEvent.click(toPendingButtons[0]);
-      
+
       await waitFor(() => {
-        expect(taskApi.updateTask).toHaveBeenCalledWith(expect.any(String), expect.objectContaining({
-          status: 'pending'
-        }));
+        expect(taskApi.updateTask).toHaveBeenCalledWith(
+          expect.any(String),
+          expect.objectContaining({
+            status: 'pending',
+          })
+        );
       });
     }
   });

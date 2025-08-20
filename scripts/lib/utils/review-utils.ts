@@ -2,13 +2,13 @@
  * Shared utilities for code review processing
  */
 
-import { execSync } from "child_process";
-import * as fs from "fs";
-import * as path from "path";
-import * as process from "process";
+import { execSync } from 'child_process';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as process from 'process';
 
 export interface ReviewResult {
-  decision: "block" | "approve";
+  decision: 'block' | 'approve';
   reason?: string;
   feedback?: string;
 }
@@ -18,8 +18,8 @@ export interface ReviewResult {
  */
 export function findProjectRoot(): string {
   let currentDir = process.cwd();
-  while (currentDir !== "/") {
-    if (fs.existsSync(path.join(currentDir, "package.json"))) {
+  while (currentDir !== '/') {
+    if (fs.existsSync(path.join(currentDir, 'package.json'))) {
       return currentDir;
     }
     currentDir = path.dirname(currentDir);
@@ -33,6 +33,6 @@ export function findProjectRoot(): string {
 export function execCommand(command: string, cwd?: string): string {
   return execSync(command, {
     cwd: cwd || process.cwd(),
-    encoding: "utf-8",
+    encoding: 'utf-8',
   });
 }

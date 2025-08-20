@@ -1,7 +1,7 @@
 /**
  * Environment configuration processing utilities
  */
-import { config } from "dotenv";
+import { config } from 'dotenv';
 import {
   EnvLoadResult,
   fileExists,
@@ -9,32 +9,25 @@ import {
   applyVariablesToEnv,
   logSuccess,
   logNoFileFound,
-} from "./env-config-helpers";
+} from './env-config-helpers';
 
 /**
  * Process a single .env file
  */
 export async function processEnvFile(
   envPath: string,
-  mergedVariables: Record<string, string>,
+  mergedVariables: Record<string, string>
 ): Promise<{ success: boolean; variablesLoaded?: number }> {
   try {
     const result = config({ path: envPath, processEnv: {} });
 
     if (result.error) {
-      console.warn(
-        `Warning: Failed to parse .env file at ${envPath}:`,
-        result.error.message,
-      );
+      console.warn(`Warning: Failed to parse .env file at ${envPath}:`, result.error.message);
       return { success: false };
     }
 
     if (result.parsed) {
-      const variablesFromFile = processVariables(
-        result.parsed,
-        mergedVariables,
-        envPath,
-      );
+      const variablesFromFile = processVariables(result.parsed, mergedVariables, envPath);
       return { success: true, variablesLoaded: variablesFromFile };
     }
 
@@ -42,7 +35,7 @@ export async function processEnvFile(
   } catch (error) {
     console.warn(
       `Warning: Error reading .env file at ${envPath}:`,
-      error instanceof Error ? error.message : error,
+      error instanceof Error ? error.message : error
     );
     return { success: false };
   }
@@ -53,7 +46,7 @@ export async function processEnvFile(
  */
 export async function loadFromMultipleFiles(
   envPaths: string[],
-  projectRoot: string,
+  projectRoot: string
 ): Promise<EnvLoadResult> {
   let totalVariablesLoaded = 0;
   const loadedFromPaths: string[] = [];
@@ -82,5 +75,5 @@ export async function loadFromMultipleFiles(
   }
 
   logNoFileFound(projectRoot, envPaths);
-  return { success: false, error: "No .env file found in expected locations" };
+  return { success: false, error: 'No .env file found in expected locations' };
 }
