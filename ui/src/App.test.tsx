@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, cleanup } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import App from './App';
 
@@ -20,6 +20,35 @@ jest.mock('./components/TaskBoard', () => ({
   TaskBoard: () => <div>Task Board Page</div>,
 }));
 
+jest.mock('./components/TaskDetail', () => ({
+  TaskDetail: () => <div>Task Detail Page</div>,
+}));
+
+jest.mock('./components/TaskAnalytics', () => ({
+  TaskAnalytics: () => <div>Task Analytics Page</div>,
+}));
+
+jest.mock('./components/PermissionEditor', () => ({
+  PermissionEditor: () => <div>Permission Editor Page</div>,
+}));
+
+jest.mock('./pages/BDDTestsDashboard', () => ({
+  __esModule: true,
+  default: () => <div>BDD Tests Dashboard Page</div>,
+}));
+
+jest.mock('./pages/WorkersDashboard', () => ({
+  WorkersDashboard: () => <div>Workers Dashboard Page</div>,
+}));
+
+jest.mock('./components/WorkerDetail', () => ({
+  WorkerDetail: () => <div>Worker Detail Page</div>,
+}));
+
+jest.mock('./components/Layout', () => ({
+  Layout: ({ children }: { children: React.ReactNode }) => <div data-testid="layout" className="min-h-screen">{children}</div>,
+}));
+
 // Mock react-router-dom
 jest.mock('react-router-dom', () => ({
   BrowserRouter: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
@@ -38,10 +67,28 @@ describe('App', () => {
   beforeEach(() => {
     queryClient = new QueryClient({
       defaultOptions: {
-        queries: { retry: false },
+        queries: { 
+          retry: false,
+          gcTime: 0,
+          staleTime: 0,
+        },
         mutations: { retry: false },
       },
     });
+  });
+
+  afterEach(() => {
+    // Cleanup React Testing Library
+    cleanup();
+    // Properly clean up QueryClient to prevent hanging
+    if (queryClient) {
+      queryClient.clear();
+      queryClient.getQueryCache().clear();
+      queryClient.getMutationCache().clear();
+    }
+    // Clear all timers and mocks
+    jest.clearAllTimers();
+    jest.clearAllMocks();
   });
 
   const renderApp = () => {

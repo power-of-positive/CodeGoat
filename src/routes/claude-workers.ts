@@ -55,6 +55,8 @@ interface ClaudeWorker {
   }>;
   validationPassed?: boolean;
   validationRuns: ValidationRun[];
+  validationAttempts?: number;
+  maxValidationAttempts?: number;
 }
 
 // In-memory storage for active workers
@@ -113,7 +115,7 @@ async function updateTaskStatus(taskId: string, status: TodoStatus, workerId?: s
 /**
  * Run validation checks after worker completion
  */
-async function runValidationChecks(worker: ClaudeWorker): Promise<boolean> {
+async function runValidationChecks(worker: ClaudeWorker): Promise<{ success: boolean; results?: ValidationRun; message?: string }> {
   try {
     console.error(`🔍 Running validation checks for worker ${worker.id}...`);
     worker.status = 'validating';
@@ -184,11 +186,20 @@ async function runValidationChecks(worker: ClaudeWorker): Promise<boolean> {
 
     if (success) {
       console.error(`✅ Validation checks passed for worker ${worker.id}`);
+      return { success: true };
     } else {
       console.error(`❌ Validation checks failed for worker ${worker.id}`);
+      
+      // Create detailed failure message
+      const failedStages = validationRun.stages.filter(stage => stage.status === 'failed');
+      const failureMessage = `Validation failed on ${failedStages.length} stage(s): ${failedStages.map(s => s.name).join(', ')}. Please fix the following issues and try again:\n\n${failedStages.map(stage => `• ${stage.name}: ${stage.error || 'Failed without specific error message'}`).join('\n')}`;
+      
+      return { 
+        success: false, 
+        results: validationRun,
+        message: failureMessage
+      };
     }
-
-    return success;
   } catch (error) {
     console.error(`⚠️ Error running validation for worker ${worker.id}:`, error);
     worker.validationPassed = false;
@@ -199,7 +210,101 @@ async function runValidationChecks(worker: ClaudeWorker): Promise<boolean> {
       console.error(`Failed to write validation error log for worker ${worker.id}:`, logError);
     }
 
-    return false;
+    return { 
+      success: false, 
+      message: `Validation error: ${(error as Error).message}` 
+    };
+  }
+}
+
+/**
+ * Restart worker with validation feedback
+ */
+async function restartWorkerWithFeedback(worker: ClaudeWorker, validationMessage: string): Promise<void> {
+  try {
+    console.error(`🔄 Restarting worker ${worker.id} with validation feedback (attempt ${(worker.validationAttempts || 0) + 1}/${worker.maxValidationAttempts})`);
+    
+    // Increment validation attempts
+    worker.validationAttempts = (worker.validationAttempts || 0) + 1;
+    
+    // Stop current process if running (it should already be finished, but just in case)
+    if (worker.process && !worker.process.killed) {
+      worker.process.kill('SIGTERM');
+    }
+    worker.process = null;
+    
+    // Reset worker status
+    worker.status = 'running';
+    worker.endTime = undefined;
+    
+    // Write validation feedback to log file
+    const feedbackMessage = `\n🔄 VALIDATION FEEDBACK (Attempt ${worker.validationAttempts}/${worker.maxValidationAttempts})\n${validationMessage}\n\nRestarting to address these issues...\n\n`;
+    
+    try {
+      fs.appendFileSync(worker.logFile, feedbackMessage);
+    } catch (logError) {
+      console.error(`Failed to write validation feedback to log for worker ${worker.id}:`, logError);
+    }
+    
+    // Create validation feedback prompt for Claude
+    const feedbackPrompt = `The validation checks failed after your previous work completed. Here are the specific issues that need to be fixed:
+
+${validationMessage}
+
+Please review these validation failures and fix all the issues. Make sure to:
+1. Address each failed validation stage
+2. Test your changes locally if possible
+3. Ensure all validation checks pass before completing
+
+Continue working from where you left off and fix these validation issues.`;
+
+    // Start new Claude Code process with feedback
+    const workDir = worker.worktreePath; // Use worktreePath directly
+    
+    const claudeArgs = [
+      'npx', '@anthropic/claude-code@latest',
+      '--message', feedbackPrompt
+    ];
+    
+    console.error(`🚀 Restarting Claude Code process for worker ${worker.id} with validation feedback`);
+    
+    const claudeProcess = spawn('bash', ['-c', claudeArgs.join(' ')], {
+      cwd: workDir,
+      stdio: ['pipe', 'pipe', 'pipe'],
+      env: {
+        ...process.env,
+        FORCE_COLOR: '1',
+        CLAUDE_API_KEY: process.env.CLAUDE_API_KEY
+      }
+    });
+    
+    worker.process = claudeProcess;
+    worker.pid = claudeProcess.pid;
+    
+    // Set up basic process handlers for the restarted worker
+    claudeProcess.on('close', (code: number | null) => {
+      console.error(`🔄 Restarted worker ${worker.id} process exited with code ${code}`);
+      // The main process handler will take care of validation on the next completion
+    });
+    
+  } catch (error) {
+    console.error(`❌ Failed to restart worker ${worker.id} with feedback:`, error);
+    worker.status = 'failed';
+  }
+}
+
+/**
+ * Load max validation attempts from settings
+ */
+async function getMaxValidationAttempts(): Promise<number> {
+  try {
+    const settingsPath = path.join(process.cwd(), 'settings.json');
+    const settingsContent = await fs.promises.readFile(settingsPath, 'utf-8');
+    const settings = JSON.parse(settingsContent);
+    return settings.validation?.maxAttempts || 3;
+  } catch (error) {
+    console.error('Failed to load validation settings, using default maxAttempts=3:', error);
+    return 3;
   }
 }
 
@@ -519,9 +624,14 @@ router.post('/start', async (req, res) => {
       worktreePath: workDir,
       worktreeManager,
       structuredEntries: [],
-      validationRuns: []
+      validationRuns: [],
+      validationAttempts: 0,
+      maxValidationAttempts: 3 // Will be updated from settings
     };
 
+    // Load max validation attempts from settings
+    worker.maxValidationAttempts = await getMaxValidationAttempts();
+    
     activeWorkers.set(workerId, worker);
 
     // Prepare Claude Code command with proper npx usage and JSON streaming
@@ -667,14 +777,30 @@ router.post('/start', async (req, res) => {
           
           // Run validation checks on successful completion
           try {
-            const validationPassed = await runValidationChecks(worker);
-            worker.status = validationPassed ? 'completed' : 'failed';
+            const validationResult = await runValidationChecks(worker);
             
-            if (validationPassed) {
+            if (validationResult.success) {
               console.error(`✅ Worker ${workerId} passed validation, marking task as completed`);
+              worker.status = 'completed';
+              worker.validationPassed = true;
               // Task will be marked as completed when merge happens (task 5)
             } else {
               console.error(`❌ Worker ${workerId} failed validation checks`);
+              
+              // Check if we can retry with feedback
+              const currentAttempts = worker.validationAttempts || 0;
+              const maxAttempts = worker.maxValidationAttempts || 3;
+              
+              if (currentAttempts < maxAttempts && validationResult.message) {
+                console.error(`🔄 Restarting worker ${workerId} with validation feedback (attempt ${currentAttempts + 1}/${maxAttempts})`);
+                await restartWorkerWithFeedback(worker, validationResult.message);
+                // Don't clean up worktree yet, worker is restarting
+                return; 
+              } else {
+                console.error(`❌ Worker ${workerId} exceeded max validation attempts (${maxAttempts}), marking as failed`);
+                worker.status = 'failed';
+                worker.validationPassed = false;
+              }
             }
           } catch (validationError) {
             console.error(`⚠️ Validation error for worker ${workerId}:`, validationError);
@@ -942,6 +1068,80 @@ router.get('/:workerId/logs', (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to read log file'
+    });
+  }
+});
+
+/**
+ * Send message to a running worker
+ */
+router.post('/:workerId/message', (req, res) => {
+  const { workerId } = req.params;
+  const { message } = req.body;
+  
+  if (!message) {
+    return res.status(400).json({
+      success: false,
+      error: 'Message content is required'
+    });
+  }
+
+  const worker = activeWorkers.get(workerId);
+
+  if (!worker) {
+    return res.status(404).json({
+      success: false,
+      error: 'Worker not found'
+    });
+  }
+
+  if (worker.status !== 'running') {
+    return res.status(400).json({
+      success: false,
+      error: `Cannot send message to worker with status: ${worker.status}`
+    });
+  }
+
+  if (!worker.process || !worker.process.stdin) {
+    return res.status(400).json({
+      success: false,
+      error: 'Worker process is not available for input'
+    });
+  }
+
+  try {
+    // Log the message being sent
+    const timestamp = new Date().toISOString();
+    const logEntry = `[${timestamp}] [USER MESSAGE] ${message}\n`;
+    fs.appendFileSync(worker.logFile, logEntry);
+
+    // Add to structured entries
+    worker.structuredEntries.push({
+      timestamp,
+      type: 'UserMessage',
+      content: message,
+      metadata: { source: 'api' }
+    });
+
+    // Send message to worker process via stdin
+    worker.process.stdin.write(`${message}\n`);
+
+    res.json({
+      success: true,
+      data: {
+        workerId,
+        message,
+        timestamp,
+        status: 'sent'
+      }
+    });
+
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    
+    res.status(500).json({
+      success: false,
+      error: `Failed to send message: ${errorMessage}`
     });
   }
 });

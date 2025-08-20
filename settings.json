@@ -16,7 +16,7 @@
         "timeout": 30000,
         "enabled": true,
         "continueOnFailure": false,
-        "priority": 0
+        "priority": 1
       },
       {
         "id": "typecheck",
@@ -25,7 +25,7 @@
         "timeout": 45000,
         "enabled": true,
         "continueOnFailure": false,
-        "priority": 1
+        "priority": 2
       },
       {
         "id": "unit-tests-backend",
@@ -34,16 +34,16 @@
         "timeout": 30000,
         "enabled": true,
         "continueOnFailure": false,
-        "priority": 2
+        "priority": 3
       },
       {
         "id": "unit-tests-frontend",
         "name": "Frontend Unit Tests",
-        "command": "cd ui && npm test -- --watchAll=false --testTimeout=10000 --maxWorkers=1",
+        "command": "cd ui && npm test -- --watchAll=false --no-watch --passWithNoTests  --testTimeout=10000 --maxWorkers=1",
         "timeout": 45000,
         "enabled": true,
         "continueOnFailure": false,
-        "priority": 3
+        "priority": 4
       },
       {
         "id": "coverage-frontend",
@@ -52,7 +52,7 @@
         "timeout": 60000,
         "enabled": true,
         "continueOnFailure": false,
-        "priority": 4
+        "priority": 5
       },
       {
         "id": "coverage-backend",
@@ -61,7 +61,7 @@
         "timeout": 45000,
         "enabled": true,
         "continueOnFailure": false,
-        "priority": 5
+        "priority": 6
       },
       {
         "id": "unit-tests-scripts",
@@ -70,7 +70,7 @@
         "timeout": 30000,
         "enabled": true,
         "continueOnFailure": false,
-        "priority": 6
+        "priority": 7
       },
       {
         "id": "integration-tests",
@@ -79,7 +79,7 @@
         "timeout": 90000,
         "enabled": true,
         "continueOnFailure": false,
-        "priority": 7
+        "priority": 8
       },
       {
         "id": "coverage-scripts",
@@ -88,7 +88,7 @@
         "timeout": 30000,
         "enabled": true,
         "continueOnFailure": false,
-        "priority": 8
+        "priority": 9
       },
       {
         "id": "api-e2e-tests",
@@ -97,7 +97,7 @@
         "timeout": 120000,
         "enabled": true,
         "continueOnFailure": false,
-        "priority": 9
+        "priority": 10
       },
       {
         "id": "typescript-preference",
@@ -106,7 +106,7 @@
         "timeout": 10000,
         "enabled": true,
         "continueOnFailure": false,
-        "priority": 10
+        "priority": 11
       },
       {
         "id": "ai-code-review",
@@ -115,23 +115,23 @@
         "timeout": 120000,
         "enabled": true,
         "continueOnFailure": false,
-        "priority": 11
+        "priority": 12
       },
       {
         "id": "visual-regression",
         "name": "Visual Regression Tests",
         "command": "node scripts/visual-regression.js",
         "timeout": 60000,
-        "enabled": false,
+        "enabled": true,
         "continueOnFailure": false,
-        "priority": 12
+        "priority": 13
       },
       {
         "id": "dead-code",
         "name": "Dead Code Detection",
         "command": "npx ts-node scripts/check-dead-code.ts",
         "timeout": 45000,
-        "enabled": false,
+        "enabled": true,
         "continueOnFailure": false,
         "priority": 14
       },
@@ -158,9 +158,9 @@
         "name": "Playwright E2E Tests",
         "command": "cd ui && npm run test:e2e",
         "timeout": 180000,
-        "enabled": false,
+        "enabled": true,
         "continueOnFailure": false,
-        "priority": 16
+        "priority": 17
       },
       {
         "id": "uncommitted-files",
@@ -169,7 +169,7 @@
         "timeout": 10000,
         "enabled": true,
         "continueOnFailure": false,
-        "priority": 17
+        "priority": 18
       },
       {
         "id": "todo-list",
@@ -178,7 +178,7 @@
         "timeout": 10000,
         "enabled": true,
         "continueOnFailure": false,
-        "priority": 18
+        "priority": 19
       }
     ],
     "enableMetrics": true,

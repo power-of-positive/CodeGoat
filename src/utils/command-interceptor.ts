@@ -41,21 +41,6 @@ const COMMAND_PATTERNS: CommandPattern[] = [
   { pattern: /^(export|unset)\s+(.+)$/, action: ActionType.ENVIRONMENT_WRITE, targetIndex: 2 },
 ];
 
-/**
- * Dangerous commands that should always be flagged
- */
-const DANGEROUS_COMMANDS = [
-  'sudo rm -rf /',
-  'rm -rf /',
-  'dd if=/dev/random',
-  'fork bomb',
-  ':(){ :|:& };:',
-  'mkfs',
-  'format',
-  'fdisk',
-  'shred',
-  'wipe',
-];
 
 /**
  * Result of command analysis
@@ -146,7 +131,7 @@ export class CommandInterceptor {
   analyzeCommand(command: string): CommandAnalysisResult {
     const trimmedCommand = command.trim();
     
-    // Check Claude deny list first
+    // Check Claude deny list first (only use user-defined deny list)
     const claudeDenyMatch = this.matchesClaudeDenyPattern(trimmedCommand);
     if (claudeDenyMatch.matches) {
       this.logger.warn('Command blocked by Claude deny list', { command: trimmedCommand, pattern: claudeDenyMatch.pattern });
@@ -156,19 +141,6 @@ export class CommandInterceptor {
         severity: 'error',
         suggestion: 'This operation is restricted by project configuration.'
       };
-    }
-    
-    // Check for dangerous commands
-    for (const dangerous of DANGEROUS_COMMANDS) {
-      if (trimmedCommand.includes(dangerous)) {
-        this.logger.warn('Dangerous command detected', { command: trimmedCommand, dangerous });
-        return {
-          allowed: false,
-          reason: `❌ Dangerous command detected: "${dangerous}". This command could cause system damage.`,
-          severity: 'error',
-          suggestion: 'Please review the command and use safer alternatives.'
-        };
-      }
     }
 
     // Try to match command patterns

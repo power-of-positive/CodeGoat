@@ -1,8 +1,16 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MemoryRouter } from 'react-router-dom';
 import { WorkersDashboard } from './WorkersDashboard';
 import { claudeWorkersApi } from '../lib/api';
+
+// Mock useNavigate
+const mockNavigate = jest.fn();
+jest.mock('react-router-dom', () => ({
+  ...jest.requireActual('react-router-dom'),
+  useNavigate: () => mockNavigate,
+}));
 
 // Mock the API
 jest.mock('../lib/api', () => ({
@@ -17,25 +25,44 @@ jest.mock('../lib/api', () => ({
 
 const mockWorkersApi = claudeWorkersApi as jest.Mocked<typeof claudeWorkersApi>;
 
+let queryClient: QueryClient;
+
 const createWrapper = () => {
-  const queryClient = new QueryClient({
+  queryClient = new QueryClient({
     defaultOptions: {
       queries: {
+        retry: false,
+        gcTime: 0,
+        staleTime: 0,
+      },
+      mutations: {
         retry: false,
       },
     },
   });
 
   return ({ children }: { children: React.ReactNode }) => (
-    <QueryClientProvider client={queryClient}>
-      {children}
-    </QueryClientProvider>
+    <MemoryRouter>
+      <QueryClientProvider client={queryClient}>
+        {children}
+      </QueryClientProvider>
+    </MemoryRouter>
   );
 };
 
 describe('WorkersDashboard', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockNavigate.mockClear();
+  });
+
+  afterEach(() => {
+    // Properly clean up QueryClient
+    if (queryClient) {
+      queryClient.clear();
+      queryClient.getQueryCache().clear();
+      queryClient.getMutationCache().clear();
+    }
   });
 
   it('renders loading state initially', () => {
@@ -214,7 +241,7 @@ describe('WorkersDashboard', () => {
     });
   });
 
-  it('opens log viewer when view logs is clicked', async () => {
+  it('navigates to worker detail when details is clicked', async () => {
     const mockWorkers = [
       {
         id: 'worker-123-abc',
@@ -235,11 +262,6 @@ describe('WorkersDashboard', () => {
       totalCount: 1,
       totalBlockedCommands: 0,
     });
-    mockWorkersApi.getWorkerLogs.mockResolvedValue({
-      workerId: 'worker-123-abc',
-      logs: 'Sample log content\nLine 2\nLine 3',
-      logFile: '/path/to/log.txt',
-    });
 
     render(<WorkersDashboard />, { wrapper: createWrapper() });
 
@@ -251,121 +273,25 @@ describe('WorkersDashboard', () => {
     });
 
     await waitFor(() => {
-      const viewLogsButton = screen.getByText('View Logs');
+      const viewLogsButton = screen.getByText('Details');
       expect(viewLogsButton).toBeInTheDocument();
     });
 
-    const viewLogsButton = screen.getByText('View Logs');
+    const viewLogsButton = screen.getByText('Details');
     fireEvent.click(viewLogsButton);
 
-    await waitFor(() => {
-      expect(screen.getByText('Worker Logs - abc')).toBeInTheDocument();
-    });
+    // Verify navigation was called with correct path
+    expect(mockNavigate).toHaveBeenCalledWith('/workers/worker-123-abc');
   });
 
-  it('handles log viewer auto-refresh toggle', async () => {
-    const mockWorkers = [
-      {
-        id: 'worker-123-abc',
-        taskId: 'task-1',
-        taskContent: 'Test task content',
-        status: 'running' as const,
-        startTime: '2025-08-19T08:00:00Z',
-        logFile: '/path/to/log.txt',
-        blockedCommands: 0,
-        hasPermissionSystem: true,
-      },
-    ];
-
-    mockWorkersApi.getWorkersStatus.mockResolvedValue({
-      workers: mockWorkers,
-      activeCount: 1,
-      totalCount: 1,
-      totalBlockedCommands: 0,
-    });
-    mockWorkersApi.getWorkerLogs.mockResolvedValue({
-      workerId: 'worker-123-abc',
-      logs: 'Sample log content',
-      logFile: '/path/to/log.txt',
-    });
-
-    render(<WorkersDashboard />, { wrapper: createWrapper() });
-
-    // Expand worker card and open log viewer
-    await waitFor(() => {
-      const workerCard = screen.getByText('Worker abc').closest('.cursor-pointer');
-      if (workerCard) {
-        fireEvent.click(workerCard);
-      }
-    });
-
-    const viewLogsButton = screen.getByText('View Logs');
-    fireEvent.click(viewLogsButton);
-
-    await waitFor(() => {
-      expect(screen.getByText('Live')).toBeInTheDocument();
-    });
-
-    // Toggle auto-refresh off
-    const liveButton = screen.getByText('Live');
-    fireEvent.click(liveButton);
-
-    await waitFor(() => {
-      expect(screen.getByText('Paused')).toBeInTheDocument();
-    });
+  it.skip('handles log viewer auto-refresh toggle', async () => {
+    // This test is skipped because the log viewer modal was removed
+    // and replaced with navigation to a separate page
   });
 
-  it('closes log viewer when close button is clicked', async () => {
-    const mockWorkers = [
-      {
-        id: 'worker-123-abc',
-        taskId: 'task-1',
-        taskContent: 'Test task content',
-        status: 'completed' as const,
-        startTime: '2025-08-19T08:00:00Z',
-        endTime: '2025-08-19T08:05:00Z',
-        logFile: '/path/to/log.txt',
-        blockedCommands: 0,
-        hasPermissionSystem: true,
-      },
-    ];
-
-    mockWorkersApi.getWorkersStatus.mockResolvedValue({
-      workers: mockWorkers,
-      activeCount: 0,
-      totalCount: 1,
-      totalBlockedCommands: 0,
-    });
-    mockWorkersApi.getWorkerLogs.mockResolvedValue({
-      workerId: 'worker-123-abc',
-      logs: 'Sample log content',
-      logFile: '/path/to/log.txt',
-    });
-
-    render(<WorkersDashboard />, { wrapper: createWrapper() });
-
-    // Open log viewer
-    await waitFor(() => {
-      const workerCard = screen.getByText('Worker abc').closest('.cursor-pointer');
-      if (workerCard) {
-        fireEvent.click(workerCard);
-      }
-    });
-
-    const viewLogsButton = screen.getByText('View Logs');
-    fireEvent.click(viewLogsButton);
-
-    await waitFor(() => {
-      expect(screen.getByText('Worker Logs - abc')).toBeInTheDocument();
-    });
-
-    // Close log viewer
-    const closeButton = screen.getByText('Close');
-    fireEvent.click(closeButton);
-
-    await waitFor(() => {
-      expect(screen.queryByText('Worker Logs - abc')).not.toBeInTheDocument();
-    });
+  it.skip('closes log viewer when close button is clicked', async () => {
+    // This test is skipped because the log viewer modal was removed
+    // and replaced with navigation to a separate page
   });
 
   it('handles refresh button click', async () => {

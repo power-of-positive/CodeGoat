@@ -586,6 +586,18 @@ export const claudeWorkersApi = {
   }> =>
     request(`/claude-workers/${workerId}/logs`),
 
+  // Send message to worker
+  sendWorkerMessage: (workerId: string, params: { message: string }): Promise<{
+    workerId: string;
+    message: string;
+    response?: string;
+    success: boolean;
+  }> =>
+    request(`/claude-workers/${workerId}/message`, {
+      method: 'POST',
+      body: JSON.stringify(params),
+    }),
+
   // Merge worktree changes back to main branch
   mergeWorktree: (workerId: string): Promise<{
     message: string;

@@ -24,7 +24,7 @@ interface SelectContentProps {
   setIsOpen?: (open: boolean) => void;
 }
 
-interface SelectItemProps {
+interface SelectItemProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'onClick' | 'type' | 'onSelect'> {
   children: React.ReactNode;
   value: string;
   className?: string;
@@ -98,20 +98,42 @@ export function SelectContent({ children, className = '', isOpen, value, onValue
     `}>
       {React.Children.map(children, (child) => {
         if (React.isValidElement(child)) {
-          return React.cloneElement(child as React.ReactElement<{
-            value?: string;
-            onValueChange?: (value: string) => void;
-            isOpen?: boolean;
-            setIsOpen?: (open: boolean) => void;
-            currentValue?: string;
-            onSelect?: (value: string) => void;
-          }>, { 
-            currentValue: value,
-            onSelect: (selectedValue: string) => {
-              onValueChange?.(selectedValue);
-              setIsOpen?.(false);
-            }
-          });
+          // Only pass select props to SelectItem components
+          if (child.type === SelectItem || (child.type as React.ComponentType)?.displayName === 'SelectItem') {
+            return React.cloneElement(child as React.ReactElement<{
+              value?: string;
+              onValueChange?: (value: string) => void;
+              isOpen?: boolean;
+              setIsOpen?: (open: boolean) => void;
+              currentValue?: string;
+              onSelect?: (value: string) => void;
+            }>, { 
+              currentValue: value,
+              onSelect: (selectedValue: string) => {
+                onValueChange?.(selectedValue);
+                setIsOpen?.(false);
+              }
+            });
+          } else {
+            // For other elements, recursively process their children
+            const childElement = child as React.ReactElement<Record<string, unknown>>;
+            return React.cloneElement(childElement, {
+              ...childElement.props,
+              children: React.Children.map(childElement.props.children, (nestedChild) => {
+                if (React.isValidElement(nestedChild) && 
+                    (nestedChild.type === SelectItem || (nestedChild.type as React.ComponentType)?.displayName === 'SelectItem')) {
+                  return React.cloneElement(nestedChild as React.ReactElement<Record<string, unknown>>, {
+                    currentValue: value,
+                    onSelect: (selectedValue: string) => {
+                      onValueChange?.(selectedValue);
+                      setIsOpen?.(false);
+                    }
+                  });
+                }
+                return nestedChild;
+              })
+            });
+          }
         }
         return child;
       })}
@@ -119,8 +141,13 @@ export function SelectContent({ children, className = '', isOpen, value, onValue
   );
 }
 
-export function SelectItem({ children, value, className = '', currentValue, onSelect }: SelectItemProps) {
+export function SelectItem({ children, value, className = '', currentValue, onSelect, ...buttonProps }: SelectItemProps) {
   const isSelected = currentValue === value;
+  
+  // Remove custom props from buttonProps to avoid React warnings
+  const cleanButtonProps = { ...buttonProps };
+  delete (cleanButtonProps as Record<string, unknown>).currentValue;
+  delete (cleanButtonProps as Record<string, unknown>).onSelect;
   
   return (
     <button
@@ -131,6 +158,7 @@ export function SelectItem({ children, value, className = '', currentValue, onSe
         ${className}
       `}
       onClick={() => onSelect?.(value)}
+      {...cleanButtonProps}
     >
       {children}
     </button>

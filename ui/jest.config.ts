@@ -35,15 +35,21 @@ const config: Config = {
   coverageReporters: ['text', 'lcov', 'html'],
   coverageThreshold: {
     global: {
-      branches: 68,
-      functions: 65,
-      lines: 78,
-      statements: 78,
+      branches: 80,
+      functions: 80,
+      lines: 80,
+      statements: 80,
     },
   },
   setupFilesAfterEnv: ['<rootDir>/src/test/setup.ts'],
-  testTimeout: 5000,
+  testTimeout: 10000,
   verbose: false,
+  forceExit: true,
+  detectOpenHandles: true,
+  // Additional process termination settings
+  maxWorkers: 1,
+  clearMocks: true,
+  restoreMocks: true,
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },

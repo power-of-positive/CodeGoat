@@ -438,7 +438,7 @@ const BDDTestsDashboard: React.FC = () => {
                 </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={300}>
-                    <LineChart data={e2eAnalytics.trends}>
+                    <LineChart data={e2eAnalytics.trends || []}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="date" />
                       <YAxis />
@@ -462,7 +462,7 @@ const BDDTestsDashboard: React.FC = () => {
                 </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={e2eAnalytics.trends}>
+                    <BarChart data={e2eAnalytics.trends || []}>
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="date" />
                       <YAxis />
@@ -482,7 +482,7 @@ const BDDTestsDashboard: React.FC = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {e2eAnalytics.topFailingTests.map((test) => (
+                    {(e2eAnalytics.topFailingTests || []).map((test) => (
                       <div key={`${test.testFile}-${test.testName}`} className="flex items-center justify-between p-3 bg-red-50 rounded-md">
                         <div className="flex-1">
                           <div className="font-medium text-sm">{test.testName}</div>

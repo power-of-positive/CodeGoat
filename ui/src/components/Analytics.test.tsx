@@ -66,10 +66,16 @@ const mockRecentRuns = [
   },
 ];
 
+let queryClient: QueryClient;
+
 const renderWithProviders = (component: React.ReactElement) => {
-  const queryClient = new QueryClient({
+  queryClient = new QueryClient({
     defaultOptions: {
-      queries: { retry: false },
+      queries: { 
+        retry: false,
+        gcTime: 0,
+        staleTime: 0,
+      },
       mutations: { retry: false },
     },
   });
@@ -89,6 +95,15 @@ describe('Analytics Component', () => {
     (analyticsApi.getValidationMetrics as jest.Mock).mockResolvedValue(mockValidationMetrics);
     (analyticsApi.getValidationRuns as jest.Mock).mockResolvedValue(mockRecentRuns);
     (settingsApi.getValidationStages as jest.Mock).mockResolvedValue([]);
+  });
+
+  afterEach(() => {
+    // Properly clean up QueryClient to prevent hanging
+    if (queryClient) {
+      queryClient.clear();
+      queryClient.getQueryCache().clear();
+      queryClient.getMutationCache().clear();
+    }
   });
 
   it('renders analytics page with correct title', async () => {

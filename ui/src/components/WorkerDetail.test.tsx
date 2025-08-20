@@ -1,0 +1,467 @@
+import React from 'react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { WorkerDetail } from './WorkerDetail';
+import { claudeWorkersApi } from '../lib/api';
+
+// Mock the API
+jest.mock('../lib/api', () => ({
+  claudeWorkersApi: {
+    getWorkerStatus: jest.fn(),
+    getWorkersStatus: jest.fn(),
+    startWorker: jest.fn(),
+    stopWorker: jest.fn(),
+    sendWorkerMessage: jest.fn(),
+    getWorkerLogs: jest.fn(),
+    mergeWorktree: jest.fn(),
+    openVSCode: jest.fn(),
+    getBlockedCommands: jest.fn(),
+    getValidationRuns: jest.fn(),
+    getValidationRunDetails: jest.fn(),
+  },
+}));
+
+// Mock the useProcessesLogs hook
+jest.mock('../hooks/useProcessesLogs', () => ({
+  useProcessesLogs: jest.fn(() => ({
+    entries: [],
+    isLoading: false,
+    error: null,
+  })),
+}));
+
+// Mock react-window
+jest.mock('react-window', () => ({
+  VariableSizeList: ({ children, itemCount }: { children: any; itemCount: number }) => {
+    const items = [];
+    for (let i = 0; i < itemCount; i++) {
+      items.push(
+        <div key={i} data-testid={`log-item-${i}`}>
+          {children({ index: i, style: {} })}
+        </div>
+      );
+    }
+    return <div data-testid="virtual-list">{items}</div>;
+  },
+}));
+
+// Mock LogEntryRow
+jest.mock('./logs/LogEntryRow', () => ({
+  __esModule: true,
+  default: ({ entry, index }: { entry: any; index: number }) => (
+    <div data-testid={`log-entry-${index}`}>
+      {typeof entry === 'string' ? entry : JSON.stringify(entry)}
+    </div>
+  ),
+}));
+
+const mockWorkerStatus = {
+  id: 'worker-123',
+  taskId: 'task-456',
+  taskContent: 'Implement feature X',
+  status: 'running' as const,
+  startTime: '2024-01-01T10:00:00Z',
+  endTime: undefined,
+  pid: 12345,
+  logFile: '/path/to/logs.txt',
+  blockedCommands: 2,
+  hasPermissionSystem: true,
+  validationPassed: undefined,
+  validationRuns: 0,
+};
+
+const mockWorkerLogs = {
+  workerId: 'worker-123',
+  logs: 'Starting worker...\nProcessing task...\nCompleted step 1',
+  logFile: '/path/to/logs.txt',
+};
+
+const renderWithProviders = (workerId: string = 'worker-123') => {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+      mutations: { retry: false },
+    },
+  });
+
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter initialEntries={[`/workers/${workerId}`]}>
+        <Routes>
+          <Route path="/workers/:workerId" element={<WorkerDetail />} />
+        </Routes>
+      </MemoryRouter>
+    </QueryClientProvider>
+  );
+};
+
+describe('WorkerDetail', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(mockWorkerStatus);
+    (claudeWorkersApi.getWorkerLogs as jest.Mock).mockResolvedValue(mockWorkerLogs);
+  });
+
+  it('renders worker detail page with loading state', () => {
+    (claudeWorkersApi.getWorkerStatus as jest.Mock).mockImplementation(
+      () => new Promise(() => {})
+    );
+    
+    renderWithProviders();
+    
+    expect(screen.getByText('Loading worker details...')).toBeInTheDocument();
+  });
+
+  it('renders worker details when loaded', async () => {
+    renderWithProviders();
+    
+    await waitFor(() => {
+      expect(screen.getByText(/Worker 123/)).toBeInTheDocument();
+      expect(screen.getByText('Implement feature X')).toBeInTheDocument();
+      expect(screen.getByText('RUNNING')).toBeInTheDocument();
+    });
+  });
+
+  it('displays worker status badge', async () => {
+    renderWithProviders();
+    
+    await waitFor(() => {
+      expect(screen.getByText('RUNNING')).toBeInTheDocument();
+    });
+  });
+
+  it('displays process ID when available', async () => {
+    renderWithProviders();
+    
+    await waitFor(() => {
+      expect(screen.getByText(/PID:.*12345/)).toBeInTheDocument();
+    });
+  });
+
+  it('displays blocked commands count', async () => {
+    renderWithProviders();
+    
+    await waitFor(() => {
+      expect(screen.getByText('2')).toBeInTheDocument();
+    });
+  });
+
+  it('shows permission system status', async () => {
+    renderWithProviders();
+    
+    await waitFor(() => {
+      expect(screen.getByText(/Permission System/i)).toBeInTheDocument();
+      expect(screen.getByText('Active')).toBeInTheDocument();
+    });
+  });
+
+  it('handles error state when worker fails to load', async () => {
+    (claudeWorkersApi.getWorkerStatus as jest.Mock).mockRejectedValue(
+      new Error('Worker not found')
+    );
+    
+    renderWithProviders();
+    
+    await waitFor(() => {
+      expect(screen.getByText(/Worker Not Found/i)).toBeInTheDocument();
+    });
+  });
+
+  it('allows starting a stopped worker', async () => {
+    const stoppedWorker = { ...mockWorkerStatus, status: 'stopped' as const };
+    (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(stoppedWorker);
+    (claudeWorkersApi.startWorker as jest.Mock).mockResolvedValue({ success: true });
+    
+    renderWithProviders();
+    
+    await waitFor(() => {
+      const startButton = screen.getByRole('button', { name: /start worker/i });
+      expect(startButton).toBeInTheDocument();
+    });
+    
+    const startButton = screen.getByRole('button', { name: /start worker/i });
+    fireEvent.click(startButton);
+    
+    await waitFor(() => {
+      expect(claudeWorkersApi.startWorker).toHaveBeenCalledWith({
+        taskId: 'task-456',
+        taskContent: 'Implement feature X',
+      });
+    });
+  });
+
+  it('allows stopping a running worker', async () => {
+    (claudeWorkersApi.stopWorker as jest.Mock).mockResolvedValue({ success: true });
+    
+    renderWithProviders();
+    
+    await waitFor(() => {
+      const stopButton = screen.getByRole('button', { name: /stop worker/i });
+      expect(stopButton).toBeInTheDocument();
+    });
+    
+    const stopButton = screen.getByRole('button', { name: /stop worker/i });
+    fireEvent.click(stopButton);
+    
+    await waitFor(() => {
+      expect(claudeWorkersApi.stopWorker).toHaveBeenCalledWith('worker-123');
+    });
+  });
+
+  it('allows sending messages to worker', async () => {
+    (claudeWorkersApi.stopWorker as jest.Mock).mockResolvedValue({ success: true });
+    (claudeWorkersApi.sendWorkerMessage as jest.Mock).mockResolvedValue({ success: true });
+    (claudeWorkersApi.startWorker as jest.Mock).mockResolvedValue({ success: true });
+    
+    renderWithProviders();
+    
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/Enter additional instructions or corrections/i)).toBeInTheDocument();
+    });
+    
+    const messageInput = screen.getByPlaceholderText(/Enter additional instructions or corrections/i);
+    const sendButton = screen.getByRole('button', { name: /interrupt.*send message/i });
+    
+    fireEvent.change(messageInput, { target: { value: 'Test message' } });
+    fireEvent.click(sendButton);
+    
+    // Wait for the async operations with the 1000ms delay
+    await new Promise(resolve => setTimeout(resolve, 1100));
+    
+    await waitFor(() => {
+      expect(claudeWorkersApi.stopWorker).toHaveBeenCalledWith('worker-123');
+      expect(claudeWorkersApi.sendWorkerMessage).toHaveBeenCalledWith(
+        'worker-123',
+        { message: 'Test message' }
+      );
+      expect(claudeWorkersApi.startWorker).toHaveBeenCalledWith({
+        taskId: 'task-456',
+        taskContent: 'Implement feature X\n\nAdditional Message: Test message',
+      });
+    });
+  });
+
+  it('displays worker logs', async () => {
+    renderWithProviders();
+    
+    await waitFor(() => {
+      expect(screen.getByText('Worker Logs')).toBeInTheDocument();
+      expect(screen.getByTestId('virtual-list')).toBeInTheDocument();
+    });
+  });
+
+  it('refreshes worker data when refresh button is clicked', async () => {
+    renderWithProviders();
+    
+    await waitFor(() => {
+      const refreshButton = screen.getByRole('button', { name: /refresh/i });
+      expect(refreshButton).toBeInTheDocument();
+    });
+    
+    const initialCallCount = (claudeWorkersApi.getWorkerStatus as jest.Mock).mock.calls.length;
+    
+    const refreshButton = screen.getByRole('button', { name: /refresh/i });
+    fireEvent.click(refreshButton);
+    
+    // Verify API was called again (should be more than initial count)
+    await waitFor(() => {
+      expect((claudeWorkersApi.getWorkerStatus as jest.Mock).mock.calls.length).toBeGreaterThan(initialCallCount);
+    });
+  });
+
+  it('displays different status badges correctly', async () => {
+    const statusTests = [
+      { status: 'starting', expected: 'STARTING' },
+      { status: 'completed', expected: 'COMPLETED' },
+      { status: 'failed', expected: 'FAILED' },
+      { status: 'validating', expected: 'VALIDATING' },
+    ];
+    
+    for (const { status, expected } of statusTests) {
+      const worker = { ...mockWorkerStatus, status: status as any };
+      (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(worker);
+      
+      const { unmount } = renderWithProviders();
+      
+      await waitFor(() => {
+        expect(screen.getByText(expected)).toBeInTheDocument();
+      });
+      
+      unmount();
+    }
+  });
+
+  it('shows validation results when available', async () => {
+    const validatedWorker = {
+      ...mockWorkerStatus,
+      status: 'completed' as const,
+      validationPassed: true,
+      validationRuns: 3,
+    };
+    (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(validatedWorker);
+    
+    renderWithProviders();
+    
+    await waitFor(() => {
+      expect(screen.getByText(/Validation Status/i)).toBeInTheDocument();
+      expect(screen.getByText(/Passed/i)).toBeInTheDocument();
+      expect(screen.getByText(/3 runs/i)).toBeInTheDocument();
+    });
+  });
+
+  it('shows end time for completed workers', async () => {
+    const completedWorker = {
+      ...mockWorkerStatus,
+      status: 'completed' as const,
+      endTime: '2024-01-01T10:30:00Z',
+    };
+    (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(completedWorker);
+    
+    renderWithProviders();
+    
+    await waitFor(() => {
+      expect(screen.getByText(/End Time/i)).toBeInTheDocument();
+    });
+  });
+
+  it('handles worker without permission system', async () => {
+    const workerWithoutPermissions = {
+      ...mockWorkerStatus,
+      hasPermissionSystem: false,
+    };
+    (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(workerWithoutPermissions);
+    
+    renderWithProviders();
+    
+    await waitFor(() => {
+      expect(screen.getByText('Inactive')).toBeInTheDocument();
+    });
+  });
+
+  it('handles missing process ID', async () => {
+    const workerWithoutPid = {
+      ...mockWorkerStatus,
+      pid: undefined,
+    };
+    (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(workerWithoutPid);
+    
+    renderWithProviders();
+    
+    await waitFor(() => {
+      expect(screen.getByText(/PID:.*N\/A/)).toBeInTheDocument();
+    });
+  });
+
+  it('clears message input after sending', async () => {
+    (claudeWorkersApi.stopWorker as jest.Mock).mockResolvedValue({ success: true });
+    (claudeWorkersApi.sendWorkerMessage as jest.Mock).mockResolvedValue({ success: true });
+    (claudeWorkersApi.startWorker as jest.Mock).mockResolvedValue({ success: true });
+    
+    renderWithProviders();
+    
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/Enter additional instructions or corrections/i)).toBeInTheDocument();
+    });
+    
+    const messageInput = screen.getByPlaceholderText(/Enter additional instructions or corrections/i) as HTMLTextAreaElement;
+    const sendButton = screen.getByRole('button', { name: /interrupt.*send message/i });
+    
+    fireEvent.change(messageInput, { target: { value: 'Test message' } });
+    expect(messageInput.value).toBe('Test message');
+    
+    fireEvent.click(sendButton);
+    
+    // Wait for the async operations
+    await new Promise(resolve => setTimeout(resolve, 1100));
+    
+    await waitFor(() => {
+      expect(messageInput.value).toBe('');
+    });
+  });
+
+  it('disables send button when message is empty', async () => {
+    renderWithProviders();
+    
+    await waitFor(() => {
+      const sendButton = screen.getByRole('button', { name: /interrupt.*send message/i });
+      expect(sendButton).toBeDisabled();
+    });
+  });
+
+  it('enables send button when message has content', async () => {
+    renderWithProviders();
+    
+    await waitFor(() => {
+      const messageInput = screen.getByPlaceholderText(/Enter additional instructions or corrections/i);
+      const sendButton = screen.getByRole('button', { name: /interrupt.*send message/i });
+      
+      fireEvent.change(messageInput, { target: { value: 'Test' } });
+      expect(sendButton).not.toBeDisabled();
+    });
+  });
+
+  it('shows task ID and content', async () => {
+    renderWithProviders();
+    
+    await waitFor(() => {
+      expect(screen.getByText('task-456')).toBeInTheDocument();
+      expect(screen.getByText('Implement feature X')).toBeInTheDocument();
+    });
+  });
+
+  it('formats timestamps correctly', async () => {
+    renderWithProviders();
+    
+    await waitFor(() => {
+      // Should format the start time
+      expect(screen.getByText(/Started:/i)).toBeInTheDocument();
+    });
+  });
+
+  it('handles logs loading error', async () => {
+    (claudeWorkersApi.getWorkerLogs as jest.Mock).mockRejectedValue(
+      new Error('Logs not available')
+    );
+    
+    renderWithProviders();
+    
+    await waitFor(() => {
+      expect(screen.getByText(/Error loading logs/i)).toBeInTheDocument();
+    });
+  });
+
+  it('handles send message error', async () => {
+    (claudeWorkersApi.stopWorker as jest.Mock).mockResolvedValue({ success: true });
+    (claudeWorkersApi.sendWorkerMessage as jest.Mock).mockRejectedValue(
+      new Error('Failed to send')
+    );
+    (claudeWorkersApi.startWorker as jest.Mock).mockResolvedValue({ success: true });
+    
+    renderWithProviders();
+    
+    await waitFor(() => {
+      const messageInput = screen.getByPlaceholderText(/Enter additional instructions or corrections/i);
+      const sendButton = screen.getByRole('button', { name: /interrupt.*send message/i });
+      
+      fireEvent.change(messageInput, { target: { value: 'Test message' } });
+      fireEvent.click(sendButton);
+    });
+    
+    // Error should be handled gracefully (component should continue working)
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText(/Enter additional instructions or corrections/i)).toBeInTheDocument();
+    });
+  });
+
+  it('navigates back when back button is clicked', async () => {
+    renderWithProviders();
+    
+    await waitFor(() => {
+      const backButton = screen.getByRole('button', { name: /back/i });
+      expect(backButton).toBeInTheDocument();
+    });
+    
+    // Navigation would be handled by React Router (mocked)
+  });
+});

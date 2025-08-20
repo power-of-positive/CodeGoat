@@ -24,13 +24,16 @@ async function diagnoseDatabasePath() {
     console.log(`Total tasks: ${taskCount}`);
     
     if (taskCount > 0) {
-      // Get task number statistics
-      const tasksWithNumbers = await prisma.todoTask.count({
-        where: { taskNumber: { not: null } }
+      // Get status distribution (taskNumber field doesn't exist in current schema)
+      const tasksByStatus = await prisma.todoTask.groupBy({
+        by: ['status'],
+        _count: true
       });
       
-      console.log(`Tasks with task numbers: ${tasksWithNumbers}`);
-      console.log(`Tasks without task numbers: ${taskCount - tasksWithNumbers}`);
+      console.log(`\nTask status distribution:`);
+      tasksByStatus.forEach(group => {
+        console.log(`  ${group.status}: ${group._count}`);
+      });
       
       // Show a few sample tasks
       const sampleTasks = await prisma.todoTask.findMany({
@@ -38,7 +41,6 @@ async function diagnoseDatabasePath() {
         orderBy: { createdAt: 'desc' },
         select: {
           id: true,
-          taskNumber: true,
           content: true,
           status: true,
           priority: true,
@@ -48,19 +50,18 @@ async function diagnoseDatabasePath() {
       
       console.log(`\n📝 Sample Tasks (latest 3):`);
       sampleTasks.forEach((task, index) => {
-        const taskId = task.taskNumber ? `TASK-${task.taskNumber.toString().padStart(3, '0')}` : task.id.substring(0, 8);
+        const taskId = task.id.substring(0, 8); // Use first 8 chars of UUID
         console.log(`${index + 1}. [${taskId}] ${task.content.substring(0, 60)}... (${task.status})`);
       });
       
-      // Check for the highest task number
-      const highestTask = await prisma.todoTask.findFirst({
-        where: { taskNumber: { not: null } },
-        orderBy: { taskNumber: 'desc' },
-        select: { taskNumber: true }
+      // Check for the latest task by creation date
+      const latestTask = await prisma.todoTask.findFirst({
+        orderBy: { createdAt: 'desc' },
+        select: { id: true, content: true, createdAt: true }
       });
       
-      if (highestTask) {
-        console.log(`\n🔝 Highest task number: TASK-${highestTask.taskNumber!.toString().padStart(3, '0')}`);
+      if (latestTask) {
+        console.log(`\n🔝 Latest task: ${latestTask.id} created at ${latestTask.createdAt.toISOString()}`);
       }
     } else {
       console.log('No TodoTask records found');

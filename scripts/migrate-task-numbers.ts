@@ -9,44 +9,50 @@ dotenv.config();
 const prisma = new PrismaClient();
 
 async function assignTaskNumbers() {
-  console.log('🔄 Assigning task numbers to existing TodoTask records...');
+  console.log('🔄 Task number migration script (legacy - taskNumber field not in current schema)');
   
   try {
-    // Get all tasks without task numbers, ordered by creation date
-    const tasksWithoutNumbers = await prisma.todoTask.findMany({
-      where: {
-        taskNumber: null
-      },
-      orderBy: {
-        createdAt: 'asc' // Assign numbers based on creation order
+    // NOTE: taskNumber field doesn't exist in current Prisma schema
+    // This script is kept for reference but disabled to prevent TypeScript errors
+    console.log('⚠️ This script is disabled because taskNumber field is not in current schema');
+    console.log('📋 Current TodoTask schema uses UUID id field instead');
+    
+    // Get all tasks to show current state
+    const allTasks = await prisma.todoTask.findMany({
+      orderBy: { createdAt: 'asc' },
+      select: {
+        id: true,
+        content: true,
+        status: true,
+        createdAt: true
       }
     });
     
-    console.log(`📋 Found ${tasksWithoutNumbers.length} tasks without task numbers`);
-    
-    if (tasksWithoutNumbers.length === 0) {
-      console.log('✅ All tasks already have task numbers assigned');
-      return;
+    console.log(`📊 Current tasks in database: ${allTasks.length}`);
+    if (allTasks.length > 0) {
+      console.log('✅ Tasks are identified by UUID id field');
+      allTasks.slice(0, 3).forEach((task, index) => {
+        console.log(`  ${index + 1}. ${task.id.substring(0, 8)}: ${task.content.substring(0, 60)}...`);
+      });
     }
     
-    // Get the highest existing task number to continue from there
+    /*
+    // COMMENTED OUT: Original migration code for taskNumber field
+    // This would need schema changes to work
+    
+    const tasksWithoutNumbers = await prisma.todoTask.findMany({
+      where: { taskNumber: null },
+      orderBy: { createdAt: 'asc' }
+    });
+    
     const highestTaskNumber = await prisma.todoTask.findFirst({
-      where: {
-        taskNumber: { not: null }
-      },
-      orderBy: {
-        taskNumber: 'desc'
-      },
-      select: {
-        taskNumber: true
-      }
+      where: { taskNumber: { not: null } },
+      orderBy: { taskNumber: 'desc' },
+      select: { taskNumber: true }
     });
     
     let startingNumber = (highestTaskNumber?.taskNumber || 0) + 1;
     
-    console.log(`🚀 Starting task number assignment from ${startingNumber}`);
-    
-    // Assign task numbers to each task
     for (let i = 0; i < tasksWithoutNumbers.length; i++) {
       const task = tasksWithoutNumbers[i];
       const taskNumber = startingNumber + i;
@@ -55,15 +61,11 @@ async function assignTaskNumbers() {
         where: { id: task.id },
         data: { taskNumber }
       });
-      
-      console.log(`✅ Assigned TASK-${taskNumber.toString().padStart(3, '0')} to: ${task.content.substring(0, 60)}...`);
     }
-    
-    console.log(`\n🎉 Successfully assigned task numbers to ${tasksWithoutNumbers.length} tasks!`);
-    console.log(`📊 Task numbers now range from TASK-001 to TASK-${(startingNumber + tasksWithoutNumbers.length - 1).toString().padStart(3, '0')}`);
+    */
     
   } catch (error) {
-    console.error('❌ Error assigning task numbers:', error);
+    console.error('❌ Error in migration script:', error);
     throw error;
   } finally {
     await prisma.$disconnect();

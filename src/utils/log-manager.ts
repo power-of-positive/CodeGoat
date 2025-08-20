@@ -121,8 +121,10 @@ export class LogManager {
   }> {
     let totalFiles = 0;
     let totalSize = 0;
-    let oldestFile: { path: string; mtime: Date } | null = null;
-    let newestFile: { path: string; mtime: Date } | null = null;
+    let oldestFile: string | null = null;
+    let newestFile: string | null = null;
+    let oldestMtime: Date | null = null;
+    let newestMtime: Date | null = null;
     let emptyFiles = 0;
     let appLogFiles = 0;
 
@@ -140,20 +142,22 @@ export class LogManager {
         appLogFiles++;
       }
 
-      if (!oldestFile || fileStat.mtime < oldestFile.mtime) {
-        oldestFile = { path: filePath, mtime: fileStat.mtime };
+      if (!oldestMtime || fileStat.mtime < oldestMtime) {
+        oldestFile = filePath;
+        oldestMtime = fileStat.mtime;
       }
 
-      if (!newestFile || fileStat.mtime > newestFile.mtime) {
-        newestFile = { path: filePath, mtime: fileStat.mtime };
+      if (!newestMtime || fileStat.mtime > newestMtime) {
+        newestFile = filePath;
+        newestMtime = fileStat.mtime;
       }
     });
 
     return {
       totalFiles,
       totalSize,
-      oldestFile: oldestFile?.path || null,
-      newestFile: newestFile?.path || null,
+      oldestFile: oldestFile ? path.relative(this.logsDir, oldestFile) : null,
+      newestFile: newestFile ? path.relative(this.logsDir, newestFile) : null,
       emptyFiles,
       appLogFiles,
     };

@@ -85,12 +85,87 @@ function hasUncommittedFiles(): boolean {
 
 
 /**
+ * Parse validation output to extract detailed error information
+ */
+function parseValidationOutput(stdout: string, stderr: string, code: number | null): Error {
+  const fullOutput = `${stdout}\n${stderr}`.trim();
+  
+  if (code === 2) {
+    const errorLines = fullOutput.split('\n').filter(line => 
+      line.includes('error') || 
+      line.includes('failed') || 
+      line.includes('FAIL') ||
+      line.includes('✖') ||
+      line.includes('❌') ||
+      line.includes('Coverage')
+    );
+    
+    let detailedMessage = `Validation blocked with exit code 2`;
+    if (errorLines.length > 0) {
+      detailedMessage += `:\n${errorLines.slice(0, 10).join('\n')}`;
+    }
+    if (errorLines.length > 10) {
+      detailedMessage += `\n... and ${errorLines.length - 10} more errors`;
+    }
+    
+    return new Error(detailedMessage);
+  } else {
+    let detailedMessage = `Validation failed with exit code ${code}`;
+    if (fullOutput) {
+      const lastLines = fullOutput.split('\n').slice(-10).join('\n');
+      detailedMessage += `:\n${lastLines}`;
+    }
+    return new Error(detailedMessage);
+  }
+}
+
+/**
+ * Create validation process promise
+ */
+function createValidationProcess(sessionId: string): Promise<void> {
+  const { spawn } = require("child_process");
+  
+  return new Promise<void>((resolve, reject) => {
+    let stdout = '';
+    let stderr = '';
+    
+    const child = spawn("npx", ["ts-node", "scripts/validate-task.ts", sessionId, "--settings=settings.json"], {
+      stdio: ["inherit", "pipe", "pipe"],
+      cwd: process.cwd()
+    });
+    
+    child.stdout?.on('data', (data: Buffer) => {
+      const output = data.toString();
+      stdout += output;
+      process.stdout.write(output);
+    });
+    
+    child.stderr?.on('data', (data: Buffer) => {
+      const output = data.toString();
+      stderr += output;
+      process.stderr.write(output);
+    });
+    
+    child.on("exit", (code: number | null) => {
+      if (code === 0) {
+        resolve();
+      } else {
+        reject(parseValidationOutput(stdout, stderr, code));
+      }
+    });
+    
+    child.on("error", (error: Error) => {
+      reject(new Error(`Validation process error: ${error.message}`));
+    });
+  });
+}
+
+/**
  * Handle validation checks with timeout (using settings.json with todo list validation)
  */
 async function handleValidationChecks(): Promise<void> {
   console.error("🧪 Running complete validation pipeline including todo list...");
 
-  // Set a timeout to prevent infinite loops - increased for comprehensive validation
   const VALIDATION_TIMEOUT = 1200000; // 20 minutes
   const timeoutPromise = new Promise<never>((_, reject) => {
     setTimeout(
@@ -100,30 +175,8 @@ async function handleValidationChecks(): Promise<void> {
   });
 
   try {
-    // Run the validation script with settings.json (includes todo list validation)
     const sessionId = `claude-stop-${Date.now()}`;
-    const { spawn } = require("child_process");
-    
-    const validationPromise = new Promise<void>((resolve, reject) => {
-      const child = spawn("npx", ["ts-node", "scripts/validate-task.ts", sessionId, "--settings=settings.json"], {
-        stdio: ["inherit", "inherit", "inherit"],
-        cwd: process.cwd()
-      });
-      
-      child.on("exit", (code: number | null) => {
-        if (code === 0) {
-          resolve();
-        } else if (code === 2) {
-          reject(new Error(`Validation blocked with exit code 2 (blocking decision)`));
-        } else {
-          reject(new Error(`Validation failed with exit code ${code}`));
-        }
-      });
-      
-      child.on("error", (error: Error) => {
-        reject(error);
-      });
-    });
+    const validationPromise = createValidationProcess(sessionId);
 
     await Promise.race([validationPromise, timeoutPromise]);
     console.error("✅ All validation checks passed including todo list");
@@ -131,11 +184,10 @@ async function handleValidationChecks(): Promise<void> {
     console.error("⚠️ Validation checks failed:", error);
     const blockResult = {
       decision: "block",
-      reason:
-        error instanceof Error ? error.message : "Validation checks failed",
+      reason: error instanceof Error ? error.message : "Validation checks failed",
     };
     console.log(JSON.stringify(blockResult));
-    process.exit(2); // Exit with code 2 to indicate block decision
+    process.exit(2);
   }
 }
 

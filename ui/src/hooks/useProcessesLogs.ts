@@ -30,7 +30,7 @@ export function useProcessesLogs(
 
   useEffect(() => {
     if (!processes.length) {
-      setEntries([]);
+      setEntries(prev => prev.length > 0 ? [] : prev); // Only update if actually different
       setIsLoading(false);
       return;
     }

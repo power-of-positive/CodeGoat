@@ -18,9 +18,7 @@ import {
   Pause,
   FileText,
   Bot,
-  ChevronUp,
-  ChevronDown,
-  User
+  GitMerge,
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
@@ -29,9 +27,9 @@ import { taskApi } from '../lib/api';
 import { BDDScenarioManager } from './BDDScenarioManager';
 import { BDDScenario } from '../../shared/types';
 import LogEntryRow from './logs/LogEntryRow';
-import { useProcessesLogs } from '../hooks/useProcessesLogs';
-import DisplayConversationEntry from './logs/DisplayConversationEntry';
-import type { NormalizedEntry } from '../../shared/types';
+import type { UnifiedLogEntry } from '../types/logs';
+// import DisplayConversationEntry from './logs/DisplayConversationEntry';
+// import type { NormalizedEntry } from '../../shared/types';
 
 // Priority colors
 const priorityColors = {
@@ -165,39 +163,127 @@ function ValidationRunCard({ run }: { run: ValidationRunData }) {
 }
 
 
-// Task logs viewer component
+
+// Enhanced task logs viewer component using actual worker logs
 interface TaskLogsProps {
-  taskId: string;
+  executorId?: string;
 }
 
-function TaskLogs({ taskId }: TaskLogsProps) {
+function TaskLogs({ executorId }: TaskLogsProps) {
   const [autoScroll, setAutoScroll] = useState(true);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const listRef = useRef<VariableSizeListType>(null);
   const innerRef = useRef<HTMLDivElement>(null);
   const [containerRef, bounds] = useMeasure();
 
-  // Mock execution processes for this task - replace with actual API call
-  const mockProcesses = [
-    {
-      id: `process-${taskId}-1`,
-      task_attempt_id: taskId,
-      run_reason: 'setupscript',
-      status: 'completed',
-      started_at: new Date(Date.now() - 10000).toISOString(),
-      completed_at: new Date(Date.now() - 5000).toISOString(),
-    },
-    {
-      id: `process-${taskId}-2`,
-      task_attempt_id: taskId,
-      run_reason: 'codingagent',
-      status: 'running',
-      started_at: new Date(Date.now() - 3000).toISOString(),
-    }
-  ];
+  // Get actual worker logs instead of mock data
+  const { data: logsData } = useQuery({
+    queryKey: ['worker-logs', executorId],
+    queryFn: () => executorId ? import('../lib/api').then(api => api.claudeWorkersApi.getWorkerLogs(executorId)) : Promise.resolve(null),
+    refetchInterval: autoRefresh ? 2000 : false,
+    enabled: !!executorId,
+    retry: 1,
+  });
 
-  // Use the enhanced logging hook
-  const { entries: logEntries, isLoading, error } = useProcessesLogs(mockProcesses, autoRefresh);
+  // Process actual logs into enhanced UnifiedLogEntry format with rich UI
+  const logEntries = React.useMemo(() => {
+    if (!logsData?.logs) return [];
+    
+    const lines = logsData.logs.split('\n').filter((line: string) => line.trim());
+    const entries: UnifiedLogEntry[] = [];
+    const baseTimestamp = Date.now() - (lines.length * 1000);
+    
+    // Add a process start entry for better visual context
+    entries.push({
+      id: `${executorId}-start`,
+      ts: baseTimestamp - 1000,
+      processId: executorId || 'unknown',
+      processName: `claude-worker`,
+      channel: 'process_start',
+      payload: {
+        processId: executorId || 'unknown',
+        runReason: 'claude-code-worker',
+        startedAt: new Date(baseTimestamp).toISOString(),
+        status: 'running'
+      }
+    });
+    
+    // Process each log line and enhance it
+    lines.forEach((line: string, index: number) => {
+      const timestamp = baseTimestamp + (index * 100);
+      
+      // Detect different types of log entries and create appropriate channels
+      if (line.includes('[ERROR]') || line.includes('ERROR:') || line.toLowerCase().includes('error')) {
+        entries.push({
+          id: `log-${executorId}-${index}`,
+          ts: timestamp,
+          processId: executorId || 'unknown',
+          processName: 'claude-worker',
+          channel: 'stderr',
+          payload: `[${new Date(timestamp).toLocaleTimeString()}] ${line}`
+        });
+      } else if (line.includes('🤖') || line.includes('assistant:') || line.includes('Claude:')) {
+        // Convert assistant messages to normalized entries for better UI
+        entries.push({
+          id: `log-${executorId}-${index}`,
+          ts: timestamp,
+          processId: executorId || 'unknown',
+          processName: 'claude-worker',
+          channel: 'normalized',
+          payload: {
+            timestamp: new Date(timestamp).toISOString(),
+            entry_type: { type: 'assistant_message' },
+            content: line.replace(/^🤖\s*/, '').replace(/^assistant:\s*/i, '').replace(/^Claude:\s*/i, '')
+          }
+        });
+      } else if (line.includes('user:') || line.includes('👤') || line.includes('Human:')) {
+        // Convert user messages to normalized entries
+        entries.push({
+          id: `log-${executorId}-${index}`,
+          ts: timestamp,
+          processId: executorId || 'unknown',
+          processName: 'claude-worker',
+          channel: 'normalized',
+          payload: {
+            timestamp: new Date(timestamp).toISOString(),
+            entry_type: { type: 'user_message' },
+            content: line.replace(/^👤\s*/, '').replace(/^user:\s*/i, '').replace(/^Human:\s*/i, '')
+          }
+        });
+      } else if (line.includes('📁') || line.includes('Read tool') || line.includes('Edit tool') || line.includes('Bash tool')) {
+        // Convert tool usage to normalized entries
+        entries.push({
+          id: `log-${executorId}-${index}`,
+          ts: timestamp,
+          processId: executorId || 'unknown',
+          processName: 'claude-worker',
+          channel: 'normalized',
+          payload: {
+            timestamp: new Date(timestamp).toISOString(),
+            entry_type: { 
+              type: 'tool_use',
+              tool_name: line.includes('Read') ? 'Read' : line.includes('Edit') ? 'Edit' : line.includes('Bash') ? 'Bash' : 'Tool',
+              action_type: { action: 'other', description: 'Tool execution' }
+            },
+            content: line.replace(/^📁\s*/, '')
+          }
+        });
+      } else {
+        // Regular stdout entries with proper formatting
+        entries.push({
+          id: `log-${executorId}-${index}`,
+          ts: timestamp,
+          processId: executorId || 'unknown',
+          processName: 'claude-worker',
+          channel: 'stdout',
+          payload: `[${new Date(timestamp).toLocaleTimeString()}] ${line}`
+        });
+      }
+    });
+    
+    // Sort by timestamp
+    return entries.sort((a, b) => a.ts - b.ts);
+  }, [logsData, executorId]);
 
   const rowHeights = useRef<Record<number, number>>({});
 
@@ -237,6 +323,26 @@ function TaskLogs({ taskId }: TaskLogsProps) {
     [bounds.height]
   );
 
+  if (!executorId) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Terminal className="h-5 w-5" />
+            Task Logs
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-12 text-gray-500">
+            <Terminal className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+            <p>No active worker for this task</p>
+            <p className="text-sm">Logs will appear when a worker is assigned</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -244,6 +350,11 @@ function TaskLogs({ taskId }: TaskLogsProps) {
           <CardTitle className="flex items-center gap-2">
             <Terminal className="h-5 w-5" />
             Task Logs
+            {executorId && (
+              <Badge variant="secondary" className="text-xs">
+                {executorId.split('-').slice(-2).join('-')}
+              </Badge>
+            )}
           </CardTitle>
           <div className="flex items-center space-x-2">
             <Button
@@ -272,11 +383,6 @@ function TaskLogs({ taskId }: TaskLogsProps) {
         </div>
       </CardHeader>
       <CardContent>
-        {error && (
-          <div className="mb-4 p-3 bg-red-100 border border-red-300 text-red-700 rounded">
-            Error loading logs: {error}
-          </div>
-        )}
         <div ref={containerRef} className="h-64 bg-gray-900 text-green-400 rounded">
           {bounds.height && bounds.width && logEntries.length > 0 ? (
             <VariableSizeList
@@ -295,7 +401,7 @@ function TaskLogs({ taskId }: TaskLogsProps) {
                   styleWithPadding.paddingBottom = '20px';
                 }
 
-                // Pass the UnifiedLogEntry for enhanced processing
+                // Pass the enhanced log entry for proper formatting with icons
                 return (
                   <LogEntryRow
                     entry={data[index]}
@@ -308,8 +414,7 @@ function TaskLogs({ taskId }: TaskLogsProps) {
             </VariableSizeList>
           ) : (
             <div className="h-full flex items-center justify-center text-gray-500 text-sm">
-              {isLoading ? 'Loading logs...' : 
-               logEntries.length === 0 ? 'No logs available for this task...' : 'No logs found'}
+              {logEntries.length === 0 ? 'No logs available for this task...' : 'Loading logs...'}
             </div>
           )}
         </div>
@@ -318,13 +423,26 @@ function TaskLogs({ taskId }: TaskLogsProps) {
   );
 }
 
-
 function WorkerInfo({ executorId }: { executorId: string }) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  
   const { data: workersData } = useQuery({
     queryKey: ['workers-status'],
-    queryFn: claudeWorkersApi.getWorkersStatus,
+    queryFn: () => import('../lib/api').then(api => api.claudeWorkersApi.getWorkersStatus()),
     refetchInterval: 5000,
+  });
+
+  // Merge worktree mutation
+  const mergeWorktreeMutation = useMutation({
+    mutationFn: async () => {
+      const { claudeWorkersApi } = await import('../lib/api');
+      const response = await claudeWorkersApi.mergeWorktree(executorId);
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['workers-status'] });
+    },
   });
 
   const worker = workersData?.workers.find(w => w.id === executorId);
@@ -433,101 +551,28 @@ function WorkerInfo({ executorId }: { executorId: string }) {
               </Badge>
             </div>
           )}
+
+          {/* Merge Worktree Action */}
+          {(worker.status === 'completed' || worker.status === 'stopped') && 
+           worker.validationPassed && (
+            <div className="pt-3 border-t border-gray-200">
+              <Button
+                onClick={() => mergeWorktreeMutation.mutate()}
+                disabled={mergeWorktreeMutation.isPending}
+                className="w-full flex items-center justify-center space-x-2 text-green-600 hover:bg-green-50"
+                variant="outline"
+              >
+                <GitMerge className="h-4 w-4" />
+                <span>{mergeWorktreeMutation.isPending ? 'Merging...' : 'Merge Worker Changes'}</span>
+              </Button>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
   );
 }
 
-function WorkerLogs({ executorId }: { executorId: string }) {
-  const [isExpanded, setIsExpanded] = useState(true);
-  const { data: logsData } = useQuery({
-    queryKey: ['worker-logs', executorId],
-    queryFn: () => claudeWorkersApi.getWorkerLogs(executorId),
-    refetchInterval: 2000,
-    retry: 1,
-  });
-
-  // Parse logs if available
-  const logEntries = React.useMemo(() => {
-    if (!logsData?.logs) return [];
-    
-    // Convert raw logs to normalized entries
-    const lines = logsData.logs.split('\n').filter(line => line.trim());
-    return lines.map((line, index) => ({
-      id: `log-${executorId}-${index}`,
-      timestamp: new Date().toISOString(),
-      level: 'info' as const,
-      content: line,
-      workerId: executorId,
-    }));
-  }, [logsData, executorId]);
-
-  return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <Terminal className="h-5 w-5 text-blue-600" />
-            Worker Logs
-            {logsData && (
-              <Badge variant="secondary" className="text-xs">
-                {executorId.split('-').slice(-2).join('-')}
-              </Badge>
-            )}
-          </CardTitle>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="flex items-center gap-1"
-          >
-            {isExpanded ? (
-              <>
-                <ChevronUp className="h-4 w-4" />
-                Collapse
-              </>
-            ) : (
-              <>
-                <ChevronDown className="h-4 w-4" />
-                Show Logs
-              </>
-            )}
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent>
-        {!logsData ? (
-          <div className="text-sm text-gray-600">
-            No logs available for worker {executorId}
-          </div>
-        ) : isExpanded && (
-          <div className="text-sm text-gray-600 mb-4">
-            Showing worker execution logs, command outputs, and validation results.
-          </div>
-        )}
-        
-        {isExpanded && logsData && (
-          <div className="bg-gray-900 text-green-400 p-3 rounded font-mono text-xs max-h-96 overflow-y-auto">
-            {logEntries.length > 0 ? (
-              logEntries.map((entry, index) => (
-                <LogEntryRow
-                  key={entry.id}
-                  entry={entry.content}
-                  index={index}
-                  style={{ padding: '2px 0' }}
-                  setRowHeight={() => {}}
-                />
-              ))
-            ) : (
-              <div className="text-gray-500">No log entries available</div>
-            )}
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
 
 
 export function TaskDetail() {
@@ -682,6 +727,28 @@ export function TaskDetail() {
         </CardContent>
       </Card>
 
+      {/* Task Logs */}
+      <TaskLogs executorId={task.executorId} />
+
+      {/* Worker Information */}
+      {task.executorId && (
+        <WorkerInfo executorId={task.executorId} />
+      )}
+
+      {/* BDD Scenarios */}
+      <Card>
+        <CardContent className="p-6">
+          <BDDScenarioManager
+            taskId={taskId!}
+            scenarios={task.bddScenarios || []}
+            onAddScenario={handleAddScenario}
+            onUpdateScenario={handleUpdateScenario}
+            onDeleteScenario={handleDeleteScenario}
+            readonly={task.status === 'completed'}
+          />
+        </CardContent>
+      </Card>
+
       {/* Validation Runs */}
       <Card>
         <CardHeader>
@@ -710,31 +777,6 @@ export function TaskDetail() {
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
-
-      {/* Task Logs */}
-      <TaskLogs taskId={taskId!} />
-
-      {/* Worker Information */}
-      {task.executorId && (
-        <>
-          <WorkerInfo executorId={task.executorId} />
-          <WorkerLogs executorId={task.executorId} />
-        </>
-      )}
-
-      {/* BDD Scenarios */}
-      <Card>
-        <CardContent className="p-6">
-          <BDDScenarioManager
-            taskId={taskId!}
-            scenarios={task.bddScenarios || []}
-            onAddScenario={handleAddScenario}
-            onUpdateScenario={handleUpdateScenario}
-            onDeleteScenario={handleDeleteScenario}
-            readonly={task.status === 'completed'}
-          />
         </CardContent>
       </Card>
     </div>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { VariableSizeList } from 'react-window';
 import type { VariableSizeList as VariableSizeListType } from 'react-window';
 import useMeasure from 'react-use-measure';
@@ -106,7 +107,7 @@ function WorkerCard({ worker, onViewLogs, onStopWorker, onMergeWorktree, onOpenV
     <Card className="mb-4">
       <CardHeader className="pb-3">
         <div 
-          className="cursor-pointer hover:bg-gray-50 -m-6 p-6 rounded-lg"
+          className="cursor-pointer -m-6 p-6 rounded-lg"
           onClick={() => setIsExpanded(!isExpanded)}
         >
         <div className="flex items-center justify-between">
@@ -233,7 +234,7 @@ function WorkerCard({ worker, onViewLogs, onStopWorker, onMergeWorktree, onOpenV
                 className="flex items-center space-x-1"
               >
                 <Terminal className="h-3 w-3" />
-                <span>View Logs</span>
+                <span>Details</span>
               </Button>
               
               {worker.status === 'running' && (
@@ -241,7 +242,7 @@ function WorkerCard({ worker, onViewLogs, onStopWorker, onMergeWorktree, onOpenV
                   size="sm"
                   variant="outline"
                   onClick={() => onStopWorker(worker.id)}
-                  className="flex items-center space-x-1 text-red-600 hover:text-red-700 hover:bg-red-50"
+                  className="flex items-center space-x-1 text-red-600"
                 >
                   <Square className="h-3 w-3" />
                   <span>Stop</span>
@@ -253,7 +254,7 @@ function WorkerCard({ worker, onViewLogs, onStopWorker, onMergeWorktree, onOpenV
                   size="sm"
                   variant="outline"
                   onClick={() => onMergeWorktree(worker.id)}
-                  className="flex items-center space-x-1 text-green-600 hover:text-green-700 hover:bg-green-50"
+                  className="flex items-center space-x-1 text-green-600"
                 >
                   <GitMerge className="h-3 w-3" />
                   <span>Merge</span>
@@ -264,7 +265,7 @@ function WorkerCard({ worker, onViewLogs, onStopWorker, onMergeWorktree, onOpenV
                 size="sm"
                 variant="outline"
                 onClick={() => onOpenVSCode(worker.id)}
-                className="flex items-center space-x-1 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                className="flex items-center space-x-1 text-blue-600"
               >
                 <Code2 className="h-3 w-3" />
                 <span>VSCode</span>
@@ -275,7 +276,7 @@ function WorkerCard({ worker, onViewLogs, onStopWorker, onMergeWorktree, onOpenV
                   size="sm"
                   variant="outline"
                   onClick={() => onViewBlockedCommands(worker.id)}
-                  className="flex items-center space-x-1 text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                  className="flex items-center space-x-1 text-orange-600"
                 >
                   <ShieldAlert className="h-3 w-3" />
                   <span>Blocked ({worker.blockedCommands})</span>
@@ -287,7 +288,7 @@ function WorkerCard({ worker, onViewLogs, onStopWorker, onMergeWorktree, onOpenV
                   size="sm"
                   variant="outline"
                   onClick={() => onViewValidationRuns(worker.id)}
-                  className="flex items-center space-x-1 text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+                  className="flex items-center space-x-1 text-purple-600"
                 >
                   <FileCheck className="h-3 w-3" />
                   <span>Validations ({worker.validationRuns})</span>
@@ -319,7 +320,7 @@ function LogViewer({ workerId, onClose }: LogViewerProps) {
     refetchInterval: isAutoRefresh ? 2000 : false, // Refresh every 2 seconds
   });
 
-  // Process logs into structured format
+  // Process logs into structured format - enhanced to match TaskDetail format
   const processedLogs = React.useMemo(() => {
     if (!logsData?.logs) return [];
     
@@ -330,6 +331,9 @@ function LogViewer({ workerId, onClose }: LogViewerProps) {
       level: 'info' as const,
       content: line,
       workerId,
+      // Add enhanced formatting properties to match TaskDetail
+      type: 'worker' as const,
+      processId: workerId,
     }));
   }, [logsData, workerId]);
 
@@ -426,10 +430,10 @@ function LogViewer({ workerId, onClose }: LogViewerProps) {
                   styleWithPadding.paddingBottom = '20px';
                 }
 
-                // Pass the raw log content as string for backwards compatibility
+                // Pass the enhanced log entry object to match TaskDetail format
                 return (
                   <LogEntryRow
-                    entry={data[index].content}
+                    entry={data[index]}
                     index={index}
                     style={styleWithPadding}
                     setRowHeight={setRowHeight}
@@ -699,8 +703,10 @@ export function WorkersDashboard() {
     },
   });
 
+  const navigate = useNavigate();
+
   const handleViewLogs = (workerId: string) => {
-    setSelectedWorkerId(workerId);
+    navigate(`/workers/${workerId}`);
   };
 
   const handleStopWorker = (workerId: string) => {
