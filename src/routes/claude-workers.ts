@@ -8,6 +8,7 @@ import { ValidationRunner } from '../../scripts/validate-task';
 import { getDatabaseService } from '../services/database';
 import { TodoStatus } from '@prisma/client';
 import { logManager } from '../utils/log-manager';
+import { ClaudeLogProcessor } from '../utils/claude-log-processor';
 // import { WinstonLogger } from '../logger-winston';
 
 const router = express.Router();
@@ -47,11 +48,12 @@ interface ClaudeWorker {
   }>;
   worktreePath?: string;
   worktreeManager?: WorktreeManager;
+  claudeLogProcessor?: ClaudeLogProcessor;
   structuredEntries: Array<{
-    timestamp: string;
     type: string;
     content: string;
     metadata?: unknown;
+    timestamp?: string;
   }>;
   validationPassed?: boolean;
   validationRuns: ValidationRun[];
@@ -426,161 +428,6 @@ function generateWorkerId(): string {
   return `claude-worker-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 }
 
-/**
- * Process Claude JSON output into structured entries
- */
-function processClaudeJson(
-  claudeJson: unknown
-): Array<{ timestamp: string; type: string; content: string; metadata?: unknown }> {
-  const timestamp = new Date().toISOString();
-
-  if (!claudeJson || typeof claudeJson !== 'object') return [];
-  const typedJson = claudeJson as Record<string, unknown>;
-  const type = typeof typedJson.type === 'string' ? typedJson.type : undefined;
-  const subtype = typeof typedJson.subtype === 'string' ? typedJson.subtype : undefined;
-  const model = typeof typedJson.model === 'string' ? typedJson.model : undefined;
-  const tool_name = typeof typedJson.tool_name === 'string' ? typedJson.tool_name : undefined;
-  const is_error = typeof typedJson.is_error === 'boolean' ? typedJson.is_error : false;
-
-  switch (type) {
-    case 'system': {
-      if (subtype === 'init') {
-        return [
-          {
-            timestamp,
-            type: 'SystemInit',
-            content: `System initialized${model ? ` with model: ${model}` : ''}`,
-            metadata: claudeJson,
-          },
-        ];
-      }
-      return [
-        {
-          timestamp,
-          type: 'SystemMessage',
-          content: subtype ? `System: ${subtype}` : 'System message',
-          metadata: claudeJson,
-        },
-      ];
-    }
-    case 'assistant': {
-      const message = typedJson.message;
-      const entries: Array<{
-        timestamp: string;
-        type: string;
-        content: string;
-        metadata?: unknown;
-      }> = [];
-
-      if (message && typeof message === 'object') {
-        const messageObj = message as Record<string, unknown>;
-        const content = messageObj.content;
-        if (Array.isArray(content)) {
-          for (const item of content) {
-            const entry = contentItemToEntry(item, 'assistant', timestamp);
-            if (entry) entries.push(entry);
-          }
-        }
-      }
-      return entries;
-    }
-    case 'user': {
-      const message = typedJson.message;
-      const entries: Array<{
-        timestamp: string;
-        type: string;
-        content: string;
-        metadata?: unknown;
-      }> = [];
-
-      if (message && typeof message === 'object') {
-        const messageObj = message as Record<string, unknown>;
-        const content = messageObj.content;
-        if (Array.isArray(content)) {
-          for (const item of content) {
-            const entry = contentItemToEntry(item, 'user', timestamp);
-            if (entry) entries.push(entry);
-          }
-        }
-      }
-      return entries;
-    }
-    case 'tool_use': {
-      return [
-        {
-          timestamp,
-          type: 'ToolUse',
-          content: `Tool use: ${tool_name || 'unknown'}`,
-          metadata: claudeJson,
-        },
-      ];
-    }
-    case 'tool_result':
-    case 'result':
-      if (is_error) {
-        return [
-          {
-            timestamp,
-            type: 'Error',
-            content: `Tool result error: ${JSON.stringify(typedJson.result)}`,
-            metadata: claudeJson,
-          },
-        ];
-      }
-      return [];
-    default:
-      return [
-        {
-          timestamp,
-          type: 'SystemMessage',
-          content: 'Unrecognized JSON message from Claude',
-          metadata: claudeJson,
-        },
-      ];
-  }
-}
-
-/**
- * Convert Claude content item to entry
- */
-function contentItemToEntry(
-  item: unknown,
-  role: string,
-  timestamp: string
-): { timestamp: string; type: string; content: string; metadata: unknown } | undefined {
-  if (!item || typeof item !== 'object') return undefined;
-  const typedItem = item as Record<string, unknown>;
-  const type = typeof typedItem.type === 'string' ? typedItem.type : undefined;
-  const text = typeof typedItem.text === 'string' ? typedItem.text : '';
-  const thinking = typeof typedItem.thinking === 'string' ? typedItem.thinking : '';
-  const name = typeof typedItem.name === 'string' ? typedItem.name : 'unknown';
-
-  switch (type) {
-    case 'text':
-      return {
-        timestamp,
-        type: role === 'user' ? 'UserMessage' : 'AssistantMessage',
-        content: text,
-        metadata: item,
-      };
-    case 'thinking':
-      return {
-        timestamp,
-        type: 'Thinking',
-        content: thinking,
-        metadata: item,
-      };
-    case 'tool_use':
-      return {
-        timestamp,
-        type: 'ToolUse',
-        content: `Tool use: ${name}`,
-        metadata: item,
-      };
-    default:
-      return undefined;
-  }
-}
 
 /**
  * Create log directory with date-based organization
@@ -662,6 +509,7 @@ router.post('/start', async (req, res) => {
       blockedCommandsList: [],
       worktreePath: workDir,
       worktreeManager,
+      claudeLogProcessor: new ClaudeLogProcessor(),
       structuredEntries: [],
       validationRuns: [],
       validationAttempts: 0,
@@ -736,17 +584,23 @@ router.post('/start', async (req, res) => {
       const monitoredOutput = monitorCommandOutput(worker, output);
       logStream.write(`STDOUT: ${monitoredOutput}`);
 
-      // Process JSON stream lines
+      // Process JSON stream lines using Claude log processor
       const lines = output.split('\n').filter((line: string) => line.trim());
       for (const line of lines) {
         try {
           const json = JSON.parse(line);
-          const entries = processClaudeJson(json);
-          worker.structuredEntries.push(...entries);
+          if (worker.claudeLogProcessor) {
+            const entries = worker.claudeLogProcessor.toNormalizedEntries(json, worker.worktreePath || '');
+            // Convert to our internal format
+            worker.structuredEntries.push(...entries.map(entry => ({
+              type: entry.entry_type.type,
+              content: entry.content,
+              metadata: entry.metadata,
+            })));
+          }
         } catch {
           // Not JSON, treat as regular output
           worker.structuredEntries.push({
-            timestamp: new Date().toISOString(),
             type: 'SystemMessage',
             content: line,
           });
@@ -1568,6 +1422,297 @@ router.post('/logs/cleanup', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Failed to cleanup logs',
+    });
+  }
+});
+
+/**
+ * Enhanced log streaming endpoint with normalized entries
+ */
+router.get('/:workerId/enhanced-logs', (req, res) => {
+  const { workerId } = req.params;
+  const worker = activeWorkers.get(workerId);
+
+  if (!worker) {
+    return res.status(404).json({
+      success: false,
+      error: 'Worker not found',
+    });
+  }
+
+  // Set up Server-Sent Events
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Cache-Control',
+  });
+
+  let lastLogIndex = 0;
+  let lastEntryIndex = 0;
+
+  const sendUpdate = () => {
+    try {
+      const patches: Array<{ op: string; path: string; value: unknown }> = [];
+
+      // Send new structured entries if available
+      if (worker.structuredEntries && worker.structuredEntries.length > lastEntryIndex) {
+        const newEntries = worker.structuredEntries.slice(lastEntryIndex);
+        lastEntryIndex = worker.structuredEntries.length;
+        
+        newEntries.forEach(entry => {
+          patches.push({
+            op: 'add',
+            path: `/entries/-`,
+            value: {
+              type: 'NORMALIZED_ENTRY',
+              content: {
+                entry_type: { type: entry.type },
+                content: entry.content,
+                metadata: entry.metadata
+                // Removed timestamp to prevent constant rerenders
+              }
+            }
+          });
+        });
+      }
+
+      // Fallback to raw logs only if no structured entries are available yet
+      if (worker.structuredEntries.length === 0 && worker.logFile && fs.existsSync(worker.logFile)) {
+        try {
+          const logs = fs.readFileSync(worker.logFile, 'utf-8');
+          const logLines = logs.split('\n').filter(line => line.trim());
+          
+          if (logLines.length > lastLogIndex) {
+            const newLines = logLines.slice(lastLogIndex);
+            lastLogIndex = logLines.length;
+            
+            newLines.forEach(line => {
+              // Determine if stderr or stdout based on content
+              const isStderr = line.includes('STDERR:') || line.includes('Error:') || line.includes('❌');
+              patches.push({
+                op: 'add',
+                path: `/entries/-`,
+                value: {
+                  type: isStderr ? 'STDERR' : 'STDOUT',
+                  content: line
+                }
+              });
+            });
+          }
+        } catch (logError) {
+          console.error(`Failed to read log file for worker ${workerId}:`, logError);
+        }
+      }
+
+      if (patches.length > 0) {
+        res.write(`event: json_patch\n`);
+        res.write(`data: ${JSON.stringify(patches)}\n\n`);
+      }
+    } catch (error) {
+      console.error(`Error sending enhanced log update for worker ${workerId}:`, error);
+    }
+  };
+
+  // Send initial state
+  sendUpdate();
+
+  // Set up polling for updates
+  const intervalId = setInterval(sendUpdate, 500);
+
+  // Handle client disconnect
+  req.on('close', () => {
+    clearInterval(intervalId);
+  });
+
+  // Send finished event when worker completes
+  const checkCompletion = () => {
+    if (worker.status === 'completed' || worker.status === 'failed' || worker.status === 'stopped') {
+      res.write(`event: finished\n`);
+      res.write(`data: ${JSON.stringify({ status: worker.status })}\n\n`);
+      clearInterval(intervalId);
+      clearInterval(completionCheckId);
+      res.end();
+    }
+  };
+
+  const completionCheckId = setInterval(checkCompletion, 1000);
+});
+
+/**
+ * Send follow-up comment to a running worker
+ */
+router.post('/:workerId/follow-up', async (req, res) => {
+  const { workerId } = req.params;
+  const { prompt } = req.body;
+
+  if (!prompt || typeof prompt !== 'string') {
+    return res.status(400).json({
+      success: false,
+      error: 'Prompt is required',
+    });
+  }
+
+  const worker = activeWorkers.get(workerId);
+
+  if (!worker) {
+    return res.status(404).json({
+      success: false,
+      error: 'Worker not found',
+    });
+  }
+
+  if (worker.status !== 'running') {
+    return res.status(400).json({
+      success: false,
+      error: 'Worker is not running',
+    });
+  }
+
+  if (!worker.process || !worker.process.stdin) {
+    return res.status(400).json({
+      success: false,
+      error: 'Worker process is not available for input',
+    });
+  }
+
+  try {
+    // Send the prompt to the Claude process stdin
+    worker.process.stdin.write(prompt + '\n');
+    
+    // Log the follow-up action
+    const logEntry = `[FOLLOW-UP] User sent prompt: ${prompt.substring(0, 100)}${prompt.length > 100 ? '...' : ''}`;
+    fs.appendFileSync(worker.logFile, `\n${new Date().toISOString()} ${logEntry}\n`);
+
+    // Add to structured entries
+    worker.structuredEntries.push({
+      type: 'follow_up',
+      content: prompt,
+      timestamp: new Date().toISOString(),
+      metadata: {
+        workerId,
+        taskId: worker.taskId,
+      },
+    });
+
+    res.json({
+      success: true,
+      data: {
+        message: 'Follow-up prompt sent successfully',
+        workerId,
+        timestamp: new Date().toISOString(),
+      },
+    });
+  } catch (error) {
+    console.error('Failed to send follow-up:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to send follow-up prompt',
+    });
+  }
+});
+
+/**
+ * Merge changes from worker's worktree
+ */
+router.post('/:workerId/merge', async (req, res) => {
+  const { workerId } = req.params;
+  const { commitMessage } = req.body;
+
+  const worker = activeWorkers.get(workerId);
+
+  if (!worker) {
+    return res.status(404).json({
+      success: false,
+      error: 'Worker not found',
+    });
+  }
+
+  if (!worker.worktreeManager || !worker.worktreePath) {
+    return res.status(400).json({
+      success: false,
+      error: 'Worker does not have a worktree',
+    });
+  }
+
+  try {
+    // Get the current branch from worktree
+    const { execSync } = await import('child_process');
+    const worktreePath = worker.worktreePath;
+
+    // Check if there are changes to commit
+    const status = execSync('git status --porcelain', {
+      cwd: worktreePath,
+      encoding: 'utf8',
+    });
+
+    if (!status.trim()) {
+      return res.status(400).json({
+        success: false,
+        error: 'No changes to commit',
+      });
+    }
+
+    // Stage all changes
+    execSync('git add -A', { cwd: worktreePath });
+
+    // Create commit message
+    const defaultMessage = `Task ${worker.taskId}: ${worker.taskContent.substring(0, 50)}...`;
+    const finalMessage = commitMessage || defaultMessage;
+
+    // Commit changes
+    execSync(`git commit -m "${finalMessage}"`, { cwd: worktreePath });
+
+    // Get commit hash
+    const commitHash = execSync('git rev-parse HEAD', {
+      cwd: worktreePath,
+      encoding: 'utf8',
+    }).trim();
+
+    // Merge to main branch (or current branch)
+    const currentBranch = execSync('git branch --show-current', {
+      cwd: path.dirname(worktreePath),
+      encoding: 'utf8',
+    }).trim();
+
+    // Cherry-pick the commit to main branch
+    execSync(`git cherry-pick ${commitHash}`, {
+      cwd: path.dirname(worktreePath),
+    });
+
+    // Log the merge action
+    const logEntry = `[MERGE] Changes merged to ${currentBranch} branch with commit ${commitHash}`;
+    fs.appendFileSync(worker.logFile, `\n${new Date().toISOString()} ${logEntry}\n`);
+
+    // Add to structured entries
+    worker.structuredEntries.push({
+      type: 'merge',
+      content: finalMessage,
+      timestamp: new Date().toISOString(),
+      metadata: {
+        workerId,
+        taskId: worker.taskId,
+        commitHash,
+        targetBranch: currentBranch,
+      },
+    });
+
+    res.json({
+      success: true,
+      data: {
+        message: 'Changes merged successfully',
+        commitHash,
+        targetBranch: currentBranch,
+        commitMessage: finalMessage,
+      },
+    });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Failed to merge changes:', error);
+    res.status(500).json({
+      success: false,
+      error: `Failed to merge changes: ${errorMessage}`,
     });
   }
 });

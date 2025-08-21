@@ -16,6 +16,10 @@
     "test:integration": "jest --config=jest.integration.config.js",
     "test:api-e2e": "cd tests/api-e2e && npm test",
     "test:e2e": "cd ui && npm run test:e2e:robust",
+    "test:playwright": "npx playwright test",
+    "test:playwright:ui": "npx playwright test --ui",
+    "test:playwright:headed": "npx playwright test --headed",
+    "test:playwright:debug": "npx playwright test --debug",
     "test:playwright-e2e": "cd ui && SKIP_WEB_SERVER=true npx playwright test tests/",
     "test:coverage": "npm run test:coverage:backend && npm run test:coverage:frontend",
     "test:coverage:backend": "jest --config=jest.unit.config.js --coverage",
@@ -36,6 +40,7 @@
   "license": "ISC",
   "description": "",
   "devDependencies": {
+    "@playwright/test": "^1.47.0",
     "@types/dotenv": "^6.1.1",
     "@types/express": "^5.0.3",
     "@types/jest": "^30.0.0",

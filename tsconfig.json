@@ -14,6 +14,6 @@
     "emitDecoratorMetadata": true,
     "resolveJsonModule": true
   },
-  "include": ["src/**/*", "scripts/**/*", "tests/**/*", "__tests__/**/*"],
-  "exclude": ["node_modules", "dist", "ui/**/*", "scripts/test-*.ts"]
+  "include": ["src/**/*", "scripts/**/*", "__tests__/**/*"],
+  "exclude": ["node_modules", "dist", "ui/**/*", "scripts/test-*.ts", "tests/e2e/**/*", "tests/**/*.spec.ts"]
 }

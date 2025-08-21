@@ -4,13 +4,16 @@ import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import '@testing-library/jest-dom';
 import { ValidationRunDetail } from './ValidationRunDetail';
-import { analyticsApi } from '../lib/api';
+import { analyticsApi, taskApi } from '../lib/api';
 import { ValidationRun } from '../../shared/types';
 
 // Mock the API
 jest.mock('../lib/api', () => ({
   analyticsApi: {
     getValidationRuns: jest.fn(),
+  },
+  taskApi: {
+    getTasks: jest.fn(),
   },
 }));
 
@@ -69,6 +72,8 @@ const renderWithProviders = (component: React.ReactElement) => {
 describe('ValidationRunDetail', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // Default mock for taskApi to prevent unexpected calls
+    (taskApi.getTasks as jest.Mock).mockResolvedValue([]);
   });
 
   it('should render loading state initially', () => {
@@ -101,6 +106,9 @@ describe('ValidationRunDetail', () => {
   it('should render not found state when run does not exist', async () => {
     (analyticsApi.getValidationRuns as jest.Mock).mockResolvedValue(
       [] // Empty array, so run won't be found
+    );
+    (taskApi.getTasks as jest.Mock).mockResolvedValue(
+      [] // Empty array, no tasks with validation runs
     );
 
     renderWithProviders(<ValidationRunDetail />);

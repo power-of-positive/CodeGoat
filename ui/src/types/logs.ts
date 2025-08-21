@@ -1,5 +1,17 @@
 import type { NormalizedEntry } from '../../../shared/types';
 
+// Enhanced types for vibe-kanban style log streaming
+export interface ActionType {
+  action: 'file_read' | 'file_edit' | 'command_run' | 'search' | 'web_fetch' | 'task_create' | 'plan_presentation' | 'todo_management';
+  path?: string;
+  changes?: unknown[];
+}
+
+export type PatchType =
+  | { type: 'NORMALIZED_ENTRY'; content: NormalizedEntry }
+  | { type: 'STDOUT'; content: string }
+  | { type: 'STDERR'; content: string };
+
 export interface UnifiedLogEntry {
   id: string;
   ts: number; // epoch-ms timestamp for sorting and react-window key

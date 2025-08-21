@@ -125,8 +125,9 @@ app.use((req, _res, next) => {
 app.use(logger.middleware());
 
 // Serve static files from UI build directory
-const uiDistPath = path.join(__dirname, '../ui/dist');
+const uiDistPath = path.join(__dirname, '../../ui/dist');
 app.use('/ui', express.static(uiDistPath));
+app.use(express.static(uiDistPath)); // Also serve UI at root
 
 // Mount API routes
 app.use('/api/settings', createSettingsRoutes(logger));
@@ -140,9 +141,14 @@ app.get('/health', (_req: Request, res: Response) => {
   res.json({ status: 'ok' });
 });
 
-// Catch-all for unmatched routes
-app.use((_req: Request, res: Response) => {
-  res.status(404).json({ error: 'Not found' });
+// Catch-all for unmatched routes - serve index.html for client-side routing
+app.get('*', (req: Request, res: Response) => {
+  // Don't serve index.html for API routes
+  if (req.path.startsWith('/api/')) {
+    res.status(404).json({ error: 'Not found' });
+  } else {
+    res.sendFile(path.join(uiDistPath, 'index.html'));
+  }
 });
 
 // Create HTTP server

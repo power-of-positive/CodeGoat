@@ -23,7 +23,6 @@ describe('API Client', () => {
         ok: true,
         json: async () => mockConfig,
       } as Response);
-
       const result = await settingsApi.getSettings();
       expect(result).toEqual(mockConfig);
       expect(fetch).toHaveBeenCalledWith('/api/settings', {
@@ -34,12 +33,10 @@ describe('API Client', () => {
     it('should update settings', async () => {
       const mockConfig = { enableMetrics: false };
       const updatedConfig = { enableMetrics: false, validation: { stages: [] } };
-
       (fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
         ok: true,
         json: async () => updatedConfig,
       } as Response);
-
       const result = await settingsApi.updateSettings(mockConfig);
       expect(result).toEqual(updatedConfig);
       expect(fetch).toHaveBeenCalledWith('/api/settings', {

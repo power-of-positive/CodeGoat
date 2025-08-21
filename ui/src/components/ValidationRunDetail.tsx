@@ -12,8 +12,19 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { analyticsApi } from '../lib/api';
-import { ValidationRun, ValidationStageResult } from '../../shared/types';
+import { analyticsApi, taskApi } from '../lib/api';
+import { ValidationRun, ValidationStageResult, Task } from '../../shared/types';
+
+// Extended Task type that includes validation runs
+interface TaskWithValidationRuns extends Task {
+  validationRuns?: Array<{
+    id: string;
+    timestamp: string;
+    success: boolean;
+    duration: number;
+    stages?: string;
+  }>;
+}
 
 // Component for stage detail with expanded logs view
 function StageDetailExpanded({ stage }: { stage: ValidationStageResult }) {
@@ -104,14 +115,29 @@ export function ValidationRunDetail() {
   const { runId } = useParams<{ runId: string }>();
   const navigate = useNavigate();
 
+  // First try to get from analytics API
   const {
-    data: runs,
-    isLoading,
-    error,
+    data: analyticsRuns,
+    isLoading: analyticsLoading,
+    error: analyticsError,
   } = useQuery<ValidationRun[]>({
     queryKey: ['validation-runs'],
     queryFn: () => analyticsApi.getValidationRuns(),
   });
+
+  // If not found in analytics, try all tasks to find the run
+  const {
+    data: allTasks,
+    isLoading: tasksLoading,
+    error: tasksError,
+  } = useQuery<TaskWithValidationRuns[]>({
+    queryKey: ['all-tasks'],
+    queryFn: () => taskApi.getTasks() as Promise<TaskWithValidationRuns[]>,
+    enabled: !analyticsLoading && !analyticsRuns?.find((r) => r.id === runId),
+  });
+
+  const isLoading = analyticsLoading || tasksLoading;
+  const error = analyticsError || tasksError;
 
   if (isLoading) {
     return (
@@ -146,7 +172,34 @@ export function ValidationRunDetail() {
     );
   }
 
-  const run = runs?.find((r) => r.id === runId);
+  // First check analytics runs
+  let run = analyticsRuns?.find((r) => r.id === runId);
+  let taskContext = null;
+
+  // If not found in analytics, check task validation runs
+  if (!run && allTasks) {
+    for (const task of allTasks) {
+      if (task.validationRuns) {
+        const taskRun = task.validationRuns.find((r) => r.id === runId);
+        if (taskRun) {
+          // Convert task validation run to ValidationRun format
+          const stages = taskRun.stages ? JSON.parse(taskRun.stages) : [];
+          run = {
+            id: taskRun.id,
+            timestamp: taskRun.timestamp,
+            success: taskRun.success,
+            duration: taskRun.duration,
+            stages: stages,
+          };
+          taskContext = {
+            taskId: task.id,
+            taskContent: task.content,
+          };
+          break;
+        }
+      }
+    }
+  }
 
   if (!run) {
     return (
@@ -178,12 +231,12 @@ export function ValidationRunDetail() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button
-            onClick={() => navigate('/analytics')}
+            onClick={() => navigate(taskContext ? `/tasks/${taskContext.taskId}` : '/analytics')}
             variant="outline"
             size="sm"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Analytics
+            {taskContext ? 'Back to Task' : 'Back to Analytics'}
           </Button>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
@@ -192,6 +245,12 @@ export function ValidationRunDetail() {
             <p className="text-gray-600">
               Run ID: {run.id} • {runDate.toLocaleString()}
             </p>
+            {taskContext && (
+              <p className="text-sm text-blue-600 mt-1">
+                Task: {taskContext.taskContent.slice(0, 100)}
+                {taskContext.taskContent.length > 100 ? '...' : ''}
+              </p>
+            )}
           </div>
         </div>
       </div>

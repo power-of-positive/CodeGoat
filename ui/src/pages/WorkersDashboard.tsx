@@ -1,32 +1,21 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { VariableSizeList } from 'react-window';
-import type { VariableSizeList as VariableSizeListType } from 'react-window';
-import useMeasure from 'react-use-measure';
 import {
-  Play,
-  Square,
   RefreshCw,
-  Clock,
   Zap,
   CheckCircle,
   XCircle,
-  AlertCircle,
   Terminal,
-  ChevronDown,
-  ChevronRight,
-  Pause,
-  GitMerge,
-  Code2,
-  ShieldAlert,
-  FileCheck,
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Badge } from '../components/ui/badge';
 import { claudeWorkersApi } from '../lib/api';
-import LogEntryRow from '../components/logs/LogEntryRow';
+import LogsViewer from '../components/logs/LogsViewer';
+import { WorkerCard } from '../components/WorkerCard';
+import { ValidationRunsViewer } from '../components/ValidationRunsViewer';
+import { BlockedCommandsViewer } from '../components/BlockedCommandsViewer';
+import type { UnifiedLogEntry } from '../types/logs';
 
 interface WorkerStatus {
   id: string;
@@ -56,268 +45,6 @@ interface WorkerLogsResponse {
   logFile: string;
 }
 
-// Status badge styling
-const statusStyles = {
-  starting: 'bg-yellow-100 text-yellow-800 border-yellow-300',
-  running: 'bg-blue-100 text-blue-800 border-blue-300',
-  validating: 'bg-purple-100 text-purple-800 border-purple-300',
-  completed: 'bg-green-100 text-green-800 border-green-300',
-  failed: 'bg-red-100 text-red-800 border-red-300',
-  stopped: 'bg-gray-100 text-gray-800 border-gray-300',
-} as const;
-
-const statusIcons = {
-  starting: AlertCircle,
-  running: Play,
-  validating: RefreshCw,
-  completed: CheckCircle,
-  failed: XCircle,
-  stopped: Square,
-} as const;
-
-interface WorkerCardProps {
-  worker: WorkerStatus;
-  onViewLogs: (workerId: string) => void;
-  onStopWorker: (workerId: string) => void;
-  onMergeWorktree: (workerId: string) => void;
-  onOpenVSCode: (workerId: string) => void;
-  onViewBlockedCommands: (workerId: string) => void;
-  onViewValidationRuns: (workerId: string) => void;
-}
-
-function WorkerCard({
-  worker,
-  onViewLogs,
-  onStopWorker,
-  onMergeWorktree,
-  onOpenVSCode,
-  onViewBlockedCommands,
-  onViewValidationRuns,
-}: WorkerCardProps) {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const StatusIcon = statusIcons[worker.status];
-
-  const formatDuration = (startTime: string, endTime?: string) => {
-    const start = new Date(startTime);
-    const end = endTime ? new Date(endTime) : new Date();
-    const duration = end.getTime() - start.getTime();
-
-    const hours = Math.floor(duration / (1000 * 60 * 60));
-    const minutes = Math.floor((duration % (1000 * 60 * 60)) / (1000 * 60));
-    const seconds = Math.floor((duration % (1000 * 60)) / 1000);
-
-    if (hours > 0) return `${hours}h ${minutes}m ${seconds}s`;
-    if (minutes > 0) return `${minutes}m ${seconds}s`;
-    return `${seconds}s`;
-  };
-
-  return (
-    <Card className="mb-4">
-      <CardHeader className="pb-3">
-        <div
-          className="cursor-pointer -m-6 p-6 rounded-lg"
-          onClick={() => setIsExpanded(!isExpanded)}
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="flex items-center">
-                {isExpanded ? (
-                  <ChevronDown className="h-4 w-4 text-gray-500" />
-                ) : (
-                  <ChevronRight className="h-4 w-4 text-gray-500" />
-                )}
-              </div>
-              <StatusIcon className="h-5 w-5 text-gray-600" />
-              <div>
-                <CardTitle className="text-sm font-medium">
-                  Worker {worker.id.split('-').pop()}
-                </CardTitle>
-                <p className="text-xs text-gray-500">{worker.taskId}</p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Badge className={`text-xs ${statusStyles[worker.status]}`}>
-                {worker.status.toUpperCase()}
-              </Badge>
-              {worker.pid && (
-                <Badge variant="outline" className="text-xs">
-                  PID: {worker.pid}
-                </Badge>
-              )}
-              {worker.blockedCommands > 0 && (
-                <Badge variant="outline" className="text-xs bg-red-50 border-red-300 text-red-700">
-                  🚫 {worker.blockedCommands} blocked
-                </Badge>
-              )}
-              {worker.validationPassed === false && worker.status === 'failed' && (
-                <Badge
-                  variant="outline"
-                  className="text-xs bg-orange-50 border-orange-300 text-orange-700"
-                >
-                  ⚠️ Validation Failed
-                </Badge>
-              )}
-              {worker.validationPassed === true && worker.status === 'completed' && (
-                <Badge
-                  variant="outline"
-                  className="text-xs bg-green-50 border-green-300 text-green-700"
-                >
-                  ✅ Validated
-                </Badge>
-              )}
-              {worker.validationRuns && worker.validationRuns > 0 && (
-                <Badge
-                  variant="outline"
-                  className="text-xs bg-purple-50 border-purple-300 text-purple-700"
-                >
-                  🔍 {worker.validationRuns} validation{worker.validationRuns > 1 ? 's' : ''}
-                </Badge>
-              )}
-            </div>
-          </div>
-        </div>
-      </CardHeader>
-
-      {isExpanded && (
-        <CardContent className="pt-0">
-          <div className="space-y-3">
-            {/* Task Content */}
-            <div>
-              <p className="text-sm font-medium text-gray-700 mb-1">Task:</p>
-              <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded border">
-                {worker.taskContent}
-              </p>
-            </div>
-
-            {/* Timing Info */}
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <p className="font-medium text-gray-700">Started:</p>
-                <p className="text-gray-600">{new Date(worker.startTime).toLocaleString()}</p>
-              </div>
-              <div>
-                <p className="font-medium text-gray-700">Duration:</p>
-                <div className="flex items-center space-x-1">
-                  <Clock className="h-3 w-3 text-gray-500" />
-                  <p className="text-gray-600">
-                    {formatDuration(worker.startTime, worker.endTime)}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Log File Path */}
-            <div>
-              <p className="text-sm font-medium text-gray-700 mb-1">Log File:</p>
-              <p className="text-xs text-gray-500 font-mono bg-gray-50 p-1 rounded">
-                {worker.logFile}
-              </p>
-            </div>
-
-            {/* Permission System Status */}
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <p className="font-medium text-gray-700">Permission System:</p>
-                <div className="flex items-center space-x-1">
-                  {worker.hasPermissionSystem ? (
-                    <>
-                      <CheckCircle className="h-3 w-3 text-green-600" />
-                      <p className="text-green-600">Active</p>
-                    </>
-                  ) : (
-                    <>
-                      <XCircle className="h-3 w-3 text-red-600" />
-                      <p className="text-red-600">Inactive</p>
-                    </>
-                  )}
-                </div>
-              </div>
-              <div>
-                <p className="font-medium text-gray-700">Blocked Commands:</p>
-                <p className={`${worker.blockedCommands > 0 ? 'text-red-600' : 'text-gray-600'}`}>
-                  {worker.blockedCommands}
-                </p>
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="flex space-x-2 pt-2 border-t">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => onViewLogs(worker.id)}
-                className="flex items-center space-x-1"
-              >
-                <Terminal className="h-3 w-3" />
-                <span>Details</span>
-              </Button>
-
-              {worker.status === 'running' && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => onStopWorker(worker.id)}
-                  className="flex items-center space-x-1 text-red-600"
-                >
-                  <Square className="h-3 w-3" />
-                  <span>Stop</span>
-                </Button>
-              )}
-
-              {(worker.status === 'completed' || worker.status === 'stopped') &&
-                worker.validationPassed && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => onMergeWorktree(worker.id)}
-                    className="flex items-center space-x-1 text-green-600"
-                  >
-                    <GitMerge className="h-3 w-3" />
-                    <span>Merge</span>
-                  </Button>
-                )}
-
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => onOpenVSCode(worker.id)}
-                className="flex items-center space-x-1 text-blue-600"
-              >
-                <Code2 className="h-3 w-3" />
-                <span>VSCode</span>
-              </Button>
-
-              {worker.blockedCommands > 0 && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => onViewBlockedCommands(worker.id)}
-                  className="flex items-center space-x-1 text-orange-600"
-                >
-                  <ShieldAlert className="h-3 w-3" />
-                  <span>Blocked ({worker.blockedCommands})</span>
-                </Button>
-              )}
-
-              {worker.validationRuns && worker.validationRuns > 0 && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => onViewValidationRuns(worker.id)}
-                  className="flex items-center space-x-1 text-purple-600"
-                >
-                  <FileCheck className="h-3 w-3" />
-                  <span>Validations ({worker.validationRuns})</span>
-                </Button>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      )}
-    </Card>
-  );
-}
-
 interface LogViewerProps {
   workerId: string;
   onClose: () => void;
@@ -326,70 +53,89 @@ interface LogViewerProps {
 function LogViewer({ workerId, onClose }: LogViewerProps) {
   const [isAutoRefresh, setIsAutoRefresh] = useState(true);
   const [autoScroll, setAutoScroll] = useState(true);
-  const listRef = useRef<VariableSizeListType>(null);
-  const innerRef = useRef<HTMLDivElement>(null);
-  const [containerRef, bounds] = useMeasure();
 
   const { data: logsData } = useQuery<WorkerLogsResponse>({
     queryKey: ['worker-logs', workerId],
     queryFn: () => claudeWorkersApi.getWorkerLogs(workerId),
-    refetchInterval: isAutoRefresh ? 2000 : false, // Refresh every 2 seconds
+    refetchInterval: isAutoRefresh ? 2000 : false,
   });
 
-  // Process logs into structured format - enhanced to match TaskDetail format
-  const processedLogs = React.useMemo(() => {
+  // Process logs into UnifiedLogEntry format to match TaskDetail
+  const logEntries = React.useMemo(() => {
     if (!logsData?.logs) return [];
 
-    const logLines = logsData.logs.split('\n').filter(line => line.trim());
-    return logLines.map((line, index) => ({
-      id: `log-${workerId}-${index}`,
-      timestamp: new Date().toISOString(),
-      level: 'info' as const,
-      content: line,
-      workerId,
-      // Add enhanced formatting properties to match TaskDetail
-      type: 'worker' as const,
+    const lines = logsData.logs
+      .split('\n')
+      .filter((line: string) => line.trim());
+    const entries: UnifiedLogEntry[] = [];
+    const baseTimestamp = Date.now() - lines.length * 1000;
+
+    // Add process start entry for consistency
+    entries.push({
+      id: `${workerId}-start`,
+      ts: baseTimestamp - 1000,
       processId: workerId,
-    }));
-  }, [logsData, workerId]);
+      processName: `claude-worker`,
+      channel: 'process_start',
+      payload: {
+        processId: workerId,
+        runReason: 'claude-code-worker',
+        startedAt: new Date(baseTimestamp).toISOString(),
+        status: 'running',
+      },
+    });
 
-  const rowHeights = useRef<Record<number, number>>({});
+    // Process each log line
+    lines.forEach((line: string, index: number) => {
+      const timestamp = baseTimestamp + index * 100;
 
-  const getRowHeight = useCallback((index: number): number => {
-    const h = rowHeights.current[index];
-    return h !== undefined ? h : 24; // Default height for log lines
-  }, []);
-
-  const setRowHeight = useCallback((index: number, size: number) => {
-    listRef.current?.resetAfterIndex(0);
-    rowHeights.current = { ...rowHeights.current, [index]: size };
-  }, []);
-
-  // Auto-scroll to bottom when new logs arrive
-  useEffect(() => {
-    if (autoScroll && processedLogs.length > 0 && listRef.current) {
-      listRef.current.scrollToItem(processedLogs.length - 1, 'end');
-    }
-  }, [processedLogs.length, autoScroll]);
-
-  // Handle scroll events to detect user scrolling
-  const onScroll = useCallback(
-    ({
-      scrollOffset,
-      scrollUpdateWasRequested,
-    }: {
-      scrollOffset: number;
-      scrollUpdateWasRequested: boolean;
-    }) => {
-      if (!scrollUpdateWasRequested && bounds.height) {
-        const atBottom = innerRef.current
-          ? innerRef.current.offsetHeight - scrollOffset - bounds.height < 20
-          : false;
-        setAutoScroll(atBottom);
+      if (
+        line.includes('[ERROR]') ||
+        line.includes('ERROR:') ||
+        line.toLowerCase().includes('error')
+      ) {
+        entries.push({
+          id: `log-${workerId}-${index}`,
+          ts: timestamp,
+          processId: workerId,
+          processName: 'claude-worker',
+          channel: 'stderr',
+          payload: line,
+        });
+      } else if (
+        line.includes('🤖') ||
+        line.includes('assistant:') ||
+        line.includes('Claude:')
+      ) {
+        entries.push({
+          id: `log-${workerId}-${index}`,
+          ts: timestamp,
+          processId: workerId,
+          processName: 'claude-worker',
+          channel: 'normalized',
+          payload: {
+            entry_type: { type: 'assistant_message' },
+            content: line
+              .replace(/^🤖\s*/, '')
+              .replace(/^assistant:\s*/i, '')
+              .replace(/^Claude:\s*/i, ''),
+            timestamp: new Date(timestamp).toISOString(),
+          },
+        });
+      } else {
+        entries.push({
+          id: `log-${workerId}-${index}`,
+          ts: timestamp,
+          processId: workerId,
+          processName: 'claude-worker',
+          channel: 'stdout',
+          payload: line,
+        });
       }
-    },
-    [bounds.height]
-  );
+    });
+
+    return entries.sort((a, b) => a.ts - b.ts);
+  }, [logsData, workerId]);
 
   return (
     <Card className="h-96">
@@ -403,7 +149,6 @@ function LogViewer({ workerId, onClose }: LogViewerProps) {
               onClick={() => setAutoScroll(!autoScroll)}
               className="flex items-center space-x-1"
             >
-              {autoScroll ? <Play className="h-3 w-3" /> : <Pause className="h-3 w-3" />}
               <span>{autoScroll ? 'Auto' : 'Manual'}</span>
             </Button>
             <Button
@@ -422,249 +167,14 @@ function LogViewer({ workerId, onClose }: LogViewerProps) {
         </div>
       </CardHeader>
       <CardContent>
-        <div ref={containerRef} className="h-64 bg-black text-green-400 rounded">
-          {bounds.height && bounds.width && processedLogs.length > 0 ? (
-            <VariableSizeList
-              ref={listRef}
-              innerRef={innerRef}
-              height={bounds.height}
-              width={bounds.width}
-              itemCount={processedLogs.length}
-              itemSize={getRowHeight}
-              onScroll={onScroll}
-              itemData={processedLogs}
-            >
-              {({ index, style, data }) => {
-                const styleWithPadding = { ...style };
-                if (index === processedLogs.length - 1) {
-                  styleWithPadding.paddingBottom = '20px';
-                }
-
-                // Pass the enhanced log entry object to match TaskDetail format
-                return (
-                  <LogEntryRow
-                    entry={data[index]}
-                    index={index}
-                    style={styleWithPadding}
-                    setRowHeight={setRowHeight}
-                  />
-                );
-              }}
-            </VariableSizeList>
-          ) : (
-            <div className="h-full flex items-center justify-center text-gray-500 text-sm">
-              {processedLogs.length === 0 ? 'No logs available yet...' : 'Loading logs...'}
-            </div>
-          )}
+        <div className="h-64 bg-gray-900 dark:bg-gray-900 text-gray-100 dark:text-gray-100 rounded overflow-hidden">
+          <LogsViewer
+            entries={logEntries}
+            followOutput={autoScroll}
+            className="h-full"
+            useVibeLogComponent={true}
+          />
         </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-interface ValidationRunsViewerProps {
-  workerId: string;
-  onClose: () => void;
-}
-
-function ValidationRunsViewer({ workerId, onClose }: ValidationRunsViewerProps) {
-  const { data: validationData, isLoading } = useQuery({
-    queryKey: ['worker-validation-runs', workerId],
-    queryFn: () => claudeWorkersApi.getValidationRuns(workerId),
-    refetchInterval: 5000,
-  });
-
-  const statusStyles = {
-    passed: 'bg-green-100 text-green-800 border-green-300',
-    failed: 'bg-red-100 text-red-800 border-red-300',
-    running: 'bg-blue-100 text-blue-800 border-blue-300',
-    pending: 'bg-gray-100 text-gray-800 border-gray-300',
-    skipped: 'bg-yellow-100 text-yellow-800 border-yellow-300',
-  };
-
-  return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <FileCheck className="h-4 w-4 text-purple-600" />
-            Validation Runs - {workerId.split('-').pop()}
-          </CardTitle>
-          <Button size="sm" variant="outline" onClick={onClose}>
-            Close
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <div className="flex items-center justify-center py-8">
-            <div className="text-sm text-gray-600">Loading validation runs...</div>
-          </div>
-        ) : (
-          <div>
-            {validationData && validationData.validationRuns.length > 0 ? (
-              <div className="space-y-4">
-                <div className="text-sm text-gray-600 mb-4">
-                  Total validation runs:{' '}
-                  <span className="font-semibold text-purple-600">{validationData.totalRuns}</span>
-                </div>
-                {validationData.validationRuns.map(run => (
-                  <div key={run.id} className="border rounded-lg p-4 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Badge className={`text-xs ${statusStyles[run.overallStatus]}`}>
-                          {run.overallStatus.toUpperCase()}
-                        </Badge>
-                        <span className="text-xs text-gray-500">
-                          {new Date(run.timestamp).toLocaleString()}
-                        </span>
-                      </div>
-                      <div className="text-xs font-mono text-gray-400">
-                        {run.id.split('-').slice(-2).join('-')}
-                      </div>
-                    </div>
-
-                    {run.stages.length > 0 && (
-                      <div className="space-y-2">
-                        <div className="text-xs font-medium text-gray-700">Stages:</div>
-                        <div className="grid grid-cols-2 gap-2">
-                          {run.stages.map((stage, idx) => (
-                            <div key={idx} className="flex items-center gap-2 text-xs">
-                              <div
-                                className={`w-2 h-2 rounded-full ${
-                                  stage.status === 'passed'
-                                    ? 'bg-green-500'
-                                    : stage.status === 'failed'
-                                      ? 'bg-red-500'
-                                      : stage.status === 'running'
-                                        ? 'bg-blue-500 animate-pulse'
-                                        : stage.status === 'skipped'
-                                          ? 'bg-yellow-500'
-                                          : 'bg-gray-400'
-                                }`}
-                              />
-                              <span className="font-mono">{stage.name}</span>
-                              {stage.duration && (
-                                <span className="text-gray-400">
-                                  ({(stage.duration / 1000).toFixed(1)}s)
-                                </span>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {run.metricsFile && (
-                      <div className="text-xs text-gray-500">
-                        <a
-                          href={`/api/claude-workers/${workerId}/validation-runs/${run.id}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:underline"
-                        >
-                          View detailed metrics →
-                        </a>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <FileCheck className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                <div className="text-sm text-gray-600">No validation runs yet</div>
-                <div className="text-xs text-gray-400 mt-2">
-                  Validation runs will appear here when a worker completes
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-interface BlockedCommandsViewerProps {
-  workerId: string;
-  onClose: () => void;
-}
-
-function BlockedCommandsViewer({ workerId, onClose }: BlockedCommandsViewerProps) {
-  const { data: blockedData, isLoading } = useQuery({
-    queryKey: ['worker-blocked-commands', workerId],
-    queryFn: () => claudeWorkersApi.getBlockedCommands(workerId),
-    refetchInterval: 5000, // Refresh every 5 seconds
-  });
-
-  return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <ShieldAlert className="h-4 w-4 text-orange-600" />
-            Blocked Commands - {workerId.split('-').pop()}
-          </CardTitle>
-          <Button size="sm" variant="outline" onClick={onClose}>
-            Close
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <div className="flex items-center justify-center py-8">
-            <div className="text-sm text-gray-600">Loading blocked commands...</div>
-          </div>
-        ) : (
-          <div>
-            {blockedData && blockedData.blockedCommandsList.length > 0 ? (
-              <div className="space-y-3">
-                <div className="text-sm text-gray-600 mb-4">
-                  Total blocked commands:{' '}
-                  <span className="font-semibold text-orange-600">
-                    {blockedData.blockedCommands}
-                  </span>
-                  {!blockedData.hasPermissionSystem && (
-                    <span className="ml-2 text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
-                      Permission system disabled
-                    </span>
-                  )}
-                </div>
-                {blockedData.blockedCommandsList.map((blocked, index) => (
-                  <div key={index} className="bg-red-50 border border-red-200 rounded-lg p-3">
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="font-mono text-sm text-red-800 bg-red-100 px-2 py-1 rounded">
-                        {blocked.command}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {new Date(blocked.timestamp).toLocaleString()}
-                      </div>
-                    </div>
-                    <div className="text-sm text-red-700 mb-1">
-                      <strong>Reason:</strong> {blocked.reason}
-                    </div>
-                    {blocked.suggestion && (
-                      <div className="text-sm text-gray-600">
-                        <strong>Suggestion:</strong> {blocked.suggestion}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <ShieldAlert className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                <div className="text-sm text-gray-600">No blocked commands</div>
-                {blockedData && !blockedData.hasPermissionSystem && (
-                  <div className="text-xs text-yellow-600 mt-2">
-                    Permission system is not active for this worker
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        )}
       </CardContent>
     </Card>
   );

@@ -49,7 +49,7 @@ export default [
 
   // Backend-specific configurations with TypeScript project
   {
-    files: ['src/**/*.ts', 'tests/**/*.ts', '__tests__/**/*.ts'],
+    files: ['src/**/*.ts', '__tests__/**/*.ts'],
     languageOptions: {
       parserOptions: {
         project: './tsconfig.json',
@@ -114,6 +114,23 @@ export default [
       ...reactHooks.configs.recommended.rules,
       'react-refresh/only-export-components': ['error', { allowConstantExport: true }],
       '@typescript-eslint/explicit-function-return-type': 'off',
+      'max-lines': ['error', { max: 500, skipBlankLines: true, skipComments: true }],
+    },
+  },
+
+  // Legacy files - temporarily disable max-lines for files not related to current task
+  {
+    files: [
+      'ui/src/components/PermissionEditor.tsx',
+      'ui/src/components/Settings.tsx',
+      'ui/src/components/TaskBoard.tsx',
+      'ui/src/components/WorkerDetail.tsx',
+      'ui/src/lib/api.test.ts',
+      'ui/src/lib/api.ts',
+      'ui/src/pages/BDDTestsDashboard.tsx',
+    ],
+    rules: {
+      'max-lines': 'off',
     },
   },
 
@@ -226,6 +243,9 @@ export default [
       'eslint.config.mjs', // Ignore main config file
       'scripts/migrate-*.ts', // Migration scripts
       'scripts/diagnose-database.ts', // Diagnostic scripts
+      'vibe-kanban/**', // Ignore vibe-kanban directory
+      'tests/e2e/**/*', // Exclude Playwright e2e tests
+      'tests/**/*.spec.ts', // Exclude all spec files in tests
     ],
   },
 ];

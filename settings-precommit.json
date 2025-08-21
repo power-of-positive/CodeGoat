@@ -59,7 +59,7 @@
         "name": "Backend Coverage Check",
         "command": "npm run test:coverage:backend",
         "timeout": 60000,
-        "enabled": false,
+        "enabled": true,
         "continueOnFailure": false,
         "order": 6
       },
@@ -68,7 +68,7 @@
         "name": "Frontend Coverage Check",
         "command": "cd ui && npm run test:coverage -- --maxWorkers=1",
         "timeout": 180000,
-        "enabled": false,
+        "enabled": true,
         "continueOnFailure": false,
         "order": 7
       },
@@ -95,7 +95,7 @@
         "name": "API E2E Tests",
         "command": "npm run test:api-e2e",
         "timeout": 60000,
-        "enabled": false,
+        "enabled": true,
         "continueOnFailure": false,
         "order": 10
       },

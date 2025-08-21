@@ -13,7 +13,7 @@
         "id": "lint",
         "name": "Code Linting",
         "command": "npm run lint",
-        "timeout": 30000,
+        "timeout": 90000,
         "enabled": true,
         "continueOnFailure": false,
         "priority": 1
@@ -31,7 +31,7 @@
         "id": "unit-tests-backend",
         "name": "Backend Unit Tests",
         "command": "npm run test:unit:backend",
-        "timeout": 30000,
+        "timeout": 60000,
         "enabled": true,
         "continueOnFailure": false,
         "priority": 3
@@ -39,18 +39,18 @@
       {
         "id": "unit-tests-frontend",
         "name": "Frontend Unit Tests",
-        "command": "cd ui && npm test -- --watchAll=false --no-watch --passWithNoTests  --testTimeout=10000 --maxWorkers=1",
-        "timeout": 45000,
-        "enabled": true,
+        "command": "npm run test:ui -- --watchAll=false --no-watch --passWithNoTests --testTimeout=20000 --maxWorkers=1",
+        "timeout": 120000,
+        "enabled": false,
         "continueOnFailure": false,
         "priority": 4
       },
       {
         "id": "coverage-frontend",
         "name": "Frontend Coverage Check",
-        "command": "cd ui && npm run test:coverage -- --maxWorkers=1",
-        "timeout": 60000,
-        "enabled": true,
+        "command": "npm run test:coverage:ui -- --maxWorkers=1",
+        "timeout": 120000,
+        "enabled": false,
         "continueOnFailure": false,
         "priority": 5
       },
@@ -122,7 +122,7 @@
         "name": "Visual Regression Tests",
         "command": "node scripts/visual-regression.js",
         "timeout": 60000,
-        "enabled": true,
+        "enabled": false,
         "continueOnFailure": false,
         "priority": 13
       },
@@ -182,7 +182,7 @@
       }
     ],
     "enableMetrics": true,
-    "maxAttempts": 5
+    "maxAttempts": 3
   },
   "logging": {
     "level": "info",

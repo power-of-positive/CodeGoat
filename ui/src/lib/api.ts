@@ -665,6 +665,35 @@ export const claudeWorkersApi = {
       body: JSON.stringify(params),
     }),
 
+  // Send follow-up comment to a running worker
+  sendFollowUp: (
+    workerId: string,
+    prompt: string
+  ): Promise<{
+    message: string;
+    workerId: string;
+    timestamp: string;
+  }> =>
+    request(`/claude-workers/${workerId}/follow-up`, {
+      method: 'POST',
+      body: JSON.stringify({ prompt }),
+    }),
+
+  // Merge changes from worker's worktree
+  mergeWorkerChanges: (
+    workerId: string,
+    commitMessage?: string
+  ): Promise<{
+    message: string;
+    commitHash: string;
+    targetBranch: string;
+    commitMessage: string;
+  }> =>
+    request(`/claude-workers/${workerId}/merge`, {
+      method: 'POST',
+      body: JSON.stringify({ commitMessage }),
+    }),
+
   // Merge worktree changes back to main branch
   mergeWorktree: (
     workerId: string

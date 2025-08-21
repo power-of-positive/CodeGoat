@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useParams } from 'react-router-dom';
-import { VariableSizeList } from 'react-window';
 import {
   Play,
   Square,
@@ -10,10 +9,6 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
-  Terminal,
-  Send,
-  MessageSquare,
-  Pause,
   GitMerge,
   Code2,
   ArrowLeft,
@@ -22,11 +17,9 @@ import {
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
-import { Textarea } from './ui/textarea';
 import { Label } from './ui/label';
 import { claudeWorkersApi } from '../lib/api';
-import LogEntryRow from './logs/LogEntryRow';
-import { useProcessesLogs } from '../hooks/useProcessesLogs';
+import { TaskLogs } from './TaskLogs';
 
 interface ValidationStageResult {
   id: string;
@@ -69,11 +62,6 @@ interface WorkerStatus {
   lastValidationRun?: ValidationRun;
 }
 
-interface WorkerLogsResponse {
-  workerId: string;
-  logs: string;
-  logFile: string;
-}
 
 // interface WorkerInteractionResponse {
 //   workerId: string;
@@ -104,10 +92,6 @@ const statusIcons = {
 export function WorkerDetail() {
   const { workerId } = useParams<{ workerId: string }>();
   const queryClient = useQueryClient();
-  const [message, setMessage] = useState('');
-  const [isStreaming, setIsStreaming] = useState(false);
-  const [rowHeights, setRowHeights] = useState<Record<number, number>>({});
-  const listRef = useRef<VariableSizeList>(null);
 
   // Fetch worker status
   const { data: worker, isLoading: isLoadingWorker } = useQuery({
@@ -120,83 +104,8 @@ export function WorkerDetail() {
     refetchInterval: 2000, // Refresh every 2 seconds
   });
 
-  // Fetch worker logs with enhanced streaming
-  const {
-    data: logsData,
-    isLoading: isLoadingLogs,
-    error: logsError,
-    dataUpdatedAt,
-  } = useQuery({
-    queryKey: ['worker-logs', workerId],
-    queryFn: async () => {
-      const response = await claudeWorkersApi.getWorkerLogs(workerId!);
-      return response as WorkerLogsResponse;
-    },
-    enabled: !!workerId,
-    refetchInterval: isStreaming ? 500 : 5000, // Faster polling when streaming (500ms)
-    refetchOnWindowFocus: isStreaming, // Refetch when window gets focus during streaming
-    staleTime: isStreaming ? 0 : 30000, // Always consider stale when streaming
-  });
 
-  // Create execution process for useProcessesLogs hook
-  const executionProcesses = worker
-    ? [
-        {
-          id: worker.id,
-          task_attempt_id: worker.taskId,
-          run_reason: 'codingagent',
-          status:
-            worker.status === 'completed'
-              ? 'completed'
-              : worker.status === 'failed'
-                ? 'failed'
-                : 'running',
-          started_at: worker.startTime,
-          completed_at: worker.endTime,
-        },
-      ]
-    : [];
 
-  // Use the processes logs hook for enhanced log display
-  const { entries: processLogEntries } = useProcessesLogs(
-    executionProcesses,
-    isStreaming
-  );
-
-  // Send message to worker and restart it
-  const sendMessageMutation = useMutation({
-    mutationFn: async (message: string) => {
-      if (!worker) throw new Error('Worker data not available');
-
-      // Step 1: Stop the current worker if it's running
-      if (worker.status === 'running' || worker.status === 'validating') {
-        await claudeWorkersApi.stopWorker(workerId!);
-
-        // Wait a moment for the worker to stop
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-      }
-
-      // Step 2: Send the message
-      const messageResponse = await claudeWorkersApi.sendWorkerMessage(
-        workerId!,
-        { message }
-      );
-
-      // Step 3: Restart the worker with the message context
-      const restartResponse = await claudeWorkersApi.startWorker({
-        taskId: worker.taskId,
-        taskContent: `${worker.taskContent}\n\nAdditional Message: ${message}`,
-      });
-
-      return { messageResponse, restartResponse };
-    },
-    onSuccess: () => {
-      setMessage('');
-      // Refresh both worker status and logs
-      queryClient.invalidateQueries({ queryKey: ['worker', workerId] });
-      queryClient.invalidateQueries({ queryKey: ['worker-logs', workerId] });
-    },
-  });
 
   // Start worker
   const startWorkerMutation = useMutation({
@@ -224,16 +133,6 @@ export function WorkerDetail() {
     },
   });
 
-  // Merge worktree
-  const mergeWorktreeMutation = useMutation({
-    mutationFn: async () => {
-      const response = await claudeWorkersApi.mergeWorktree(workerId!);
-      return response;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['worker', workerId] });
-    },
-  });
 
   // Open VS Code
   const openVSCodeMutation = useMutation({
@@ -260,6 +159,20 @@ export function WorkerDetail() {
     },
   });
 
+
+
+  // Merge worker changes with commit message
+  const mergeChangesMutation = useMutation({
+    mutationFn: async (commitMessage?: string) => {
+      const response = await claudeWorkersApi.mergeWorkerChanges(workerId!, commitMessage);
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['worker', workerId] });
+      queryClient.invalidateQueries({ queryKey: ['worker-logs', workerId] });
+    },
+  });
+
   // Check if worker should be auto-retriggered after validation failure
   useEffect(() => {
     if (
@@ -273,12 +186,7 @@ export function WorkerDetail() {
     }
   }, [worker]);
 
-  const handleSendMessage = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (message.trim() && workerId) {
-      sendMessageMutation.mutate(message.trim());
-    }
-  };
+
 
   const formatDuration = (startTime: string, endTime?: string) => {
     const start = new Date(startTime);
@@ -294,108 +202,9 @@ export function WorkerDetail() {
     return `${seconds}s`;
   };
 
-  // Parse logs into entries for display
-  const logEntries = React.useMemo(() => {
-    if (!logsData?.logs) return processLogEntries;
 
-    // Parse raw logs into structured entries
-    const rawLogLines = logsData.logs.split('\n').filter((line) => line.trim());
-    const rawLogEntries = rawLogLines.map((line, index) => ({
-      id: `raw-log-${index}`,
-      channel: 'stdout' as const,
-      payload: line,
-      timestamp: new Date().toISOString(),
-    }));
 
-    // Combine process logs with parsed raw logs
-    return [...processLogEntries, ...rawLogEntries];
-  }, [logsData?.logs, processLogEntries]);
 
-  const getRowHeight = useCallback(
-    (index: number) => {
-      if (rowHeights[index]) {
-        return rowHeights[index];
-      }
-
-      // Calculate estimated height based on content
-      const entry = logEntries[index];
-      if (entry) {
-        const content =
-          typeof entry === 'string'
-            ? entry
-            : typeof entry.payload === 'string'
-              ? entry.payload
-              : JSON.stringify(entry.payload);
-
-        // Estimate height based on content length and line breaks
-        const lines = content.split('\n').length;
-        const avgCharsPerLine = 80; // Average chars that fit per line
-        const estimatedLines = Math.max(
-          lines,
-          Math.ceil(content.length / avgCharsPerLine)
-        );
-
-        // Base height + (line height * estimated lines) with reasonable bounds
-        return Math.max(60, Math.min(400, 40 + estimatedLines * 20));
-      }
-
-      return 80; // Default height
-    },
-    [rowHeights, logEntries]
-  );
-
-  const setRowHeight = useCallback((index: number, height: number) => {
-    setRowHeights((prev) => {
-      if (prev[index] !== height) {
-        const updated = { ...prev, [index]: height };
-        return updated;
-      }
-      return prev;
-    });
-  }, []);
-
-  // Auto-scroll to bottom when new entries arrive (only if streaming)
-  useEffect(() => {
-    if (listRef.current && logEntries.length > 0 && isStreaming) {
-      // Small delay to allow height calculations
-      setTimeout(() => {
-        if (listRef.current) {
-          listRef.current.scrollToItem(logEntries.length - 1, 'end');
-        }
-      }, 100);
-    }
-  }, [logEntries.length, isStreaming]);
-
-  // Reset row heights when log entries change significantly
-  useEffect(() => {
-    setRowHeights({});
-    if (listRef.current) {
-      listRef.current.resetAfterIndex(0);
-    }
-  }, [logsData?.logs]);
-
-  // Auto-enable streaming when worker is actively running
-  useEffect(() => {
-    if (worker) {
-      if (worker.status === 'running' || worker.status === 'validating') {
-        if (!isStreaming) {
-          setIsStreaming(true);
-        }
-      } else if (
-        worker.status === 'completed' ||
-        worker.status === 'failed' ||
-        worker.status === 'stopped'
-      ) {
-        // Keep streaming on for a few seconds after completion to catch final logs
-        if (isStreaming) {
-          const timer = setTimeout(() => {
-            setIsStreaming(false);
-          }, 5000); // Stop streaming 5 seconds after completion
-          return () => clearTimeout(timer);
-        }
-      }
-    }
-  }, [worker?.status, isStreaming, worker]);
 
   if (isLoadingWorker) {
     return (
@@ -811,16 +620,16 @@ export function WorkerDetail() {
                 worker.validationPassed && (
                   <div className="space-y-2">
                     <Button
-                      onClick={() => mergeWorktreeMutation.mutate()}
-                      disabled={mergeWorktreeMutation.isPending}
+                      onClick={() => mergeChangesMutation.mutate(undefined)}
+                      disabled={mergeChangesMutation.isPending}
                       className="w-full flex items-center justify-center space-x-2 text-green-600"
                       variant="outline"
                     >
                       <GitMerge className="h-4 w-4" />
                       <span>
-                        {mergeWorktreeMutation.isPending
+                        {mergeChangesMutation.isPending
                           ? 'Merging...'
-                          : 'Merge Worktree'}
+                          : 'Merge Changes'}
                       </span>
                     </Button>
                     <p className="text-xs text-gray-500 text-center">
@@ -848,187 +657,15 @@ export function WorkerDetail() {
                 </p>
               </div>
 
-              <div className="flex items-center justify-between pt-2 border-t">
-                <div className="flex flex-col">
-                  <Label className="text-sm">Real-time Log Streaming:</Label>
-                  <span className="text-xs text-gray-500">
-                    {isStreaming ? 'Updates every 500ms' : 'Manual refresh'}
-                  </span>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsStreaming(!isStreaming)}
-                  className={`${isStreaming ? 'text-red-600 border-red-300 bg-red-50' : 'text-green-600 border-green-300 bg-green-50'}`}
-                >
-                  {isStreaming ? (
-                    <>
-                      <Pause className="h-4 w-4" />
-                      <span className="ml-1">Stop Stream</span>
-                    </>
-                  ) : (
-                    <>
-                      <Play className="h-4 w-4" />
-                      <span className="ml-1">Start Stream</span>
-                    </>
-                  )}
-                </Button>
-              </div>
             </CardContent>
           </Card>
 
-          {/* Message Worker Card */}
-          {worker.status === 'running' && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center space-x-2">
-                  <MessageSquare className="h-5 w-5" />
-                  <span>Interrupt & Send Message</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="mb-3 p-2 bg-orange-50 border border-orange-200 rounded text-sm text-orange-700">
-                  <div className="flex items-center space-x-1 mb-1">
-                    <AlertCircle className="h-3 w-3" />
-                    <span className="font-medium">
-                      This will interrupt the current run
-                    </span>
-                  </div>
-                  <p className="text-xs">
-                    Sending a message will stop the current Claude Code
-                    execution and restart it with your new instructions.
-                  </p>
-                </div>
-                <form onSubmit={handleSendMessage} className="space-y-3">
-                  <div>
-                    <Label htmlFor="message">Additional instructions:</Label>
-                    <Textarea
-                      id="message"
-                      value={message}
-                      onChange={(e) => setMessage(e.target.value)}
-                      placeholder="Enter additional instructions or corrections..."
-                      className="min-h-[100px] mt-1"
-                      disabled={sendMessageMutation.isPending}
-                    />
-                  </div>
-                  <Button
-                    type="submit"
-                    disabled={!message.trim() || sendMessageMutation.isPending}
-                    className="w-full flex items-center justify-center space-x-2"
-                  >
-                    <Send className="h-4 w-4" />
-                    <span>
-                      {sendMessageMutation.isPending
-                        ? 'Interrupting & Restarting...'
-                        : 'Interrupt & Send Message'}
-                    </span>
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-          )}
+
         </div>
 
         {/* Logs Panel */}
         <div className="lg:col-span-2">
-          <Card className="flex flex-col h-[800px]">
-            <CardHeader className="flex-shrink-0">
-              <CardTitle className="text-lg flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Terminal className="h-5 w-5" />
-                  <span>Worker Logs</span>
-                  {isStreaming && (
-                    <div className="flex items-center space-x-2">
-                      <Badge
-                        variant="outline"
-                        className="text-xs bg-green-50 border-green-300 text-green-700"
-                      >
-                        <div className="flex items-center space-x-1">
-                          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                          <span>LIVE</span>
-                        </div>
-                      </Badge>
-                      <span className="text-xs text-gray-500">
-                        Last update:{' '}
-                        {new Date(dataUpdatedAt).toLocaleTimeString()}
-                      </span>
-                    </div>
-                  )}
-                </div>
-                <div className="flex items-center space-x-2 text-sm text-gray-500">
-                  <span>{logEntries.length} entries</span>
-                  {logEntries.length > 0 && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        if (listRef.current) {
-                          listRef.current.scrollToItem(
-                            logEntries.length - 1,
-                            'end'
-                          );
-                        }
-                      }}
-                      className="text-xs px-2 py-1 h-6"
-                    >
-                      Jump to End
-                    </Button>
-                  )}
-                </div>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="flex-1 p-0">
-              <div className="h-full bg-gray-900 overflow-hidden">
-                {logsError ? (
-                  <div className="flex items-center justify-center h-full">
-                    <div className="text-center">
-                      <XCircle className="h-12 w-12 text-red-600 mx-auto mb-4" />
-                      <p className="text-red-400">Error loading logs</p>
-                      <p className="text-sm text-gray-500 mt-2">
-                        {logsError instanceof Error
-                          ? logsError.message
-                          : 'Failed to load logs'}
-                      </p>
-                    </div>
-                  </div>
-                ) : isLoadingLogs ? (
-                  <div className="flex items-center justify-center h-full">
-                    <RefreshCw className="h-6 w-6 animate-spin text-gray-400" />
-                    <span className="ml-2 text-gray-400">Loading logs...</span>
-                  </div>
-                ) : logEntries.length > 0 ? (
-                  <VariableSizeList
-                    ref={listRef}
-                    height={720} // Slightly larger to use full space
-                    width="100%"
-                    itemCount={logEntries.length}
-                    itemSize={getRowHeight}
-                    className="scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800"
-                    overscanCount={5} // Pre-render some items for smoother scrolling
-                  >
-                    {({ index, style }) => (
-                      <LogEntryRow
-                        entry={logEntries[index]}
-                        index={index}
-                        style={style}
-                        setRowHeight={setRowHeight}
-                      />
-                    )}
-                  </VariableSizeList>
-                ) : (
-                  <div className="flex items-center justify-center h-full">
-                    <div className="text-center">
-                      <Terminal className="h-12 w-12 text-gray-600 mx-auto mb-4" />
-                      <p className="text-gray-400">No logs available yet</p>
-                      <p className="text-sm text-gray-500 mt-2">
-                        Logs will appear here as the worker runs
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+          <TaskLogs executorId={workerId} />
         </div>
       </div>
     </div>

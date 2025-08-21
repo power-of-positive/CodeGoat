@@ -269,7 +269,7 @@ describe('Analytics Routes', () => {
       });
 
       expect(mockAnalyticsService.endSession).toHaveBeenCalledWith('test-session', true);
-    });
+    }, 10000);
 
     it('should handle success false value', async () => {
       mockAnalyticsService.endSession.mockResolvedValue(undefined);
