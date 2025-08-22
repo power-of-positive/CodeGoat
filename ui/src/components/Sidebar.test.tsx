@@ -47,7 +47,7 @@ describe('Sidebar', () => {
 
       // Check that all navigation items are rendered
       expect(screen.getByText('Analytics')).toBeInTheDocument();
-      expect(screen.getByText('Task Board')).toBeInTheDocument();
+      expect(screen.getByText('Tasks')).toBeInTheDocument();
       expect(screen.getByText('Task Analytics')).toBeInTheDocument();
       expect(screen.getByText('BDD Tests')).toBeInTheDocument();
       expect(screen.getByText('Workers')).toBeInTheDocument();
@@ -59,7 +59,7 @@ describe('Sidebar', () => {
       renderWithRouter(<Sidebar />);
 
       expect(screen.getByText('View validation metrics and performance data')).toBeInTheDocument();
-      expect(screen.getByText('Track and organize your development tasks')).toBeInTheDocument();
+      expect(screen.getByText('Manage development tasks and track progress')).toBeInTheDocument();
       expect(screen.getByText('View task completion statistics and trends')).toBeInTheDocument();
       expect(screen.getByText('View BDD scenarios and E2E test execution status')).toBeInTheDocument();
       expect(screen.getByText('Monitor Claude Code worker processes and logs')).toBeInTheDocument();

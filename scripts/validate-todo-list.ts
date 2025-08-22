@@ -34,7 +34,7 @@ const TODO_LIST_FILES = [
 ];
 
 // API configuration
-const API_BASE_URL = 'http://localhost:3000/api';
+const API_BASE_URL = 'http://localhost:3001/api';
 const TASKS_ENDPOINT = `${API_BASE_URL}/tasks`;
 
 // Colors for console output

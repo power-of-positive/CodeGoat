@@ -35,8 +35,8 @@ const navItems: NavItem[] = [
   {
     href: '/tasks',
     icon: CheckSquare,
-    label: 'Task Board',
-    description: 'Track and organize your development tasks',
+    label: 'Tasks',
+    description: 'Manage development tasks and track progress',
   },
   {
     href: '/task-analytics',
