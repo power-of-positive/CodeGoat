@@ -72,6 +72,13 @@ npm run logs:stats                       # View log statistics
 # Code quality
 npm run duplication-check                # Check for code duplication
 npm run quality                          # Run all quality checks
+
+# Database backup commands
+npm run backup:create [description]      # Create manual backup
+npm run backup:list                      # List all backups
+npm run backup:restore <filename>        # Restore from backup
+npm run backup:status                    # Show backup system status
+npm run backup:scheduled:run             # Run scheduled backup
 ```
 
 ### Single Test Execution

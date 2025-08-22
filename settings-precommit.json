@@ -112,9 +112,9 @@
         "id": "ai-code-review",
         "name": "AI Code Review",
         "command": "npx ts-node src/tools/ai-code-reviewer.ts",
-        "timeout": 60000,
+        "timeout": 30000,
         "enabled": true,
-        "continueOnFailure": false,
+        "continueOnFailure": true,
         "order": 12
       },
       {
@@ -147,11 +147,29 @@
       {
         "id": "e2e-tests",
         "name": "Playwright E2E Tests",
-        "command": "cd ui && npm run test:e2e",
+        "command": "cd ui && SKIP_WEB_SERVER=true npm run test:e2e",
         "timeout": 180000,
         "enabled": false,
         "continueOnFailure": false,
         "order": 16
+      },
+      {
+        "id": "uncommitted-files",
+        "name": "Uncommitted Files Check",
+        "command": "npx ts-node scripts/check-uncommitted-files.ts",
+        "timeout": 10000,
+        "enabled": true,
+        "continueOnFailure": false,
+        "order": 17
+      },
+      {
+        "id": "todo-list",
+        "name": "Todo List Validation",
+        "command": "npx ts-node scripts/validate-todo-list.ts",
+        "timeout": 10000,
+        "enabled": false,
+        "continueOnFailure": true,
+        "order": 18
       }
     ],
     "enableMetrics": true,

@@ -35,4 +35,4 @@ test-results.xml
 rust-backend-crates/*
 claude-worktrees/**
 
-vibe-kanban/** */
+vibe-kanban/

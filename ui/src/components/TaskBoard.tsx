@@ -578,10 +578,10 @@ export function TaskBoard() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
-              Task Management
+              Task Board
             </h1>
             <p className="text-gray-600">
-              Manage your tasks with a kanban-style board
+              Track and organize your development tasks
             </p>
           </div>
           <Button onClick={() => setShowCreateForm(true)}>

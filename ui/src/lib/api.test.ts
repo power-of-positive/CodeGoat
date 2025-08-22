@@ -470,6 +470,116 @@ describe('API Client', () => {
     });
   });
 
+  describe('analyticsApi advanced features', () => {
+    it('should get stage history', async () => {
+      const mockHistory = {
+        stageId: 'lint',
+        history: {
+          timeline: [
+            { date: '2023-01-01', attempts: 5, successes: 4, rate: 0.8, avgDuration: 1000 }
+          ],
+          trends: {
+            successTrend: 0.05,
+            durationTrend: -100,
+            totalAttempts: 50,
+            totalSuccesses: 45
+          }
+        }
+      };
+
+      (fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockHistory,
+      } as Response);
+
+      const result = await analyticsApi.getStageHistory('lint', 30);
+      expect(result).toEqual(mockHistory);
+      expect(fetch).toHaveBeenCalledWith('/api/analytics/stages/lint/history?days=30', {
+        headers: { 'Content-Type': 'application/json' },
+      });
+    });
+
+    it('should get stage statistics', async () => {
+      const mockStats = {
+        stageId: 'lint',
+        statistics: {
+          overview: {
+            totalAttempts: 100,
+            totalSuccesses: 85,
+            totalFailures: 15,
+            successRate: 0.85,
+            averageDuration: 1500,
+            medianDuration: 1200,
+            minDuration: 800,
+            maxDuration: 3000,
+            standardDeviation: 400
+          },
+          recentRuns: [
+            {
+              timestamp: '2023-01-01T12:00:00Z',
+              success: true,
+              duration: 1200,
+              sessionId: 'session-123'
+            }
+          ],
+          performanceMetrics: {
+            durationsPercentiles: {
+              p50: 1200,
+              p90: 2000,
+              p95: 2500,
+              p99: 2900
+            },
+            successRateByTimeOfDay: {
+              '12': { attempts: 10, successes: 9, rate: 0.9 }
+            },
+            failureReasons: {
+              'timeout': 5,
+              'error': 10
+            }
+          }
+        }
+      };
+
+      (fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockStats,
+      } as Response);
+
+      const result = await analyticsApi.getStageStatistics('lint');
+      expect(result).toEqual(mockStats);
+      expect(fetch).toHaveBeenCalledWith('/api/analytics/stages/lint/statistics', {
+        headers: { 'Content-Type': 'application/json' },
+      });
+    });
+  });
+
+  describe('taskApi extended methods', () => {
+    it('should get a single task with validation runs', async () => {
+      const mockTask = {
+        id: 'task-123',
+        content: 'Task content',
+        status: 'pending',
+        priority: 'high',
+        validationRuns: [
+          { id: 'run-1', status: 'passed' },
+          { id: 'run-2', status: 'failed' }
+        ]
+      };
+
+      (fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockTask,
+      } as Response);
+
+      const result = await taskApi.getTask('task-123');
+      expect(result).toEqual(mockTask);
+      expect(fetch).toHaveBeenCalledWith('/api/tasks/task-123', {
+        headers: { 'Content-Type': 'application/json' },
+      });
+    });
+  });
+
+
   describe('claudeWorkersApi', () => {
     it('should start a worker', async () => {
       const mockResponse = {

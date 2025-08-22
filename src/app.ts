@@ -4,7 +4,9 @@ import { WinstonLogger } from './logger-winston';
 import { createSettingsRoutes } from './routes/settings';
 import { createAnalyticsRoutes } from './routes/analytics';
 import { createTaskRoutes } from './routes/tasks';
+import { createBackupRoutes } from './routes/backup';
 import claudeWorkersRouter from './routes/claude-workers';
+import { createE2ERoutes } from './routes/e2e';
 
 export function createApp() {
   const app = express();
@@ -114,7 +116,9 @@ export function createApp() {
   app.use('/api/settings', createSettingsRoutes(logger));
   app.use('/api/analytics', createAnalyticsRoutes(logger));
   app.use('/api/tasks', createTaskRoutes(logger));
+  app.use('/api/backup', createBackupRoutes(logger));
   app.use('/api/claude-workers', claudeWorkersRouter);
+  app.use('/api/e2e', createE2ERoutes(logger));
 
   // Health check endpoint
   app.get('/health', (_req: Request, res: Response) => {

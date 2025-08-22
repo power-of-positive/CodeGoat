@@ -202,6 +202,39 @@ describe('Analytics Component', () => {
     });
   });
 
+  it('can retry after API error', async () => {
+    // First, mock failure
+    (analyticsApi.getValidationMetrics as jest.Mock).mockRejectedValueOnce(
+      new Error('API Error')
+    );
+    (analyticsApi.getValidationRuns as jest.Mock).mockRejectedValueOnce(
+      new Error('API Error')
+    );
+
+    renderWithProviders(<Analytics />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/failed to load/i)).toBeInTheDocument();
+    });
+
+    // Then mock success for retry
+    (analyticsApi.getValidationMetrics as jest.Mock).mockResolvedValue(
+      mockValidationMetrics
+    );
+    (analyticsApi.getValidationRuns as jest.Mock).mockResolvedValue(
+      mockRecentRuns
+    );
+
+    // Click the "Try Again" button
+    const tryAgainButton = screen.getByText('Try Again');
+    fireEvent.click(tryAgainButton);
+
+    // Should now load successfully
+    await waitFor(() => {
+      expect(screen.getByText('Validation Analytics')).toBeInTheDocument();
+    });
+  });
+
   it('shows loading state initially', () => {
     renderWithProviders(<Analytics />);
 

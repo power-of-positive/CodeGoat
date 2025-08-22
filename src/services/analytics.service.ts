@@ -111,15 +111,40 @@ export class AnalyticsService {
   /**
    * Get current development analytics
    */
-  async getAnalytics(): Promise<DevelopmentAnalytics> {
+  async getAnalytics(agentFilter?: string): Promise<DevelopmentAnalytics> {
     // First try to load sessions data (for backward compatibility and tests)
-    const sessions = await this.loadAllSessions();
+    let sessions = await this.loadAllSessions();
+    
+    // Filter sessions by agent if specified
+    if (agentFilter && sessions.length > 0) {
+      sessions = sessions.filter(session => 
+        session.userPrompt?.includes(agentFilter) || 
+        session.taskDescription?.includes(agentFilter) ||
+        (session as SessionMetrics & { agent?: string }).agent === agentFilter
+      );
+    }
+    
     if (sessions.length > 0) {
       return this.calculateAnalyticsFromSessions(sessions);
     }
 
     // Try to load validation metrics data (existing production data)
-    const validationMetrics = await this.loadValidationMetrics();
+    let validationMetrics = await this.loadValidationMetrics();
+    
+    // Filter validation metrics by agent if specified
+    if (agentFilter && validationMetrics.length > 0) {
+      validationMetrics = validationMetrics.filter(metric => {
+        const metricRecord = metric as Record<string, unknown> & { 
+          agent?: string; 
+          userPrompt?: string; 
+          taskDescription?: string; 
+        };
+        return metricRecord.agent === agentFilter || 
+               metricRecord.userPrompt?.includes(agentFilter) ||
+               metricRecord.taskDescription?.includes(agentFilter);
+      });
+    }
+    
     if (validationMetrics.length > 0) {
       return ValidationMetricsConverter.calculateAnalytics(validationMetrics);
     }

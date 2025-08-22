@@ -113,9 +113,9 @@ describe('TaskBoard', () => {
     renderWithProviders(<TaskBoard />);
 
     await waitFor(() => {
-      expect(screen.getByText('Task Management')).toBeInTheDocument();
+      expect(screen.getByText('Task Board')).toBeInTheDocument();
       expect(
-        screen.getByText('Manage your tasks with a kanban-style board')
+        screen.getByText('Track and organize your development tasks')
       ).toBeInTheDocument();
     });
 
@@ -140,7 +140,7 @@ describe('TaskBoard', () => {
     renderWithProviders(<TaskBoard />);
 
     await waitFor(() => {
-      expect(screen.getByText('Task Management')).toBeInTheDocument();
+      expect(screen.getByText('Task Board')).toBeInTheDocument();
     });
 
     fireEvent.click(screen.getByText('Add Task'));
@@ -157,7 +157,7 @@ describe('TaskBoard', () => {
     renderWithProviders(<TaskBoard />);
 
     await waitFor(() => {
-      expect(screen.getByText('Task Management')).toBeInTheDocument();
+      expect(screen.getByText('Task Board')).toBeInTheDocument();
     });
 
     // Check priority badges
@@ -172,7 +172,7 @@ describe('TaskBoard', () => {
     renderWithProviders(<TaskBoard />);
 
     await waitFor(() => {
-      expect(screen.getByText('Task Management')).toBeInTheDocument();
+      expect(screen.getByText('Task Board')).toBeInTheDocument();
     });
 
     // Check duration display
@@ -186,7 +186,7 @@ describe('TaskBoard', () => {
     renderWithProviders(<TaskBoard />);
 
     await waitFor(() => {
-      expect(screen.getByText('Task Management')).toBeInTheDocument();
+      expect(screen.getByText('Task Board')).toBeInTheDocument();
     });
 
     // Should show empty state messages
@@ -201,7 +201,7 @@ describe('TaskBoard', () => {
     renderWithProviders(<TaskBoard />);
 
     await waitFor(() => {
-      expect(screen.getByText('Task Management')).toBeInTheDocument();
+      expect(screen.getByText('Task Board')).toBeInTheDocument();
     });
 
     // Check summary cards - should have one task in each column
@@ -215,7 +215,7 @@ describe('TaskBoard', () => {
     renderWithProviders(<TaskBoard />);
 
     await waitFor(() => {
-      expect(screen.getByText('Task Management')).toBeInTheDocument();
+      expect(screen.getByText('Task Board')).toBeInTheDocument();
     });
 
     // Check status change buttons exist
@@ -235,7 +235,7 @@ describe('TaskBoard', () => {
     renderWithProviders(<TaskBoard />);
 
     await waitFor(() => {
-      expect(screen.getByText('Task Management')).toBeInTheDocument();
+      expect(screen.getByText('Task Board')).toBeInTheDocument();
     });
 
     // Click Add Task button
@@ -265,7 +265,7 @@ describe('TaskBoard', () => {
     renderWithProviders(<TaskBoard />);
 
     await waitFor(() => {
-      expect(screen.getByText('Task Management')).toBeInTheDocument();
+      expect(screen.getByText('Task Board')).toBeInTheDocument();
     });
 
     // Click Add Task button
@@ -285,7 +285,7 @@ describe('TaskBoard', () => {
     renderWithProviders(<TaskBoard />);
 
     await waitFor(() => {
-      expect(screen.getByText('Task Management')).toBeInTheDocument();
+      expect(screen.getByText('Task Board')).toBeInTheDocument();
     });
 
     // Check that action buttons are rendered
@@ -306,7 +306,7 @@ describe('TaskBoard', () => {
     renderWithProviders(<TaskBoard />);
 
     await waitFor(() => {
-      expect(screen.getByText('Task Management')).toBeInTheDocument();
+      expect(screen.getByText('Task Board')).toBeInTheDocument();
     });
 
     // Verify delete mutation is set up
@@ -319,7 +319,7 @@ describe('TaskBoard', () => {
     renderWithProviders(<TaskBoard />);
 
     await waitFor(() => {
-      expect(screen.getByText('Task Management')).toBeInTheDocument();
+      expect(screen.getByText('Task Board')).toBeInTheDocument();
     });
 
     // Verify update mutation is set up
@@ -332,7 +332,7 @@ describe('TaskBoard', () => {
     renderWithProviders(<TaskBoard />);
 
     await waitFor(() => {
-      expect(screen.getByText('Task Management')).toBeInTheDocument();
+      expect(screen.getByText('Task Board')).toBeInTheDocument();
     });
 
     // Click Add Task button
@@ -356,7 +356,7 @@ describe('TaskBoard', () => {
     renderWithProviders(<TaskBoard />);
 
     await waitFor(() => {
-      expect(screen.getByText('Task Management')).toBeInTheDocument();
+      expect(screen.getByText('Task Board')).toBeInTheDocument();
     });
 
     // The component should handle loading states gracefully
@@ -376,7 +376,7 @@ describe('TaskBoard', () => {
     renderWithProviders(<TaskBoard />);
 
     await waitFor(() => {
-      expect(screen.getByText('Task Management')).toBeInTheDocument();
+      expect(screen.getByText('Task Board')).toBeInTheDocument();
     });
 
     // Click Start button for pending task
@@ -408,7 +408,7 @@ describe('TaskBoard', () => {
     renderWithProviders(<TaskBoard />);
 
     await waitFor(() => {
-      expect(screen.getByText('Task Management')).toBeInTheDocument();
+      expect(screen.getByText('Task Board')).toBeInTheDocument();
     });
 
     // Just verify the component renders properly
@@ -425,7 +425,7 @@ describe('TaskBoard', () => {
     renderWithProviders(<TaskBoard />);
 
     await waitFor(() => {
-      expect(screen.getByText('Task Management')).toBeInTheDocument();
+      expect(screen.getByText('Task Board')).toBeInTheDocument();
     });
 
     // Find and click the first task's menu button - look for MoreVertical icon
@@ -476,7 +476,7 @@ describe('TaskBoard', () => {
     renderWithProviders(<TaskBoard />);
 
     await waitFor(() => {
-      expect(screen.getByText('Task Management')).toBeInTheDocument();
+      expect(screen.getByText('Task Board')).toBeInTheDocument();
     });
 
     // Find and click the first task's menu button - look for MoreVertical icon
@@ -514,7 +514,7 @@ describe('TaskBoard', () => {
     renderWithProviders(<TaskBoard />);
 
     await waitFor(() => {
-      expect(screen.getByText('Task Management')).toBeInTheDocument();
+      expect(screen.getByText('Task Board')).toBeInTheDocument();
     });
 
     // Find and click the first task's menu button - look for MoreVertical icon
@@ -546,7 +546,7 @@ describe('TaskBoard', () => {
     renderWithProviders(<TaskBoard />);
 
     await waitFor(() => {
-      expect(screen.getByText('Task Management')).toBeInTheDocument();
+      expect(screen.getByText('Task Board')).toBeInTheDocument();
     });
 
     // Find and click the first task's menu button - look for MoreVertical icon
@@ -582,7 +582,7 @@ describe('TaskBoard', () => {
     renderWithProviders(<TaskBoard />);
 
     await waitFor(() => {
-      expect(screen.getByText('Task Management')).toBeInTheDocument();
+      expect(screen.getByText('Task Board')).toBeInTheDocument();
     });
 
     // Test moving task to pending

@@ -7,11 +7,13 @@ import {
   Play,
   AlertCircle,
   Activity,
+  GitMerge,
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
-import { taskApi } from '../lib/api';
+import { PageLoading } from './ui/loading';
+import { taskApi, claudeWorkersApi } from '../lib/api';
 import { BDDScenarioManager } from './BDDScenarioManager';
 import { BDDScenario } from '../../shared/types';
 import { ValidationRunCard } from './ValidationRunCard';
@@ -97,6 +99,21 @@ export function TaskDetail() {
     },
   });
 
+  // Merge worker changes mutation
+  const mergeChangesMutation = useMutation({
+    mutationFn: async () => {
+      if (!task?.executorId) {
+        throw new Error('No executor ID available for this task');
+      }
+      const commitMessage = `Task ${taskId}: Merge changes from task execution`;
+      const response = await claudeWorkersApi.mergeWorker(task.executorId, commitMessage);
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['task', taskId] });
+    },
+  });
+
   const handleAddScenario = (scenario: Omit<BDDScenario, 'id'>) => {
     createScenarioMutation.mutate(scenario);
   };
@@ -110,14 +127,7 @@ export function TaskDetail() {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-96">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-2 text-gray-600">Loading task details...</p>
-        </div>
-      </div>
-    );
+    return <PageLoading message="Loading task details..." />;
   }
 
   if (error || !taskResponse) {
@@ -160,6 +170,18 @@ export function TaskDetail() {
           </Button>
           <h1 className="text-2xl font-bold text-gray-900">Task Details</h1>
         </div>
+        {/* Merge button */}
+        {task.executorId && task.status === 'completed' && (
+          <Button
+            onClick={() => mergeChangesMutation.mutate()}
+            disabled={mergeChangesMutation.isPending}
+            className="flex items-center gap-2"
+            variant="outline"
+          >
+            <GitMerge className="w-4 h-4" />
+            {mergeChangesMutation.isPending ? 'Merging...' : 'Merge Changes'}
+          </Button>
+        )}
       </div>
 
       {/* Task Information */}

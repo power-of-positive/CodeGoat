@@ -350,6 +350,226 @@ describe('LogEntryRow', () => {
     });
   });
 
+  describe('Message type detection and styling', () => {
+    it('should detect user messages', () => {
+      const entry = 'user: Hello, this is a user message';
+      render(<LogEntryRow entry={entry} index={0} setRowHeight={mockSetRowHeight} />);
+      expect(screen.getByText('user: Hello, this is a user message')).toBeInTheDocument();
+    });
+
+    it('should detect user messages with emoji', () => {
+      const entry = '👤 user said: Hello from user';
+      render(<LogEntryRow entry={entry} index={0} setRowHeight={mockSetRowHeight} />);
+      expect(screen.getByText('👤 user said: Hello from user')).toBeInTheDocument();
+    });
+
+    it('should detect assistant messages', () => {
+      const entry = 'assistant: Hello, this is an assistant response';
+      render(<LogEntryRow entry={entry} index={0} setRowHeight={mockSetRowHeight} />);
+      expect(screen.getByText('assistant: Hello, this is an assistant response')).toBeInTheDocument();
+    });
+
+    it('should detect assistant messages with emoji', () => {
+      const entry = '🤖 Claude said: Hello from Claude';
+      render(<LogEntryRow entry={entry} index={0} setRowHeight={mockSetRowHeight} />);
+      expect(screen.getByText('🤖 Claude said: Hello from Claude')).toBeInTheDocument();
+    });
+
+    it('should detect tool usage messages', () => {
+      const entry = '📁 using tool Read to access file';
+      render(<LogEntryRow entry={entry} index={0} setRowHeight={mockSetRowHeight} />);
+      expect(screen.getByText('📁 using tool Read to access file')).toBeInTheDocument();
+    });
+
+    it('should detect tool usage with various keywords', () => {
+      const entry = 'Tool use: bash tool executed';
+      render(<LogEntryRow entry={entry} index={0} setRowHeight={mockSetRowHeight} />);
+      expect(screen.getByText('Tool use: bash tool executed')).toBeInTheDocument();
+    });
+
+    it('should detect system messages', () => {
+      const entry = 'system: validation pipeline started';
+      render(<LogEntryRow entry={entry} index={0} setRowHeight={mockSetRowHeight} />);
+      expect(screen.getByText('system: validation pipeline started')).toBeInTheDocument();
+    });
+
+    it('should detect system messages with brackets', () => {
+      const entry = '[system] Pipeline validation complete';
+      render(<LogEntryRow entry={entry} index={0} setRowHeight={mockSetRowHeight} />);
+      expect(screen.getByText('Pipeline validation complete')).toBeInTheDocument();
+    });
+
+    it('should detect success messages', () => {
+      const entry = '✅ success: operation completed successfully';
+      render(<LogEntryRow entry={entry} index={0} setRowHeight={mockSetRowHeight} />);
+      expect(screen.getByText('✅ success: operation completed successfully')).toBeInTheDocument();
+    });
+
+    it('should detect success messages with celebration emoji', () => {
+      const entry = 'Tests passed 🎉 all good!';
+      render(<LogEntryRow entry={entry} index={0} setRowHeight={mockSetRowHeight} />);
+      expect(screen.getByText('Tests passed 🎉 all good!')).toBeInTheDocument();
+    });
+
+    it('should detect error messages', () => {
+      const entry = '❌ error: something went wrong';
+      render(<LogEntryRow entry={entry} index={0} setRowHeight={mockSetRowHeight} />);
+      expect(screen.getByText('❌ error: something went wrong')).toBeInTheDocument();
+    });
+
+    it('should detect error messages with brackets', () => {
+      const entry = '[error] failed to process';
+      render(<LogEntryRow entry={entry} index={0} setRowHeight={mockSetRowHeight} />);
+      expect(screen.getByText('failed to process')).toBeInTheDocument();
+    });
+
+    it('should detect command output messages', () => {
+      const entry = '$ npm install package';
+      render(<LogEntryRow entry={entry} index={0} setRowHeight={mockSetRowHeight} />);
+      expect(screen.getByText('$ npm install package')).toBeInTheDocument();
+    });
+
+    it('should detect command execution messages', () => {
+      const entry = 'executing: build command';
+      render(<LogEntryRow entry={entry} index={0} setRowHeight={mockSetRowHeight} />);
+      expect(screen.getByText('executing: build command')).toBeInTheDocument();
+    });
+
+    it('should handle default info messages', () => {
+      const entry = 'Some regular info message';
+      render(<LogEntryRow entry={entry} index={0} setRowHeight={mockSetRowHeight} />);
+      expect(screen.getByText('Some regular info message')).toBeInTheDocument();
+    });
+  });
+
+  describe('Skip filtered entries', () => {
+    it('should skip suggestion entries', () => {
+      const entry = '💡 Suggestion: use better variable names';
+      const { container } = render(<LogEntryRow entry={entry} index={0} setRowHeight={mockSetRowHeight} />);
+      expect(container.firstChild).toBeNull();
+    });
+
+    it('should skip target entries', () => {
+      const entry = 'Target: optimize performance';
+      const { container } = render(<LogEntryRow entry={entry} index={0} setRowHeight={mockSetRowHeight} />);
+      expect(container.firstChild).toBeNull();
+    });
+
+    it('should skip action entries', () => {
+      const entry = 'Action: refactor code';
+      const { container } = render(<LogEntryRow entry={entry} index={0} setRowHeight={mockSetRowHeight} />);
+      expect(container.firstChild).toBeNull();
+    });
+
+    it('should skip command warning entries', () => {
+      const entry = '⚠️  COMMAND WARNING: dangerous operation';
+      const { container } = render(<LogEntryRow entry={entry} index={0} setRowHeight={mockSetRowHeight} />);
+      expect(container.firstChild).toBeNull();
+    });
+  });
+
+  describe('JSON content extraction', () => {
+    it('should extract content from JSON response object', () => {
+      const jsonContent = JSON.stringify({
+        content: 'Extracted content from JSON'
+      });
+      render(<LogEntryRow entry={jsonContent} index={0} setRowHeight={mockSetRowHeight} />);
+      expect(screen.getByText('Extracted content from JSON')).toBeInTheDocument();
+    });
+
+    it('should extract content from array content', () => {
+      const jsonContent = JSON.stringify({
+        content: [{ text: 'First item' }, { text: 'Second item' }]
+      });
+      render(<LogEntryRow entry={jsonContent} index={0} setRowHeight={mockSetRowHeight} />);
+      expect(screen.getByText(/First item.*Second item/s)).toBeInTheDocument();
+    });
+
+    it('should extract from data.content field', () => {
+      const jsonContent = JSON.stringify({
+        data: { content: 'Data content field' }
+      });
+      render(<LogEntryRow entry={jsonContent} index={0} setRowHeight={mockSetRowHeight} />);
+      expect(screen.getByText('Data content field')).toBeInTheDocument();
+    });
+
+    it('should handle tool messages', () => {
+      const jsonContent = JSON.stringify({
+        tool_name: 'Read',
+        parameters: { file: 'test.txt' }
+      });
+      render(<LogEntryRow entry={jsonContent} index={0} setRowHeight={mockSetRowHeight} />);
+      expect(screen.getByText(/🔧 Read:/)).toBeInTheDocument();
+    });
+
+    it('should handle status messages', () => {
+      const jsonContent = JSON.stringify({
+        status: 'completed',
+        message: 'Task finished'
+      });
+      render(<LogEntryRow entry={jsonContent} index={0} setRowHeight={mockSetRowHeight} />);
+      expect(screen.getByText('completed: Task finished')).toBeInTheDocument();
+    });
+
+    it('should handle error objects with string error', () => {
+      const jsonContent = JSON.stringify({
+        error: 'Something went wrong'
+      });
+      render(<LogEntryRow entry={jsonContent} index={0} setRowHeight={mockSetRowHeight} />);
+      expect(screen.getByText('❌ Error: Something went wrong')).toBeInTheDocument();
+    });
+
+    it('should handle error objects with error.message', () => {
+      const jsonContent = JSON.stringify({
+        error: { message: 'Detailed error message' }
+      });
+      render(<LogEntryRow entry={jsonContent} index={0} setRowHeight={mockSetRowHeight} />);
+      expect(screen.getByText('❌ Error: Detailed error message')).toBeInTheDocument();
+    });
+
+    it('should truncate very long messages', () => {
+      const longContent = 'a'.repeat(1200);
+      render(<LogEntryRow entry={longContent} index={0} setRowHeight={mockSetRowHeight} />);
+      expect(screen.getByText(/message truncated/)).toBeInTheDocument();
+    });
+  });
+
+  describe('ISO timestamp parsing', () => {
+    it('should parse ISO timestamp format', () => {
+      const entry = '2024-01-01T12:30:45.000Z This is the message';
+      render(<LogEntryRow entry={entry} index={0} setRowHeight={mockSetRowHeight} />);
+      expect(screen.getByText('This is the message')).toBeInTheDocument();
+    });
+
+    it('should parse ISO timestamp without milliseconds', () => {
+      const entry = '2024-01-01T12:30:45Z Message without milliseconds';
+      render(<LogEntryRow entry={entry} index={0} setRowHeight={mockSetRowHeight} />);
+      expect(screen.getByText('Message without milliseconds')).toBeInTheDocument();
+    });
+  });
+
+  describe('Core functionality tests', () => {
+    it('should handle malformed JSON gracefully', () => {
+      const entry = '{"incomplete": json';
+      render(<LogEntryRow entry={entry} index={0} setRowHeight={mockSetRowHeight} />);
+      expect(screen.getByText('{"incomplete": json')).toBeInTheDocument();
+    });
+
+    it('should handle entry with ts field', () => {
+      const entry: UnifiedLogEntry = {
+        id: 'log-ts',
+        ts: Date.now(),
+        processId: 'proc-1',
+        processName: 'test-process',
+        channel: 'stdout',
+        payload: 'Message with ts field'
+      };
+
+      render(<LogEntryRow entry={entry} index={0} setRowHeight={mockSetRowHeight} />);
+      expect(screen.getByText('Message with ts field')).toBeInTheDocument();
+    });
+  });
+
   describe('Style application', () => {
     it('should apply style when provided', () => {
       const entry = 'Test message';

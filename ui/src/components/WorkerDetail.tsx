@@ -478,7 +478,7 @@ export function WorkerDetail() {
                               className="flex items-center justify-between p-2 bg-white rounded border text-xs hover:bg-gray-50 cursor-pointer"
                               onClick={() =>
                                 window.open(
-                                  `/analytics/validation/${run.id}`,
+                                  `/validation-run/${run.id}`,
                                   '_blank'
                                 )
                               }

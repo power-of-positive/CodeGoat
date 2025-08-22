@@ -6,7 +6,8 @@ import { AnalyticsService } from '../services/analytics.service';
 function getAnalytics(analyticsService: AnalyticsService, logger: ILogger) {
   return async (req: Request, res: Response): Promise<void> => {
     try {
-      const analytics = await analyticsService.getAnalytics();
+      const agentFilter = req.query.agent as string;
+      const analytics = await analyticsService.getAnalytics(agentFilter);
       res.json(analytics);
     } catch (error) {
       logger.error('Failed to get analytics', error as Error);

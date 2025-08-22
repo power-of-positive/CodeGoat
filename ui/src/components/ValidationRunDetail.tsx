@@ -226,7 +226,8 @@ export function ValidationRunDetail() {
   const runDate = new Date(run.timestamp);
 
   return (
-    <div className="space-y-6">
+    <div className="p-6">
+      <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -309,6 +310,7 @@ export function ValidationRunDetail() {
             <StageDetailExpanded key={`${stage.id}-${index}`} stage={stage} />
           ))}
         </div>
+      </div>
       </div>
     </div>
   );

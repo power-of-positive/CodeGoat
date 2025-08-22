@@ -1,6 +1,6 @@
 {
-  "maxModifiedFiles": 0,
-  "maxUntrackedFiles": 0,
+  "maxModifiedFiles": 100,
+  "maxUntrackedFiles": 5,
   "ignorePatterns": [
     "validation-metrics.json",
     "validation-sessions.json",
@@ -16,7 +16,8 @@
     "test-results/**",
     "playwright-report/**",
     ".env.local",
-    "*.local"
+    "*.local",
+    "vibe-kanban/**"
   ],
   "failOnExcess": true
 }

@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Terminal, Play, Pause, FileText } from 'lucide-react';
+import { Virtuoso, VirtuosoHandle } from 'react-virtuoso';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Badge } from './ui/badge';
-import SimpleLogViewer from './logs/SimpleLogViewer';
+import EnhancedLogEntryRow from './logs/EnhancedLogEntryRow';
 import { useEnhancedLogStream } from '../hooks/useEnhancedLogStream';
 
 interface TaskLogsProps {
@@ -13,6 +14,7 @@ interface TaskLogsProps {
 export function TaskLogs({ executorId }: TaskLogsProps) {
   const [autoScroll, setAutoScroll] = useState(true);
   const [autoRefresh, setAutoRefresh] = useState(true);
+  const virtuosoRef = useRef<VirtuosoHandle>(null);
 
   // Use SSE streaming instead of polling to prevent continuous rerendering
   const { entries: logEntries, isConnected } = useEnhancedLogStream(executorId || '', !!executorId);
@@ -90,11 +92,26 @@ export function TaskLogs({ executorId }: TaskLogsProps) {
       </CardHeader>
       <CardContent className="p-0">
         <div className="border rounded-lg h-96">
-          <SimpleLogViewer
-            entries={logEntries}
-            followOutput={autoScroll}
-            className="h-full"
-          />
+          {logEntries.length === 0 ? (
+            <div className="p-4 text-center text-muted-foreground text-sm">
+              No logs available
+            </div>
+          ) : (
+            <Virtuoso
+              ref={virtuosoRef}
+              className="h-full rounded-lg"
+              data={logEntries}
+              itemContent={(index, entry) => (
+                <EnhancedLogEntryRow
+                  key={entry.id}
+                  entry={entry}
+                  index={index}
+                />
+              )}
+              followOutput={autoScroll ? 'smooth' : false}
+              increaseViewportBy={{ top: 0, bottom: 600 }}
+            />
+          )}
         </div>
         <div className="p-3 border-t bg-muted/30 text-xs text-muted-foreground">
           <div className="flex justify-between">

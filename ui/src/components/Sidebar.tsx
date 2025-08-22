@@ -35,8 +35,8 @@ const navItems: NavItem[] = [
   {
     href: '/tasks',
     icon: CheckSquare,
-    label: 'Tasks',
-    description: 'Manage tasks with kanban-style board',
+    label: 'Task Board',
+    description: 'Track and organize your development tasks',
   },
   {
     href: '/task-analytics',
@@ -111,6 +111,7 @@ function SidebarHeader({
         size="sm"
         onClick={onToggle}
         className="hidden md:flex h-8 w-8 p-0"
+        aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
       >
         {isCollapsed ? <Menu className="h-4 w-4" /> : <X className="h-4 w-4" />}
       </Button>
@@ -120,6 +121,7 @@ function SidebarHeader({
         size="sm"
         onClick={onToggle}
         className="md:hidden h-8 w-8 p-0"
+        aria-label="Close sidebar"
       >
         <X className="h-4 w-4" />
       </Button>
@@ -232,6 +234,7 @@ function MobileMenuButton({
         fixed top-4 left-4 z-40 md:hidden
         ${isCollapsed ? 'block' : 'hidden'}
       `}
+      aria-label="Open sidebar"
     >
       <Menu className="h-4 w-4" />
     </Button>

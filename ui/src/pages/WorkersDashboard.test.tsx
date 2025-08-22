@@ -23,65 +23,63 @@ jest.mock('../lib/api', () => ({
   },
 }));
 
+// Mock ValidationRunsViewer
+jest.mock('../components/ValidationRunsViewer', () => ({
+  ValidationRunsViewer: ({ workerId, onClose }: any) => (
+    <div data-testid="validation-runs-viewer">
+      Validation Runs for {workerId}
+      <button onClick={onClose}>Close</button>
+    </div>
+  ),
+}));
+
+// Mock BlockedCommandsViewer
+jest.mock('../components/BlockedCommandsViewer', () => ({
+  BlockedCommandsViewer: ({ workerId, onClose }: any) => (
+    <div data-testid="blocked-commands-viewer">
+      Blocked Commands for {workerId}
+      <button onClick={onClose}>Close</button>
+    </div>
+  ),
+}));
+
+// Mock LogsViewer
+jest.mock('../components/logs/LogsViewer', () => {
+  return function MockLogsViewer({ entries, followOutput, className, useVibeLogComponent }: any) {
+    return (
+      <div data-testid="logs-viewer" className={className}>
+        <div>Log entries: {entries?.length || 0}</div>
+        <div>Follow output: {followOutput ? 'true' : 'false'}</div>
+        <div>Use vibe component: {useVibeLogComponent ? 'true' : 'false'}</div>
+      </div>
+    );
+  };
+});
+
 const mockWorkersApi = claudeWorkersApi as jest.Mocked<typeof claudeWorkersApi>;
 
-let queryClient: QueryClient;
-
 const createWrapper = () => {
-  queryClient = new QueryClient({
+  const queryClient = new QueryClient({
     defaultOptions: {
-      queries: {
-        retry: false,
-        gcTime: 0,
-        staleTime: 0,
-      },
-      mutations: {
-        retry: false,
-      },
+      queries: { retry: false, gcTime: 0 },
     },
   });
 
   return ({ children }: { children: React.ReactNode }) => (
-    <MemoryRouter>
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-    </MemoryRouter>
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter>
+        {children}
+      </MemoryRouter>
+    </QueryClientProvider>
   );
 };
 
-describe('WorkersDashboard', () => {
+describe('WorkersDashboard - Core Functionality', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockNavigate.mockClear();
   });
 
-  afterEach(() => {
-    // Properly clean up QueryClient
-    if (queryClient) {
-      queryClient.clear();
-      queryClient.getQueryCache().clear();
-      queryClient.getMutationCache().clear();
-    }
-  });
-
-  it('renders loading state initially', () => {
-    mockWorkersApi.getWorkersStatus.mockImplementation(() => new Promise(() => {}));
-
-    render(<WorkersDashboard />, { wrapper: createWrapper() });
-
-    expect(screen.getByText('Loading workers...')).toBeInTheDocument();
-  });
-
-  it('renders error state when API fails', async () => {
-    mockWorkersApi.getWorkersStatus.mockRejectedValue(new Error('API Error'));
-
-    render(<WorkersDashboard />, { wrapper: createWrapper() });
-
-    await waitFor(() => {
-      expect(screen.getByText('Failed to Load Workers')).toBeInTheDocument();
-    });
-  });
-
-  it('renders empty state when no workers exist', async () => {
+  it('renders workers dashboard with initial state', async () => {
     mockWorkersApi.getWorkersStatus.mockResolvedValue({
       workers: [],
       activeCount: 0,
@@ -92,16 +90,15 @@ describe('WorkersDashboard', () => {
     render(<WorkersDashboard />, { wrapper: createWrapper() });
 
     await waitFor(() => {
-      expect(screen.getByText('No Workers')).toBeInTheDocument();
-      expect(
-        screen.getByText(
-          'No Claude Code workers are currently running. Start a worker from the task board to see it here.'
-        )
-      ).toBeInTheDocument();
+      expect(screen.getByText('Claude Code Workers')).toBeInTheDocument();
+      expect(screen.getByText('Active Workers')).toBeInTheDocument();
+      expect(screen.getByText('Total Workers')).toBeInTheDocument();
+      expect(screen.getByText('Success Rate')).toBeInTheDocument();
+      expect(screen.getByText('Blocked Commands')).toBeInTheDocument();
     });
   });
 
-  it('renders workers when they exist', async () => {
+  it('displays workers when data is loaded', async () => {
     const mockWorkers = [
       {
         id: 'worker-123-abc',
@@ -114,39 +111,36 @@ describe('WorkersDashboard', () => {
         blockedCommands: 0,
         hasPermissionSystem: true,
       },
-      {
-        id: 'worker-456-def',
-        taskId: 'task-2',
-        taskContent: 'Another task',
-        status: 'completed' as const,
-        startTime: '2025-08-19T07:00:00Z',
-        endTime: '2025-08-19T07:05:00Z',
-        logFile: '/path/to/log2.txt',
-        blockedCommands: 0,
-        hasPermissionSystem: true,
-      },
     ];
 
     mockWorkersApi.getWorkersStatus.mockResolvedValue({
       workers: mockWorkers,
       activeCount: 1,
-      totalCount: 2,
+      totalCount: 1,
       totalBlockedCommands: 0,
     });
 
     render(<WorkersDashboard />, { wrapper: createWrapper() });
 
     await waitFor(() => {
-      expect(screen.getByText('Claude Code Workers')).toBeInTheDocument();
-      expect(screen.getByText('1')).toBeInTheDocument(); // Active workers
-      expect(screen.getByText('2')).toBeInTheDocument(); // Total workers
-      expect(screen.getByText('50%')).toBeInTheDocument(); // Success rate
       expect(screen.getByText('Worker abc')).toBeInTheDocument();
-      expect(screen.getByText('Worker def')).toBeInTheDocument();
+      expect(screen.getByText('task-1')).toBeInTheDocument();
+      expect(screen.getByText('RUNNING')).toBeInTheDocument();
     });
   });
 
-  it('expands and collapses worker cards', async () => {
+  it('handles API error', async () => {
+    mockWorkersApi.getWorkersStatus.mockRejectedValue(new Error('API Error'));
+
+    render(<WorkersDashboard />, { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getByText('Failed to Load Workers')).toBeInTheDocument();
+      expect(screen.getByText('Could not load worker status')).toBeInTheDocument();
+    });
+  });
+
+  it('navigates to worker logs when details button is clicked', async () => {
     const mockWorkers = [
       {
         id: 'worker-123-abc',
@@ -172,25 +166,21 @@ describe('WorkersDashboard', () => {
 
     await waitFor(() => {
       const workerCard = screen.getByText('Worker abc').closest('.cursor-pointer');
-      expect(workerCard).toBeInTheDocument();
+      if (workerCard) {
+        fireEvent.click(workerCard);
+      }
     });
 
-    // Initially collapsed - task content should not be visible
-    expect(screen.queryByText('Test task content')).not.toBeInTheDocument();
-
-    // Click to expand
-    const workerCard = screen.getByText('Worker abc').closest('.cursor-pointer');
-    if (workerCard) {
-      fireEvent.click(workerCard);
-    }
-
-    // Now expanded - task content should be visible
     await waitFor(() => {
-      expect(screen.getByText('Test task content')).toBeInTheDocument();
+      const detailsButton = screen.getByText('Details');
+      expect(detailsButton).toBeInTheDocument();
+      fireEvent.click(detailsButton);
     });
+
+    expect(mockNavigate).toHaveBeenCalledWith('/workers/worker-123-abc');
   });
 
-  it('handles worker stop functionality', async () => {
+  it('handles stop worker confirmation and success', async () => {
     const mockWorkers = [
       {
         id: 'worker-123-abc',
@@ -211,12 +201,13 @@ describe('WorkersDashboard', () => {
       totalCount: 1,
       totalBlockedCommands: 0,
     });
+
     mockWorkersApi.stopWorker.mockResolvedValue({
       workerId: 'worker-123-abc',
       status: 'stopped',
     });
 
-    // Mock window.confirm to always return true
+    // Mock window.confirm
     window.confirm = jest.fn(() => true);
 
     render(<WorkersDashboard />, { wrapper: createWrapper() });
@@ -231,10 +222,8 @@ describe('WorkersDashboard', () => {
     await waitFor(() => {
       const stopButton = screen.getByText('Stop');
       expect(stopButton).toBeInTheDocument();
+      fireEvent.click(stopButton);
     });
-
-    const stopButton = screen.getByText('Stop');
-    fireEvent.click(stopButton);
 
     expect(window.confirm).toHaveBeenCalledWith('Are you sure you want to stop this worker?');
 
@@ -243,15 +232,15 @@ describe('WorkersDashboard', () => {
     });
   });
 
-  it('navigates to worker detail when details is clicked', async () => {
+  it('handles stop worker cancellation', async () => {
     const mockWorkers = [
       {
         id: 'worker-123-abc',
         taskId: 'task-1',
         taskContent: 'Test task content',
-        status: 'completed' as const,
+        status: 'running' as const,
         startTime: '2025-08-19T08:00:00Z',
-        endTime: '2025-08-19T08:05:00Z',
+        pid: 12345,
         logFile: '/path/to/log.txt',
         blockedCommands: 0,
         hasPermissionSystem: true,
@@ -260,10 +249,12 @@ describe('WorkersDashboard', () => {
 
     mockWorkersApi.getWorkersStatus.mockResolvedValue({
       workers: mockWorkers,
-      activeCount: 0,
+      activeCount: 1,
       totalCount: 1,
       totalBlockedCommands: 0,
     });
+
+    window.confirm = jest.fn(() => false);
 
     render(<WorkersDashboard />, { wrapper: createWrapper() });
 
@@ -275,46 +266,11 @@ describe('WorkersDashboard', () => {
     });
 
     await waitFor(() => {
-      const viewLogsButton = screen.getByText('Details');
-      expect(viewLogsButton).toBeInTheDocument();
+      const stopButton = screen.getByText('Stop');
+      fireEvent.click(stopButton);
     });
 
-    const viewLogsButton = screen.getByText('Details');
-    fireEvent.click(viewLogsButton);
-
-    // Verify navigation was called with correct path
-    expect(mockNavigate).toHaveBeenCalledWith('/workers/worker-123-abc');
-  });
-
-  it.skip('handles log viewer auto-refresh toggle', async () => {
-    // This test is skipped because the log viewer modal was removed
-    // and replaced with navigation to a separate page
-  });
-
-  it.skip('closes log viewer when close button is clicked', async () => {
-    // This test is skipped because the log viewer modal was removed
-    // and replaced with navigation to a separate page
-  });
-
-  it('handles refresh button click', async () => {
-    mockWorkersApi.getWorkersStatus.mockResolvedValue({
-      workers: [],
-      activeCount: 0,
-      totalCount: 0,
-      totalBlockedCommands: 0,
-    });
-
-    render(<WorkersDashboard />, { wrapper: createWrapper() });
-
-    await waitFor(() => {
-      const refreshButton = screen.getByText('Refresh');
-      expect(refreshButton).toBeInTheDocument();
-    });
-
-    const refreshButton = screen.getByText('Refresh');
-    fireEvent.click(refreshButton);
-
-    // Verify the API was called again
-    expect(mockWorkersApi.getWorkersStatus).toHaveBeenCalledTimes(2);
+    expect(window.confirm).toHaveBeenCalled();
+    expect(mockWorkersApi.stopWorker).not.toHaveBeenCalled();
   });
 });

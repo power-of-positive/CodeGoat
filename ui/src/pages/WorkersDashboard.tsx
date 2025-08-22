@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { PageLoading } from '../components/ui/loading';
 import { claudeWorkersApi } from '../lib/api';
 import LogsViewer from '../components/logs/LogsViewer';
 import { WorkerCard } from '../components/WorkerCard';
@@ -274,16 +275,7 @@ export function WorkersDashboard() {
   };
 
   if (isLoading) {
-    return (
-      <div className="p-6">
-        <div className="flex items-center justify-center min-h-96">
-          <div className="text-center">
-            <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
-            <p className="text-gray-600">Loading workers...</p>
-          </div>
-        </div>
-      </div>
-    );
+    return <PageLoading message="Loading workers..." />;
   }
 
   if (error) {

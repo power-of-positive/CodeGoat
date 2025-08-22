@@ -412,4 +412,140 @@ describe('WorkerDetail', () => {
 
     // Navigation would be handled by React Router (mocked)
   });
+
+  it('handles error loading worker data', async () => {
+    (claudeWorkersApi.getWorkerStatus as jest.Mock).mockRejectedValue(new Error('Failed to load'));
+
+    renderWithProviders();
+
+    await waitFor(() => {
+      expect(screen.getByText('Worker Not Found')).toBeInTheDocument();
+    });
+  });
+
+  it('displays worker with validation information', async () => {
+    const workerWithValidation = {
+      ...mockWorkerStatus,
+      validationRuns: 2,
+      validationPassed: false,
+    };
+    
+    (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(workerWithValidation);
+
+    renderWithProviders();
+
+    await waitFor(() => {
+      expect(screen.getByText(/Worker 123/)).toBeInTheDocument();
+    });
+  });
+
+  it('handles worker with end time', async () => {
+    const completedWorker = {
+      ...mockWorkerStatus,
+      status: 'completed' as const,
+      endTime: '2023-01-01T11:00:00Z',
+    };
+    
+    (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(completedWorker);
+
+    renderWithProviders();
+
+    await waitFor(() => {
+      expect(screen.getByText('COMPLETED')).toBeInTheDocument();
+    });
+  });
+
+  it('displays worker blocked commands information', async () => {
+    const workerWithBlocked = {
+      ...mockWorkerStatus,
+      blockedCommands: 3,
+    };
+    
+    (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(workerWithBlocked);
+
+    renderWithProviders();
+
+    await waitFor(() => {
+      expect(screen.getByText('3')).toBeInTheDocument();
+    });
+  });
+
+  it('handles worker with permission system enabled', async () => {
+    const workerWithPermissions = {
+      ...mockWorkerStatus,
+      hasPermissionSystem: true,
+    };
+    
+    (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(workerWithPermissions);
+
+    renderWithProviders();
+
+    await waitFor(() => {
+      expect(screen.getByText(/permission system/i)).toBeInTheDocument();
+    });
+  });
+
+  it('handles worker without permission system', async () => {
+    const workerWithoutPermissions = {
+      ...mockWorkerStatus,
+      hasPermissionSystem: false,
+    };
+    
+    (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(workerWithoutPermissions);
+
+    renderWithProviders();
+
+    await waitFor(() => {
+      expect(screen.getByText(/Worker 123/)).toBeInTheDocument();
+    });
+  });
+
+  it('handles different worker statuses', async () => {
+    const statuses = ['starting', 'validating', 'stopped'] as const;
+    
+    for (const status of statuses) {
+      const worker = { ...mockWorkerStatus, status };
+      (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(worker);
+
+      const { unmount } = renderWithProviders();
+
+      await waitFor(() => {
+        expect(screen.getByText(status.toUpperCase())).toBeInTheDocument();
+      });
+
+      unmount();
+    }
+  });
+
+  it('handles worker with validation passed', async () => {
+    const validatedWorker = {
+      ...mockWorkerStatus,
+      status: 'completed' as const,
+      validationPassed: true,
+    };
+    
+    (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(validatedWorker);
+
+    renderWithProviders();
+
+    await waitFor(() => {
+      expect(screen.getByText('COMPLETED')).toBeInTheDocument();
+    });
+  });
+
+  it('handles worker with validation failed', async () => {
+    const failedValidationWorker = {
+      ...mockWorkerStatus,
+      status: 'failed' as const,
+      validationPassed: false,
+    };
+    
+    (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(failedValidationWorker);
+
+    renderWithProviders();
+
+    await waitFor(() => {
+      expect(screen.getByText('FAILED')).toBeInTheDocument();
+    });
+  });
 });

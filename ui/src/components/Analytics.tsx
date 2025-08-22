@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { AlertCircle } from 'lucide-react';
 import { Button } from './ui/button';
 import { SimpleSelect as Select, Option } from './ui/select';
+import { PageLoading } from './ui/loading';
 import { analyticsApi } from '../lib/api';
 import { ValidationChart } from './ValidationChart';
 import { TimeSeriesCharts } from './TimeSeriesCharts';
@@ -41,24 +42,12 @@ export function Analytics() {
   );
 
   // Extract unique agent IDs from runs for filter options
-  // For now, we'll use common agent IDs until the backend provides them
   const agentIds = React.useMemo(() => {
-    return ['claude_code', 'claude_3_5_sonnet', 'gpt_4', 'local_agent'];
+    return ['claude_cli', 'gemini_cli', 'cursor_cli'];
   }, []);
 
   if (isLoading) {
-    return (
-      <div className="p-6">
-        <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/3 mb-4"></div>
-          <div className="grid grid-cols-3 gap-4 mb-6">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-24 bg-gray-200 rounded"></div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
+    return <PageLoading message="Loading validation analytics..." type="skeleton" />;
   }
 
   if (error) {
@@ -94,6 +83,7 @@ export function Analytics() {
             value={selectedAgent}
             onChange={(e) => setSelectedAgent(e.target.value)}
             className="w-48"
+            data-testid="agent-filter"
           >
             <Option value="">All Agents</Option>
             {agentIds.map((agentId) => (
@@ -105,16 +95,26 @@ export function Analytics() {
         </div>
       </div>
 
-      {metrics && <MetricsSummary metrics={metrics} />}
+      {metrics && (
+        <div data-testid={selectedAgent ? "filtered-metrics" : "metrics-summary"}>
+          <MetricsSummary metrics={metrics} />
+        </div>
+      )}
 
       {/* Time Series Charts */}
-      <div className="mb-6">
+      <div className="mb-6" data-testid={selectedAgent ? "agent-specific-charts" : "time-series-charts"}>
         <TimeSeriesCharts runs={runs} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <RecentRuns runs={runs} />
-        {metrics && <ValidationChart metrics={metrics} />}
+        <div data-testid="recent-runs">
+          <RecentRuns runs={runs} />
+        </div>
+        {metrics && (
+          <div data-testid="validation-chart">
+            <ValidationChart metrics={metrics} />
+          </div>
+        )}
       </div>
     </div>
   );

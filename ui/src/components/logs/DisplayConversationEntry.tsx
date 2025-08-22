@@ -15,6 +15,7 @@ import {
   Terminal,
   User,
 } from 'lucide-react';
+import { formatStableTimestamp } from '../../utils/timestamp';
 import type { NormalizedEntry, NormalizedEntryType } from '../../../shared/types';
 
 interface Props {
@@ -172,7 +173,7 @@ function DisplayConversationEntry({ entry, index }: Props) {
         <div className="flex-1 min-w-0">
           {entry.timestamp && (
             <div className="text-xs text-gray-500 mb-1">
-              {new Date(entry.timestamp).toLocaleTimeString()}
+              {formatStableTimestamp(entry.timestamp)}
             </div>
           )}
           {isErrorMessage && hasMultipleLines ? (

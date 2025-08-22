@@ -31,7 +31,7 @@ export default function LogsViewer({
 
   // Auto-scroll to bottom when new entries arrive
   useEffect(() => {
-    if (followOutput && entries.length > 0) {
+    if (followOutput && entries && entries.length > 0) {
       // Small delay to allow virtuoso to update
       requestAnimationFrame(() => {
         virtuosoRef.current?.scrollToIndex({
@@ -40,7 +40,7 @@ export default function LogsViewer({
         });
       });
     }
-  }, [entries.length, followOutput]);
+  }, [entries, followOutput]);
 
   // Memoized item content to prevent unnecessary rerenders
   const itemContent = useCallback(
@@ -90,7 +90,7 @@ export default function LogsViewer({
   }
 
   // Empty state
-  if (entries.length === 0) {
+  if (!entries || entries.length === 0) {
     return (
       <div className={`flex items-center justify-center h-64 ${className}`}>
         <div className="text-center text-gray-500 dark:text-gray-400">

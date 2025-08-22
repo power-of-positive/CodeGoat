@@ -364,4 +364,19 @@ describe('DisplayConversationEntry', () => {
     // Should not crash and should render content
     expect(screen.getByText('Unknown tool content')).toBeInTheDocument();
   });
+
+  it('should handle unknown entry type with fallback icon', () => {
+    const entry: NormalizedEntry = {
+      ...baseEntry,
+      entry_type: {
+        type: 'unknown_type' as any
+      },
+      content: 'Unknown entry type content'
+    };
+    
+    render(<DisplayConversationEntry entry={entry} index={0} />);
+    
+    // Should not crash and should render content with fallback icon
+    expect(screen.getByText('Unknown entry type content')).toBeInTheDocument();
+  });
 });

@@ -574,6 +574,94 @@ export const e2eTestingApi = {
     };
     results?: E2ETestSuite;
   }> => request(`/e2e/runs/${runId}`),
+
+  // BDD and Cucumber integration methods
+  getCoverage: (): Promise<{
+    overview: {
+      totalScenarios: number;
+      linkedScenarios: number;
+      unlinkedScenarios: number;
+      coveragePercentage: number;
+    };
+    byFeature: Array<{
+      feature: string;
+      totalScenarios: number;
+      linkedScenarios: number;
+      coveragePercentage: number;
+    }>;
+    trends: Array<{
+      date: string;
+      coverage: number;
+    }>;
+  }> => request('/e2e/coverage'),
+
+  getScenarioSuggestions: (scenarioId: string): Promise<Array<{
+    testFile: string;
+    testName: string;
+    confidence: number;
+    matchingKeywords: string[];
+  }>> => request(`/e2e/scenario-suggestions?scenarioId=${scenarioId}`),
+
+  runCucumberTests: (params: {
+    features?: string[];
+    tags?: string[];
+    parallel?: boolean;
+  }): Promise<{
+    runId: string;
+    status: 'started';
+    message: string;
+    estimatedDuration: number;
+  }> => request('/e2e/cucumber/run', {
+    method: 'POST',
+    body: JSON.stringify(params),
+  }),
+
+  getCucumberResults: (runId: string): Promise<{
+    runId: string;
+    status: 'completed' | 'running' | 'failed';
+    duration: number;
+    summary: {
+      features: number;
+      scenarios: number;
+      steps: number;
+      passed: number;
+      failed: number;
+      skipped: number;
+      pending: number;
+    };
+    features: Array<{
+      name: string;
+      scenarios: Array<{
+        name: string;
+        status: 'passed' | 'failed' | 'skipped';
+        duration: number;
+        steps: Array<{
+          step: string;
+          status: 'passed' | 'failed' | 'skipped';
+        }>;
+      }>;
+    }>;
+    reportPath: string;
+  }> => request(`/e2e/cucumber/results/${runId}`),
+
+  validateGherkin: (gherkinContent: string): Promise<{
+    valid: boolean;
+    errors: string[];
+    warnings: string[];
+    suggestions: string[];
+  }> => request('/e2e/gherkin/validate', {
+    method: 'POST',
+    body: JSON.stringify({ gherkinContent }),
+  }),
+
+  generateStepDefinitions: (gherkinContent: string): Promise<{
+    stepDefinitions: string[];
+    language: string;
+    framework: string;
+  }> => request('/e2e/step-definitions/generate', {
+    method: 'POST',
+    body: JSON.stringify({ gherkinContent }),
+  }),
 };
 
 // Claude Code Workers API
@@ -677,6 +765,20 @@ export const claudeWorkersApi = {
     request(`/claude-workers/${workerId}/follow-up`, {
       method: 'POST',
       body: JSON.stringify({ prompt }),
+    }),
+
+  // Merge worker's changes
+  mergeWorker: (
+    workerId: string,
+    commitMessage?: string
+  ): Promise<{
+    success: boolean;
+    message: string;
+    branch?: string;
+  }> =>
+    request(`/claude-workers/${workerId}/merge`, {
+      method: 'POST',
+      body: JSON.stringify({ commitMessage }),
     }),
 
   // Merge changes from worker's worktree
