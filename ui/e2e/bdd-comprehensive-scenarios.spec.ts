@@ -1,13 +1,13 @@
 import { test, expect } from '@playwright/test';
-import { setupTestEnvironment, cleanupTestEnvironment } from './helpers/test-setup';
+// import { setupTestEnvironment, cleanupTestEnvironment } from './helpers/test-setup';
 
 test.describe('BDD Comprehensive Scenarios E2E Tests', () => {
   test.beforeEach(async ({ page }) => {
-    await setupTestEnvironment(page);
+    // await setupTestEnvironment(page);
   });
 
   test.afterEach(async ({ page }) => {
-    await cleanupTestEnvironment(page);
+    // await cleanupTestEnvironment(page);
   });
 
   test.describe('BDD Scenarios Management', () => {
