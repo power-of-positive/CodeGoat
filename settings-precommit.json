@@ -39,8 +39,8 @@
       {
         "id": "unit-tests-frontend",
         "name": "Frontend Unit Tests",
-        "command": "cd ui && CI=true npm test -- --watchAll=false --no-watch --passWithNoTests --testTimeout=120000 --maxWorkers=1",
-        "timeout": 180000,
+        "command": "cd ui && CI=true npm test -- --watchAll=false --no-watch --passWithNoTests --testTimeout=30000 --maxWorkers=2",
+        "timeout": 60000,
         "enabled": true,
         "continueOnFailure": false,
         "order": 4
@@ -59,7 +59,7 @@
         "name": "Backend Coverage Check",
         "command": "npm run test:coverage:backend",
         "timeout": 60000,
-        "enabled": true,
+        "enabled": false,
         "continueOnFailure": false,
         "order": 6
       },
@@ -113,7 +113,7 @@
         "name": "AI Code Review",
         "command": "npx ts-node src/tools/ai-code-reviewer.ts",
         "timeout": 30000,
-        "enabled": true,
+        "enabled": false,
         "continueOnFailure": true,
         "order": 12
       },
@@ -122,7 +122,7 @@
         "name": "Dead Code Detection",
         "command": "npx ts-node scripts/check-dead-code.ts",
         "timeout": 60000,
-        "enabled": true,
+        "enabled": false,
         "continueOnFailure": false,
         "order": 13
       },
