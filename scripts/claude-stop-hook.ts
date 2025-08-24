@@ -75,6 +75,71 @@ function hasUncommittedFiles(): boolean {
 }
 
 /**
+ * Todo item interface for validation
+ */
+interface TodoItem {
+  content: string;
+  status: 'pending' | 'in_progress' | 'completed';
+  priority: 'high' | 'medium' | 'low';
+  id: string;
+}
+
+/**
+ * Validate todo list from CLAUDE_TOOL_INPUT environment variable
+ */
+function validateTodoList(): { shouldBlock: boolean; reason?: string } {
+  const todoInput = process.env.CLAUDE_TOOL_INPUT;
+  
+  if (!todoInput) {
+    console.error('ℹ️ No CLAUDE_TOOL_INPUT provided - allowing completion');
+    return { shouldBlock: false };
+  }
+
+  try {
+    const todos: TodoItem[] = JSON.parse(todoInput);
+    
+    if (!Array.isArray(todos)) {
+      console.error('⚠️ CLAUDE_TOOL_INPUT is not an array - allowing completion');
+      return { shouldBlock: false };
+    }
+
+    // Check for high priority unfinished tasks
+    const highPriorityUnfinished = todos.filter(
+      todo => todo.priority === 'high' && (todo.status === 'pending' || todo.status === 'in_progress')
+    );
+
+    if (highPriorityUnfinished.length > 0) {
+      const taskList = highPriorityUnfinished
+        .map(task => `  - ${task.content}`)
+        .join('\n');
+      return {
+        shouldBlock: true,
+        reason: `High priority tasks remain unfinished:\n${taskList}`
+      };
+    }
+
+    // Check for too many unfinished tasks
+    const allUnfinished = todos.filter(
+      todo => todo.status === 'pending' || todo.status === 'in_progress'
+    );
+
+    if (allUnfinished.length >= 10) {
+      return {
+        shouldBlock: true,
+        reason: `Too many unfinished tasks (${allUnfinished.length}). Please complete some tasks before stopping.`
+      };
+    }
+
+    console.error(`✅ Todo validation passed - ${allUnfinished.length} unfinished tasks (no high priority)`);
+    return { shouldBlock: false };
+
+  } catch (error) {
+    console.error(`⚠️ Error parsing CLAUDE_TOOL_INPUT: ${error} - allowing completion`);
+    return { shouldBlock: false };
+  }
+}
+
+/**
  * Parse validation output to extract detailed error information
  */
 function parseValidationOutput(stdout: string, stderr: string, code: number | null): Error {
@@ -124,7 +189,7 @@ function createValidationProcess(sessionId: string): Promise<void> {
 
     const child = spawn(
       'npx',
-      ['ts-node', 'scripts/validate-task.ts', sessionId, '--settings=settings.json'],
+      ['ts-node', 'scripts/validate-task.ts', sessionId, '--settings=settings-precommit.json'],
       {
         stdio: ['inherit', 'pipe', 'pipe'],
         cwd: process.cwd(),
@@ -222,7 +287,20 @@ async function main(): Promise<void> {
   }, GLOBAL_TIMEOUT);
 
   try {
-    // Run validation pipeline first (includes todo list validation via settings.json)
+    // First, validate todo list from CLAUDE_TOOL_INPUT before running expensive validation
+    console.error('🔍 Checking todo list from CLAUDE_TOOL_INPUT...');
+    const todoValidation = validateTodoList();
+    if (todoValidation.shouldBlock) {
+      console.error('⚠️ Todo validation failed - blocking completion');
+      const blockResult = {
+        decision: 'block',
+        reason: todoValidation.reason || 'High priority tasks remain unfinished',
+      };
+      console.log(JSON.stringify(blockResult));
+      process.exit(2);
+    }
+
+    // Run validation pipeline (includes additional validation via settings.json)
     await handleValidationChecks();
 
     // Then check for uncommitted files (since validation passed)
