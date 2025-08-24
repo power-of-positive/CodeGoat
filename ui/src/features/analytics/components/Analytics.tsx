@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, TrendingUp, Clock, BarChart3, ExternalLink } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { Button } from '../../../shared/ui/button';
 import { SimpleSelect as Select, Option } from '../../../shared/ui/select';
+import { Card, CardContent, CardHeader, CardTitle } from '../../../shared/ui/card';
 import { PageLoading } from '../../../shared/ui/loading';
 import { analyticsApi } from '../../../shared/lib/api';
 import { ValidationChart } from './ValidationChart';
@@ -116,6 +118,78 @@ export function Analytics() {
           </div>
         )}
       </div>
+
+      {/* Advanced Analytics Promotion */}
+      <Card className="mt-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-blue-900">
+            <TrendingUp className="w-5 h-5" />
+            Advanced Stage Analytics
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-blue-800 mb-4">
+            Get deeper insights into your validation pipeline performance with advanced stage analytics,
+            historical trends, and comparative analysis across different time periods.
+          </p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Link to="/stage-history?view=statistics" className="block">
+              <div className="p-4 bg-white rounded-lg border border-blue-200 hover:border-blue-300 transition-colors group">
+                <div className="flex items-center gap-3 mb-2">
+                  <BarChart3 className="w-5 h-5 text-blue-600" />
+                  <h4 className="font-medium text-gray-900 group-hover:text-blue-600">
+                    Stage Statistics
+                  </h4>
+                  <ExternalLink className="w-3 h-3 text-gray-400 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+                </div>
+                <p className="text-sm text-gray-600">
+                  Detailed performance metrics, reliability analysis, and success rate trends for each stage.
+                </p>
+              </div>
+            </Link>
+
+            <Link to="/stage-history?view=timeline" className="block">
+              <div className="p-4 bg-white rounded-lg border border-blue-200 hover:border-blue-300 transition-colors group">
+                <div className="flex items-center gap-3 mb-2">
+                  <Clock className="w-5 h-5 text-blue-600" />
+                  <h4 className="font-medium text-gray-900 group-hover:text-blue-600">
+                    Historical Timeline
+                  </h4>
+                  <ExternalLink className="w-3 h-3 text-gray-400 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+                </div>
+                <p className="text-sm text-gray-600">
+                  Interactive timeline view with animation, trends visualization, and real-time monitoring.
+                </p>
+              </div>
+            </Link>
+
+            <Link to="/stage-history?view=comparison" className="block">
+              <div className="p-4 bg-white rounded-lg border border-blue-200 hover:border-blue-300 transition-colors group">
+                <div className="flex items-center gap-3 mb-2">
+                  <TrendingUp className="w-5 h-5 text-blue-600" />
+                  <h4 className="font-medium text-gray-900 group-hover:text-blue-600">
+                    Performance Comparison
+                  </h4>
+                  <ExternalLink className="w-3 h-3 text-gray-400 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+                </div>
+                <p className="text-sm text-gray-600">
+                  Compare performance between different time periods with detailed change analysis.
+                </p>
+              </div>
+            </Link>
+          </div>
+
+          <div className="mt-4 flex justify-end">
+            <Link to="/stage-history">
+              <Button className="flex items-center gap-2">
+                Explore All Features
+                <ExternalLink className="w-4 h-4" />
+              </Button>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

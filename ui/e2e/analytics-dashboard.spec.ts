@@ -12,8 +12,8 @@ test.describe('Analytics Dashboard', () => {
       // Should be on analytics page
       await expect(page).toHaveURL('/analytics');
       
-      // Check if analytics content is available
-      const analyticsHeading = page.locator('text=Validation Analytics');
+      // Check for specific analytics heading (avoid ambiguous selector)
+      const analyticsHeading = page.getByRole('heading', { name: 'Validation Analytics' });
       if (await analyticsHeading.count() > 0) {
         await expect(analyticsHeading).toBeVisible();
       } else {
@@ -140,7 +140,8 @@ test.describe('Analytics Dashboard', () => {
     test('should redirect root to analytics', async ({ page }) => {
       // Go to root
       await page.goto('/');
-      await page.waitForLoadState('networkidle');
+      // Increase timeout for redirect to complete
+      await page.waitForLoadState('networkidle', { timeout: 15000 });
 
       // Should redirect to analytics or another main route
       const currentUrl = page.url();

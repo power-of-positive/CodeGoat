@@ -8,6 +8,7 @@ import { createBackupRoutes } from './routes/backup';
 import claudeWorkersRouter from './routes/claude-workers';
 import { createE2ERoutes } from './routes/e2e';
 import bddScenariosRouter from './routes/bdd-scenarios';
+import { createValidationRunRoutes } from './routes/validation-runs';
 
 export function createApp() {
   const app = express();
@@ -121,6 +122,7 @@ export function createApp() {
   app.use('/api/claude-workers', claudeWorkersRouter);
   app.use('/api/e2e', createE2ERoutes(logger));
   app.use('/api/bdd-scenarios', bddScenariosRouter);
+  app.use('/api/validation-runs', createValidationRunRoutes(logger));
 
   // Health check endpoint
   app.get('/health', (_req: Request, res: Response) => {

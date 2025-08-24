@@ -158,6 +158,35 @@ function getStageStatistics(analyticsService: AnalyticsService, logger: ILogger)
   };
 }
 
+function getValidationRuns(analyticsService: AnalyticsService, logger: ILogger) {
+  return async (req: Request, res: Response): Promise<void> => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 50;
+      const taskId = req.query.taskId as string;
+      const validationRuns = await analyticsService.getValidationRuns(limit, taskId);
+
+      res.json({ validationRuns });
+    } catch (error) {
+      logger.error('Failed to get validation runs', error as Error);
+      res.status(500).json({ error: 'Failed to get validation runs' });
+    }
+  };
+}
+
+function getValidationStatistics(analyticsService: AnalyticsService, logger: ILogger) {
+  return async (req: Request, res: Response): Promise<void> => {
+    try {
+      const days = parseInt(req.query.days as string) || 30;
+      const statistics = await analyticsService.getValidationRunStatistics(days);
+
+      res.json({ statistics });
+    } catch (error) {
+      logger.error('Failed to get validation statistics', error as Error);
+      res.status(500).json({ error: 'Failed to get validation statistics' });
+    }
+  };
+}
+
 export function createAnalyticsRoutes(logger: ILogger): Router {
   const router = Router();
   const analyticsService = new AnalyticsService(logger);
@@ -173,6 +202,10 @@ export function createAnalyticsRoutes(logger: ILogger): Router {
   // Stage-specific analytics
   router.get('/stages/:stageId/history', getStageHistory(analyticsService, logger));
   router.get('/stages/:stageId/statistics', getStageStatistics(analyticsService, logger));
+
+  // Database-based validation runs and statistics
+  router.get('/validation-runs', getValidationRuns(analyticsService, logger));
+  router.get('/validation-statistics', getValidationStatistics(analyticsService, logger));
 
   return router;
 }

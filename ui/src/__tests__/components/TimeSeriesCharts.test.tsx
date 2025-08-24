@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { TimeSeriesCharts } from '../../features/analytics/components/TimeSeriesCharts';
-import { ValidationRun } from '../../../shared/types';
+import { ValidationRun } from '../../shared/types';
 
 // Mock Recharts components
 jest.mock('recharts', () => ({

@@ -1,4 +1,4 @@
-import { PrismaClient, BDDScenarioStatus, TodoTask, BDDScenario } from '@prisma/client';
+import { PrismaClient, BDDScenarioStatus, Task, BDDScenario } from '@prisma/client';
 import { BDDScenarioService, BDDScenarioInput } from '../bdd-scenario-service';
 import * as fs from 'fs/promises';
 import * as path from 'path';
@@ -59,12 +59,12 @@ Feature: CodeGoat Test Scenarios
       expect(scenarios[0]).toMatchObject({
         title: 'User creates a new task',
         feature: 'CodeGoat Test Scenarios',
-        todoTaskId: 'comprehensive-bdd',
+        taskId: 'comprehensive-bdd',
       });
       expect(scenarios[1]).toMatchObject({
         title: 'User edits an existing task',
         feature: 'CodeGoat Test Scenarios',
-        todoTaskId: 'comprehensive-bdd',
+        taskId: 'comprehensive-bdd',
       });
       expect(scenarios[0].gherkinContent).toContain('Given I am on the Tasks page');
       expect(scenarios[1].gherkinContent).toContain('When I edit the task');
@@ -82,7 +82,7 @@ Feature: CodeGoat Test Scenarios
   describe('createScenario', () => {
     it('should create a new BDD scenario', async () => {
       const scenarioInput: BDDScenarioInput = {
-        todoTaskId: 'test-task-id',
+        taskId: 'test-task-id',
         title: 'Test Scenario',
         feature: 'Test Feature',
         description: 'Test Description',
@@ -91,7 +91,7 @@ Feature: CodeGoat Test Scenarios
 
       const mockScenario: BDDScenario = {
         id: 'scenario-id',
-        todoTaskId: scenarioInput.todoTaskId,
+        taskId: scenarioInput.taskId,
         title: scenarioInput.title,
         feature: scenarioInput.feature,
         description: scenarioInput.description,
@@ -113,7 +113,7 @@ Feature: CodeGoat Test Scenarios
 
       expect(mockPrismaClient.bDDScenario.create).toHaveBeenCalledWith({
         data: {
-          todoTaskId: scenarioInput.todoTaskId,
+          taskId: scenarioInput.taskId,
           title: scenarioInput.title,
           feature: scenarioInput.feature,
           description: scenarioInput.description,
@@ -129,7 +129,7 @@ Feature: CodeGoat Test Scenarios
 
     it('should handle creation errors', async () => {
       const scenarioInput: BDDScenarioInput = {
-        todoTaskId: 'test-task-id',
+        taskId: 'test-task-id',
         title: 'Test Scenario',
         feature: 'Test Feature',
         description: 'Test Description',
@@ -148,8 +148,8 @@ Feature: CodeGoat Test Scenarios
     it('should fetch scenarios for a specific task', async () => {
       const taskId = 'test-task-id';
       const mockScenarios = [
-        { id: '1', title: 'Scenario 1', todoTaskId: taskId },
-        { id: '2', title: 'Scenario 2', todoTaskId: taskId },
+        { id: '1', title: 'Scenario 1', taskId: taskId },
+        { id: '2', title: 'Scenario 2', taskId: taskId },
       ] as BDDScenario[];
 
       mockPrismaClient.bDDScenario.findMany.mockResolvedValue(mockScenarios);
@@ -157,7 +157,7 @@ Feature: CodeGoat Test Scenarios
       const result = await service.getScenariosByTaskId(taskId);
 
       expect(mockPrismaClient.bDDScenario.findMany).toHaveBeenCalledWith({
-        where: { todoTaskId: taskId },
+        where: { taskId: taskId },
         orderBy: { createdAt: 'desc' },
       });
       expect(result).toEqual(mockScenarios);
@@ -283,7 +283,7 @@ Feature: Test Feature
       const mockMasterTask = {
         id: 'comprehensive-bdd',
         content: 'Comprehensive BDD Scenarios for All User-Facing Features',
-      } as TodoTask;
+      } as Task;
 
       const mockScenarios = [
         { id: '1', title: 'Test Scenario 1' },
@@ -320,7 +320,7 @@ Feature: Test Feature
       const mockMasterTask = {
         id: 'comprehensive-bdd',
         content: 'Existing task',
-      } as TodoTask;
+      } as Task;
 
       mockPrismaClient.todoTask.findFirst.mockResolvedValue(mockMasterTask);
       mockPrismaClient.bDDScenario.findFirst.mockResolvedValue(null);
@@ -335,7 +335,7 @@ Feature: Test Feature
       const mockMasterTask = {
         id: 'comprehensive-bdd',
         content: 'Existing task',
-      } as TodoTask;
+      } as Task;
 
       const existingScenario = {
         id: 'existing',

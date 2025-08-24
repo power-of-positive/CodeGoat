@@ -125,7 +125,18 @@ export function ValidationRunDetail() {
   const { runId } = useParams<{ runId: string }>();
   const navigate = useNavigate();
 
-  // First try to get from analytics API
+  // First try to get from new database API
+  const {
+    data: dbRun,
+    isLoading: dbLoading,
+    error: dbError,
+  } = useQuery({
+    queryKey: ['validation-run', runId],
+    queryFn: () => analyticsApi.getValidationRunById(runId!),
+    enabled: !!runId,
+  });
+
+  // Fallback: try to get from analytics API
   const {
     data: analyticsRuns,
     isLoading: analyticsLoading,
@@ -133,9 +144,10 @@ export function ValidationRunDetail() {
   } = useQuery<ValidationRun[]>({
     queryKey: ['validation-runs'],
     queryFn: () => analyticsApi.getValidationRuns(),
+    enabled: !dbLoading && !dbRun && !dbError,
   });
 
-  // If not found in analytics, try all tasks to find the run
+  // Final fallback: try all tasks to find the run
   const {
     data: allTasks,
     isLoading: tasksLoading,
@@ -143,11 +155,11 @@ export function ValidationRunDetail() {
   } = useQuery<TaskWithValidationRuns[]>({
     queryKey: ['all-tasks'],
     queryFn: () => taskApi.getTasks() as unknown as Promise<TaskWithValidationRuns[]>,
-    enabled: !analyticsLoading && !analyticsRuns?.find((r) => r.id === runId),
+    enabled: !dbLoading && !dbRun && !dbError && !analyticsLoading && !analyticsRuns?.find((r) => r.id === runId),
   });
 
-  const isLoading = analyticsLoading || tasksLoading;
-  const error = analyticsError || tasksError;
+  const isLoading = dbLoading || analyticsLoading || tasksLoading;
+  const error = dbError || analyticsError || tasksError;
 
   if (isLoading) {
     return (
@@ -182,12 +194,42 @@ export function ValidationRunDetail() {
     );
   }
 
-  // First check analytics runs
-  let run = analyticsRuns?.find((r) => r.id === runId);
+  // Process run data from different sources
+  let run: ValidationRun | null = null;
   let taskContext = null;
 
-  // If not found in analytics, check task validation runs
-  if (!run && allTasks) {
+  // First check database API run
+  if (dbRun) {
+    run = {
+      id: dbRun.id,
+      timestamp: dbRun.timestamp,
+      success: dbRun.success,
+      duration: dbRun.totalTime,
+      stages: dbRun.stages.map(stage => ({
+        id: stage.stageId,
+        name: stage.stageName,
+        success: stage.success,
+        duration: stage.duration,
+        attempt: 1, // Database doesn't track attempts yet, default to 1
+        output: stage.output || undefined,
+        error: stage.errorMessage || undefined,
+      })),
+    };
+    
+    // Add task context if available
+    if (dbRun.taskId) {
+      taskContext = {
+        taskId: dbRun.taskId,
+        taskContent: `Task ${dbRun.taskId}`, // We could fetch the actual task content later
+      };
+    }
+  }
+  // Fallback to analytics runs
+  else if (analyticsRuns) {
+    run = analyticsRuns.find((r) => r.id === runId) || null;
+  }
+  // Final fallback to task validation runs
+  else if (allTasks) {
     for (const task of allTasks) {
       if (task.validationRuns) {
         const taskRun = task.validationRuns.find((r) => r.id === runId);

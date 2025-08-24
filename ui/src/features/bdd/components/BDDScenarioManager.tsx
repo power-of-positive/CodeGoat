@@ -14,7 +14,7 @@ import {
 import { Button } from '../../../shared/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../shared/ui/card';
 import { Badge } from '../../../shared/ui/badge';
-import { BDDScenario } from '../../../../shared/types';
+import { BDDScenario } from '../../../shared/types';
 import BDDExecutionHistory from './BDDExecutionHistory';
 
 interface BDDScenarioManagerProps {
@@ -63,6 +63,9 @@ function BDDScenarioForm({ scenario, onSave, onCancel }: BDDScenarioFormProps) {
   const [gherkinContent, setGherkinContent] = useState(
     scenario?.gherkinContent || ''
   );
+  const [given, setGiven] = useState(scenario?.given || '');
+  const [when, setWhen] = useState(scenario?.when || '');
+  const [then, setThen] = useState(scenario?.then || '');
   const [status, setStatus] = useState<BDDScenario['status']>(
     scenario?.status || 'pending'
   );
@@ -78,6 +81,9 @@ function BDDScenarioForm({ scenario, onSave, onCancel }: BDDScenarioFormProps) {
       feature: feature.trim(),
       description: description.trim(),
       gherkinContent: gherkinContent.trim(),
+      given: given.trim(),
+      when: when.trim(),
+      then: then.trim(),
       status,
       ...(scenario && {
         id: scenario.id,

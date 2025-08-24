@@ -15,6 +15,9 @@ jest.mock('lucide-react', () => ({
   BarChart3: () => <div data-testid="bar-chart-icon" />,
   TestTube: () => <div data-testid="test-tube-icon" />,
   Zap: () => <div data-testid="zap-icon" />,
+  Layers: () => <div data-testid="layers-icon" />,
+  List: () => <div data-testid="list-icon" />,
+  TrendingUp: () => <div data-testid="trending-up-icon" />,
 }));
 
 // Mock button component
@@ -32,6 +35,15 @@ jest.mock('../ui/button', () => ({
   ),
 }));
 
+// Mock React Router
+jest.mock('react-router-dom', () => ({
+  ...jest.requireActual('react-router-dom'),
+  Link: ({ children, to, className, onClick }: any) => (
+    <a href={to} className={className} onClick={onClick}>{children}</a>
+  ),
+  useLocation: () => ({ pathname: '/' }),
+}));
+
 const renderWithRouter = (component: React.ReactElement, initialRoute = '/') => {
   return render(
     <MemoryRouter initialEntries={[initialRoute]}>
@@ -47,36 +59,45 @@ describe('Sidebar', () => {
 
       // Check that all navigation items are rendered
       expect(screen.getByText('Analytics')).toBeInTheDocument();
+      expect(screen.getByText('Stage History')).toBeInTheDocument();
       expect(screen.getByText('Tasks')).toBeInTheDocument();
+      expect(screen.getByText('Task Management')).toBeInTheDocument();
       expect(screen.getByText('Task Analytics')).toBeInTheDocument();
       expect(screen.getByText('BDD Tests')).toBeInTheDocument();
       expect(screen.getByText('Workers')).toBeInTheDocument();
       expect(screen.getByText('Permissions')).toBeInTheDocument();
       expect(screen.getByText('Settings')).toBeInTheDocument();
+      expect(screen.getByText('Stage Management')).toBeInTheDocument();
     });
 
     it('renders navigation item descriptions', () => {
       renderWithRouter(<Sidebar />);
 
       expect(screen.getByText('View validation metrics and performance data')).toBeInTheDocument();
-      expect(screen.getByText('Manage development tasks and track progress')).toBeInTheDocument();
+      expect(screen.getByText('Advanced stage performance analytics and trends')).toBeInTheDocument();
+      expect(screen.getByText('Kanban board for task management')).toBeInTheDocument();
+      expect(screen.getByText('Advanced task CRUD with filtering and search')).toBeInTheDocument();
       expect(screen.getByText('View task completion statistics and trends')).toBeInTheDocument();
       expect(screen.getByText('View BDD scenarios and E2E test execution status')).toBeInTheDocument();
       expect(screen.getByText('Monitor Claude Code worker processes and logs')).toBeInTheDocument();
       expect(screen.getByText('Configure executor security permissions')).toBeInTheDocument();
-      expect(screen.getByText('Configure validation pipeline stages')).toBeInTheDocument();
+      expect(screen.getByText('Configure validation pipeline settings')).toBeInTheDocument();
+      expect(screen.getByText('Advanced stage editing and reordering')).toBeInTheDocument();
     });
 
     it('renders all required icons', () => {
       renderWithRouter(<Sidebar />);
 
       expect(screen.getByTestId('chart-column-icon')).toBeInTheDocument();
+      expect(screen.getByTestId('trending-up-icon')).toBeInTheDocument();
       expect(screen.getByTestId('check-square-icon')).toBeInTheDocument();
+      expect(screen.getByTestId('list-icon')).toBeInTheDocument();
       expect(screen.getByTestId('bar-chart-icon')).toBeInTheDocument();
       expect(screen.getByTestId('test-tube-icon')).toBeInTheDocument();
       expect(screen.getByTestId('zap-icon')).toBeInTheDocument();
       expect(screen.getByTestId('shield-icon')).toBeInTheDocument();
       expect(screen.getByTestId('settings-icon')).toBeInTheDocument();
+      expect(screen.getByTestId('layers-icon')).toBeInTheDocument();
     });
 
     it('applies custom className when provided', () => {
@@ -124,12 +145,15 @@ describe('Sidebar', () => {
       const hrefs = links.map(link => link.getAttribute('href'));
       
       expect(hrefs).toContain('/analytics');
+      expect(hrefs).toContain('/stage-history');
       expect(hrefs).toContain('/tasks');
+      expect(hrefs).toContain('/task-management');
       expect(hrefs).toContain('/task-analytics');
       expect(hrefs).toContain('/bdd-tests');
       expect(hrefs).toContain('/workers');
       expect(hrefs).toContain('/permissions');
       expect(hrefs).toContain('/settings');
+      expect(hrefs).toContain('/stage-management');
     });
 
     it.skip('highlights active navigation item based on current route', () => {

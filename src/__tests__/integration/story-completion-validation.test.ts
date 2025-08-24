@@ -1,4 +1,4 @@
-import { TaskType, TodoStatus, TodoPriority, BDDScenarioStatus } from '@prisma/client';
+import { TaskType, TaskStatus, Priority, BDDScenarioStatus } from '@prisma/client';
 
 // This test validates the business logic and data structures for story completion validation
 describe('Story Completion Validation - Business Logic Test', () => {
@@ -13,8 +13,8 @@ describe('Story Completion Validation - Business Logic Test', () => {
     const storyTask = {
       id: testTaskId,
       content: 'Test Story for Completion Validation',
-      status: TodoStatus.IN_PROGRESS,
-      priority: TodoPriority.HIGH,
+      status: TaskStatus.IN_PROGRESS,
+      priority: Priority.HIGH,
       taskType: TaskType.STORY,
     };
 
@@ -37,8 +37,8 @@ describe('Story Completion Validation - Business Logic Test', () => {
     const storyTask = {
       id: testTaskId,
       content: 'Test Story with Unlinked Scenarios',
-      status: TodoStatus.IN_PROGRESS,
-      priority: TodoPriority.HIGH,
+      status: TaskStatus.IN_PROGRESS,
+      priority: Priority.HIGH,
       taskType: TaskType.STORY,
     };
 
@@ -88,8 +88,8 @@ describe('Story Completion Validation - Business Logic Test', () => {
     const storyTask = {
       id: testTaskId,
       content: 'Test Story with Non-passed Scenarios',
-      status: TodoStatus.IN_PROGRESS,
-      priority: TodoPriority.HIGH,
+      status: TaskStatus.IN_PROGRESS,
+      priority: Priority.HIGH,
       taskType: TaskType.STORY,
     };
 
@@ -140,8 +140,8 @@ describe('Story Completion Validation - Business Logic Test', () => {
     const storyTask = {
       id: testTaskId,
       content: 'Test Story with Valid Scenarios',
-      status: TodoStatus.IN_PROGRESS,
-      priority: TodoPriority.HIGH,
+      status: TaskStatus.IN_PROGRESS,
+      priority: Priority.HIGH,
       taskType: TaskType.STORY,
     };
 
@@ -202,8 +202,8 @@ describe('Story Completion Validation - Business Logic Test', () => {
     const regularTask = {
       id: `TEST-TASK-${Date.now()}`,
       content: 'Regular Task Without BDD Requirements',
-      status: TodoStatus.IN_PROGRESS,
-      priority: TodoPriority.MEDIUM,
+      status: TaskStatus.IN_PROGRESS,
+      priority: Priority.MEDIUM,
       taskType: TaskType.TASK, // Regular task
     };
 
@@ -221,7 +221,7 @@ describe('Story Completion Validation - Business Logic Test', () => {
     // Test enum values used in validation
     expect(TaskType.STORY).toBe('STORY');
     expect(TaskType.TASK).toBe('TASK');
-    expect(TodoStatus.COMPLETED).toBe('COMPLETED');
+    expect(TaskStatus.COMPLETED).toBe('COMPLETED');
     expect(BDDScenarioStatus.PASSED).toBe('PASSED');
     expect(BDDScenarioStatus.FAILED).toBe('FAILED');
     expect(BDDScenarioStatus.PENDING).toBe('PENDING');

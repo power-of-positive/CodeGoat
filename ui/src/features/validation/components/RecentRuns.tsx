@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { Button } from '../../../shared/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../shared/ui/card';
-import { ValidationRun, ValidationStageResult } from '../../../../shared/types';
+import { ValidationRun, ValidationStageResult } from '../../../shared/types';
 
 // Component for stage detail (needed by ValidationRunItem)
 function StageDetail({ stage }: { stage: ValidationStageResult }) {

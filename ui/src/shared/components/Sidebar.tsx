@@ -11,6 +11,9 @@ import {
   BarChart3,
   TestTube,
   Zap,
+  Layers,
+  List,
+  TrendingUp,
 } from 'lucide-react';
 import { Button } from '../ui/button';
 
@@ -33,10 +36,22 @@ const navItems: NavItem[] = [
     description: 'View validation metrics and performance data',
   },
   {
+    href: '/stage-history',
+    icon: TrendingUp,
+    label: 'Stage History',
+    description: 'Advanced stage performance analytics and trends',
+  },
+  {
     href: '/tasks',
     icon: CheckSquare,
     label: 'Tasks',
-    description: 'Manage development tasks and track progress',
+    description: 'Kanban board for task management',
+  },
+  {
+    href: '/task-management',
+    icon: List,
+    label: 'Task Management',
+    description: 'Advanced task CRUD with filtering and search',
   },
   {
     href: '/task-analytics',
@@ -66,7 +81,13 @@ const navItems: NavItem[] = [
     href: '/settings',
     icon: Settings,
     label: 'Settings',
-    description: 'Configure validation pipeline stages',
+    description: 'Configure validation pipeline settings',
+  },
+  {
+    href: '/stage-management',
+    icon: Layers,
+    label: 'Stage Management',
+    description: 'Advanced stage editing and reordering',
   },
 ];
 

@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import DisplayConversationEntry from '../DisplayConversationEntry';
-import type { NormalizedEntry } from '../../../../shared/types/index';
+import type { NormalizedEntry } from '../../../../shared/types/logs';
 
 describe('DisplayConversationEntry', () => {
   const baseEntry: NormalizedEntry = {

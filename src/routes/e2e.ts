@@ -398,7 +398,7 @@ router.get('/coverage', async (req, res) => {
     // Get all BDD scenarios
     const scenarios = await db.bDDScenario.findMany({
       include: {
-        todoTask: true
+        task: true
       }
     });
     

@@ -99,7 +99,7 @@ async function createCodegoatTasks() {
     for (const taskData of tasks) {
       try {
         // Check if task already exists
-        const existingTask = await prisma.todoTask.findUnique({
+        const existingTask = await prisma.task.findUnique({
           where: { id: taskData.id }
         });
 
@@ -110,9 +110,10 @@ async function createCodegoatTasks() {
         }
 
         // Create the task
-        await prisma.todoTask.create({
+        await prisma.task.create({
           data: {
             id: taskData.id,
+            title: taskData.content, // Add required title field
             content: taskData.content,
             status: 'PENDING',
             priority: taskData.priority,

@@ -3,13 +3,13 @@ import express from 'express';
 import { createTaskRoutes } from '../../routes/tasks';
 import { WinstonLogger } from '../../logger-winston';
 import { getDatabaseService } from '../../services/database';
-import { TodoStatus, TodoPriority, TaskType, BDDScenarioStatus } from '@prisma/client';
+import { TaskStatus, Priority, TaskType, BDDScenarioStatus } from '@prisma/client';
 
 // Mock the database service
 jest.mock('../../services/database');
 
 const mockDb = {
-  todoTask: {
+  task: {
     findMany: jest.fn(),
     findUnique: jest.fn(),
     create: jest.fn(),
@@ -49,9 +49,10 @@ describe('Tasks Route - Story Completion Validation', () => {
   describe('PUT /api/tasks/:id - Story Completion Validation', () => {
     const storyTask = {
       id: 'CODEGOAT-001',
+      title: 'Implement user authentication', // Add required title field
       content: 'Implement user authentication',
-      status: TodoStatus.IN_PROGRESS,
-      priority: TodoPriority.HIGH,
+      status: TaskStatus.IN_PROGRESS,
+      priority: Priority.HIGH,
       taskType: TaskType.STORY,
       executorId: null,
       startTime: new Date('2024-01-01T10:00:00Z'),
@@ -59,11 +60,17 @@ describe('Tasks Route - Story Completion Validation', () => {
       duration: null,
       createdAt: new Date('2024-01-01T09:00:00Z'),
       updatedAt: new Date('2024-01-01T10:00:00Z'),
+      // Add other unified Task fields
+      projectId: null,
+      parentTaskAttempt: null,
+      templateId: null,
+      tags: null,
+      description: null,
     };
 
     it('should prevent story completion without BDD scenarios', async () => {
       // Mock existing story task
-      mockDb.todoTask.findUnique.mockResolvedValue(storyTask);
+      mockDb.task.findUnique.mockResolvedValue(storyTask);
       
       // Mock no BDD scenarios
       mockDb.bDDScenario.findMany.mockResolvedValue([]);
@@ -78,12 +85,12 @@ describe('Tasks Route - Story Completion Validation', () => {
       expect(response.body.code).toBe('STORY_MISSING_BDD_SCENARIOS');
       
       // Ensure task update was not called
-      expect(mockDb.todoTask.update).not.toHaveBeenCalled();
+      expect(mockDb.task.update).not.toHaveBeenCalled();
     });
 
     it('should prevent story completion with unlinked BDD scenarios', async () => {
       // Mock existing story task
-      mockDb.todoTask.findUnique.mockResolvedValue(storyTask);
+      mockDb.task.findUnique.mockResolvedValue(storyTask);
       
       // Mock BDD scenarios without test links
       const unlinkedScenarios = [
@@ -96,7 +103,7 @@ describe('Tasks Route - Story Completion Validation', () => {
           status: BDDScenarioStatus.PENDING,
           playwrightTestFile: null, // Not linked
           playwrightTestName: null, // Not linked
-          todoTaskId: 'CODEGOAT-001',
+          taskId: 'CODEGOAT-001',
           createdAt: new Date(),
           updatedAt: new Date(),
           executedAt: null,
@@ -112,7 +119,7 @@ describe('Tasks Route - Story Completion Validation', () => {
           status: BDDScenarioStatus.PENDING,
           playwrightTestFile: 'auth.spec.ts', // Linked
           playwrightTestName: 'should logout user', // Linked
-          todoTaskId: 'CODEGOAT-001',
+          taskId: 'CODEGOAT-001',
           createdAt: new Date(),
           updatedAt: new Date(),
           executedAt: null,
@@ -135,12 +142,12 @@ describe('Tasks Route - Story Completion Validation', () => {
       expect(response.body.details.unlinkedScenarios[0].id).toBe('scenario-1');
       
       // Ensure task update was not called
-      expect(mockDb.todoTask.update).not.toHaveBeenCalled();
+      expect(mockDb.task.update).not.toHaveBeenCalled();
     });
 
     it('should prevent story completion with non-passed BDD scenarios', async () => {
       // Mock existing story task
-      mockDb.todoTask.findUnique.mockResolvedValue(storyTask);
+      mockDb.task.findUnique.mockResolvedValue(storyTask);
       
       // Mock BDD scenarios that are linked but not passed
       const nonPassedScenarios = [
@@ -153,7 +160,7 @@ describe('Tasks Route - Story Completion Validation', () => {
           status: BDDScenarioStatus.FAILED, // Failed test
           playwrightTestFile: 'auth.spec.ts',
           playwrightTestName: 'should login user',
-          todoTaskId: 'CODEGOAT-001',
+          taskId: 'CODEGOAT-001',
           createdAt: new Date(),
           updatedAt: new Date(),
           executedAt: new Date(),
@@ -169,7 +176,7 @@ describe('Tasks Route - Story Completion Validation', () => {
           status: BDDScenarioStatus.PENDING, // Still pending
           playwrightTestFile: 'auth.spec.ts',
           playwrightTestName: 'should logout user',
-          todoTaskId: 'CODEGOAT-001',
+          taskId: 'CODEGOAT-001',
           createdAt: new Date(),
           updatedAt: new Date(),
           executedAt: null,
@@ -193,12 +200,12 @@ describe('Tasks Route - Story Completion Validation', () => {
       expect(response.body.details.nonPassedScenarios[1].status).toBe('pending');
       
       // Ensure task update was not called
-      expect(mockDb.todoTask.update).not.toHaveBeenCalled();
+      expect(mockDb.task.update).not.toHaveBeenCalled();
     });
 
     it('should allow story completion with valid linked and passed BDD scenarios', async () => {
       // Mock existing story task
-      mockDb.todoTask.findUnique.mockResolvedValue(storyTask);
+      mockDb.task.findUnique.mockResolvedValue(storyTask);
       
       // Mock BDD scenarios that are linked and passed
       const passedScenarios = [
@@ -211,7 +218,7 @@ describe('Tasks Route - Story Completion Validation', () => {
           status: BDDScenarioStatus.PASSED,
           playwrightTestFile: 'auth.spec.ts',
           playwrightTestName: 'should login user',
-          todoTaskId: 'CODEGOAT-001',
+          taskId: 'CODEGOAT-001',
           createdAt: new Date(),
           updatedAt: new Date(),
           executedAt: new Date(),
@@ -227,7 +234,7 @@ describe('Tasks Route - Story Completion Validation', () => {
           status: BDDScenarioStatus.PASSED,
           playwrightTestFile: 'auth.spec.ts',
           playwrightTestName: 'should logout user',
-          todoTaskId: 'CODEGOAT-001',
+          taskId: 'CODEGOAT-001',
           createdAt: new Date(),
           updatedAt: new Date(),
           executedAt: new Date(),
@@ -241,12 +248,12 @@ describe('Tasks Route - Story Completion Validation', () => {
       // Mock successful task update
       const completedTask = {
         ...storyTask,
-        status: TodoStatus.COMPLETED,
+        status: TaskStatus.COMPLETED,
         endTime: new Date('2024-01-01T12:00:00Z'),
         duration: '2h 0m',
       };
       
-      mockDb.todoTask.update.mockResolvedValue(completedTask);
+      mockDb.task.update.mockResolvedValue(completedTask);
 
       const response = await request(app)
         .put('/api/tasks/CODEGOAT-001')
@@ -257,10 +264,10 @@ describe('Tasks Route - Story Completion Validation', () => {
       expect(response.body.data.status).toBe('completed');
       
       // Ensure task update was called
-      expect(mockDb.todoTask.update).toHaveBeenCalledWith({
+      expect(mockDb.task.update).toHaveBeenCalledWith({
         where: { id: 'CODEGOAT-001' },
         data: expect.objectContaining({
-          status: TodoStatus.COMPLETED,
+          status: TaskStatus.COMPLETED,
           endTime: expect.any(Date),
           duration: expect.any(String),
         }),
@@ -274,17 +281,17 @@ describe('Tasks Route - Story Completion Validation', () => {
         taskType: TaskType.TASK,
       };
       
-      mockDb.todoTask.findUnique.mockResolvedValue(regularTask);
+      mockDb.task.findUnique.mockResolvedValue(regularTask);
       
       // Mock successful task update
       const completedTask = {
         ...regularTask,
-        status: TodoStatus.COMPLETED,
+        status: TaskStatus.COMPLETED,
         endTime: new Date('2024-01-01T12:00:00Z'),
         duration: '2h 0m',
       };
       
-      mockDb.todoTask.update.mockResolvedValue(completedTask);
+      mockDb.task.update.mockResolvedValue(completedTask);
 
       const response = await request(app)
         .put('/api/tasks/CODEGOAT-001')
@@ -298,20 +305,20 @@ describe('Tasks Route - Story Completion Validation', () => {
       expect(mockDb.bDDScenario.findMany).not.toHaveBeenCalled();
       
       // Ensure task update was called
-      expect(mockDb.todoTask.update).toHaveBeenCalled();
+      expect(mockDb.task.update).toHaveBeenCalled();
     });
 
     it('should allow non-completion status updates for stories without validation', async () => {
       // Mock existing story task
-      mockDb.todoTask.findUnique.mockResolvedValue(storyTask);
+      mockDb.task.findUnique.mockResolvedValue(storyTask);
       
       // Mock successful task update
       const updatedTask = {
         ...storyTask,
-        status: TodoStatus.PENDING,
+        status: TaskStatus.PENDING,
       };
       
-      mockDb.todoTask.update.mockResolvedValue(updatedTask);
+      mockDb.task.update.mockResolvedValue(updatedTask);
 
       const response = await request(app)
         .put('/api/tasks/CODEGOAT-001')
@@ -325,7 +332,7 @@ describe('Tasks Route - Story Completion Validation', () => {
       expect(mockDb.bDDScenario.findMany).not.toHaveBeenCalled();
       
       // Ensure task update was called
-      expect(mockDb.todoTask.update).toHaveBeenCalled();
+      expect(mockDb.task.update).toHaveBeenCalled();
     });
   });
 });

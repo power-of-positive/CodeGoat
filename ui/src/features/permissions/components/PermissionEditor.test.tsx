@@ -2,7 +2,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { PermissionEditor } from './PermissionEditor';
 import { permissionApi } from '../../../shared/lib/api';
-import { ActionType, PermissionScope } from '../../../../shared/types';
+import { PermissionActionType, PermissionScope } from '../../../shared/types';
 
 // Mock the API
 jest.mock('../../../shared/lib/api', () => ({
@@ -54,10 +54,11 @@ describe('PermissionEditor', () => {
     mockPermissionApi.getRules.mockResolvedValue([
       {
         id: '1',
-        action: ActionType.FILE_READ,
+        action: PermissionActionType.FILE_READ,
         scope: PermissionScope.WORKTREE,
+        resource: '',
         allowed: true,
-        reason: 'Allow file reading in worktree',
+        description: 'Allow file reading in worktree',
         priority: 100,
       },
     ]);
@@ -183,7 +184,7 @@ describe('PermissionEditor', () => {
   it('handles create rule form submission', async () => {
     mockPermissionApi.createRule.mockResolvedValue({
       id: '2',
-      action: ActionType.FILE_WRITE,
+      action: PermissionActionType.FILE_WRITE,
       scope: PermissionScope.GLOBAL,
       allowed: false,
       reason: 'Test rule',
@@ -202,7 +203,7 @@ describe('PermissionEditor', () => {
     await waitFor(() => {
       const actionSelect = screen.getByLabelText('Action');
       fireEvent.change(actionSelect, {
-        target: { value: ActionType.FILE_WRITE },
+        target: { value: PermissionActionType.FILE_WRITE },
       });
 
       const denyRadio = screen.getByLabelText('Deny');
@@ -223,10 +224,11 @@ describe('PermissionEditor', () => {
 
     await waitFor(() => {
       expect(mockPermissionApi.createRule).toHaveBeenCalledWith({
-        action: ActionType.FILE_WRITE,
+        action: PermissionActionType.FILE_WRITE,
         scope: PermissionScope.GLOBAL,
+        resource: '',
         allowed: false,
-        reason: 'Test rule',
+        description: 'Test rule',
         priority: 200,
       });
     });
@@ -250,7 +252,7 @@ describe('PermissionEditor', () => {
     await waitFor(() => {
       const actionSelect = screen.getByLabelText('Action');
       fireEvent.change(actionSelect, {
-        target: { value: ActionType.FILE_READ },
+        target: { value: PermissionActionType.FILE_READ },
       });
 
       const targetInput = screen.getByLabelText('Target (optional)');
@@ -265,7 +267,7 @@ describe('PermissionEditor', () => {
 
     await waitFor(() => {
       expect(mockPermissionApi.testPermission).toHaveBeenCalledWith({
-        action: ActionType.FILE_READ,
+        action: PermissionActionType.FILE_READ,
         target: '/tmp/test.txt',
       });
     });
@@ -300,14 +302,14 @@ describe('PermissionEditor', () => {
     mockPermissionApi.getRules.mockResolvedValue([
       {
         id: '1',
-        action: ActionType.FILE_READ,
+        action: PermissionActionType.FILE_READ,
         scope: PermissionScope.WORKTREE,
         allowed: true,
         priority: 100,
       },
       {
         id: '2',
-        action: ActionType.FILE_WRITE,
+        action: PermissionActionType.FILE_WRITE,
         scope: PermissionScope.GLOBAL,
         allowed: false,
         priority: 200,
@@ -355,7 +357,7 @@ describe('PermissionEditor', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Edit Rule')).toBeInTheDocument();
-      expect(screen.getByLabelText('Action')).toHaveValue(ActionType.FILE_READ);
+      expect(screen.getByLabelText('Action')).toHaveValue(PermissionActionType.FILE_READ);
     });
   });
 
@@ -430,10 +432,10 @@ describe('PermissionEditor', () => {
   it('handles update rule form submission', async () => {
     mockPermissionApi.updateRule.mockResolvedValue({
       id: '1',
-      action: ActionType.FILE_WRITE,
+      action: PermissionActionType.FILE_WRITE,
       scope: PermissionScope.GLOBAL,
       allowed: false,
-      reason: 'Updated rule',
+      description: 'Updated rule',
       priority: 150,
     });
 
@@ -449,7 +451,7 @@ describe('PermissionEditor', () => {
     await waitFor(() => {
       const actionSelect = screen.getByLabelText('Action');
       fireEvent.change(actionSelect, {
-        target: { value: ActionType.FILE_WRITE },
+        target: { value: PermissionActionType.FILE_WRITE },
       });
 
       const priorityInput = screen.getByLabelText('Priority');
@@ -467,10 +469,11 @@ describe('PermissionEditor', () => {
 
     await waitFor(() => {
       expect(mockPermissionApi.updateRule).toHaveBeenCalledWith('1', {
-        action: ActionType.FILE_WRITE,
+        action: PermissionActionType.FILE_WRITE,
         scope: PermissionScope.WORKTREE,
+        resource: '',
         allowed: true,
-        reason: 'Updated rule',
+        description: 'Updated rule',
         priority: 150,
       });
     });
@@ -500,21 +503,21 @@ describe('PermissionEditor', () => {
     const rulesWithDifferentActions = [
       {
         id: '1',
-        action: ActionType.FILE_READ,
+        action: PermissionActionType.FILE_READ,
         scope: PermissionScope.WORKTREE,
         allowed: true,
         priority: 100,
       },
       {
         id: '2',
-        action: ActionType.NETWORK_REQUEST,
+        action: PermissionActionType.NETWORK_REQUEST,
         scope: PermissionScope.GLOBAL,
         allowed: false,
         priority: 200,
       },
       {
         id: '3',
-        action: ActionType.CLAUDE_EXECUTE,
+        action: PermissionActionType.CLAUDE_EXECUTE,
         scope: PermissionScope.GLOBAL,
         allowed: true,
         priority: 300,

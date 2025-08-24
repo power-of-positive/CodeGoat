@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../shared/ui/card';
 import { Button } from '../../../shared/ui/button';
 import { BarChart3 } from 'lucide-react';
-import { ValidationMetrics, ValidationStage } from '../../../../shared/types';
+import { ValidationMetrics, ValidationStage } from '../../../shared/types';
 import { settingsApi } from '../../../shared/lib/api';
 import { StageHistoryView } from './StageHistoryView';
 

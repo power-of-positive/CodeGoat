@@ -1,9 +1,9 @@
 import express from 'express';
 import { WinstonLogger } from '../logger-winston';
 import { getDatabaseService } from '../services/database';
-import { TodoStatus, TodoPriority, TodoTask, BDDScenarioStatus, TaskType } from '@prisma/client';
+import { TaskStatus, Priority, Task, BDDScenarioStatus, TaskType } from '@prisma/client';
 
-interface Task {
+interface ApiTask {
   id: string; // CODEGOAT-001, CODEGOAT-055, etc.
   content: string;
   status: 'pending' | 'in_progress' | 'completed';
@@ -16,17 +16,17 @@ interface Task {
 }
 
 // Status mapping between API and Prisma enum
-const statusMapping: Record<string, TodoStatus> = {
-  pending: TodoStatus.PENDING,
-  in_progress: TodoStatus.IN_PROGRESS,
-  completed: TodoStatus.COMPLETED,
+const statusMapping: Record<string, TaskStatus> = {
+  pending: TaskStatus.PENDING,
+  in_progress: TaskStatus.IN_PROGRESS,
+  completed: TaskStatus.COMPLETED,
 };
 
 // Priority mapping between API and Prisma enum
-const priorityMapping: Record<string, TodoPriority> = {
-  low: TodoPriority.LOW,
-  medium: TodoPriority.MEDIUM,
-  high: TodoPriority.HIGH,
+const priorityMapping: Record<string, Priority> = {
+  low: Priority.LOW,
+  medium: Priority.MEDIUM,
+  high: Priority.HIGH,
 };
 
 // TaskType mapping between API and Prisma enum
@@ -36,16 +36,22 @@ const taskTypeMapping: Record<string, TaskType> = {
 };
 
 // Reverse mappings for API responses
-const reverseStatusMapping: Record<TodoStatus, string> = {
-  [TodoStatus.PENDING]: 'pending',
-  [TodoStatus.IN_PROGRESS]: 'in_progress',
-  [TodoStatus.COMPLETED]: 'completed',
+const reverseStatusMapping: Record<TaskStatus, string> = {
+  [TaskStatus.PENDING]: 'pending',
+  [TaskStatus.IN_PROGRESS]: 'in_progress',
+  [TaskStatus.COMPLETED]: 'completed',
+  [TaskStatus.TODO]: 'todo',
+  [TaskStatus.INPROGRESS]: 'inprogress',
+  [TaskStatus.INREVIEW]: 'inreview',
+  [TaskStatus.DONE]: 'done',
+  [TaskStatus.CANCELLED]: 'cancelled',
 };
 
-const reversePriorityMapping: Record<TodoPriority, string> = {
-  [TodoPriority.LOW]: 'low',
-  [TodoPriority.MEDIUM]: 'medium',
-  [TodoPriority.HIGH]: 'high',
+const reversePriorityMapping: Record<Priority, string> = {
+  [Priority.LOW]: 'low',
+  [Priority.MEDIUM]: 'medium',
+  [Priority.HIGH]: 'high',
+  [Priority.URGENT]: 'urgent',
 };
 
 const reverseTaskTypeMapping: Record<TaskType, string> = {
@@ -75,7 +81,7 @@ async function generateNextTaskId(): Promise<string> {
   const db = getDatabaseService();
 
   // Find the highest existing CODEGOAT ID
-  const tasks = await db.todoTask.findMany({
+  const tasks = await db.task.findMany({
     where: {
       id: { startsWith: 'CODEGOAT-' },
     },
@@ -96,13 +102,13 @@ async function generateNextTaskId(): Promise<string> {
 }
 
 // Helper function to convert database task to API format
-function dbTaskToApiTask(dbTask: TodoTask): Task {
+function dbTaskToApiTask(dbTask: Task): ApiTask {
   return {
     id: dbTask.id,
-    content: dbTask.content,
-    status: reverseStatusMapping[dbTask.status] as Task['status'],
-    priority: reversePriorityMapping[dbTask.priority] as Task['priority'],
-    taskType: reverseTaskTypeMapping[dbTask.taskType] as Task['taskType'],
+    content: dbTask.content ?? dbTask.title, // Use content for todo tasks, title for regular tasks
+    status: reverseStatusMapping[dbTask.status] as ApiTask['status'],
+    priority: reversePriorityMapping[dbTask.priority] as ApiTask['priority'],
+    taskType: reverseTaskTypeMapping[dbTask.taskType ?? TaskType.TASK] as ApiTask['taskType'],
     executorId: dbTask.executorId ?? undefined,
     startTime: dbTask.startTime?.toISOString(),
     endTime: dbTask.endTime?.toISOString(),
@@ -137,7 +143,14 @@ export function createTaskRoutes(logger: WinstonLogger) {
   router.get('/', async (req, res) => {
     try {
       const db = getDatabaseService();
-      const dbTasks = await db.todoTask.findMany({
+      const dbTasks = await db.task.findMany({
+        where: {
+          // Only fetch todo tasks (tasks without projectId or with CODEGOAT- ids)
+          OR: [
+            { projectId: null },
+            { id: { startsWith: 'CODEGOAT-' } },
+          ],
+        },
         orderBy: [{ priority: 'desc' }, { createdAt: 'desc' }],
       });
 
@@ -154,34 +167,43 @@ export function createTaskRoutes(logger: WinstonLogger) {
     try {
       const db = getDatabaseService();
 
+      // Define filter for todo tasks
+      const todoTasksFilter = {
+        OR: [
+          { projectId: null },
+          { id: { startsWith: 'CODEGOAT-' } },
+        ],
+      };
+
       // Get overall statistics
-      const totalTasks = await db.todoTask.count();
-      const completedTasks = await db.todoTask.count({
-        where: { status: TodoStatus.COMPLETED },
+      const totalTasks = await db.task.count({ where: todoTasksFilter });
+      const completedTasks = await db.task.count({
+        where: { ...todoTasksFilter, status: TaskStatus.COMPLETED },
       });
-      const inProgressTasks = await db.todoTask.count({
-        where: { status: TodoStatus.IN_PROGRESS },
+      const inProgressTasks = await db.task.count({
+        where: { ...todoTasksFilter, status: TaskStatus.IN_PROGRESS },
       });
-      const pendingTasks = await db.todoTask.count({
-        where: { status: TodoStatus.PENDING },
+      const pendingTasks = await db.task.count({
+        where: { ...todoTasksFilter, status: TaskStatus.PENDING },
       });
 
       // Get completion rate by priority
       const priorityStats = await Promise.all([
-        db.todoTask.count({ where: { priority: TodoPriority.HIGH } }),
-        db.todoTask.count({ where: { priority: TodoPriority.HIGH, status: TodoStatus.COMPLETED } }),
-        db.todoTask.count({ where: { priority: TodoPriority.MEDIUM } }),
-        db.todoTask.count({
-          where: { priority: TodoPriority.MEDIUM, status: TodoStatus.COMPLETED },
+        db.task.count({ where: { ...todoTasksFilter, priority: Priority.HIGH } }),
+        db.task.count({ where: { ...todoTasksFilter, priority: Priority.HIGH, status: TaskStatus.COMPLETED } }),
+        db.task.count({ where: { ...todoTasksFilter, priority: Priority.MEDIUM } }),
+        db.task.count({
+          where: { ...todoTasksFilter, priority: Priority.MEDIUM, status: TaskStatus.COMPLETED },
         }),
-        db.todoTask.count({ where: { priority: TodoPriority.LOW } }),
-        db.todoTask.count({ where: { priority: TodoPriority.LOW, status: TodoStatus.COMPLETED } }),
+        db.task.count({ where: { ...todoTasksFilter, priority: Priority.LOW } }),
+        db.task.count({ where: { ...todoTasksFilter, priority: Priority.LOW, status: TaskStatus.COMPLETED } }),
       ]);
 
       // Get average completion time for completed tasks with valid durations
-      const completedTasksWithDuration = await db.todoTask.findMany({
+      const completedTasksWithDuration = await db.task.findMany({
         where: {
-          status: TodoStatus.COMPLETED,
+          ...todoTasksFilter,
+          status: TaskStatus.COMPLETED,
           startTime: { not: null },
           endTime: { not: null },
         },
@@ -204,9 +226,10 @@ export function createTaskRoutes(logger: WinstonLogger) {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-      const recentCompletions = await db.todoTask.findMany({
+      const recentCompletions = await db.task.findMany({
         where: {
-          status: TodoStatus.COMPLETED,
+          ...todoTasksFilter,
+          status: TaskStatus.COMPLETED,
           endTime: {
             gte: thirtyDaysAgo,
           },
@@ -223,9 +246,10 @@ export function createTaskRoutes(logger: WinstonLogger) {
         const startOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
         const endOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1);
 
-        const completedOnDay = await db.todoTask.count({
+        const completedOnDay = await db.task.count({
           where: {
-            status: TodoStatus.COMPLETED,
+            ...todoTasksFilter,
+            status: TaskStatus.COMPLETED,
             endTime: {
               gte: startOfDay,
               lt: endOfDay,
@@ -290,7 +314,7 @@ export function createTaskRoutes(logger: WinstonLogger) {
   router.get('/:id', async (req, res) => {
     try {
       const db = getDatabaseService();
-      const dbTask = await db.todoTask.findUnique({
+      const dbTask = await db.task.findUnique({
         where: { id: req.params.id },
         include: {
           validationRuns: {
@@ -352,17 +376,18 @@ export function createTaskRoutes(logger: WinstonLogger) {
       }
 
       const db = getDatabaseService();
-      const dbStatus = statusMapping[status] || TodoStatus.PENDING;
-      const dbPriority = priorityMapping[priority] || TodoPriority.MEDIUM;
+      const dbStatus = statusMapping[status] || TaskStatus.PENDING;
+      const dbPriority = priorityMapping[priority] || Priority.MEDIUM;
       const dbTaskType = taskTypeMapping[taskType] || TaskType.TASK;
 
       const taskId = await generateNextTaskId();
 
       const taskData: {
         id: string;
+        title: string;
         content: string;
-        status: TodoStatus;
-        priority: TodoPriority;
+        status: TaskStatus;
+        priority: Priority;
         taskType: TaskType;
         executorId?: string;
         startTime?: Date;
@@ -370,6 +395,7 @@ export function createTaskRoutes(logger: WinstonLogger) {
         duration?: string;
       } = {
         id: taskId,
+        title: content.trim(), // Set title for unified schema
         content: content.trim(),
         status: dbStatus,
         priority: dbPriority,
@@ -386,7 +412,7 @@ export function createTaskRoutes(logger: WinstonLogger) {
         taskData.duration = '0m';
       }
 
-      const dbTask = await db.todoTask.create({
+      const dbTask = await db.task.create({
         data: taskData,
       });
 
@@ -404,7 +430,7 @@ export function createTaskRoutes(logger: WinstonLogger) {
   router.put('/:id', async (req, res) => {
     try {
       const db = getDatabaseService();
-      const existingTask = await db.todoTask.findUnique({
+      const existingTask = await db.task.findUnique({
         where: { id: req.params.id },
       });
 
@@ -415,8 +441,9 @@ export function createTaskRoutes(logger: WinstonLogger) {
       const updates = req.body;
       const updateData: {
         content?: string;
-        status?: TodoStatus;
-        priority?: TodoPriority;
+        title?: string;
+        status?: TaskStatus;
+        priority?: Priority;
         taskType?: TaskType;
         executorId?: string;
         startTime?: Date;
@@ -427,6 +454,7 @@ export function createTaskRoutes(logger: WinstonLogger) {
       // Handle content updates
       if (updates.content !== undefined) {
         updateData.content = updates.content;
+        updateData.title = updates.content; // Keep title in sync
       }
 
       // Handle priority updates
@@ -450,7 +478,7 @@ export function createTaskRoutes(logger: WinstonLogger) {
         if (updates.status === 'completed' && existingTask.taskType === TaskType.STORY) {
           // Check if story has BDD scenarios
           const bddScenarios = await db.bDDScenario.findMany({
-            where: { todoTaskId: req.params.id },
+            where: { taskId: req.params.id },
           });
 
           if (bddScenarios.length === 0) {
@@ -501,11 +529,11 @@ export function createTaskRoutes(logger: WinstonLogger) {
 
         updateData.status = statusMapping[updates.status];
 
-        if (updates.status === 'in_progress' && existingTask.status === TodoStatus.PENDING) {
+        if (updates.status === 'in_progress' && existingTask.status === TaskStatus.PENDING) {
           updateData.startTime = new Date();
         } else if (
           updates.status === 'completed' &&
-          existingTask.status === TodoStatus.IN_PROGRESS
+          existingTask.status === TaskStatus.IN_PROGRESS
         ) {
           const endTime = new Date();
           updateData.endTime = endTime;
@@ -523,7 +551,7 @@ export function createTaskRoutes(logger: WinstonLogger) {
         }
       }
 
-      const updatedDbTask = await db.todoTask.update({
+      const updatedDbTask = await db.task.update({
         where: { id: req.params.id },
         data: updateData,
       });
@@ -542,7 +570,7 @@ export function createTaskRoutes(logger: WinstonLogger) {
   router.delete('/:id', async (req, res) => {
     try {
       const db = getDatabaseService();
-      const existingTask = await db.todoTask.findUnique({
+      const existingTask = await db.task.findUnique({
         where: { id: req.params.id },
       });
 
@@ -550,7 +578,7 @@ export function createTaskRoutes(logger: WinstonLogger) {
         return res.status(404).json({ success: false, message: 'Task not found' });
       }
 
-      await db.todoTask.delete({
+      await db.task.delete({
         where: { id: req.params.id },
       });
 
@@ -583,7 +611,7 @@ export function createTaskRoutes(logger: WinstonLogger) {
       const db = getDatabaseService();
 
       // Verify task exists
-      const existingTask = await db.todoTask.findUnique({
+      const existingTask = await db.task.findUnique({
         where: { id: req.params.id },
       });
 
@@ -595,7 +623,7 @@ export function createTaskRoutes(logger: WinstonLogger) {
 
       const scenario = await db.bDDScenario.create({
         data: {
-          todoTaskId: req.params.id,
+          taskId: req.params.id,
           title: title.trim(),
           feature: feature.trim(),
           description: description?.trim() ?? '',
@@ -632,7 +660,7 @@ export function createTaskRoutes(logger: WinstonLogger) {
       const db = getDatabaseService();
 
       // Verify task exists
-      const existingTask = await db.todoTask.findUnique({
+      const existingTask = await db.task.findUnique({
         where: { id: req.params.id },
       });
 
@@ -644,7 +672,7 @@ export function createTaskRoutes(logger: WinstonLogger) {
       const existingScenario = await db.bDDScenario.findFirst({
         where: {
           id: req.params.scenarioId,
-          todoTaskId: req.params.id,
+          taskId: req.params.id,
         },
       });
 
@@ -739,7 +767,7 @@ export function createTaskRoutes(logger: WinstonLogger) {
       const existingScenario = await db.bDDScenario.findFirst({
         where: {
           id: req.params.scenarioId,
-          todoTaskId: req.params.id,
+          taskId: req.params.id,
         },
       });
 
@@ -774,7 +802,7 @@ export function createTaskRoutes(logger: WinstonLogger) {
       const existingScenario = await db.bDDScenario.findFirst({
         where: {
           id: req.params.scenarioId,
-          todoTaskId: req.params.id,
+          taskId: req.params.id,
         },
       });
 
@@ -834,7 +862,7 @@ export function createTaskRoutes(logger: WinstonLogger) {
       const existingScenario = await db.bDDScenario.findFirst({
         where: {
           id: req.params.scenarioId,
-          todoTaskId: req.params.id,
+          taskId: req.params.id,
         },
       });
 
@@ -906,7 +934,7 @@ export function createTaskRoutes(logger: WinstonLogger) {
       const existingScenario = await db.bDDScenario.findFirst({
         where: {
           id: req.params.scenarioId,
-          todoTaskId: req.params.id,
+          taskId: req.params.id,
         },
       });
 

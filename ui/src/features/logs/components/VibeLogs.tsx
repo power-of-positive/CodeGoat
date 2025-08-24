@@ -18,7 +18,7 @@ import {
 import MarkdownRenderer from './MarkdownRenderer';
 import RawLogText from './RawLogText';
 import { UnifiedLogEntry, ProcessStartPayload } from '../../../shared/types/logs';
-import { NormalizedEntry } from '../../../shared/types/index';
+import { NormalizedEntry } from '../../../shared/types/logs';
 
 interface VibeLogsProps {
   entry: UnifiedLogEntry;

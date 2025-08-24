@@ -5,7 +5,7 @@
 import React from 'react';
 
 // Import functions and utilities that can be tested in isolation
-import { cn } from './lib/utils';
+import { cn } from './shared/lib/utils';
 
 // Simple utility tests
 describe('Coverage Tests', () => {

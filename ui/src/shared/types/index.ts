@@ -1,29 +1,5 @@
 // Shared types for the application
 
-export interface NormalizedEntry {
-  timestamp: string | null;
-  entry_type: NormalizedEntryType;
-  content: string;
-}
-
-export type NormalizedEntryType =
-  | { type: 'user_message' }
-  | { type: 'assistant_message' }
-  | { type: 'tool_use'; tool_name: string; action_type: ClaudeActionType }
-  | { type: 'system_message' }
-  | { type: 'error_message' }
-  | { type: 'thinking' };
-
-export type ClaudeActionType =
-  | { action: 'file_read'; path: string }
-  | { action: 'file_write'; path: string }
-  | { action: 'command_run'; command: string }
-  | { action: 'search'; query: string }
-  | { action: 'web_fetch'; url: string }
-  | { action: 'task_create'; description: string }
-  | { action: 'plan_presentation'; plan: string }
-  | { action: 'other'; description: string };
-
 export interface BDDScenario {
   id: string;
   title: string;
@@ -147,21 +123,91 @@ export interface BDDStepResult {
   error?: string;
 }
 
-// Import and re-export log types
-export { 
-  UnifiedLogEntry,
-  ProcessStartPayload,
-  WorkerLogEntry,
-  LogParseResult 
-} from './logs';
+// Import and re-export log types (including moved types)
+// Temporarily commented out to fix circular dependency issue
+// export { 
+//   UnifiedLogEntry,
+//   ProcessStartPayload,
+//   WorkerLogEntry,
+//   LogParseResult,
+//   NormalizedEntry,
+//   NormalizedEntryType,
+//   ClaudeActionType
+// } from './logs';
 
-// Import and re-export permission types from the enum-based definitions
-export { 
-  ActionType as PermissionActionType, 
-  PermissionScope,
-  PermissionRule,
-  PermissionConfig 
-} from '../../../shared/types';
+// Permission types - define them here since the old location is removed
+export enum PermissionActionType {
+  READ = 'read',
+  WRITE = 'write',
+  DELETE = 'delete',
+  EXECUTE = 'execute',
+  ALL = 'all',
+  FILE_READ = 'file_read',
+  FILE_WRITE = 'file_write',
+  NETWORK_REQUEST = 'network_request',
+  CLAUDE_EXECUTE = 'claude_execute',
+}
+
+// Backend ActionType (different from PermissionActionType)
+export enum ActionType {
+  // File system operations
+  FILE_READ = 'file_read',
+  FILE_WRITE = 'file_write',
+  FILE_DELETE = 'file_delete',
+  DIRECTORY_CREATE = 'directory_create',
+  DIRECTORY_DELETE = 'directory_delete',
+
+  // Network operations
+  NETWORK_REQUEST = 'network_request',
+  NETWORK_LISTEN = 'network_listen',
+
+  // Process operations
+  PROCESS_SPAWN = 'process_spawn',
+  PROCESS_KILL = 'process_kill',
+
+  // System operations
+  SYSTEM_COMMAND = 'system_command',
+  ENVIRONMENT_READ = 'environment_read',
+  ENVIRONMENT_WRITE = 'environment_write',
+
+  // Claude-specific operations
+  CLAUDE_EXECUTE = 'claude_execute',
+  CLAUDE_PROMPT = 'claude_prompt',
+}
+
+export enum PermissionScope {
+  FILE = 'file',
+  DIRECTORY = 'directory',
+  COMMAND = 'command',
+  API = 'api',
+  GLOBAL = 'global',
+  WORKTREE = 'worktree',
+  ALL = 'all',
+  SPECIFIC_PATH = 'specific_path',
+  PATTERN = 'pattern',
+}
+
+export interface PermissionRule {
+  id: string;
+  action: PermissionActionType;
+  scope: PermissionScope;
+  resource: string;
+  allowed: boolean;
+  description?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  target?: string;
+  reason?: string;
+  priority?: number;
+}
+
+export interface PermissionConfig {
+  rules: PermissionRule[];
+  defaultAllow: boolean;
+  enableStrictMode: boolean;
+  enableLogging?: boolean;
+  strictMode?: boolean;
+}
 
 export interface E2ETestResult {
   id: string;

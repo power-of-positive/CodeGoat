@@ -37,26 +37,32 @@ test.describe('Analytics Page', () => {
   test('should display summary cards', async ({ page }) => {
     await page.waitForLoadState('networkidle');
 
-    // Look for grid layout if it exists
-    const gridLayout = page.locator('.grid');
-    if (await gridLayout.count() > 0) {
-      await expect(gridLayout).toBeVisible();
+    // Look for specific metrics summary grid layout
+    const metricsGrid = page.getByTestId('metrics-summary');
+    if (await metricsGrid.count() > 0) {
+      await expect(metricsGrid).toBeVisible();
+    } else {
+      // Fallback to more general grid selector that is first
+      const gridLayout = page.locator('.grid').first();
+      if (await gridLayout.count() > 0) {
+        await expect(gridLayout).toBeVisible();
+      }
     }
 
-    // Look for summary cards with flexible text matching
-    const totalRuns = page.locator('text=Total Runs, text=Total, text=Runs').first();
+    // Look for summary cards with specific text matching
+    const totalRuns = page.getByText('Total Runs', { exact: false });
     if (await totalRuns.count() > 0) {
-      await expect(totalRuns).toBeVisible();
+      await expect(totalRuns.first()).toBeVisible();
     }
 
-    const successRate = page.locator('text=Success Rate, text=Success, text=Rate').first();
+    const successRate = page.getByText('Success Rate', { exact: false });
     if (await successRate.count() > 0) {
-      await expect(successRate).toBeVisible();
+      await expect(successRate.first()).toBeVisible();
     }
 
-    const avgDuration = page.locator('text=Avg Duration, text=Duration, text=Average').first();
+    const avgDuration = page.getByText('Duration', { exact: false });
     if (await avgDuration.count() > 0) {
-      await expect(avgDuration).toBeVisible();
+      await expect(avgDuration.first()).toBeVisible();
     }
 
     // At minimum, verify page loads

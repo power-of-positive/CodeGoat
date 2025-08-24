@@ -12,7 +12,7 @@ import {
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../shared/ui/card';
 import { Button } from '../../../shared/ui/button';
-import { ValidationRun } from '../../../../shared/types';
+import { ValidationRun } from '../../../shared/types';
 
 interface TimeSeriesChartsProps {
   runs: ValidationRun[];

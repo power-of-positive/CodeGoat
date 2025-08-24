@@ -1,49 +1,49 @@
 #!/usr/bin/env npx ts-node
 
-import { PrismaClient, TodoStatus, TodoPriority, TaskType } from '@prisma/client';
+import { PrismaClient, TaskStatus, Priority, TaskType } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
 const tasks = [
   {
     content: 'Audit and link existing BDD scenarios to Playwright tests via cucumber',
-    status: TodoStatus.IN_PROGRESS,
-    priority: TodoPriority.HIGH,
+    status: TaskStatus.IN_PROGRESS,
+    priority: Priority.HIGH,
     taskType: TaskType.TASK,
     executorId: 'claude-code',
   },
   {
     content: 'Implement story completion validation requiring BDD scenarios and tests',
-    status: TodoStatus.PENDING,
-    priority: TodoPriority.HIGH,
+    status: TaskStatus.PENDING,
+    priority: Priority.HIGH,
     taskType: TaskType.STORY,
     executorId: 'claude-code',
   },
   {
     content: 'Fix missing validation step details page',
-    status: TodoStatus.PENDING,
-    priority: TodoPriority.MEDIUM,
+    status: TaskStatus.PENDING,
+    priority: Priority.MEDIUM,
     taskType: TaskType.TASK,
     executorId: 'claude-code',
   },
   {
     content: 'Fix recent runs links in analytics page to show run details',
-    status: TodoStatus.PENDING,
-    priority: TodoPriority.MEDIUM,
+    status: TaskStatus.PENDING,
+    priority: Priority.MEDIUM,
     taskType: TaskType.TASK,
     executorId: 'claude-code',
   },
   {
     content: 'Fix run details links in task details page',
-    status: TodoStatus.PENDING,
-    priority: TodoPriority.MEDIUM,
+    status: TaskStatus.PENDING,
+    priority: Priority.MEDIUM,
     taskType: TaskType.TASK,
     executorId: 'claude-code',
   },
   {
     content: 'Add Playwright tests for all BDD functionality',
-    status: TodoStatus.PENDING,
-    priority: TodoPriority.HIGH,
+    status: TaskStatus.PENDING,
+    priority: Priority.HIGH,
     taskType: TaskType.TASK,
     executorId: 'claude-code',
   },
@@ -54,11 +54,12 @@ async function addTasks() {
     console.log('Adding BDD-related tasks to database...');
 
     for (const taskData of tasks) {
-      const task = await prisma.todoTask.create({
+      const task = await prisma.task.create({
         data: {
           id: crypto.randomUUID(),
+          title: taskData.content, // Set title same as content for unified schema
           ...taskData,
-          startTime: taskData.status === TodoStatus.IN_PROGRESS ? new Date() : undefined,
+          startTime: taskData.status === TaskStatus.IN_PROGRESS ? new Date() : undefined,
         },
       });
       console.log(`✓ Added task: ${task.content}`);

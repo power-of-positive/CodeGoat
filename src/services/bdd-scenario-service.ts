@@ -3,7 +3,7 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 
 export interface BDDScenarioInput {
-  todoTaskId: string;
+  taskId: string;
   title: string;
   feature: string;
   description: string;
@@ -66,7 +66,7 @@ export class BDDScenarioService {
         // Save previous scenario if exists
         if (currentScenario?.title) {
           scenarios.push({
-            todoTaskId: 'comprehensive-bdd', // Will be updated when associating with actual tasks
+            taskId: 'comprehensive-bdd', // Will be updated when associating with actual tasks
             title: currentScenario.title,
             feature: featureName,
             description: currentScenario.description ?? currentScenario.title,
@@ -104,7 +104,7 @@ export class BDDScenarioService {
     // Add final scenario
     if (currentScenario?.title) {
       scenarios.push({
-        todoTaskId: 'comprehensive-bdd',
+        taskId: 'comprehensive-bdd',
         title: currentScenario.title,
         feature: featureName,
         description: currentScenario.description ?? currentScenario.title,
@@ -122,7 +122,7 @@ export class BDDScenarioService {
     try {
       return await this.prisma.bDDScenario.create({
         data: {
-          todoTaskId: scenario.todoTaskId,
+          taskId: scenario.taskId,
           title: scenario.title,
           feature: scenario.feature,
           description: scenario.description,
@@ -142,10 +142,10 @@ export class BDDScenarioService {
   /**
    * Get all BDD scenarios for a task
    */
-  async getScenariosByTaskId(todoTaskId: string): Promise<BDDScenario[]> {
+  async getScenariosByTaskId(taskId: string): Promise<BDDScenario[]> {
     try {
       return await this.prisma.bDDScenario.findMany({
-        where: { todoTaskId },
+        where: { taskId },
         orderBy: { createdAt: 'desc' },
       });
     } catch (error) {
@@ -161,7 +161,7 @@ export class BDDScenarioService {
     try {
       return await this.prisma.bDDScenario.findMany({
         include: {
-          todoTask: true,
+          task: true,
           executionHistory: {
             orderBy: { executedAt: 'desc' },
             take: 5, // Last 5 executions
@@ -276,13 +276,14 @@ export class BDDScenarioService {
       const createdScenarios: BDDScenario[] = [];
 
       // Create a master task for comprehensive BDD scenarios if it doesn't exist
-      let masterTask = await this.prisma.todoTask.findFirst({
+      let masterTask = await this.prisma.task.findFirst({
         where: { id: 'comprehensive-bdd' },
       });
 
-      masterTask ??= await this.prisma.todoTask.create({
+      masterTask ??= await this.prisma.task.create({
         data: {
           id: 'comprehensive-bdd',
+          title: 'Comprehensive BDD Scenarios for All User-Facing Features',
           content: 'Comprehensive BDD Scenarios for All User-Facing Features',
           status: 'IN_PROGRESS',
           priority: 'HIGH',
@@ -293,14 +294,14 @@ export class BDDScenarioService {
 
       // Create scenarios
       for (const scenarioInput of scenarioInputs) {
-        // Update todoTaskId to the master task
-        scenarioInput.todoTaskId = masterTask.id;
+        // Update taskId to the master task
+        scenarioInput.taskId = masterTask.id;
 
         // Check if scenario already exists
         const existing = await this.prisma.bDDScenario.findFirst({
           where: {
             title: scenarioInput.title,
-            todoTaskId: masterTask.id,
+            taskId: masterTask.id,
           },
         });
 

@@ -1,6 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import type { UnifiedLogEntry, ProcessStartPayload } from '../shared/types/logs';
-import type { NormalizedEntry } from '../shared/types/index';
+import type { UnifiedLogEntry, ProcessStartPayload, NormalizedEntry } from '../shared/types/logs';
 
 interface UseEnhancedLogStreamResult {
   entries: UnifiedLogEntry[];

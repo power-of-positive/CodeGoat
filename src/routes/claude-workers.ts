@@ -6,7 +6,7 @@ import { CommandInterceptor, formatCommandAnalysis } from '../utils/command-inte
 import { WorktreeManager } from '../utils/worktree-manager';
 import { ValidationRunner } from '../../scripts/validate-task';
 import { getDatabaseService } from '../services/database';
-import { TodoStatus } from '@prisma/client';
+import { TaskStatus } from '@prisma/client';
 import { logManager } from '../utils/log-manager';
 import { ClaudeLogProcessor } from '../utils/claude-log-processor';
 // import { WinstonLogger } from '../logger-winston';
@@ -69,14 +69,14 @@ const activeWorkers = new Map<string, ClaudeWorker>();
  */
 async function updateTaskStatus(
   taskId: string,
-  status: TodoStatus,
+  status: TaskStatus,
   workerId?: string
 ): Promise<void> {
   try {
     const db = getDatabaseService();
 
     // Check if task exists
-    const existingTask = await db.todoTask.findUnique({
+    const existingTask = await db.task.findUnique({
       where: { id: taskId },
     });
 
@@ -87,7 +87,7 @@ async function updateTaskStatus(
 
     // Prepare update data
     const updateData: {
-      status: TodoStatus;
+      status: TaskStatus;
       executorId?: string;
       startTime?: Date;
       endTime?: Date;
@@ -96,17 +96,17 @@ async function updateTaskStatus(
     };
 
     // Set executor when starting task
-    if (status === TodoStatus.IN_PROGRESS && workerId) {
+    if (status === TaskStatus.IN_PROGRESS && workerId) {
       updateData.executorId = workerId;
       updateData.startTime = new Date();
     }
 
     // Set end time when completing task
-    if (status === TodoStatus.COMPLETED) {
+    if (status === TaskStatus.COMPLETED) {
       updateData.endTime = new Date();
     }
 
-    await db.todoTask.update({
+    await db.task.update({
       where: { id: taskId },
       data: updateData,
     });
@@ -568,7 +568,7 @@ router.post('/start', async (req, res) => {
 
     // Update task status to in_progress when worker starts
     try {
-      await updateTaskStatus(taskId, TodoStatus.IN_PROGRESS, workerId);
+      await updateTaskStatus(taskId, TaskStatus.IN_PROGRESS, workerId);
     } catch {
       // Task status update error logging disabled
     }
@@ -1196,7 +1196,7 @@ router.post('/:workerId/merge-worktree', async (req, res) => {
     // Mark task as completed after successful merge (only if validation passed)
     if (worker.validationPassed === true) {
       try {
-        await updateTaskStatus(worker.taskId, TodoStatus.COMPLETED);
+        await updateTaskStatus(worker.taskId, TaskStatus.COMPLETED);
         console.error(`✅ Task ${worker.taskId} marked as completed after successful merge`);
       } catch {
         // Task completion error logging disabled

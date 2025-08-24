@@ -110,6 +110,7 @@ export function ScenarioCard({ scenario, onExecute }: {
                 className="h-7 w-7 p-0"
                 onClick={() => setShowDetails(true)}
                 title="View Details"
+                aria-label="View Details"
               >
                 <Eye className="h-3 w-3" />
               </Button>
@@ -120,6 +121,7 @@ export function ScenarioCard({ scenario, onExecute }: {
                   className="h-7 w-7 p-0"
                   onClick={() => onExecute(scenario.id)}
                   title="Execute Scenario"
+                  aria-label="Execute Scenario"
                 >
                   <Play className="h-3 w-3" />
                 </Button>
@@ -142,10 +144,10 @@ export function ScenarioCard({ scenario, onExecute }: {
               <p>Executed: {formatExecutionTime(scenario.executedAt)}</p>
             )}
             {scenario.playwrightTestFile && (
-              <p className="flex items-center gap-1">
+              <div className="flex items-center gap-1 text-xs text-gray-500">
                 <ExternalLink className="h-3 w-3" />
                 Linked to: {scenario.playwrightTestFile}
-              </p>
+              </div>
             )}
             {scenario.todoTask && (
               <p>Task: {scenario.todoTask.content}</p>

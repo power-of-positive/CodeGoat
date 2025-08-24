@@ -21,25 +21,23 @@ import { Textarea } from '../../../shared/ui/textarea';
 import { Badge } from '../../../shared/ui/badge';
 import { permissionApi } from '../../../shared/lib/api';
 import {
-  ActionType,
+  PermissionActionType,
   PermissionScope,
-} from '../../../../shared/types';
-import {
   PermissionRule,
   PermissionConfig,
 } from '../../../shared/types/index';
 
 interface PermissionFormData {
-  action: ActionType;
+  action: PermissionActionType;
   scope: PermissionScope;
-  target?: string;
+  resource: string;
   allowed: boolean;
-  reason?: string;
-  priority: number;
+  description?: string;
+  priority?: number;
 }
 
 interface PermissionTestData {
-  action: ActionType;
+  action: PermissionActionType;
   target?: string;
   worktreeDir?: string;
 }
@@ -49,17 +47,19 @@ export function PermissionEditor() {
   const [editingRule, setEditingRule] = useState<PermissionRule | null>(null);
   const [showTestForm, setShowTestForm] = useState(false);
   const [formData, setFormData] = useState<PermissionFormData>({
-    action: ActionType.FILE_READ,
+    action: PermissionActionType.FILE_READ,
     scope: PermissionScope.GLOBAL,
+    resource: '',
     allowed: true,
     priority: 100,
   });
   const [testData, setTestData] = useState<PermissionTestData>({
-    action: ActionType.FILE_READ,
+    action: PermissionActionType.FILE_READ,
   });
   const [testResult, setTestResult] = useState<{
     allowed: boolean;
     reason: string;
+    matchingRule?: PermissionRule;
   } | null>(null);
 
   const queryClient = useQueryClient();
@@ -150,8 +150,9 @@ export function PermissionEditor() {
 
   const resetForm = () => {
     setFormData({
-      action: ActionType.FILE_READ,
+      action: PermissionActionType.FILE_READ,
       scope: PermissionScope.GLOBAL,
+      resource: '',
       allowed: true,
       priority: 100,
     });
@@ -182,10 +183,10 @@ export function PermissionEditor() {
     setFormData({
       action: rule.action,
       scope: rule.scope,
-      target: rule.target,
+      resource: rule.resource,
       allowed: rule.allowed,
-      reason: rule.reason,
-      priority: rule.priority,
+      description: rule.description,
+      priority: rule.priority || 100,
     });
     setShowCreateForm(true);
   };
@@ -221,22 +222,19 @@ export function PermissionEditor() {
     }
   };
 
-  const getActionIcon = (action: ActionType) => {
+  const getActionIcon = (action: PermissionActionType) => {
     switch (action) {
-      case ActionType.FILE_READ:
-      case ActionType.FILE_WRITE:
-      case ActionType.FILE_DELETE:
+      case PermissionActionType.FILE_READ:
+      case PermissionActionType.FILE_WRITE:
+      case PermissionActionType.DELETE:
         return '📁';
-      case ActionType.NETWORK_REQUEST:
-      case ActionType.NETWORK_LISTEN:
+      case PermissionActionType.NETWORK_REQUEST:
         return '🌐';
-      case ActionType.PROCESS_SPAWN:
-      case ActionType.PROCESS_KILL:
+      case PermissionActionType.EXECUTE:
         return '⚙️';
-      case ActionType.SYSTEM_COMMAND:
+      case PermissionActionType.ALL:
         return '💻';
-      case ActionType.CLAUDE_EXECUTE:
-      case ActionType.CLAUDE_PROMPT:
+      case PermissionActionType.CLAUDE_EXECUTE:
         return '🤖';
       default:
         return '🔧';
@@ -413,11 +411,11 @@ export function PermissionEditor() {
                   onChange={(e) =>
                     setTestData({
                       ...testData,
-                      action: e.target.value as ActionType,
+                      action: e.target.value as PermissionActionType,
                     })
                   }
                 >
-                  {Object.values(ActionType).map((action) => (
+                  {Object.values(PermissionActionType).map((action) => (
                     <Option key={action} value={action}>
                       {getActionIcon(action)} {action.replace('_', ' ')}
                     </Option>
@@ -510,11 +508,11 @@ export function PermissionEditor() {
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      action: e.target.value as ActionType,
+                      action: e.target.value as PermissionActionType,
                     })
                   }
                 >
-                  {Object.values(ActionType).map((action) => (
+                  {Object.values(PermissionActionType).map((action) => (
                     <Option key={action} value={action}>
                       {getActionIcon(action)} {action.replace('_', ' ')}
                     </Option>
@@ -545,12 +543,12 @@ export function PermissionEditor() {
               {(formData.scope === PermissionScope.SPECIFIC_PATH ||
                 formData.scope === PermissionScope.PATTERN) && (
                 <div className="md:col-span-2">
-                  <Label htmlFor="target">Target</Label>
+                  <Label htmlFor="resource">Resource</Label>
                   <Input
-                    id="target"
-                    value={formData.target || ''}
+                    id="resource"
+                    value={formData.resource || ''}
                     onChange={(e) =>
-                      setFormData({ ...formData, target: e.target.value })
+                      setFormData({ ...formData, resource: e.target.value })
                     }
                     placeholder={
                       formData.scope === PermissionScope.SPECIFIC_PATH
@@ -610,12 +608,12 @@ export function PermissionEditor() {
               </div>
 
               <div className="md:col-span-2">
-                <Label htmlFor="reason">Reason (optional)</Label>
+                <Label htmlFor="description">Reason (optional)</Label>
                 <Textarea
-                  id="reason"
-                  value={formData.reason || ''}
+                  id="description"
+                  value={formData.description || ''}
                   onChange={(e) =>
-                    setFormData({ ...formData, reason: e.target.value })
+                    setFormData({ ...formData, description: e.target.value })
                   }
                   placeholder="Explain why this rule exists..."
                   rows={3}
@@ -688,9 +686,9 @@ export function PermissionEditor() {
                             </code>
                           </div>
                         )}
-                        {rule.reason && (
+                        {rule.description && (
                           <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                            {rule.reason}
+                            {rule.description}
                           </div>
                         )}
                       </div>

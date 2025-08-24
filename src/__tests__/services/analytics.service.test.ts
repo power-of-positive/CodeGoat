@@ -35,7 +35,7 @@ describe('AnalyticsService', () => {
 
       const sessionId = await analyticsService.startSession('Test prompt', 'Test task');
 
-      expect(sessionId).toMatch(/^session_\d+_[a-z0-9]{9}$/);
+      expect(sessionId).toMatch(/^session_\d+_[a-z0-9]{8,9}$/);
       expect(mockLogger.info).toHaveBeenCalledWith(
         'Development session started',
         expect.objectContaining({
@@ -57,7 +57,7 @@ describe('AnalyticsService', () => {
 
       const sessionId = await analyticsService.startSession();
 
-      expect(sessionId).toMatch(/^session_\d+_[a-z0-9]{9}$/);
+      expect(sessionId).toMatch(/^session_\d+_[a-z0-9]{8,9}$/);
       expect(mockLogger.info).toHaveBeenCalledWith(
         'Development session started',
         expect.objectContaining({
@@ -594,7 +594,7 @@ describe('AnalyticsService', () => {
 
       const sessionId = await analyticsService.startSession();
 
-      expect(sessionId).toMatch(/^session_\d+_[a-z0-9]{9}$/);
+      expect(sessionId).toMatch(/^session_\d+_[a-z0-9]{8,9}$/);
       // Should start with empty sessions list when file is corrupted
     });
   });

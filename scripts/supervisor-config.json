@@ -1,0 +1,31 @@
+{
+  "maxAttempts": 10,
+  "sessionTimeout": 1800000,
+  "hookTimeout": 300000,
+  "logDir": "./logs/supervisor",
+  "claudeCommand": ["claude"],
+  "prompts": {
+    "fixTests": "Fix all failing tests and ensure they pass. Do not stop until all validation stages are green.",
+    "increaseTestCoverage": "Increase test coverage to 80% and ensure all tests still pass. Fix any issues that arise.",
+    "fixValidationIssues": "Fix all validation pipeline issues including linting, type checking, and test failures. Ensure complete validation success.",
+    "completeTasks": "Complete all remaining tasks in the todo list and ensure all validation stages pass."
+  },
+  "validationStages": [
+    "lint",
+    "typecheck", 
+    "unit-tests-backend",
+    "unit-tests-frontend",
+    "coverage-frontend",
+    "coverage-backend",
+    "integration-tests",
+    "api-e2e-tests",
+    "playwright-e2e",
+    "typescript-preference",
+    "ai-code-review",
+    "dead-code",
+    "duplication-check",
+    "vulnerability-check",
+    "uncommitted-files",
+    "todo-list"
+  ]
+}

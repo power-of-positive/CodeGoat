@@ -3,12 +3,17 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-// Todo list item interface
+// Todo list item interface - aligned with API format
 interface TodoItem {
+  id: string; // CODEGOAT-001, CODEGOAT-055, etc.
   content: string;
   status: 'pending' | 'in_progress' | 'completed';
-  priority: 'high' | 'medium' | 'low';
-  id: string; // CODEGOAT-001, CODEGOAT-055, etc.
+  priority: 'low' | 'medium' | 'high';
+  taskType: 'story' | 'task';
+  executorId?: string;
+  startTime?: string;
+  endTime?: string;
+  duration?: string;
 }
 
 // Configuration interface
@@ -26,11 +31,10 @@ const DEFAULT_CONFIG: ValidationConfig = {
   onlyFailOnHighPriority: false, // Fail on any unfinished tasks (blocks Claude Code until ALL tasks done)
 };
 
-// Define possible todo list file paths (prioritize todo-list.json)
+// Legacy file paths for backward compatibility (fallback only)
 const TODO_LIST_FILES = [
   path.join(process.cwd(), 'todo-list.json'),
   path.join(process.cwd(), '.claude_todo.json'),
-  path.join(process.cwd(), 'TODO-Kanban-Implementation.md'),
 ];
 
 // API configuration
@@ -101,25 +105,13 @@ async function fetchTasksFromAPI(): Promise<TodoItem[]> {
       throw new Error(`API request failed: ${response.status} ${response.statusText}`);
     }
 
-    const apiResponse = (await response.json()) as
-      | { success?: boolean; data?: TodoItem[] }
-      | TodoItem[];
+    const apiResponse = await response.json() as { success: boolean; data: TodoItem[] };
 
-    // Handle wrapped API response format
-    let tasks: TodoItem[];
-    if (
-      typeof apiResponse === 'object' &&
-      'success' in apiResponse &&
-      apiResponse.success &&
-      Array.isArray(apiResponse.data)
-    ) {
-      tasks = apiResponse.data;
-    } else if (Array.isArray(apiResponse)) {
-      tasks = apiResponse;
-    } else {
-      throw new Error('Invalid API response: expected array of tasks or {success: true, data: []}');
+    if (!apiResponse.success || !Array.isArray(apiResponse.data)) {
+      throw new Error('Invalid API response: expected {success: true, data: []}');
     }
 
+    const tasks = apiResponse.data;
     console.log(
       `${colors.green}✅ Successfully fetched ${tasks.length} tasks from API${colors.reset}`
     );
@@ -131,22 +123,36 @@ async function fetchTasksFromAPI(): Promise<TodoItem[]> {
 }
 
 /**
- * Parse todo list from JSON format
+ * Parse todo list from JSON format (legacy fallback only)
  */
 function parseTodoListFromJSON(filePath: string): TodoItem[] {
   try {
     const content = fs.readFileSync(filePath, 'utf-8');
     const data = JSON.parse(content);
 
-    // Handle different JSON formats
+    // Handle different JSON formats and convert to new format
+    let rawTasks: any[] = [];
     if (Array.isArray(data)) {
-      return data;
+      rawTasks = data;
     } else if (data.todos && Array.isArray(data.todos)) {
-      return data.todos;
+      rawTasks = data.todos;
     } else {
       console.error(`${colors.red}Invalid JSON format in ${filePath}${colors.reset}`);
       return [];
     }
+
+    // Convert legacy format to new TodoItem format
+    return rawTasks.map((task: any) => ({
+      id: task.id?.startsWith('CODEGOAT-') ? task.id : `CODEGOAT-${String(task.id).padStart(3, '0')}`,
+      content: task.content || '',
+      status: task.status || 'pending',
+      priority: task.priority || 'medium',
+      taskType: task.taskType || 'task',
+      executorId: task.executorId,
+      startTime: task.startTime,
+      endTime: task.endTime,
+      duration: task.duration,
+    }));
   } catch (error) {
     console.error(`${colors.red}Error parsing JSON todo list: ${error}${colors.reset}`);
     return [];
@@ -154,57 +160,13 @@ function parseTodoListFromJSON(filePath: string): TodoItem[] {
 }
 
 /**
- * Parse the TODO markdown file and extract todo items
+ * Parse the TODO markdown file and extract todo items (deprecated - use API instead)
  */
 function parseTodoListFromMarkdown(filePath: string): TodoItem[] {
-  try {
-    const content = fs.readFileSync(filePath, 'utf-8');
-    const todoItems: TodoItem[] = [];
-
-    // Regular expression to match todo items in markdown
-    // Matches patterns like: "### KANBAN-001: Database Schema Implementation"
-    // followed by "**Priority**: High" and checkboxes
-    const taskRegex = /### (KANBAN-\d+): (.+?)\n\*\*Priority\*\*: (High|Medium|Low)/gi;
-    const matches = content.matchAll(taskRegex);
-
-    for (const match of matches) {
-      const [, taskId, taskTitle, priority] = match;
-
-      // Extract the section content for this task
-      const taskStartIndex = match.index!;
-      const nextTaskMatch = content
-        .substring(taskStartIndex + match[0].length)
-        .search(/### KANBAN-\d+:/);
-      const taskEndIndex =
-        nextTaskMatch === -1 ? content.length : taskStartIndex + match[0].length + nextTaskMatch;
-
-      const taskSection = content.substring(taskStartIndex, taskEndIndex);
-
-      // Count completed and total checkboxes
-      const completedCheckboxes = (taskSection.match(/- \[x\]/gi) || []).length;
-      const totalCheckboxes = (taskSection.match(/- \[[x\s]\]/gi) || []).length;
-
-      // Determine status based on completion
-      let status: TodoItem['status'] = 'pending';
-      if (completedCheckboxes === totalCheckboxes && totalCheckboxes > 0) {
-        status = 'completed';
-      } else if (completedCheckboxes > 0) {
-        status = 'in_progress';
-      }
-
-      todoItems.push({
-        id: taskId.toLowerCase(),
-        content: taskTitle.trim(),
-        status,
-        priority: priority.toLowerCase() as 'high' | 'medium' | 'low',
-      });
-    }
-
-    return todoItems;
-  } catch (error) {
-    console.error(`${colors.red}Error reading todo list file: ${error}${colors.reset}`);
-    return [];
-  }
+  console.warn(
+    `${colors.yellow}⚠️  Markdown parsing is deprecated. Use API-based task management instead.${colors.reset}`
+  );
+  return [];
 }
 
 /**
@@ -224,6 +186,8 @@ function validateTodoListFormat(todos: TodoItem[]): { valid: boolean; errors: st
     // Check required fields
     if (!todo.id || todo.id.trim().length === 0) {
       errors.push(`Todo item ${index + 1}: Missing or empty ID`);
+    } else if (!todo.id.match(/^CODEGOAT-\d{3}$/)) {
+      errors.push(`Todo item ${index + 1}: Invalid ID format (${todo.id}), expected CODEGOAT-XXX`);
     }
 
     if (!todo.content || todo.content.trim().length === 0) {
@@ -234,8 +198,12 @@ function validateTodoListFormat(todos: TodoItem[]): { valid: boolean; errors: st
       errors.push(`Todo item ${index + 1}: Invalid status (${todo.status})`);
     }
 
-    if (!['high', 'medium', 'low'].includes(todo.priority)) {
+    if (!['low', 'medium', 'high'].includes(todo.priority)) {
       errors.push(`Todo item ${index + 1}: Invalid priority (${todo.priority})`);
+    }
+
+    if (todo.taskType && !['story', 'task'].includes(todo.taskType)) {
+      errors.push(`Todo item ${index + 1}: Invalid taskType (${todo.taskType})`);
     }
   });
 
@@ -356,39 +324,41 @@ function displayStatistics(todos: TodoItem[]): void {
 }
 
 /**
- * Find and parse todo list from available sources (API first, then files)
+ * Find and parse todo list from available sources (API-first approach)
  */
 async function findAndParseTodoList(): Promise<{ todos: TodoItem[]; source: string }> {
-  // First try to fetch from API
+  // Primary: Try to fetch from API
   if (await isServerRunning()) {
     try {
       const todos = await fetchTasksFromAPI();
-      if (todos.length > 0) {
-        return { todos, source: 'API' };
-      }
-    } catch {
+      return { todos, source: 'API' };
+    } catch (error) {
+      console.error(
+        `${colors.red}❌ API fetch failed: ${error}${colors.reset}`
+      );
       console.warn(
-        `${colors.yellow}⚠️  API fetch failed, falling back to file-based parsing${colors.reset}`
+        `${colors.yellow}⚠️  Falling back to file-based parsing (legacy mode)${colors.reset}`
       );
     }
   } else {
-    console.log(`${colors.yellow}⚠️  Server not running, using file-based parsing${colors.reset}`);
+    console.log(`${colors.yellow}⚠️  Server not running, trying file-based parsing${colors.reset}`);
   }
 
-  // Fall back to file-based parsing
+  // Fallback: File-based parsing (legacy support)
   for (const filePath of TODO_LIST_FILES) {
     if (fs.existsSync(filePath)) {
-      console.log(`${colors.blue}📖 Found todo list: ${path.basename(filePath)}${colors.reset}`);
+      console.log(`${colors.blue}📖 Found legacy todo list: ${path.basename(filePath)}${colors.reset}`);
 
       let todos: TodoItem[] = [];
       if (filePath.endsWith('.json')) {
         todos = parseTodoListFromJSON(filePath);
-      } else if (filePath.endsWith('.md')) {
-        todos = parseTodoListFromMarkdown(filePath);
       }
 
       if (todos.length > 0) {
-        return { todos, source: path.basename(filePath) };
+        console.warn(
+          `${colors.yellow}⚠️  Using legacy file format. Consider migrating to API-based task management.${colors.reset}`
+        );
+        return { todos, source: `${path.basename(filePath)} (legacy)` };
       }
     }
   }
@@ -399,16 +369,20 @@ async function findAndParseTodoList(): Promise<{ todos: TodoItem[]; source: stri
 function performBasicValidation(todos: TodoItem[], source: string): number {
   if (source === 'none') {
     console.error(`${colors.red}❌ No todo list source found. Tried:${colors.reset}`);
-    console.error(`${colors.red}   • API: ${TASKS_ENDPOINT}${colors.reset}`);
-    TODO_LIST_FILES.forEach(file => {
-      console.error(`${colors.red}   • File: ${path.basename(file)}${colors.reset}`);
-    });
+    console.error(`${colors.red}   • Primary API: ${TASKS_ENDPOINT}${colors.reset}`);
+    console.error(`${colors.red}   • Legacy files: ${TODO_LIST_FILES.map(f => path.basename(f)).join(', ')}${colors.reset}`);
+    console.error(`${colors.red}💡 Make sure the CodeGoat server is running on port 3001${colors.reset}`);
     return 1;
   }
 
   if (todos.length === 0) {
-    console.error(`${colors.red}❌ No valid todo items found from ${source}${colors.reset}`);
-    return 1;
+    if (source === 'API') {
+      console.log(`${colors.green}✅ No tasks found - all work complete!${colors.reset}`);
+      return 0; // Empty API response is valid (no tasks = all done)
+    } else {
+      console.error(`${colors.red}❌ No valid todo items found from ${source}${colors.reset}`);
+      return 1;
+    }
   }
 
   return 0;

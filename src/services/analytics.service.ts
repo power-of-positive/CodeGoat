@@ -1,5 +1,6 @@
 import fs from 'fs/promises';
 import path from 'path';
+import { PrismaClient } from '@prisma/client';
 import { ILogger } from '../logger-interface';
 import { ValidationMetricsConverter } from '../utils/validation-metrics-converter';
 import type {
@@ -20,11 +21,13 @@ export class AnalyticsService {
   private sessionsPath: string;
   private metricsPath: string;
   private logger: ILogger;
+  private db: PrismaClient;
 
   constructor(logger: ILogger, sessionsPath?: string, metricsPath?: string) {
     this.logger = logger;
     this.sessionsPath = sessionsPath ?? path.join(process.cwd(), 'validation-sessions.json');
     this.metricsPath = metricsPath ?? path.join(process.cwd(), 'validation-metrics.json');
+    this.db = new PrismaClient();
   }
 
   /**
@@ -760,5 +763,199 @@ export class AnalyticsService {
         failureReasons,
       },
     };
+  }
+
+  /**
+   * Get validation runs from the database
+   */
+  async getValidationRuns(limit: number = 50, todoTaskId?: string): Promise<Array<{
+    id: string;
+    timestamp: Date;
+    success: boolean;
+    duration: number;
+    todoTaskId?: string;
+    stages: Array<{
+      id: string;
+      name: string;
+      success: boolean;
+      duration: number;
+      output?: string;
+      error?: string;
+    }>;
+  }>> {
+    try {
+      const validationRuns = await this.db.validationRun.findMany({
+        where: todoTaskId ? { taskId: todoTaskId } : undefined,
+        orderBy: { timestamp: 'desc' },
+        take: limit,
+        include: {
+          task: true,
+          stages: {
+            orderBy: { order: 'asc' }
+          }
+        },
+      });
+
+      return validationRuns.map(run => ({
+        id: run.id,
+        timestamp: run.timestamp,
+        success: run.success,
+        duration: run.totalTime, // Use totalTime from new schema
+        todoTaskId: run.taskId ?? undefined, // Keep for API compatibility
+        stages: (run.stages || []).map(stage => ({
+          id: stage.stageId,
+          name: stage.stageName,
+          success: stage.success,
+          duration: stage.duration,
+          output: stage.output || undefined,
+          error: stage.errorMessage || undefined,
+        })), // Transform stages to match expected interface
+      }));
+    } catch (error) {
+      this.logger.error('Failed to get validation runs from database', error as Error);
+      return [];
+    }
+  }
+
+  /**
+   * Get validation run statistics from database
+   */
+  async getValidationRunStatistics(days: number = 30): Promise<{
+    totalRuns: number;
+    successfulRuns: number;
+    failedRuns: number;
+    successRate: number;
+    averageDuration: number;
+    recentTrend: {
+      totalRuns: number;
+      successRate: number;
+    };
+    stageStatistics: Record<string, {
+      totalAttempts: number;
+      successfulAttempts: number;
+      successRate: number;
+      averageDuration: number;
+    }>;
+  }> {
+    try {
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - days);
+
+      const validationRuns = await this.db.validationRun.findMany({
+        where: {
+          timestamp: {
+            gte: cutoffDate,
+          },
+        },
+        include: {
+          stages: {
+            orderBy: { order: 'asc' }
+          }
+        },
+        orderBy: { timestamp: 'desc' },
+      });
+
+      const totalRuns = validationRuns.length;
+      const successfulRuns = validationRuns.filter(run => run.success).length;
+      const failedRuns = totalRuns - successfulRuns;
+      const successRate = totalRuns > 0 ? (successfulRuns / totalRuns) * 100 : 0;
+      const averageDuration = totalRuns > 0 
+        ? validationRuns.reduce((sum, run) => sum + run.totalTime, 0) / totalRuns 
+        : 0;
+
+      // Calculate recent trend (last 7 days vs previous 7 days)
+      const recentCutoff = new Date();
+      recentCutoff.setDate(recentCutoff.getDate() - 7);
+      
+      const recentRuns = validationRuns.filter(run => run.timestamp >= recentCutoff);
+
+      const recentTrend = {
+        totalRuns: recentRuns.length,
+        successRate: recentRuns.length > 0 
+          ? (recentRuns.filter(run => run.success).length / recentRuns.length) * 100 
+          : 0,
+      };
+
+      // Calculate stage statistics
+      const stageStatistics: Record<string, {
+        totalAttempts: number;
+        successfulAttempts: number;
+        successRate: number;
+        averageDuration: number;
+      }> = {};
+
+      validationRuns.forEach(run => {
+        const stages = run.stages || [];
+
+        stages.forEach(stage => {
+          if (!stageStatistics[stage.stageId]) {
+            stageStatistics[stage.stageId] = {
+              totalAttempts: 0,
+              successfulAttempts: 0,
+              successRate: 0,
+              averageDuration: 0,
+            };
+          }
+
+          stageStatistics[stage.stageId].totalAttempts++;
+          if (stage.success) {
+            stageStatistics[stage.stageId].successfulAttempts++;
+          }
+        });
+      });
+
+      // Calculate final statistics for each stage
+      Object.keys(stageStatistics).forEach(stageId => {
+        const stats = stageStatistics[stageId];
+        stats.successRate = stats.totalAttempts > 0 
+          ? (stats.successfulAttempts / stats.totalAttempts) * 100 
+          : 0;
+        
+        // Calculate average duration for this stage
+        let totalDuration = 0;
+        let durationCount = 0;
+        
+        validationRuns.forEach(run => {
+          const stages = run.stages || [];
+          
+          stages.forEach(stage => {
+            if (stage.stageId === stageId) {
+              totalDuration += stage.duration;
+              durationCount++;
+            }
+          });
+        });
+
+        stats.averageDuration = durationCount > 0 ? totalDuration / durationCount : 0;
+      });
+
+      return {
+        totalRuns,
+        successfulRuns,
+        failedRuns,
+        successRate,
+        averageDuration,
+        recentTrend,
+        stageStatistics,
+      };
+    } catch (error) {
+      this.logger.error('Failed to get validation run statistics', error as Error);
+      return {
+        totalRuns: 0,
+        successfulRuns: 0,
+        failedRuns: 0,
+        successRate: 0,
+        averageDuration: 0,
+        recentTrend: { totalRuns: 0, successRate: 0 },
+        stageStatistics: {},
+      };
+    }
+  }
+
+  /**
+   * Cleanup method to close database connection
+   */
+  async dispose(): Promise<void> {
+    await this.db.$disconnect();
   }
 }

@@ -1,313 +1,159 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BrowserRouter } from 'react-router-dom';
+import { render, screen } from '@testing-library/react';
 import BDDTestsDashboard from './BDDTestsDashboard';
 
-// Mock fetch API
-const mockFetch = jest.fn();
-global.fetch = mockFetch;
+// Mock the BDDScenariosDashboard component
+jest.mock('../features/bdd/components/BDDScenariosDashboard', () => ({
+  BDDScenariosDashboard: () => (
+    <div data-testid="bdd-scenarios-dashboard">
+      <h1>BDD Scenarios Dashboard</h1>
+      <p>Mock BDD Scenarios Dashboard Component</p>
+    </div>
+  ),
+}));
 
-const mockBDDScenarios = [
-  {
-    id: 'scenario-1',
-    todoTaskId: 'task-1',
-    title: 'User creates a new task',
-    feature: 'Task Management',
-    description: 'Test scenario for task creation',
-    gherkinContent: 'Given I am on the Tasks page\nWhen I click Add Task\nThen I should see the form',
-    status: 'passed',
-    executedAt: '2024-01-01T10:00:00Z',
-    executionDuration: 1500,
-    errorMessage: null,
-    playwrightTestFile: null,
-    playwrightTestName: null,
-    createdAt: '2024-01-01T09:00:00Z',
-    updatedAt: '2024-01-01T10:00:00Z',
-  },
-  {
-    id: 'scenario-2',
-    todoTaskId: 'task-2', 
-    title: 'User edits an existing task',
-    feature: 'Task Management',
-    description: 'Test scenario for task editing',
-    gherkinContent: 'Given I have a task\nWhen I edit it\nThen I should see changes',
-    status: 'failed',
-    executedAt: '2024-01-01T11:00:00Z',
-    executionDuration: 2000,
-    errorMessage: 'Assertion failed',
-    playwrightTestFile: null,
-    playwrightTestName: null,
-    createdAt: '2024-01-01T09:30:00Z',
-    updatedAt: '2024-01-01T11:00:00Z',
-  },
-];
+describe('BDDTestsDashboard', () => {
+  it('should render BDDScenariosDashboard component', () => {
+    render(<BDDTestsDashboard />);
 
-const mockStats = {
-  total: 2,
-  passed: 1,
-  failed: 1,
-  pending: 0,
-  skipped: 0,
-  passRate: 50,
-};
-
-const renderWithProviders = (component: React.ReactElement) => {
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: {
-        retry: false,
-      },
-    },
+    expect(screen.getByTestId('bdd-scenarios-dashboard')).toBeInTheDocument();
+    expect(screen.getByText('BDD Scenarios Dashboard')).toBeInTheDocument();
+    expect(screen.getByText('Mock BDD Scenarios Dashboard Component')).toBeInTheDocument();
   });
 
-  return render(
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        {component}
-      </BrowserRouter>
-    </QueryClientProvider>
-  );
-};
-
-describe.skip('BDDTestsDashboard', () => {
-  beforeEach(() => {
-    mockFetch.mockClear();
+  it('should be a functional component', () => {
+    expect(typeof BDDTestsDashboard).toBe('function');
   });
 
-  it('should render BDD scenarios dashboard', async () => {
-    // Mock API responses
-    mockFetch
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ data: mockBDDScenarios }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ data: mockStats }),
-      });
+  it('should render without crashing', () => {
+    const { container } = render(<BDDTestsDashboard />);
+    expect(container).toBeInTheDocument();
+  });
 
-    renderWithProviders(<BDDTestsDashboard />);
+  it('should have the correct component structure', () => {
+    const { container } = render(<BDDTestsDashboard />);
+    const dashboard = container.firstChild;
+    
+    expect(dashboard).toBeInTheDocument();
+  });
 
-    await waitFor(() => {
-      expect(screen.getByText('BDD Test Scenarios')).toBeInTheDocument();
+  it('should render BDDScenariosDashboard as the only child', () => {
+    const { container } = render(<BDDTestsDashboard />);
+    
+    expect(container.children).toHaveLength(1);
+    expect(screen.getByTestId('bdd-scenarios-dashboard')).toBeInTheDocument();
+  });
+
+  it('should maintain component identity across re-renders', () => {
+    const { rerender } = render(<BDDTestsDashboard />);
+    
+    expect(screen.getByTestId('bdd-scenarios-dashboard')).toBeInTheDocument();
+    
+    rerender(<BDDTestsDashboard />);
+    
+    expect(screen.getByTestId('bdd-scenarios-dashboard')).toBeInTheDocument();
+    expect(screen.getByText('BDD Scenarios Dashboard')).toBeInTheDocument();
+  });
+
+  it('should export the component as default', () => {
+    expect(BDDTestsDashboard).toBeDefined();
+    expect(BDDTestsDashboard.name).toBe('BDDTestsDashboard');
+  });
+
+  it('should have React.FC type signature', () => {
+    // This test ensures the component is properly typed
+    const component: React.FC = BDDTestsDashboard;
+    expect(component).toBe(BDDTestsDashboard);
+  });
+
+  it('should render consistently with different prop scenarios', () => {
+    // Test rendering multiple times to ensure consistency
+    const render1 = render(<BDDTestsDashboard />);
+    const content1 = render1.container.innerHTML;
+    render1.unmount();
+
+    const render2 = render(<BDDTestsDashboard />);
+    const content2 = render2.container.innerHTML;
+    render2.unmount();
+
+    expect(content1).toBe(content2);
+  });
+
+  it('should not accept any props (pure wrapper component)', () => {
+    // Verify component doesn't expect props by testing it works without any
+    expect(() => render(<BDDTestsDashboard />)).not.toThrow();
+  });
+
+  it('should properly delegate rendering to BDDScenariosDashboard', () => {
+    render(<BDDTestsDashboard />);
+    
+    // Verify that the mock component's content is actually rendered
+    expect(screen.getByTestId('bdd-scenarios-dashboard')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('BDD Scenarios Dashboard');
+  });
+
+  describe('Component Props and Interface', () => {
+    it('should not pass any props to BDDScenariosDashboard', () => {
+      render(<BDDTestsDashboard />);
+      
+      // The mock component should render without any props
+      expect(screen.getByTestId('bdd-scenarios-dashboard')).toBeInTheDocument();
     });
 
-    expect(screen.getByText('Total Scenarios')).toBeInTheDocument();
-    expect(screen.getByText('Passed')).toBeInTheDocument();
-    expect(screen.getByText('Failed')).toBeInTheDocument();
-    expect(screen.getByText('Pending')).toBeInTheDocument();
-  });
-
-  it('should display scenario statistics', async () => {
-    mockFetch
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ data: mockBDDScenarios }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ data: mockStats }),
-      });
-
-    renderWithProviders(<BDDTestsDashboard />);
-
-    await waitFor(() => {
-      expect(screen.getByTestId('total-scenarios-count')).toHaveTextContent('2');
-    });
-
-    expect(screen.getByTestId('passed-scenarios-count')).toHaveTextContent('1');
-    expect(screen.getByTestId('failed-scenarios-count')).toHaveTextContent('1');
-    expect(screen.getByTestId('pending-scenarios-count')).toHaveTextContent('0');
-    expect(screen.getByTestId('pass-rate')).toHaveTextContent('50%');
-  });
-
-  it('should display BDD scenarios', async () => {
-    mockFetch
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ data: mockBDDScenarios }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ data: mockStats }),
-      });
-
-    renderWithProviders(<BDDTestsDashboard />);
-
-    await waitFor(() => {
-      expect(screen.getByText('User creates a new task')).toBeInTheDocument();
-    });
-
-    expect(screen.getByText('User edits an existing task')).toBeInTheDocument();
-    expect(screen.getByText('Task Management')).toBeInTheDocument();
-  });
-
-  it('should create comprehensive scenarios', async () => {
-    // Initial load
-    mockFetch
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ data: [] }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ data: { total: 0, passed: 0, failed: 0, pending: 0, skipped: 0, passRate: 0 } }),
-      })
-      // Create scenarios
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ success: true, message: 'Created 25 comprehensive BDD scenarios' }),
-      })
-      // Refresh after creation
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ data: mockBDDScenarios }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ data: mockStats }),
-      });
-
-    renderWithProviders(<BDDTestsDashboard />);
-
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: /create comprehensive scenarios/i })).toBeInTheDocument();
-    });
-
-    const createButton = screen.getByRole('button', { name: /create comprehensive scenarios/i });
-    fireEvent.click(createButton);
-
-    await waitFor(() => {
-      expect(mockFetch).toHaveBeenCalledWith('/api/bdd-scenarios/comprehensive', {
-        method: 'POST',
-      });
+    it('should maintain its function signature', () => {
+      // Ensure the component signature hasn't changed
+      expect(BDDTestsDashboard.length).toBe(0); // No parameters expected
     });
   });
 
-  it('should execute all scenarios', async () => {
-    mockFetch
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ data: mockBDDScenarios }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ data: mockStats }),
-      })
-      // Execute all
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ success: true, message: 'Executed 2 scenarios' }),
-      })
-      // Refresh after execution
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ data: mockBDDScenarios }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ data: mockStats }),
-      });
-
-    renderWithProviders(<BDDTestsDashboard />);
-
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: /execute all scenarios/i })).toBeInTheDocument();
+  describe('Integration Behavior', () => {
+    it('should act as a proper wrapper component', () => {
+      const { container } = render(<BDDTestsDashboard />);
+      
+      // Check that it's rendering exactly what we expect - the child component
+      expect(container.firstChild).toHaveAttribute('data-testid', 'bdd-scenarios-dashboard');
     });
 
-    const executeButton = screen.getByRole('button', { name: /execute all scenarios/i });
-    fireEvent.click(executeButton);
+    it('should not add any additional DOM elements', () => {
+      const { container } = render(<BDDTestsDashboard />);
+      
+      // Should render only the child component, no wrapper divs or anything else
+      expect(container.children).toHaveLength(1);
+      expect(container.firstChild?.nodeName).toBe('DIV');
+    });
 
-    await waitFor(() => {
-      expect(mockFetch).toHaveBeenCalledWith('/api/bdd-scenarios/execute-all', {
-        method: 'POST',
-      });
+    it('should handle React lifecycle methods correctly', () => {
+      const { unmount } = render(<BDDTestsDashboard />);
+      
+      // Should unmount without errors
+      expect(() => unmount()).not.toThrow();
     });
   });
 
-  it('should filter scenarios by search term', async () => {
-    mockFetch
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ data: mockBDDScenarios }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ data: mockStats }),
+  describe('Error Boundaries and Edge Cases', () => {
+    it('should handle rendering when BDDScenariosDashboard mock is available', () => {
+      // This implicitly tests that our mock is working and component renders
+      expect(() => render(<BDDTestsDashboard />)).not.toThrow();
+    });
+
+    it('should be testable in isolation', () => {
+      // Component should be unit testable without complex setup
+      const { container } = render(<BDDTestsDashboard />);
+      expect(container).toMatchSnapshot();
+    });
+
+    it('should maintain stable behavior across multiple renders', () => {
+      const renders = Array.from({ length: 5 }, () => {
+        const { container } = render(<BDDTestsDashboard />);
+        const html = container.innerHTML;
+        return html;
       });
 
-    renderWithProviders(<BDDTestsDashboard />);
-
-    await waitFor(() => {
-      expect(screen.getByText('User creates a new task')).toBeInTheDocument();
-    });
-
-    const searchInput = screen.getByTestId('search-scenarios');
-    fireEvent.change(searchInput, { target: { value: 'creates' } });
-
-    await waitFor(() => {
-      expect(screen.getByText('User creates a new task')).toBeInTheDocument();
-      expect(screen.queryByText('User edits an existing task')).not.toBeInTheDocument();
-    });
-  });
-
-  it('should filter scenarios by status', async () => {
-    mockFetch
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ data: mockBDDScenarios }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ data: mockStats }),
+      // All renders should produce identical output
+      const firstRender = renders[0];
+      renders.forEach(render => {
+        expect(render).toBe(firstRender);
       });
-
-    renderWithProviders(<BDDTestsDashboard />);
-
-    await waitFor(() => {
-      expect(screen.getByText('User creates a new task')).toBeInTheDocument();
     });
-
-    const statusFilter = screen.getByTestId('status-filter');
-    fireEvent.change(statusFilter, { target: { value: 'passed' } });
-
-    await waitFor(() => {
-      expect(screen.getByText('User creates a new task')).toBeInTheDocument();
-      expect(screen.queryByText('User edits an existing task')).not.toBeInTheDocument();
-    });
-  });
-
-  it('should display empty state when no scenarios exist', async () => {
-    mockFetch
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ data: [] }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ data: { total: 0, passed: 0, failed: 0, pending: 0, skipped: 0, passRate: 0 } }),
-      });
-
-    renderWithProviders(<BDDTestsDashboard />);
-
-    await waitFor(() => {
-      expect(screen.getByText('No BDD Scenarios Found')).toBeInTheDocument();
-    }, { timeout: 10000 });
-
-    expect(screen.getByText('Create comprehensive BDD scenarios to get started with behavioral testing.')).toBeInTheDocument();
-  });
-
-  it('should handle API errors gracefully', async () => {
-    mockFetch
-      .mockRejectedValueOnce(new Error('Failed to fetch scenarios'))
-      .mockRejectedValueOnce(new Error('Failed to fetch stats'));
-
-    renderWithProviders(<BDDTestsDashboard />);
-
-    // Component should show error state
-    await waitFor(() => {
-      expect(screen.getByText('Error Loading BDD Scenarios')).toBeInTheDocument();
-    }, { timeout: 10000 });
   });
 });

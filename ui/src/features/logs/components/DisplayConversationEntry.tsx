@@ -16,7 +16,7 @@ import {
   User,
 } from 'lucide-react';
 import { formatStableTimestamp } from '../../../utils/timestamp';
-import type { NormalizedEntry, NormalizedEntryType } from '../../../shared/types/index';
+import type { NormalizedEntry, NormalizedEntryType } from '../../../shared/types/logs';
 
 interface Props {
   entry: NormalizedEntry;

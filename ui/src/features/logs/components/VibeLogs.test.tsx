@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import VibeLogs from './VibeLogs';
 import { UnifiedLogEntry, ProcessStartPayload } from '../../../shared/types/logs';
-import type { NormalizedEntry } from '../../../shared/types/index';
+import type { NormalizedEntry } from '../../../shared/types/logs';
 
 // Mock lucide-react icons
 jest.mock('lucide-react', () => ({

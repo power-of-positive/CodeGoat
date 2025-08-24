@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { BDDScenarioManager } from '../../features/bdd/components/BDDScenarioManager';
-import { BDDScenario } from '../../../shared/types';
+import { BDDScenario } from '../../shared/types';
 
 const mockScenarios: BDDScenario[] = [
   {
@@ -20,6 +20,9 @@ Scenario: User creates a new task
   When I click "Add Task"
   And I fill in the task details
   Then a new task should be created`,
+    given: 'I am on the task board',
+    when: 'I click "Add Task" and fill in the task details',
+    then: 'a new task should be created',
     status: 'pending',
     executedAt: undefined,
     executionDuration: undefined,
@@ -39,6 +42,9 @@ Scenario: User updates task status
   Given I have a pending task
   When I change the status to "in_progress"
   Then the task should be updated`,
+    given: 'I have a pending task',
+    when: 'I change the status to "in_progress"',
+    then: 'the task should be updated',
     status: 'passed',
     executedAt: '2023-10-01T10:00:00Z',
     executionDuration: 1500,
@@ -152,6 +158,9 @@ describe('BDDScenarioManager', () => {
         feature: 'Test feature',
         description: '',
         gherkinContent: 'Given test\nWhen test\nThen test',
+        given: '',
+        when: '',
+        then: '',
         status: 'pending',
       });
     });

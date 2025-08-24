@@ -243,6 +243,300 @@ export const analyticsApi = {
       };
     };
   }> => request(`/analytics/stages/${stageId}/statistics`),
+
+  // Database-based validation runs and statistics
+  getValidationRunsFromDB: (params?: {
+    limit?: number;
+    todoTaskId?: string;
+  }): Promise<{
+    validationRuns: Array<{
+      id: string;
+      timestamp: Date;
+      success: boolean;
+      duration: number;
+      todoTaskId?: string;
+      stages: Array<{
+        id: string;
+        name: string;
+        success: boolean;
+        duration: number;
+        output?: string;
+        error?: string;
+      }>;
+    }>;
+  }> => {
+    const queryParams = new URLSearchParams();
+    if (params?.limit) {
+      queryParams.append('limit', params.limit.toString());
+    }
+    if (params?.todoTaskId) {
+      queryParams.append('todoTaskId', params.todoTaskId);
+    }
+    
+    const url = `/analytics/validation-runs${queryParams.toString() ? `?${queryParams}` : ''}`;
+    return request(url);
+  },
+
+  getValidationStatisticsFromDB: (days?: number): Promise<{
+    statistics: {
+      totalRuns: number;
+      successfulRuns: number;
+      failedRuns: number;
+      successRate: number;
+      averageDuration: number;
+      recentTrend: {
+        totalRuns: number;
+        successRate: number;
+      };
+      stageStatistics: Record<string, {
+        totalAttempts: number;
+        successfulAttempts: number;
+        successRate: number;
+        averageDuration: number;
+      }>;
+    };
+  }> => {
+    const url = days ? `/analytics/validation-statistics?days=${days}` : '/analytics/validation-statistics';
+    return request(url);
+  },
+
+  // Get individual validation run by ID from database
+  getValidationRunById: (runId: string): Promise<{
+    id: string;
+    taskId?: string;
+    sessionId?: string;
+    timestamp: string;
+    startTime?: number;
+    totalTime: number;
+    totalStages: number;
+    passedStages: number;
+    failedStages: number;
+    success: boolean;
+    triggerType?: string;
+    environment?: string;
+    gitCommit?: string;
+    gitBranch?: string;
+    stages: Array<{
+      id: string;
+      stageId: string;
+      stageName: string;
+      success: boolean;
+      duration: number;
+      command?: string;
+      exitCode?: number;
+      output?: string;
+      errorMessage?: string;
+      enabled: boolean;
+      continueOnFailure: boolean;
+      order: number;
+    }>;
+    logs?: Array<{
+      id: string;
+      stageId?: string;
+      level: string;
+      message: string;
+      timestamp: string;
+      metadata?: Record<string, unknown>;
+    }>;
+  }> => request(`/validation-runs/${runId}`),
+
+  // Get detailed stage analytics
+  getStageAnalytics: (params?: {
+    days?: number;
+    environment?: string;
+    stageId?: string;
+    startDate?: string;
+    endDate?: string;
+  }): Promise<{
+    overview: {
+      totalStages: number;
+      period: string;
+      totalStageExecutions: number;
+    };
+    stageStatistics: Array<{
+      stageId: string;
+      stageName: string;
+      totalRuns: number;
+      successfulRuns: number;
+      failedRuns: number;
+      successRate: number;
+      totalDuration: number;
+      avgDuration: number;
+      minDuration: number;
+      maxDuration: number;
+      reliability: 'excellent' | 'good' | 'fair' | 'poor';
+    }>;
+    trends: Array<{
+      date: string;
+      stageId: string;
+      stageName: string;
+      totalRuns: number;
+      successfulRuns: number;
+      failedRuns: number;
+      successRate: number;
+      avgDuration: number;
+    }>;
+    insights: {
+      problematicStages: Array<Record<string, unknown>>;
+      topPerformingStages: Array<Record<string, unknown>>;
+      stageExecutionPattern: Array<{
+        runId: string;
+        timestamp: string;
+        stageSequence: Array<{
+          stageId: string;
+          success: boolean;
+          duration: number;
+        }>;
+      }>;
+    };
+  }> => {
+    const queryParams = new URLSearchParams();
+    if (params?.days) {
+      queryParams.append('days', params.days.toString());
+    }
+    if (params?.environment) {
+      queryParams.append('environment', params.environment);
+    }
+    if (params?.stageId) {
+      queryParams.append('stageId', params.stageId);
+    }
+    if (params?.startDate) {
+      queryParams.append('startDate', params.startDate);
+    }
+    if (params?.endDate) {
+      queryParams.append('endDate', params.endDate);
+    }
+    
+    const url = `/validation-runs/analytics/stages${queryParams.toString() ? `?${queryParams}` : ''}`;
+    return request(url);
+  },
+
+  // Get historical timeline data
+  getHistoricalData: (params?: {
+    days?: number;
+    granularity?: 'hourly' | 'daily' | 'weekly';
+    environment?: string;
+    includeStages?: boolean;
+  }): Promise<{
+    timeline: Array<{
+      timestamp: string;
+      runs: Array<Record<string, unknown>>;
+      totalRuns: number;
+      successfulRuns: number;
+      failedRuns: number;
+      averageDuration: number;
+      successRate: number;
+      stagePerformance: Record<string, {
+        success: number;
+        total: number;
+        avgDuration: number;
+        successRate: number;
+      }>;
+    }>;
+    summary: {
+      totalPeriods: number;
+      granularity: string;
+      dateRange: {
+        start: string;
+        end: string;
+      };
+    };
+  }> => {
+    const queryParams = new URLSearchParams();
+    if (params?.days) {
+      queryParams.append('days', params.days.toString());
+    }
+    if (params?.granularity) {
+      queryParams.append('granularity', params.granularity);
+    }
+    if (params?.environment) {
+      queryParams.append('environment', params.environment);
+    }
+    if (params?.includeStages !== undefined) {
+      queryParams.append('includeStages', params.includeStages.toString());
+    }
+    
+    const url = `/validation-runs/analytics/history${queryParams.toString() ? `?${queryParams}` : ''}`;
+    return request(url);
+  },
+
+  // Compare performance between periods
+  getPerformanceComparison: (params: {
+    period1Start: string;
+    period1End: string;
+    period2Start: string;
+    period2End: string;
+    environment?: string;
+  }): Promise<{
+    periods: {
+      period1: {
+        label: string;
+        totalRuns: number;
+        successfulRuns: number;
+        failedRuns: number;
+        successRate: number;
+        avgDuration: number;
+        stages: Array<{
+          stageId: string;
+          stageName: string;
+          totalRuns: number;
+          successfulRuns: number;
+          successRate: number;
+          avgDuration: number;
+        }>;
+      };
+      period2: {
+        label: string;
+        totalRuns: number;
+        successfulRuns: number;
+        failedRuns: number;
+        successRate: number;
+        avgDuration: number;
+        stages: Array<{
+          stageId: string;
+          stageName: string;
+          totalRuns: number;
+          successfulRuns: number;
+          successRate: number;
+          avgDuration: number;
+        }>;
+      };
+    };
+    comparison: {
+      overall: {
+        successRate: { value: number; percentage: number; trend: 'up' | 'down' | 'stable' };
+        avgDuration: { value: number; percentage: number; trend: 'up' | 'down' | 'stable' };
+        totalRuns: { value: number; percentage: number; trend: 'up' | 'down' | 'stable' };
+      };
+      stages: Array<{
+        stageId: string;
+        stageName: string;
+        status: 'compared' | 'new_in_period2' | 'removed_in_period2';
+        successRateChange?: { value: number; percentage: number; trend: 'up' | 'down' | 'stable' };
+        durationChange?: { value: number; percentage: number; trend: 'up' | 'down' | 'stable' };
+        runsChange?: { value: number; percentage: number; trend: 'up' | 'down' | 'stable' };
+      }>;
+    };
+    insights: {
+      improved: number;
+      degraded: number;
+      stable: number;
+      newStages: number;
+      removedStages: number;
+    };
+  }> => {
+    const queryParams = new URLSearchParams();
+    queryParams.append('period1Start', params.period1Start);
+    queryParams.append('period1End', params.period1End);
+    queryParams.append('period2Start', params.period2Start);
+    queryParams.append('period2End', params.period2End);
+    if (params.environment) {
+      queryParams.append('environment', params.environment);
+    }
+    
+    const url = `/validation-runs/analytics/comparison?${queryParams}`;
+    return request(url);
+  },
 };
 
 // Legacy config API for compatibility (minimal implementation)

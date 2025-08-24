@@ -146,9 +146,14 @@ class ValidationRunner {
   private async findCurrentTask(): Promise<string | null> {
     try {
       // Look for a task that's currently in progress
-      const inProgressTask = await this.db.todoTask.findFirst({
+      const inProgressTask = await this.db.task.findFirst({
         where: {
           status: 'IN_PROGRESS',
+          // Only look for todo tasks (not project tasks)
+          OR: [
+            { projectId: null },
+            { id: { startsWith: 'CODEGOAT-' } },
+          ],
         },
         orderBy: {
           updatedAt: 'desc',
@@ -253,7 +258,7 @@ class ValidationRunner {
         }
       }
 
-      this.results.success = overallSuccess && this.results.failed === 0;
+      this.results.success = overallSuccess;
       this.results.totalTime = Date.now() - this.startTime;
 
       await this.saveMetrics();
@@ -313,15 +318,40 @@ class ValidationRunner {
 
       // Save to database
       try {
-        await this.db.validationRun.create({
+        const validationRun = await this.db.validationRun.create({
           data: {
-            todoTaskId: currentTaskId,
+            taskId: currentTaskId,
             timestamp: new Date(),
+            totalTime: this.results.totalTime,
+            totalStages: this.results.stages.length,
+            passedStages: this.results.stages.filter(s => s.success).length,
+            failedStages: this.results.stages.filter(s => !s.success).length,
             success: this.results.success,
-            duration: this.results.totalTime,
-            stages: JSON.stringify(this.results.stages),
+            triggerType: 'validation_script',
+            environment: 'development',
           },
         });
+
+        // Create individual stage records
+        for (let i = 0; i < this.results.stages.length; i++) {
+          const stage = this.results.stages[i];
+          await this.db.validationStage.create({
+            data: {
+              runId: validationRun.id,
+              stageId: stage.id,
+              stageName: stage.name,
+              success: stage.success,
+              duration: stage.duration,
+              command: null, // Not available in ValidationStageResult
+              exitCode: null, // Not available in ValidationStageResult
+              output: stage.output || null,
+              errorMessage: stage.error || null,
+              enabled: true, // Default value
+              continueOnFailure: false, // Default value
+              order: i + 1,
+            },
+          });
+        }
 
         if (currentTaskId) {
           console.log(

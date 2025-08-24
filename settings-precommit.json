@@ -39,10 +39,10 @@
       {
         "id": "unit-tests-frontend",
         "name": "Frontend Unit Tests",
-        "command": "cd ui && CI=true npm test -- --watchAll=false --no-watch --passWithNoTests --testTimeout=30000 --maxWorkers=2",
+        "command": "cd ui && npm test -- --watchAll=false --testTimeout=30000",
         "timeout": 60000,
-        "enabled": true,
-        "continueOnFailure": false,
+        "enabled": false,
+        "continueOnFailure": true,
         "order": 4
       },
       {

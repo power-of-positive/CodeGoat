@@ -1,0 +1,16 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`BDDTestsDashboard Error Boundaries and Edge Cases should be testable in isolation 1`] = `
+<div>
+  <div
+    data-testid="bdd-scenarios-dashboard"
+  >
+    <h1>
+      BDD Scenarios Dashboard
+    </h1>
+    <p>
+      Mock BDD Scenarios Dashboard Component
+    </p>
+  </div>
+</div>
+`;

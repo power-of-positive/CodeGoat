@@ -357,7 +357,7 @@ async function addBddScenarios() {
     for (const scenarioData of bddScenarios) {
       try {
         // Check if task exists
-        const task = await prisma.todoTask.findUnique({
+        const task = await prisma.task.findUnique({
           where: { id: scenarioData.taskId }
         });
 
@@ -370,7 +370,7 @@ async function addBddScenarios() {
         // Check if scenario already exists (by title and task)
         const existingScenario = await prisma.bDDScenario.findFirst({
           where: {
-            todoTaskId: scenarioData.taskId,
+            taskId: scenarioData.taskId,
             title: scenarioData.title
           }
         });
@@ -384,7 +384,7 @@ async function addBddScenarios() {
         // Create the BDD scenario
         await prisma.bDDScenario.create({
           data: {
-            todoTaskId: scenarioData.taskId,
+            taskId: scenarioData.taskId,
             title: scenarioData.title,
             feature: scenarioData.feature,
             description: scenarioData.description,

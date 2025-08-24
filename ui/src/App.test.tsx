@@ -62,6 +62,7 @@ jest.mock('react-router-dom', () => ({
   useLocation: () => ({ pathname: '/analytics' }),
   useParams: () => ({ runId: 'test-run-123' }),
   useNavigate: () => jest.fn(),
+  useSearchParams: () => [new URLSearchParams(), jest.fn()],
   Link: ({ children, to }: { children: React.ReactNode; to: string }) => (
     <a href={to}>{children}</a>
   ),

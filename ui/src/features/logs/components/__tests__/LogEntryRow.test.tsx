@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import LogEntryRow from '../LogEntryRow';
-import type { UnifiedLogEntry, ProcessStartPayload, NormalizedEntry } from '../../../../shared/types';
+import type { UnifiedLogEntry, ProcessStartPayload, NormalizedEntry } from '../../../../shared/types/logs';
 
 const mockSetRowHeight = jest.fn();
 

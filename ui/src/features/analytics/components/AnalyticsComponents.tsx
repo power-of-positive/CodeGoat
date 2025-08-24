@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { Button } from '../../../shared/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../shared/ui/card';
-import { ValidationMetrics, ValidationStageResult } from '../../../../shared/types';
+import { ValidationMetrics, ValidationStageResult } from '../../../shared/types';
 
 export function AnalyticsHeader({ refetch }: { refetch: () => void }) {
   const [isLoading, setIsLoading] = useState(false);

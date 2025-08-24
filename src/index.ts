@@ -8,6 +8,7 @@ import { createSettingsRoutes } from './routes/settings';
 import { createAnalyticsRoutes } from './routes/analytics';
 import { createTaskRoutes } from './routes/tasks';
 import { createPermissionRoutes } from './routes/permissions';
+// import { createValidationRunRoutes } from './routes/validation-runs-simple';
 import claudeWorkersRouter from './routes/claude-workers';
 import { createDatabaseService } from './services/database';
 
@@ -134,6 +135,7 @@ app.use('/api/settings', createSettingsRoutes(logger));
 app.use('/api/analytics', createAnalyticsRoutes(logger));
 app.use('/api/tasks', createTaskRoutes(logger));
 app.use('/api/permissions', createPermissionRoutes(logger));
+// Validation runs route temporarily disabled
 app.use('/api/claude-workers', claudeWorkersRouter);
 
 // Health check endpoint
@@ -142,7 +144,7 @@ app.get('/health', (_req: Request, res: Response) => {
 });
 
 // Catch-all for unmatched routes - serve index.html for client-side routing
-app.get('*', (req: Request, res: Response) => {
+app.use((req: Request, res: Response) => {
   // Don't serve index.html for API routes
   if (req.path.startsWith('/api/')) {
     res.status(404).json({ error: 'Not found' });
