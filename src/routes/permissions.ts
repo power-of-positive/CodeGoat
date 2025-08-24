@@ -212,7 +212,7 @@ export function createPermissionRoutes(logger: WinstonLogger) {
   });
 
   // GET /permissions/defaults - Get default permission configurations
-  router.get('/defaults', async (req, res) => {
+  router.get('/defaults', (req, res) => {
     try {
       const defaults = {
         restrictive: DefaultPermissions.restrictive(),
@@ -228,7 +228,7 @@ export function createPermissionRoutes(logger: WinstonLogger) {
   });
 
   // GET /permissions/actions - Get available action types
-  router.get('/actions', async (req, res) => {
+  router.get('/actions', (req, res) => {
     try {
       const actions = Object.values(ActionType);
       res.json({ success: true, data: actions });
@@ -239,7 +239,7 @@ export function createPermissionRoutes(logger: WinstonLogger) {
   });
 
   // GET /permissions/scopes - Get available permission scopes
-  router.get('/scopes', async (req, res) => {
+  router.get('/scopes', (req, res) => {
     try {
       const scopes = Object.values(PermissionScope);
       res.json({ success: true, data: scopes });

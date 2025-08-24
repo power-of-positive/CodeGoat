@@ -125,12 +125,12 @@ export class SettingsLoader {
 
   async getFallbackSettings(): Promise<FallbackSettings> {
     const settings = await this.loadSettings();
-    return settings.fallback || (await this.getDefaultFallbackSettings());
+    return settings.fallback ?? (await this.getDefaultFallbackSettings());
   }
 
   async getValidationSettings(): Promise<ValidationSettings> {
     const settings = await this.loadSettings();
-    return settings.validation || (await this.getDefaultValidationSettings());
+    return settings.validation ?? (await this.getDefaultValidationSettings());
   }
 
   invalidateCache(): void {

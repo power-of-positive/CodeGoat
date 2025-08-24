@@ -1,7 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { gherkin } from '@cucumber/gherkin';
-import { IdGenerator } from '@cucumber/gherkin';
+import { gherkin, IdGenerator } from '@cucumber/gherkin';
 
 export interface PlaywrightTest {
   file: string;

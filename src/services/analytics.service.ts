@@ -23,8 +23,8 @@ export class AnalyticsService {
 
   constructor(logger: ILogger, sessionsPath?: string, metricsPath?: string) {
     this.logger = logger;
-    this.sessionsPath = sessionsPath || path.join(process.cwd(), 'validation-sessions.json');
-    this.metricsPath = metricsPath || path.join(process.cwd(), 'validation-metrics.json');
+    this.sessionsPath = sessionsPath ?? path.join(process.cwd(), 'validation-sessions.json');
+    this.metricsPath = metricsPath ?? path.join(process.cwd(), 'validation-metrics.json');
   }
 
   /**
@@ -118,8 +118,8 @@ export class AnalyticsService {
     // Filter sessions by agent if specified
     if (agentFilter && sessions.length > 0) {
       sessions = sessions.filter(session => 
-        session.userPrompt?.includes(agentFilter) || 
-        session.taskDescription?.includes(agentFilter) ||
+        (session.userPrompt?.includes(agentFilter) ?? false) || 
+        (session.taskDescription?.includes(agentFilter) ?? false) ||
         (session as SessionMetrics & { agent?: string }).agent === agentFilter
       );
     }
@@ -140,7 +140,7 @@ export class AnalyticsService {
           taskDescription?: string; 
         };
         return metricRecord.agent === agentFilter || 
-               metricRecord.userPrompt?.includes(agentFilter) ||
+               (metricRecord.userPrompt?.includes(agentFilter) ?? false) ||
                metricRecord.taskDescription?.includes(agentFilter);
       });
     }
@@ -189,15 +189,19 @@ export class AnalyticsService {
   }
 
   private calculateAverageTimeToSuccess(successfulSessions: SessionMetrics[]): number {
-    if (successfulSessions.length === 0) return 0;
+    if (successfulSessions.length === 0) {
+      return 0;
+    }
     return (
-      successfulSessions.reduce((sum, s) => sum + (s.totalValidationTime || 0), 0) /
+      successfulSessions.reduce((sum, s) => sum + (s.totalValidationTime ?? 0), 0) /
       successfulSessions.length
     );
   }
 
   private calculateAverageAttemptsToSuccess(successfulSessions: SessionMetrics[]): number {
-    if (successfulSessions.length === 0) return 0;
+    if (successfulSessions.length === 0) {
+      return 0;
+    }
     return (
       successfulSessions.reduce((sum, s) => sum + s.attempts.length, 0) / successfulSessions.length
     );
@@ -278,7 +282,7 @@ export class AnalyticsService {
       if (session.finalSuccess) {
         dailyStats[date].successes++;
       }
-      dailyStats[date].totalTime += session.totalDuration || 0;
+      dailyStats[date].totalTime += session.totalDuration ?? 0;
     });
 
     return dailyStats;
@@ -337,7 +341,7 @@ export class AnalyticsService {
   private async loadSession(sessionId: string): Promise<SessionMetrics | null> {
     try {
       const sessions = await this.loadAllSessions();
-      return sessions.find(s => s.sessionId === sessionId) || null;
+      return sessions.find(s => s.sessionId === sessionId) ?? null;
     } catch {
       return null;
     }
@@ -429,14 +433,18 @@ export class AnalyticsService {
 
     // Process sessions data
     sessions.forEach(session => {
-      if (session.startTime < cutoffDate.getTime()) return;
+      if (session.startTime < cutoffDate.getTime()) {
+        return;
+      }
 
       session.attempts.forEach(attempt => {
         attempt.stages.forEach(stage => {
-          if (stage.id !== stageId) return;
+          if (stage.id !== stageId) {
+            return;
+          }
 
           const date = new Date(session.startTime).toISOString().split('T')[0];
-          const dayData = stageData.get(date) || {
+          const dayData = stageData.get(date) ?? {
             attempts: 0,
             successes: 0,
             totalDuration: 0,
@@ -464,14 +472,16 @@ export class AnalyticsService {
           stages?: { id: string; success: boolean; duration?: number }[];
         };
         const metricDate = new Date(metricRecord.timestamp);
-        if (metricDate < cutoffDate) return;
+        if (metricDate < cutoffDate) {
+          return;
+        }
 
-        const stages = metricRecord.stages || [];
+        const stages = metricRecord.stages ?? [];
         const targetStage = stages.find(s => s.id === stageId);
 
         if (targetStage) {
           const date = metricDate.toISOString().split('T')[0];
-          const dayData = stageData.get(date) || {
+          const dayData = stageData.get(date) ?? {
             attempts: 0,
             successes: 0,
             totalDuration: 0,
@@ -479,8 +489,8 @@ export class AnalyticsService {
           };
 
           dayData.attempts++;
-          dayData.totalDuration += targetStage.duration || 0;
-          dayData.durations.push(targetStage.duration || 0);
+          dayData.totalDuration += targetStage.duration ?? 0;
+          dayData.durations.push(targetStage.duration ?? 0);
 
           if (targetStage.success) {
             dayData.successes++;
@@ -583,7 +593,9 @@ export class AnalyticsService {
     sessions.forEach(session => {
       session.attempts.forEach(attempt => {
         attempt.stages.forEach(stage => {
-          if (stage.id !== stageId) return;
+          if (stage.id !== stageId) {
+            return;
+          }
 
           allRuns.push({
             timestamp: new Date(session.startTime).toISOString(),
@@ -610,14 +622,14 @@ export class AnalyticsService {
             error?: string;
           }[];
         };
-        const stages = metricRecord.stages || [];
+        const stages = metricRecord.stages ?? [];
         const targetStage = stages.find(s => s.id === stageId);
 
         if (targetStage) {
           allRuns.push({
             timestamp: metricRecord.timestamp,
             success: targetStage.success,
-            duration: targetStage.duration || 0,
+            duration: targetStage.duration ?? 0,
             output: targetStage.output,
             error: targetStage.error,
           });
@@ -700,7 +712,7 @@ export class AnalyticsService {
     allRuns
       .filter(run => !run.success && run.error)
       .forEach(run => {
-        const error = run.error?.toLowerCase() || '';
+        const error = run.error?.toLowerCase() ?? '';
 
         // Common error patterns
         const patterns = [

@@ -2,11 +2,11 @@ import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
-import BDDExecutionHistory from '../BDDExecutionHistory';
-import { taskApi } from '../../lib/api';
+import BDDExecutionHistory from '../../features/bdd/components/BDDExecutionHistory';
+import { taskApi } from '../../shared/lib/api';
 
 // Mock the API
-jest.mock('../../lib/api', () => ({
+jest.mock('../../shared/lib/api', () => ({
   taskApi: {
     getScenarioExecutions: jest.fn(),
     getScenarioAnalytics: jest.fn(),

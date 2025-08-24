@@ -64,7 +64,9 @@ describe('file-filtering', () => {
     it('should filter valid existing files', () => {
       // Mock all path and fs functions to return expected values
       vi.mocked(path.resolve).mockImplementation((_root: string, file?: string) => {
-        if (file) return `/project/${file}`; // path.resolve(projectRoot, file)
+        if (file) {
+          return `/project/${file}`;
+        } // path.resolve(projectRoot, file)
         return '/project'; // path.resolve(projectRoot)
       });
       vi.mocked(path.normalize).mockImplementation((p: string) => p);

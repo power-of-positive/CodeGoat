@@ -8,10 +8,14 @@ export function createDatabaseService(_logger: WinstonLogger) {
     prisma = new PrismaClient();
 
     // Handle graceful shutdown
-    process.on('beforeExit', async () => {
-      if (prisma) {
-        await prisma.$disconnect();
-      }
+    process.on('beforeExit', () => {
+      (async () => {
+        if (prisma) {
+          await prisma.$disconnect();
+        }
+      })().catch(error => {
+        console.error('Error disconnecting Prisma:', error);
+      });
     });
   }
 

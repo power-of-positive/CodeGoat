@@ -53,7 +53,9 @@ describe('check-runners API E2E', () => {
       const mockServer = {
         listen: vi.fn(),
         close: vi.fn((callback?: () => void) => {
-          if (callback) callback();
+          if (callback) {
+            callback();
+          }
         }),
 
         on: vi.fn((event: string, callback: (err?: Error) => void) => {
@@ -78,7 +80,9 @@ describe('check-runners API E2E', () => {
       const mockServer = {
         listen: vi.fn((_port: number, callback: () => void) => callback()),
         close: vi.fn((callback?: () => void) => {
-          if (callback) callback();
+          if (callback) {
+            callback();
+          }
         }),
         on: vi.fn(),
       };

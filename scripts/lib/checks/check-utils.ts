@@ -8,8 +8,9 @@ import { StagedFiles } from '../files/staged-files';
  * Validate staged files object structure
  */
 export function validateStagedFiles(stagedFiles: unknown): asserts stagedFiles is StagedFiles {
-  if (!stagedFiles || typeof stagedFiles !== 'object')
+  if (!stagedFiles || typeof stagedFiles !== 'object') {
     throw new Error('Invalid stagedFiles: must be object');
+  }
   const files = stagedFiles as Record<string, unknown>;
   if (
     !Array.isArray(files.frontendFiles) ||
@@ -43,7 +44,9 @@ export function runChecks(
 ) {
   try {
     validateStagedFiles(stagedFiles);
-    if (stagedFiles[fileArray].length === 0) return { failed: false, output: '' };
+    if (stagedFiles[fileArray].length === 0) {
+      return { failed: false, output: '' };
+    }
 
     const results: string[] = [];
     let hasFailure = false;

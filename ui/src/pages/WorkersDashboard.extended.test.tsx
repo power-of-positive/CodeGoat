@@ -3,10 +3,10 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import { WorkersDashboard } from './WorkersDashboard';
-import { claudeWorkersApi } from '../lib/api';
+import { claudeWorkersApi } from '../shared/lib/api';
 
 // Mock the API
-jest.mock('../lib/api', () => ({
+jest.mock('../shared/lib/api', () => ({
   claudeWorkersApi: {
     getWorkersStatus: jest.fn(),
   },

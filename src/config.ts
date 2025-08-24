@@ -11,7 +11,7 @@ export class ConfigLoader {
   constructor(configPath?: string) {
     const baseDir = process.cwd();
     this.defaultConfigPath = path.join(baseDir, 'config.default.yaml');
-    this.userConfigPath = configPath || path.join(baseDir, 'config.user.yaml');
+    this.userConfigPath = configPath ?? path.join(baseDir, 'config.user.yaml');
     // Fallback to original config.yaml if user doesn't specify
     if (
       !configPath &&
@@ -66,16 +66,16 @@ export class ConfigLoader {
     (config.model_list as Record<string, unknown>[]).forEach(
       (model: Record<string, unknown>, index: number) => {
         const modelName = model.model_name as string | undefined;
-        const modelKey = modelName?.replace(/[^a-zA-Z0-9-_]/g, '-') || `model-${index}`;
-        const litellmParams = (model.litellm_params as { model?: string; api_key?: string }) || {};
+        const modelKey = modelName?.replace(/[^a-zA-Z0-9-_]/g, '-') ?? `model-${index}`;
+        const litellmParams = (model.litellm_params as { model?: string; api_key?: string }) ?? {};
         models[modelKey] = {
-          name: (model.model_name as string) || `Model ${index + 1}`,
-          model: litellmParams.model || '',
-          provider: this.extractProvider(litellmParams.model || '') || 'openrouter',
+          name: (model.model_name as string) ?? `Model ${index + 1}`,
+          model: litellmParams.model ?? '',
+          provider: this.extractProvider(litellmParams.model ?? '') ?? 'openrouter',
           baseUrl: this.getProviderBaseUrl(
-            this.extractProvider(litellmParams.model || '') || 'openrouter'
+            this.extractProvider(litellmParams.model ?? '') ?? 'openrouter'
           ),
-          apiKey: litellmParams.api_key || '',
+          apiKey: litellmParams.api_key ?? '',
           enabled: true,
         };
       }
@@ -85,7 +85,7 @@ export class ConfigLoader {
       models,
       settings: this.extractLegacySettings(config),
       fallbacks: this.normalizeFallbacks(
-        (config.litellm_settings as { fallbacks?: unknown[] })?.fallbacks || []
+        (config.litellm_settings as { fallbacks?: unknown[] })?.fallbacks ?? []
       ),
     };
   }
@@ -124,10 +124,18 @@ export class ConfigLoader {
   }
 
   private extractProvider(model: string): string {
-    if (!model) return 'openrouter';
-    if (model.startsWith('openrouter/')) return 'openrouter';
-    if (model.startsWith('openai/')) return 'openai';
-    if (model.startsWith('anthropic/')) return 'anthropic';
+    if (!model) {
+      return 'openrouter';
+    }
+    if (model.startsWith('openrouter/')) {
+      return 'openrouter';
+    }
+    if (model.startsWith('openai/')) {
+      return 'openai';
+    }
+    if (model.startsWith('anthropic/')) {
+      return 'anthropic';
+    }
     return 'other';
   }
 
@@ -141,7 +149,9 @@ export class ConfigLoader {
   }
 
   private normalizeFallbacks(fallbacks: unknown): Record<string, string[]> {
-    if (!fallbacks || !Array.isArray(fallbacks)) return {};
+    if (!fallbacks || !Array.isArray(fallbacks)) {
+      return {};
+    }
     const normalized: Record<string, string[]> = {};
     (fallbacks as Record<string, string[]>[]).forEach((fallbackGroup: Record<string, string[]>) => {
       Object.keys(fallbackGroup).forEach((primaryModel: string) => {
@@ -158,13 +168,13 @@ export class ConfigLoader {
     return {
       models: { ...defaultConfig.models, ...userConfig.models },
       settings: { ...defaultConfig.settings, ...userConfig.settings },
-      fallbacks: userConfig.fallbacks || defaultConfig.fallbacks || {},
+      fallbacks: userConfig.fallbacks ?? defaultConfig.fallbacks ?? {},
     };
   }
 
   private convertToProxyConfig(modelConfig: ModelConfig): ProxyConfig {
     return {
-      proxy: { port: parseInt(process.env.PORT || '3001', 10), host: '0.0.0.0' },
+      proxy: { port: parseInt(process.env.PORT ?? '3001', 10), host: '0.0.0.0' },
       routes: this.createDefaultRoutes(),
       settings: {
         logging: { level: 'info', format: 'json' },
@@ -217,7 +227,9 @@ export class ConfigLoader {
   }
 
   private validateConfig(): void {
-    if (!this.config) throw new Error('Configuration is empty');
+    if (!this.config) {
+      throw new Error('Configuration is empty');
+    }
     if (!this.config.proxy || typeof this.config.proxy.port !== 'number') {
       throw new Error('Invalid proxy configuration: port is required');
     }
@@ -238,7 +250,9 @@ export class ConfigLoader {
   }
 
   getConfig(): ProxyConfig {
-    if (!this.config) throw new Error('Configuration not loaded. Call load() first.');
+    if (!this.config) {
+      throw new Error('Configuration not loaded. Call load() first.');
+    }
     return this.config;
   }
 
@@ -275,7 +289,7 @@ export class ConfigLoader {
     try {
       const userConfig = this.loadUserConfig();
 
-      if (!userConfig.models || !userConfig.models[modelId]) {
+      if (!userConfig.models?.[modelId]) {
         throw new Error('Model not found in user configuration');
       }
 
@@ -293,7 +307,7 @@ export class ConfigLoader {
     try {
       const userConfig = this.loadUserConfig();
 
-      if (!userConfig.models || !userConfig.models[modelId]) {
+      if (!userConfig.models?.[modelId]) {
         throw new Error('Model not found in user configuration');
       }
 
@@ -318,7 +332,9 @@ export class ConfigLoader {
     isDefault: boolean;
   }> {
     const config = this.getConfig();
-    if (!config.modelConfig?.models) return [];
+    if (!config.modelConfig?.models) {
+      return [];
+    }
 
     return Object.entries(config.modelConfig.models).map(([id, model]) => ({
       id,
@@ -333,7 +349,9 @@ export class ConfigLoader {
   }
 
   private isDefaultModel(modelId: string): boolean {
-    if (!fs.existsSync(this.defaultConfigPath)) return false;
+    if (!fs.existsSync(this.defaultConfigPath)) {
+      return false;
+    }
 
     const defaultContent = fs.readFileSync(this.defaultConfigPath, 'utf8');
     const defaultConfig = this.normalizeConfig(yaml.parse(defaultContent));
@@ -347,7 +365,9 @@ export class ConfigLoader {
       const userContent = fs.readFileSync(this.userConfigPath, 'utf8');
       userConfig = this.normalizeConfig(yaml.parse(userContent));
     }
-    if (!userConfig.models) userConfig.models = {};
+    if (!userConfig.models) {
+      userConfig.models = {};
+    }
     return userConfig;
   }
 
@@ -370,7 +390,7 @@ export class ConfigLoader {
       name: modelData.name,
       model: modelData.model,
       provider: modelData.provider,
-      baseUrl: modelData.baseUrl || this.getProviderBaseUrl(modelData.provider),
+      baseUrl: modelData.baseUrl ?? this.getProviderBaseUrl(modelData.provider),
       apiKey: modelData.apiKey.startsWith('os.environ/')
         ? modelData.apiKey
         : `os.environ/${modelData.apiKey.toUpperCase().replace(/[^A-Z0-9_]/g, '_')}_API_KEY`,

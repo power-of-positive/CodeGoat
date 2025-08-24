@@ -54,7 +54,9 @@ describe('check-runners', () => {
 
     // Mock path functions
     vi.mocked(path.resolve).mockImplementation(p => {
-      if (!p || p === '') return '/mock/';
+      if (!p || p === '') {
+        return '/mock/';
+      }
       return `/mock/${p}`.replace(/\/+/g, '/');
     });
     vi.mocked(path.join).mockImplementation((...parts) => parts.join('/'));

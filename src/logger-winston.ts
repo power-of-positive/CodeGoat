@@ -18,7 +18,7 @@ export class WinstonLogger implements ILogger {
   private logsDir: string;
 
   constructor(config: Partial<WinstonLoggerConfig> = {}) {
-    this.logsDir = config.logsDir || path.join(process.cwd(), 'logs');
+    this.logsDir = config.logsDir ?? path.join(process.cwd(), 'logs');
     const transports = this.createTransports(config);
     this.logger = this.createLogger(config, transports);
   }
@@ -58,8 +58,8 @@ export class WinstonLogger implements ILogger {
       new winston.transports.File({
         filename: path.join(this.logsDir, 'app.log'),
         format: winston.format.combine(winston.format.timestamp(), winston.format.json()),
-        maxsize: parseInt(config.maxSize || '10485760'),
-        maxFiles: parseInt(config.maxFiles || '5'),
+        maxsize: parseInt(config.maxSize ?? '10485760'),
+        maxFiles: parseInt(config.maxFiles ?? '5'),
       })
     );
 
@@ -69,8 +69,8 @@ export class WinstonLogger implements ILogger {
         filename: path.join(this.logsDir, 'error.log'),
         level: 'error',
         format: winston.format.combine(winston.format.timestamp(), winston.format.json()),
-        maxsize: parseInt(config.maxSize || '10485760'),
-        maxFiles: parseInt(config.maxFiles || '3'),
+        maxsize: parseInt(config.maxSize ?? '10485760'),
+        maxFiles: parseInt(config.maxFiles ?? '3'),
       })
     );
 
@@ -82,13 +82,13 @@ export class WinstonLogger implements ILogger {
           winston.format.timestamp(),
           winston.format.printf(({ timestamp, message, ...meta }) => {
             if (meta.method && meta.path) {
-              return `${timestamp} ${meta.method} ${meta.path} ${meta.statusCode || '-'} ${meta.duration || '-'}ms`;
+              return `${timestamp} ${meta.method} ${meta.path} ${meta.statusCode ?? '-'} ${meta.duration ?? '-'}ms`;
             }
             return `${timestamp} ${message}`;
           })
         ),
-        maxsize: parseInt(config.maxSize || '10485760'),
-        maxFiles: parseInt(config.maxFiles || '10'),
+        maxsize: parseInt(config.maxSize ?? '10485760'),
+        maxFiles: parseInt(config.maxFiles ?? '10'),
       })
     );
 
@@ -100,7 +100,7 @@ export class WinstonLogger implements ILogger {
     transports: winston.transport[]
   ): winston.Logger {
     return winston.createLogger({
-      level: config.level || 'info',
+      level: config.level ?? 'info',
       format: winston.format.combine(
         winston.format.timestamp(),
         winston.format.errors({ stack: true }),
@@ -185,8 +185,8 @@ export class WinstonLogger implements ILogger {
     return {
       requestHeaders: this.sanitizeHeaders(req.headers),
       requestBody: this.captureRequestBody(req),
-      clientIp: req.ip || req.socket?.remoteAddress || 'unknown',
-      userAgent: (req.get && req.get('user-agent')) || req.headers?.['user-agent'] || 'unknown',
+      clientIp: req.ip ?? req.socket?.remoteAddress ?? 'unknown',
+      userAgent: (req.get?.('user-agent')) ?? req.headers?.['user-agent'] ?? 'unknown',
     };
   }
 

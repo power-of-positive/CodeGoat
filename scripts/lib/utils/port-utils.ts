@@ -23,7 +23,9 @@ export async function isPortAvailable(port: number): Promise<boolean> {
  */
 export async function findAvailablePort(preferredPort = 3001): Promise<number> {
   for (let port = preferredPort; port <= preferredPort + 10; port++) {
-    if (await isPortAvailable(port)) return port;
+    if (await isPortAvailable(port)) {
+      return port;
+    }
   }
   throw new Error(`No available ports found in range ${preferredPort}-${preferredPort + 10}`);
 }

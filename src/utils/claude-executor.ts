@@ -248,7 +248,7 @@ export class ClaudeCodeExecutor {
       const settingsContent = fs.readFileSync(claudeSettingsPath, 'utf-8');
       const settings: ClaudeSettings = JSON.parse(settingsContent);
 
-      return settings.permissions?.deny || [];
+      return settings.permissions?.deny ?? [];
     } catch (error) {
       this.logger?.warn('Failed to load .claude/settings.json deny patterns', {
         error: (error as Error).message,
@@ -361,7 +361,9 @@ export class ClaudeCodeExecutor {
           const arg = parts[i];
 
           // Skip flags/options starting with -
-          if (arg.startsWith('-')) continue;
+          if (arg.startsWith('-')) {
+            continue;
+          }
 
           // Check this argument as potential file target
           const result = this.isCommandDeniedByClaudeSettings(opPattern.action, arg);

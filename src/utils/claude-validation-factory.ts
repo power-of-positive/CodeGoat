@@ -26,7 +26,7 @@ export class ClaudeValidationFactory {
     const logger = options.logger;
 
     // Set up default Claude command if not provided
-    const claudeCommand = options.claudeCommand || this.detectClaudeCommand(logger);
+    const claudeCommand = options.claudeCommand ?? this.detectClaudeCommand(logger);
 
     // Set up permission manager based on mode
     let permissionManager: PermissionManager | undefined;
@@ -39,7 +39,7 @@ export class ClaudeValidationFactory {
 
     // Determine validation settings path
     const validationSettings =
-      options.validationSettings || this.findValidationSettings(options.worktreeDir);
+      options.validationSettings ?? this.findValidationSettings(options.worktreeDir);
 
     // Create wrapper options
     const wrapperOptions: ValidationWrapperOptions = {
@@ -57,7 +57,7 @@ export class ClaudeValidationFactory {
       claudeCommand,
       enableValidation: wrapperOptions.enableValidation,
       validationSettings,
-      permissionMode: options.permissionMode || 'disabled',
+      permissionMode: options.permissionMode ?? 'disabled',
     });
 
     return new ClaudeValidationWrapper(wrapperOptions, logger);

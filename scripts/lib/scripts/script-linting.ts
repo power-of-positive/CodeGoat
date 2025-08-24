@@ -24,7 +24,9 @@ export function runScriptLinting(
   scriptFiles: string[]
 ): { failed: boolean; output: string } {
   const validFiles = filterValidFiles(projectRoot, scriptFiles) || [];
-  if (validFiles.length === 0) return { failed: false, output: '' };
+  if (validFiles.length === 0) {
+    return { failed: false, output: '' };
+  }
 
   const escaped = validFiles.map(f => `'${f.replace(/'/g, `'\\''`)}'`).join(' ');
   const command = `ESLINT_USE_FLAT_CONFIG=false npx eslint --max-warnings 100 --rule 'no-console:off' ${escaped}`;

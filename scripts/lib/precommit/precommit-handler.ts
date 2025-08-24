@@ -7,8 +7,7 @@ import * as path from 'path';
 import * as process from 'process';
 import { findProjectRoot } from '../utils/review-utils';
 import { runAllChecks } from './precommit-checks';
-import { getStagedFiles } from '../files/staged-files';
-import type { StagedFiles } from '../files/staged-files';
+import { getStagedFiles, type StagedFiles } from '../files/staged-files';
 import { runTypeScriptCheck } from '../formatting/format-runners';
 import { runFormattingSteps } from '../precommit/precommit-formatting';
 import { runLlmReviewProcess, REVIEW_FILE_NAME } from './precommit-llm';
@@ -88,7 +87,9 @@ async function executeMainChecks(
   stagedFiles: StagedFiles
 ): Promise<PrecommitResult | null> {
   const formattingResult = runFormattingAndTypeChecks(projectRoot, stagedFiles.allFiles);
-  if (formattingResult) return formattingResult;
+  if (formattingResult) {
+    return formattingResult;
+  }
 
   const { criticalFailure, allOutput, analysisResult } = await runAllChecks(
     projectRoot,
@@ -109,7 +110,9 @@ async function executeMainChecks(
   }
 
   const llmResult = await runLlmReviewProcess(projectRoot, allOutput);
-  if (llmResult) return llmResult;
+  if (llmResult) {
+    return llmResult;
+  }
 
   return null;
 }
@@ -123,10 +126,14 @@ export async function runPrecommitChecks(): Promise<PrecommitResult> {
   try {
     const projectRoot = initializeProjectEnvironment();
     const { stagedFiles, shouldEarlyReturn, result } = validateStagedFilesStep(projectRoot);
-    if (shouldEarlyReturn && result) return result;
+    if (shouldEarlyReturn && result) {
+      return result;
+    }
 
     const checkResult = await executeMainChecks(projectRoot, stagedFiles);
-    if (checkResult) return checkResult;
+    if (checkResult) {
+      return checkResult;
+    }
 
     return {
       decision: 'approve',

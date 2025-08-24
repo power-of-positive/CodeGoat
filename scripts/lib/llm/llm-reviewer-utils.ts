@@ -7,18 +7,24 @@ import type { ReviewResult, ReviewedFile, StructuredReviewData } from './llm-rev
  * Generate formatted report from review results
  */
 export function generateReport(reviews: Array<{ file: string; result: ReviewResult }>): string {
-  if (reviews.length === 0) return 'No files could be reviewed';
+  if (reviews.length === 0) {
+    return 'No files could be reviewed';
+  }
 
   let report = `# LLM Code Review Results\n\n`;
   const highIssues = reviews.filter(r => r.result.severity === 'high');
   const mediumIssues = reviews.filter(r => r.result.severity === 'medium');
 
   const addSection = (title: string, issues: typeof highIssues, includeSum = false) => {
-    if (issues.length === 0) return;
+    if (issues.length === 0) {
+      return;
+    }
     report += `## ${title} (${issues.length})\n\n`;
     for (const { file, result } of issues) {
       report += `### ${file}\n**Issues:** ${result.issues.join(', ')}\n**Suggestions:** ${result.suggestions.join(', ')}\n`;
-      if (includeSum) report += `**Summary:** ${result.summary}\n`;
+      if (includeSum) {
+        report += `**Summary:** ${result.summary}\n`;
+      }
       report += '\n';
     }
   };

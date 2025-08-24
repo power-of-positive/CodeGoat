@@ -49,7 +49,9 @@ export function analyzeStructuredReview(reviewData: StructuredReviewData): strin
  * Validate structured review data format
  */
 export function validateReviewData(data: unknown): data is StructuredReviewData {
-  if (!data || typeof data !== 'object') return false;
+  if (!data || typeof data !== 'object') {
+    return false;
+  }
 
   const reviewData = data as Record<string, unknown>;
 

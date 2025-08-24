@@ -1,5 +1,5 @@
 import React from 'react';
-import { BDDScenariosDashboard } from '../components/BDDScenariosDashboard';
+import { BDDScenariosDashboard } from '../features/bdd/components/BDDScenariosDashboard';
 
 const BDDTestsDashboard: React.FC = () => {
   return <BDDScenariosDashboard />;

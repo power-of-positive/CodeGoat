@@ -117,7 +117,9 @@ export async function runFrontendChecks(
     // Run API E2E tests second, unless explicitly skipped
     if (process.env.SKIP_API_E2E_TESTS !== 'true') {
       const apiE2eResult = await runApiE2eTests(projectRoot);
-      if (apiE2eResult.failed) return apiE2eResult;
+      if (apiE2eResult.failed) {
+        return apiE2eResult;
+      }
     } else {
       console.log('⏭️ API E2E tests skipped (SKIP_API_E2E_TESTS=true)');
     }
@@ -130,7 +132,9 @@ export async function runFrontendChecks(
 
     console.log('🔍 Starting frontend checks...');
     const syncResult = runSyncFrontendChecks(projectRoot);
-    if (syncResult.failed) return syncResult;
+    if (syncResult.failed) {
+      return syncResult;
+    }
 
     return { failed: false, output: '' };
   } catch (error) {

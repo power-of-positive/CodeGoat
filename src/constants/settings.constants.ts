@@ -130,7 +130,7 @@ async function loadDefaultSettings(): Promise<Settings> {
     // Add logging defaults and any missing properties
     return {
       ...jsonSettings,
-      logging: jsonSettings.logging || getDefaultLogging(),
+      logging: jsonSettings.logging ?? getDefaultLogging(),
     };
   } catch {
     // Fallback to hardcoded defaults if JSON file is missing

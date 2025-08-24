@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import { BDDScenarioManager } from '../../components/BDDScenarioManager';
+import { BDDScenarioManager } from '../../features/bdd/components/BDDScenarioManager';
 import { BDDScenario } from '../../../shared/types';
 
 const mockScenarios: BDDScenario[] = [

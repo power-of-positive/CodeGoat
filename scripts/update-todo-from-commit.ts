@@ -105,7 +105,9 @@ function calculateDuration(startTime: string, endTime: string): string {
   const end = new Date(endTime).getTime();
   const durationMs = end - start;
 
-  if (durationMs < 0) return 'Invalid duration';
+  if (durationMs < 0) {
+    return 'Invalid duration';
+  }
 
   const seconds = Math.floor(durationMs / 1000);
   const minutes = Math.floor(seconds / 60);

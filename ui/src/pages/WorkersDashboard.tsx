@@ -8,15 +8,15 @@ import {
   XCircle,
   Terminal,
 } from 'lucide-react';
-import { Button } from '../components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { PageLoading } from '../components/ui/loading';
-import { claudeWorkersApi } from '../lib/api';
-import LogsViewer from '../components/logs/LogsViewer';
-import { WorkerCard } from '../components/WorkerCard';
-import { ValidationRunsViewer } from '../components/ValidationRunsViewer';
-import { BlockedCommandsViewer } from '../components/BlockedCommandsViewer';
-import type { UnifiedLogEntry } from '../types/logs';
+import { Button } from '../shared/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '../shared/ui/card';
+import { PageLoading } from '../shared/ui/loading';
+import { claudeWorkersApi } from '../shared/lib/api';
+import LogsViewer from '../features/logs/components/LogsViewer';
+import { WorkerCard } from '../features/workers/components/WorkerCard';
+import { ValidationRunsViewer } from '../features/validation/components/ValidationRunsViewer';
+import { BlockedCommandsViewer } from '../features/permissions/components/BlockedCommandsViewer';
+import type { UnifiedLogEntry } from '../shared/types/logs';
 
 interface WorkerStatus {
   id: string;
@@ -63,7 +63,9 @@ function LogViewer({ workerId, onClose }: LogViewerProps) {
 
   // Process logs into UnifiedLogEntry format to match TaskDetail
   const logEntries = React.useMemo(() => {
-    if (!logsData?.logs) return [];
+    if (!logsData?.logs) {
+      return [];
+    }
 
     const lines = logsData.logs
       .split('\n')

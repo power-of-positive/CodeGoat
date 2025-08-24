@@ -112,7 +112,9 @@ export class ValidationMetricsConverter {
   }
 
   private static calculateAverageTime(successfulAttempts: Record<string, unknown>[]): number {
-    if (successfulAttempts.length === 0) return 0;
+    if (successfulAttempts.length === 0) {
+      return 0;
+    }
     const totalTime = successfulAttempts.reduce(
       (sum, m) => sum + ((m.totalTime as number) || 0),
       0
@@ -193,10 +195,14 @@ export class ValidationMetricsConverter {
 
     metrics.forEach(metric => {
       const timestamp = metric.timestamp as string;
-      if (!timestamp) return; // Skip invalid timestamps
+      if (!timestamp) {
+        return;
+      } // Skip invalid timestamps
 
       const date = new Date(timestamp);
-      if (isNaN(date.getTime())) return; // Skip invalid dates
+      if (isNaN(date.getTime())) {
+        return;
+      } // Skip invalid dates
 
       const dateStr = date.toISOString().split('T')[0];
       if (!dailyStats[dateStr]) {

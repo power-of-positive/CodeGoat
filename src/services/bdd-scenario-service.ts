@@ -64,12 +64,12 @@ export class BDDScenarioService {
       // Start of new scenario
       if (line.startsWith('Scenario:')) {
         // Save previous scenario if exists
-        if (currentScenario && currentScenario.title) {
+        if (currentScenario?.title) {
           scenarios.push({
             todoTaskId: 'comprehensive-bdd', // Will be updated when associating with actual tasks
             title: currentScenario.title,
             feature: featureName,
-            description: currentScenario.description || currentScenario.title,
+            description: currentScenario.description ?? currentScenario.title,
             gherkinContent: currentGherkin.join('\n'),
           });
         }
@@ -102,12 +102,12 @@ export class BDDScenarioService {
     }
 
     // Add final scenario
-    if (currentScenario && currentScenario.title) {
+    if (currentScenario?.title) {
       scenarios.push({
         todoTaskId: 'comprehensive-bdd',
         title: currentScenario.title,
         feature: featureName,
-        description: currentScenario.description || currentScenario.title,
+        description: currentScenario.description ?? currentScenario.title,
         gherkinContent: currentGherkin.join('\n'),
       });
     }
@@ -210,8 +210,8 @@ export class BDDScenarioService {
           executionDuration: execution.executionDuration,
           errorMessage: execution.errorMessage,
           stepResults: execution.stepResults ? JSON.stringify(execution.stepResults) : null,
-          environment: execution.environment || 'test',
-          executedBy: execution.executedBy || 'system',
+          environment: execution.environment ?? 'test',
+          executedBy: execution.executedBy ?? 'system',
           gherkinSnapshot: '', // Will be populated from current scenario
         },
       });
@@ -280,18 +280,16 @@ export class BDDScenarioService {
         where: { id: 'comprehensive-bdd' },
       });
 
-      if (!masterTask) {
-        masterTask = await this.prisma.todoTask.create({
-          data: {
-            id: 'comprehensive-bdd',
-            content: 'Comprehensive BDD Scenarios for All User-Facing Features',
-            status: 'IN_PROGRESS',
-            priority: 'HIGH',
-            taskType: 'STORY',
-            executorId: 'system',
-          },
-        });
-      }
+      masterTask ??= await this.prisma.todoTask.create({
+        data: {
+          id: 'comprehensive-bdd',
+          content: 'Comprehensive BDD Scenarios for All User-Facing Features',
+          status: 'IN_PROGRESS',
+          priority: 'HIGH',
+          taskType: 'STORY',
+          executorId: 'system',
+        },
+      });
 
       // Create scenarios
       for (const scenarioInput of scenarioInputs) {

@@ -16,8 +16,12 @@ export function findTestFiles(changedFiles: string[], scriptsDir: string): strin
       const baseName = path.basename(f, '.ts');
       const testFile = path.join(path.dirname(f), `${baseName}.test.ts`);
       const specFile = path.join(path.dirname(f), `${baseName}.spec.ts`);
-      if (fs.existsSync(testFile)) return path.relative(scriptsDir, testFile);
-      if (fs.existsSync(specFile)) return path.relative(scriptsDir, specFile);
+      if (fs.existsSync(testFile)) {
+        return path.relative(scriptsDir, testFile);
+      }
+      if (fs.existsSync(specFile)) {
+        return path.relative(scriptsDir, specFile);
+      }
       return null;
     })
     .filter(Boolean) as string[];

@@ -3,7 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import { WorkersDashboard } from './WorkersDashboard';
-import { claudeWorkersApi } from '../lib/api';
+import { claudeWorkersApi } from '../shared/lib/api';
 
 // Mock useNavigate
 const mockNavigate = jest.fn();
@@ -13,7 +13,7 @@ jest.mock('react-router-dom', () => ({
 }));
 
 // Mock the API
-jest.mock('../lib/api', () => ({
+jest.mock('../shared/lib/api', () => ({
   claudeWorkersApi: {
     getWorkersStatus: jest.fn(),
     getWorkerLogs: jest.fn(),
@@ -24,7 +24,7 @@ jest.mock('../lib/api', () => ({
 }));
 
 // Mock ValidationRunsViewer
-jest.mock('../components/ValidationRunsViewer', () => ({
+jest.mock('../features/validation/components/ValidationRunsViewer', () => ({
   ValidationRunsViewer: ({ workerId, onClose }: any) => (
     <div data-testid="validation-runs-viewer">
       Validation Runs for {workerId}
@@ -34,7 +34,7 @@ jest.mock('../components/ValidationRunsViewer', () => ({
 }));
 
 // Mock BlockedCommandsViewer
-jest.mock('../components/BlockedCommandsViewer', () => ({
+jest.mock('../features/permissions/components/BlockedCommandsViewer', () => ({
   BlockedCommandsViewer: ({ workerId, onClose }: any) => (
     <div data-testid="blocked-commands-viewer">
       Blocked Commands for {workerId}
@@ -44,7 +44,7 @@ jest.mock('../components/BlockedCommandsViewer', () => ({
 }));
 
 // Mock LogsViewer
-jest.mock('../components/logs/LogsViewer', () => {
+jest.mock('../features/logs/components/LogsViewer', () => {
   return function MockLogsViewer({ entries, followOutput, className, useVibeLogComponent }: any) {
     return (
       <div data-testid="logs-viewer" className={className}>

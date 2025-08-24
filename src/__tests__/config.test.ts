@@ -66,7 +66,7 @@ models:
       expect(config.routes.length).toBeGreaterThan(0);
       expect(config.modelConfig).toBeDefined();
       // Should have 2 models: 1 default + 1 user
-      expect(Object.keys(config.modelConfig?.models || {})).toHaveLength(2);
+      expect(Object.keys(config.modelConfig?.models ?? {})).toHaveLength(2);
     });
 
     it('should throw error for invalid file path', () => {
@@ -77,7 +77,7 @@ models:
       expect(() => configLoader.load()).not.toThrow();
 
       const config = configLoader.load();
-      expect(Object.keys(config.modelConfig?.models || {})).toHaveLength(0);
+      expect(Object.keys(config.modelConfig?.models ?? {})).toHaveLength(0);
     });
 
     it('should create proper route configuration', () => {
@@ -131,7 +131,7 @@ models:
 
       const config = configLoader.getConfig();
       expect(config).toBeDefined();
-      expect(Object.keys(config.modelConfig?.models || {})).toHaveLength(1);
+      expect(Object.keys(config.modelConfig?.models ?? {})).toHaveLength(1);
     });
 
     it('should throw error if configuration not loaded', () => {

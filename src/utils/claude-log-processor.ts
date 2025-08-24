@@ -21,7 +21,9 @@ export class ClaudeLogProcessor {
         }];
       }
       case 'assistant': {
-        if (!('message' in claudeJson)) return [];
+        if (!('message' in claudeJson)) {
+          return [];
+        }
         const message = claudeJson.message;
         const entries: NormalizedEntry[] = [];
         if (!this.modelName && message.model) {
@@ -33,19 +35,25 @@ export class ClaudeLogProcessor {
         }
         for (const item of message.content) {
           const entry = this.contentItemToNormalizedEntry(item, 'assistant', _worktreePath);
-          if (entry) entries.push(entry);
+          if (entry) {
+            entries.push(entry);
+          }
         }
         return entries;
       }
       case 'user': {
-        if (!('message' in claudeJson)) return [];
+        if (!('message' in claudeJson)) {
+          return [];
+        }
         const message = claudeJson.message;
         return message.content
           .map((item: ClaudeContentItem) => this.contentItemToNormalizedEntry(item, 'user', _worktreePath))
           .filter(Boolean) as NormalizedEntry[];
       }
       case 'tool_use': {
-        if (!('tool_name' in claudeJson)) return [];
+        if (!('tool_name' in claudeJson)) {
+          return [];
+        }
         const actionType = this.inferActionType(claudeJson.tool_name, claudeJson.input);
         return [{
           entry_type: { 
@@ -108,7 +116,7 @@ export class ClaudeLogProcessor {
     if (lowerName.includes('read') || lowerName.includes('file') && lowerName.includes('read')) {
       return { 
         action: 'file_read', 
-        path: (typeof typedInput.file_path === 'string' ? typedInput.file_path : undefined) || 
+        path: (typeof typedInput.file_path === 'string' ? typedInput.file_path : undefined) ?? 
               (typeof typedInput.path === 'string' ? typedInput.path : undefined)
       };
     }
@@ -119,7 +127,7 @@ export class ClaudeLogProcessor {
       
       return { 
         action: 'file_edit', 
-        path: (typeof typedInput.file_path === 'string' ? typedInput.file_path : undefined) || 
+        path: (typeof typedInput.file_path === 'string' ? typedInput.file_path : undefined) ?? 
               (typeof typedInput.path === 'string' ? typedInput.path : undefined),
         changes: Array.isArray(typedInput.edits) 
           ? typedInput.edits 

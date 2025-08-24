@@ -4,31 +4,31 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import App from './App';
 
 // Mock the Analytics and Settings components
-jest.mock('./components/Analytics', () => ({
+jest.mock('./features/analytics/components/Analytics', () => ({
   Analytics: () => <div>Analytics Page</div>,
 }));
 
-jest.mock('./components/Settings', () => ({
+jest.mock('./shared/components/Settings', () => ({
   Settings: () => <div>Settings Page</div>,
 }));
 
-jest.mock('./components/ValidationRunDetail', () => ({
+jest.mock('./features/validation/components/ValidationRunDetail', () => ({
   ValidationRunDetail: () => <div>Validation Run Detail Page</div>,
 }));
 
-jest.mock('./components/TaskBoard', () => ({
+jest.mock('./features/tasks/components/TaskBoard', () => ({
   TaskBoard: () => <div>Task Board Page</div>,
 }));
 
-jest.mock('./components/TaskDetail', () => ({
+jest.mock('./features/tasks/components/TaskDetail', () => ({
   TaskDetail: () => <div>Task Detail Page</div>,
 }));
 
-jest.mock('./components/TaskAnalytics', () => ({
+jest.mock('./features/tasks/components/TaskAnalytics', () => ({
   TaskAnalytics: () => <div>Task Analytics Page</div>,
 }));
 
-jest.mock('./components/PermissionEditor', () => ({
+jest.mock('./features/permissions/components/PermissionEditor', () => ({
   PermissionEditor: () => <div>Permission Editor Page</div>,
 }));
 
@@ -41,11 +41,11 @@ jest.mock('./pages/WorkersDashboard', () => ({
   WorkersDashboard: () => <div>Workers Dashboard Page</div>,
 }));
 
-jest.mock('./components/WorkerDetail', () => ({
+jest.mock('./features/workers/components/WorkerDetail', () => ({
   WorkerDetail: () => <div>Worker Detail Page</div>,
 }));
 
-jest.mock('./components/Layout', () => ({
+jest.mock('./shared/components/Layout', () => ({
   Layout: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="layout" className="min-h-screen">
       {children}

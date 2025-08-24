@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
-import type { UnifiedLogEntry, ProcessStartPayload } from '../types/logs';
-import type { NormalizedEntry } from '../../../shared/types';
+import type { UnifiedLogEntry, ProcessStartPayload } from '../shared/types/logs';
+import type { NormalizedEntry } from '../shared/types/index';
 
 interface UseEnhancedLogStreamResult {
   entries: UnifiedLogEntry[];
@@ -84,7 +84,9 @@ export const useEnhancedLogStream = (
         
         patches.forEach((patch: { value?: { type: string; content: string | NormalizedEntry } }) => {
           const value = patch?.value;
-          if (!value || !value.type) return;
+          if (!value || !value.type) {
+            return;
+          }
 
           let channel: UnifiedLogEntry['channel'];
           let payload: string | NormalizedEntry;

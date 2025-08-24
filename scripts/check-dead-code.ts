@@ -110,12 +110,16 @@ function parseUnusedExports(output: string): UnusedExport[] {
 }
 
 function formatExportsList(exports: UnusedExport[], maxDisplay: number = 15): string {
-  if (exports.length === 0) return 'none';
+  if (exports.length === 0) {
+    return 'none';
+  }
 
   // Group by file for better readability
   const byFile = exports.reduce(
     (acc, exp) => {
-      if (!acc[exp.file]) acc[exp.file] = [];
+      if (!acc[exp.file]) {
+        acc[exp.file] = [];
+      }
       acc[exp.file].push(exp);
       return acc;
     },

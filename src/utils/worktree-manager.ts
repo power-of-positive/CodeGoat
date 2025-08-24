@@ -15,8 +15,8 @@ export class WorktreeManager {
   private readonly gitRoot: string;
 
   constructor(basePath?: string, logger?: ILogger, gitRoot?: string) {
-    this.basePath = basePath || path.join(path.dirname(process.cwd()), 'claude-worktrees');
-    this.gitRoot = gitRoot || process.cwd();
+    this.basePath = basePath ?? path.join(path.dirname(process.cwd()), 'claude-worktrees');
+    this.gitRoot = gitRoot ?? process.cwd();
     this.logger = logger;
   }
 

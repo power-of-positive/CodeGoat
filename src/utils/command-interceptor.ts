@@ -88,7 +88,7 @@ export class CommandInterceptor {
     this.permissionManager = permissionManager;
     this.logger = logger;
     this.worktreeDir = worktreeDir;
-    this.loadClaudeDenyList();
+    void this.loadClaudeDenyList();
   }
 
   /**
@@ -240,7 +240,9 @@ export class CommandInterceptor {
    * Resolve target path relative to worktree
    */
   private resolveTarget(target: string): string {
-    if (!target) return '';
+    if (!target) {
+      return '';
+    }
 
     // Handle relative paths
     if (!path.isAbsolute(target)) {

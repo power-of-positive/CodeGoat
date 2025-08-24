@@ -31,12 +31,16 @@ export function sanitizeFilePath(file: string, projectRoot: string): string {
  * Filter out invalid files from script files list
  */
 export function filterValidFiles(projectRoot: string, scriptFiles: string[]): string[] {
-  if (!Array.isArray(scriptFiles)) return [];
+  if (!Array.isArray(scriptFiles)) {
+    return [];
+  }
   const validFiles: string[] = [];
   for (const file of scriptFiles) {
     try {
       const sanitizedFile = sanitizeFilePath(file, projectRoot);
-      if (fs.existsSync(path.join(projectRoot, sanitizedFile))) validFiles.push(sanitizedFile);
+      if (fs.existsSync(path.join(projectRoot, sanitizedFile))) {
+        validFiles.push(sanitizedFile);
+      }
     } catch {
       console.warn(`Skipping invalid file: ${file}`);
     }
@@ -48,7 +52,9 @@ export function filterValidFiles(projectRoot: string, scriptFiles: string[]): st
  * Filter files that should be included in coverage analysis
  */
 export function filterCoverageFiles(projectRoot: string, scriptFiles: string[]): string[] {
-  if (!Array.isArray(scriptFiles)) return [];
+  if (!Array.isArray(scriptFiles)) {
+    return [];
+  }
   const validFiles: string[] = [];
 
   for (const file of scriptFiles) {

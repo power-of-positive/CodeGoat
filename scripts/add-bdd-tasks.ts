@@ -1,7 +1,6 @@
 #!/usr/bin/env npx ts-node
 
-import { PrismaClient } from '@prisma/client';
-import { TodoStatus, TodoPriority, TaskType } from '@prisma/client';
+import { PrismaClient, TodoStatus, TodoPriority, TaskType } from '@prisma/client';
 
 const prisma = new PrismaClient();
 

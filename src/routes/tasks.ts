@@ -103,16 +103,18 @@ function dbTaskToApiTask(dbTask: TodoTask): Task {
     status: reverseStatusMapping[dbTask.status] as Task['status'],
     priority: reversePriorityMapping[dbTask.priority] as Task['priority'],
     taskType: reverseTaskTypeMapping[dbTask.taskType] as Task['taskType'],
-    executorId: dbTask.executorId || undefined,
+    executorId: dbTask.executorId ?? undefined,
     startTime: dbTask.startTime?.toISOString(),
     endTime: dbTask.endTime?.toISOString(),
-    duration: dbTask.duration || undefined,
+    duration: dbTask.duration ?? undefined,
   };
 }
 
 // Helper function to calculate duration
 function calculateDuration(startTime?: string, endTime?: string): string | undefined {
-  if (!startTime || !endTime) return undefined;
+  if (!startTime || !endTime) {
+    return undefined;
+  }
 
   const start = new Date(startTime);
   const end = new Date(endTime);
@@ -345,7 +347,7 @@ export function createTaskRoutes(logger: WinstonLogger) {
         executorId,
       } = req.body;
 
-      if (!content || !content.trim()) {
+      if (!content?.trim()) {
         return res.status(400).json({ success: false, message: 'Task content is required' });
       }
 
@@ -372,7 +374,7 @@ export function createTaskRoutes(logger: WinstonLogger) {
         status: dbStatus,
         priority: dbPriority,
         taskType: dbTaskType,
-        executorId: executorId || undefined,
+        executorId: executorId ?? undefined,
       };
 
       // Handle timing based on initial status
@@ -568,12 +570,9 @@ export function createTaskRoutes(logger: WinstonLogger) {
       const { title, feature, description, gherkinContent, status = 'pending' } = req.body;
 
       if (
-        !title ||
-        !title.trim() ||
-        !feature ||
-        !feature.trim() ||
-        !gherkinContent ||
-        !gherkinContent.trim()
+        !title?.trim() ||
+        !feature?.trim() ||
+        !gherkinContent?.trim()
       ) {
         return res.status(400).json({
           success: false,
@@ -599,7 +598,7 @@ export function createTaskRoutes(logger: WinstonLogger) {
           todoTaskId: req.params.id,
           title: title.trim(),
           feature: feature.trim(),
-          description: description?.trim() || '',
+          description: description?.trim() ?? '',
           gherkinContent: gherkinContent.trim(),
           status: dbStatus,
         },
@@ -674,7 +673,7 @@ export function createTaskRoutes(logger: WinstonLogger) {
       }
 
       if (updates.description !== undefined) {
-        updateData.description = updates.description?.trim() || '';
+        updateData.description = updates.description?.trim() ?? '';
       }
 
       if (updates.gherkinContent !== undefined) {
@@ -938,7 +937,7 @@ export function createTaskRoutes(logger: WinstonLogger) {
       const executionsWithDuration = executions.filter(e => e.executionDuration);
       const averageDuration =
         executionsWithDuration.length > 0
-          ? executionsWithDuration.reduce((sum, e) => sum + (e.executionDuration || 0), 0) /
+          ? executionsWithDuration.reduce((sum, e) => sum + (e.executionDuration ?? 0), 0) /
             executionsWithDuration.length
           : 0;
 
@@ -958,9 +957,15 @@ export function createTaskRoutes(logger: WinstonLogger) {
             acc[date] = { date, total: 0, passed: 0, failed: 0, skipped: 0 };
           }
           acc[date].total++;
-          if (execution.status === BDDScenarioStatus.PASSED) acc[date].passed++;
-          if (execution.status === BDDScenarioStatus.FAILED) acc[date].failed++;
-          if (execution.status === BDDScenarioStatus.SKIPPED) acc[date].skipped++;
+          if (execution.status === BDDScenarioStatus.PASSED) {
+            acc[date].passed++;
+          }
+          if (execution.status === BDDScenarioStatus.FAILED) {
+            acc[date].failed++;
+          }
+          if (execution.status === BDDScenarioStatus.SKIPPED) {
+            acc[date].skipped++;
+          }
           return acc;
         },
         {} as Record<string, DailyStats>

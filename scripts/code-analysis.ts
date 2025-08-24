@@ -44,7 +44,9 @@ const parseJscpd = (): AnalysisResult['duplicates'] => {
 
 const analyzeDuplicates = (): AnalysisResult['duplicates'] => {
   console.log('🔍 Analyzing code duplication...');
-  if (!fs.existsSync('./code-analysis')) fs.mkdirSync('./code-analysis', { recursive: true });
+  if (!fs.existsSync('./code-analysis')) {
+    fs.mkdirSync('./code-analysis', { recursive: true });
+  }
   run('npx jscpd --reporters json --output ./code-analysis/jscpd .');
   return parseJscpd();
 };
@@ -107,12 +109,15 @@ async function main(): Promise<void> {
   };
 
   const issues = [];
-  if (result.duplicates.percentage > 2)
+  if (result.duplicates.percentage > 2) {
     issues.push(`${result.duplicates.percentage.toFixed(1)}% duplication`);
-  if (result.deadCode.unusedImports.length > 5)
+  }
+  if (result.deadCode.unusedImports.length > 5) {
     issues.push(`${result.deadCode.unusedImports.length} unused imports`);
-  if (result.deadCode.unusedExports.length > 3)
+  }
+  if (result.deadCode.unusedExports.length > 3) {
     issues.push(`${result.deadCode.unusedExports.length} unused exports`);
+  }
 
   result.summary =
     issues.length === 0
@@ -133,11 +138,11 @@ async function main(): Promise<void> {
   if (shouldBlock) {
     const reasons = [];
     if (result.duplicates.percentage > 5)
-      reasons.push(`High duplication: ${result.duplicates.percentage.toFixed(1)}%`);
+      {reasons.push(`High duplication: ${result.duplicates.percentage.toFixed(1)}%`);}
     if (result.deadCode.unusedImports.length > 10)
-      reasons.push(`Too many unused imports: ${result.deadCode.unusedImports.length}`);
+      {reasons.push(`Too many unused imports: ${result.deadCode.unusedImports.length}`);}
     if (result.deadCode.unusedExports.length > 5)
-      reasons.push(`Unused exports: ${result.deadCode.unusedExports.length}`);
+      {reasons.push(`Unused exports: ${result.deadCode.unusedExports.length}`);}
 
     console.error('🚫 Blocking issues:', reasons.join(', '));
     console.log(JSON.stringify({ blocked: true, reasons }));

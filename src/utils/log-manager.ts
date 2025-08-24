@@ -38,10 +38,14 @@ export class LogManager {
         const fileStat = await stat(filePath);
 
         // Skip directories
-        if (fileStat.isDirectory()) continue;
+        if (fileStat.isDirectory()) {
+          continue;
+        }
 
         // Skip non-log files
-        if (!this.isLogFile(file)) continue;
+        if (!this.isLogFile(file)) {
+          continue;
+        }
 
         // Create date-based subfolder
         const fileDate = new Date(fileStat.birthtime);
@@ -132,8 +136,10 @@ export class LogManager {
     let emptyFiles = 0;
     let appLogFiles = 0;
 
-    await this.walkDirectory(this.logsDir, async (filePath: string, fileStat: fs.Stats) => {
-      if (!this.isLogFile(path.basename(filePath))) return;
+    await this.walkDirectory(this.logsDir, (filePath: string, fileStat: fs.Stats): Promise<void> => {
+      if (!this.isLogFile(path.basename(filePath))) {
+        return Promise.resolve();
+      }
 
       totalFiles++;
       totalSize += fileStat.size;
@@ -155,6 +161,7 @@ export class LogManager {
         newestFile = filePath;
         newestMtime = fileStat.mtime;
       }
+      return Promise.resolve();
     });
 
     return {
@@ -173,13 +180,17 @@ export class LogManager {
   scheduleCleanup(intervalHours: number = 24): ReturnType<typeof setInterval> {
     const interval = intervalHours * 60 * 60 * 1000; // Convert to milliseconds
 
-    return setInterval(async () => {
-      console.error('🧹 Running scheduled log cleanup...');
-      await this.organizeLogs();
-      const stats = await this.cleanupLogs();
-      console.error(
-        `✅ Log cleanup completed: ${stats.deletedFiles} old files, ${stats.emptyFilesDeleted} empty files deleted`
-      );
+    return setInterval(() => {
+      (async () => {
+        console.error('🧹 Running scheduled log cleanup...');
+        await this.organizeLogs();
+        const stats = await this.cleanupLogs();
+        console.error(
+          `✅ Log cleanup completed: ${stats.deletedFiles} old files, ${stats.emptyFilesDeleted} empty files deleted`
+        );
+      })().catch(error => {
+        console.error('Error in scheduled log cleanup:', error);
+      });
     }, interval);
   }
 

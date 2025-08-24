@@ -1,0 +1,685 @@
+
+> codegoat@1.0.0 lint
+> eslint . --ext .ts,.tsx
+
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/examples/permissions-example.ts
+  343:26  warning  No magic number: 70  no-magic-numbers
+  357:38  warning  No magic number: 25  no-magic-numbers
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/playwright.config.ts
+  51:16  warning  No magic number: 120  no-magic-numbers
+  56:12  warning  No magic number: 30   no-magic-numbers
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/playwright.simple.config.ts
+  22:12  warning  No magic number: 30  no-magic-numbers
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/scripts/check-uncommitted-files.ts
+  74:1  warning  Function 'getGitStatus' has a complexity of 11. Maximum allowed is 10  complexity
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/scripts/claude-stop-hook.ts
+  108:54  warning  No magic number: -10  no-magic-numbers
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/scripts/cleanup-test-projects.ts
+  163:11  warning  Blocks are nested too deeply (5). Maximum allowed is 4  max-depth
+  165:13  warning  Blocks are nested too deeply (6). Maximum allowed is 4  max-depth
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/scripts/code-analysis-staged.ts
+  75:57  warning  No magic number: 0.3  no-magic-numbers
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/scripts/code-analysis.ts
+   59:15  warning  No magic number: 20                                                  no-magic-numbers
+   63:15  warning  No magic number: 20                                                  no-magic-numbers
+  102:1   warning  Async function 'main' has a complexity of 11. Maximum allowed is 10  complexity
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/scripts/database-backup.ts
+   57:63  warning  No magic number: 1024                                                no-magic-numbers
+  110:71  warning  No magic number: 1024                                                no-magic-numbers
+  149:39  warning  No magic number: 16                                                  no-magic-numbers
+  171:29  warning  No magic number: 8                                                   no-magic-numbers
+  171:52  warning  No magic number: 40                                                  no-magic-numbers
+  171:92  warning  No magic number: 20                                                  no-magic-numbers
+  172:26  warning  No magic number: 88                                                  no-magic-numbers
+  175:51  warning  No magic number: 7                                                   no-magic-numbers
+  176:45  warning  No magic number: 39                                                  no-magic-numbers
+  177:36  warning  No magic number: 1024                                                no-magic-numbers
+  177:65  warning  No magic number: 9                                                   no-magic-numbers
+  178:69  warning  No magic number: 19                                                  no-magic-numbers
+  238:51  warning  No magic number: 1024                                                no-magic-numbers
+  251:52  warning  No magic number: 1024                                                no-magic-numbers
+  275:1   warning  Async function 'main' has a complexity of 14. Maximum allowed is 10  complexity
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/scripts/lib/checks/check-runners.ts
+  29:51  warning  No magic number: 3001    no-magic-numbers
+  32:69  warning  No magic number: 180000  no-magic-numbers
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/scripts/lib/checks/check-utils.ts
+  38:8  warning  Function 'runChecks' has too many parameters (5). Maximum allowed is 4  max-params
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/scripts/lib/constants.ts
+  10:5  warning  No magic number: 150  no-magic-numbers
+  17:5  warning  No magic number: 33   no-magic-numbers
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/scripts/lib/llm/llm-reviewer-core.ts
+  130:67  warning  No magic number: 0.5  no-magic-numbers
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/scripts/lib/llm/llm-reviewer-helpers.ts
+  43:18  warning  No magic number: 1024  no-magic-numbers
+  43:25  warning  No magic number: 1024  no-magic-numbers
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/scripts/lib/llm/llm-reviewer-processor.ts
+  42:64  warning  No magic number: 50  no-magic-numbers
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/scripts/lib/precommit/precommit-llm-helpers.ts
+  22:24  warning  No magic number: 8  no-magic-numbers
+  22:47  warning  No magic number: 4  no-magic-numbers
+  22:91  warning  No magic number: 4  no-magic-numbers
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/scripts/lib/scripts/script-checks.ts
+  21:69  warning  No magic number: 180000  no-magic-numbers
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/scripts/lib/utils/command-utils.ts
+  54:24  warning  No magic number: 8  no-magic-numbers
+  54:47  warning  No magic number: 4  no-magic-numbers
+  54:91  warning  No magic number: 4  no-magic-numbers
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/scripts/lib/utils/constants.ts
+  10:5  warning  No magic number: 150  no-magic-numbers
+  17:5  warning  No magic number: 33   no-magic-numbers
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/scripts/lib/utils/env-config-helpers.ts
+  49:29  warning  No magic number: 31   no-magic-numbers
+  49:44  warning  No magic number: 127  no-magic-numbers
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/scripts/lib/utils/env-config.ts
+  61:1  warning  Function 'validateSingleVar' has too many parameters (5). Maximum allowed is 4  max-params
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/scripts/lib/utils/validation-utils.ts
+  28:53  warning  No magic number: 65535  no-magic-numbers
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/scripts/log-stats.ts
+   25:51  warning  No magic number: 1024  no-magic-numbers
+   25:58  warning  No magic number: 1024  no-magic-numbers
+   26:64  warning  No magic number: 1024  no-magic-numbers
+   29:68  warning  No magic number: 24    no-magic-numbers
+   29:73  warning  No magic number: 60    no-magic-numbers
+   29:78  warning  No magic number: 60    no-magic-numbers
+   48:25  warning  No magic number: 8     no-magic-numbers
+   48:52  warning  No magic number: 1024  no-magic-numbers
+   48:59  warning  No magic number: 1024  no-magic-numbers
+   48:85  warning  No magic number: 8     no-magic-numbers
+   58:33  warning  No magic number: 50    no-magic-numbers
+   64:25  warning  No magic number: 500   no-magic-numbers
+   64:31  warning  No magic number: 1024  no-magic-numbers
+   64:38  warning  No magic number: 1024  no-magic-numbers
+   67:38  warning  No magic number: 1024  no-magic-numbers
+   67:45  warning  No magic number: 1024  no-magic-numbers
+   74:31  warning  No magic number: 50    no-magic-numbers
+   74:36  warning  No magic number: 1024  no-magic-numbers
+   74:43  warning  No magic number: 1024  no-magic-numbers
+   77:43  warning  No magic number: 1024  no-magic-numbers
+   77:50  warning  No magic number: 1024  no-magic-numbers
+   85:68  warning  No magic number: 24    no-magic-numbers
+   85:73  warning  No magic number: 60    no-magic-numbers
+   85:78  warning  No magic number: 60    no-magic-numbers
+   86:21  warning  No magic number: 90    no-magic-numbers
+   88:28  warning  No magic number: 30    no-magic-numbers
+   98:26  warning  No magic number: 50    no-magic-numbers
+  101:31  warning  No magic number: 1024  no-magic-numbers
+  101:38  warning  No magic number: 1024  no-magic-numbers
+  104:51  warning  No magic number: 0.3   no-magic-numbers
+  107:50  warning  No magic number: 0.5   no-magic-numbers
+  134:24  warning  No magic number: 1024  no-magic-numbers
+  134:31  warning  No magic number: 1024  no-magic-numbers
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/scripts/optimized-log-cleanup.ts
+   32:51  warning  No magic number: 1024   no-magic-numbers
+   32:58  warning  No magic number: 1024   no-magic-numbers
+   33:64  warning  No magic number: 1024   no-magic-numbers
+   42:54  warning  No magic number: 1024   no-magic-numbers
+   42:61  warning  No magic number: 1024   no-magic-numbers
+   52:54  warning  No magic number: 1024   no-magic-numbers
+   52:61  warning  No magic number: 1024   no-magic-numbers
+   59:56  warning  No magic number: 1024   no-magic-numbers
+   59:63  warning  No magic number: 1024   no-magic-numbers
+   63:47  warning  No magic number: 1024   no-magic-numbers
+   63:54  warning  No magic number: 1024   no-magic-numbers
+   68:51  warning  No magic number: 1024   no-magic-numbers
+   68:58  warning  No magic number: 1024   no-magic-numbers
+   71:31  warning  No magic number: 5000   no-magic-numbers
+   73:38  warning  No magic number: 15000  no-magic-numbers
+   86:31  warning  No magic number: 30     no-magic-numbers
+   89:30  warning  No magic number: 50     no-magic-numbers
+   89:35  warning  No magic number: 1024   no-magic-numbers
+   89:42  warning  No magic number: 1024   no-magic-numbers
+  117:23  warning  No magic number: 1024   no-magic-numbers
+  117:30  warning  No magic number: 1024   no-magic-numbers
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/scripts/populate-comprehensive-bdd-scenarios.ts
+  551:1  warning  Async function 'main' has a complexity of 11. Maximum allowed is 10  complexity
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/scripts/scheduled-backup.ts
+  49:42  warning  No magic number: 60  no-magic-numbers
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/scripts/sync-todo-to-database.ts
+  186:1   warning  Function 'generateBDDScenarios' has a complexity of 15. Maximum allowed is 10  complexity
+  297:70  warning  No magic number: 50                                                            no-magic-numbers
+  356:89  warning  No magic number: 50                                                            no-magic-numbers
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/scripts/test-blocking.ts
+  15:30  warning  No magic number: 80  no-magic-numbers
+  17:28  warning  No magic number: 80  no-magic-numbers
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/scripts/update-todo-from-commit.ts
+   43:35  warning  No magic number: 5000  no-magic-numbers
+  113:40  warning  No magic number: 60    no-magic-numbers
+  114:38  warning  No magic number: 60    no-magic-numbers
+  115:35  warning  No magic number: 24    no-magic-numbers
+  118:32  warning  No magic number: 24    no-magic-numbers
+  118:49  warning  No magic number: 60    no-magic-numbers
+  120:35  warning  No magic number: 60    no-magic-numbers
+  122:37  warning  No magic number: 60    no-magic-numbers
+  154:35  warning  No magic number: 5000  no-magic-numbers
+  178:35  warning  No magic number: 2000  no-magic-numbers
+  226:56  warning  No magic number: 60    no-magic-numbers
+  272:65  warning  No magic number: 7     no-magic-numbers
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/scripts/validate-commit-message.ts
+  184:1   warning  Async function 'handleTaskOperations' has a complexity of 12. Maximum allowed is 10  complexity
+  235:82  warning  No magic number: 60                                                                  no-magic-numbers
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/scripts/validate-task.ts
+  279:35  warning  No magic number: 30000  no-magic-numbers
+  376:49  warning  No magic number: -1000  no-magic-numbers
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/scripts/validate-todo-list.ts
+   77:35  warning  No magic number: 2000  no-magic-numbers
+   97:35  warning  No magic number: 5000  no-magic-numbers
+  315:35  warning  No magic number: 5000  no-magic-numbers
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/scripts/verify-sync.ts
+   59:64  warning  No magic number: 50  no-magic-numbers
+   68:64  warning  No magic number: 50  no-magic-numbers
+   89:66  warning  No magic number: 50  no-magic-numbers
+  100:68  warning  No magic number: 40  no-magic-numbers
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/src/app.ts
+   50:18  warning  No magic number: 200  no-magic-numbers
+   79:25  warning  No magic number: 400  no-magic-numbers
+   91:25  warning  No magic number: 413  no-magic-numbers
+  132:16  warning  No magic number: 404  no-magic-numbers
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/src/config.ts
+  67:7  warning  Arrow function has a complexity of 11. Maximum allowed is 10  complexity
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/src/index.ts
+   35:21  warning  No magic number: 1024                                                                                      no-magic-numbers
+   35:28  warning  No magic number: 1024                                                                                      no-magic-numbers
+   65:16  warning  No magic number: 200                                                                                       no-magic-numbers
+   94:23  warning  No magic number: 400                                                                                       no-magic-numbers
+  106:23  warning  No magic number: 413                                                                                       no-magic-numbers
+  148:16  warning  No magic number: 404                                                                                       no-magic-numbers
+  157:31  error    Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  157:34  warning  No magic number: 3000                                                                                      no-magic-numbers
+  158:31  error    Prefer using nullish coalescing operator (`??`) instead of a logical or (`||`), as it is a safer operator  @typescript-eslint/prefer-nullish-coalescing
+  167:21  warning  No magic number: 6                                                                                         no-magic-numbers
+  167:25  warning  No magic number: 60                                                                                        no-magic-numbers
+  167:30  warning  No magic number: 60                                                                                        no-magic-numbers
+  180:28  warning  No magic number: 24                                                                                        no-magic-numbers
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/src/logger-winston.ts
+  193:3   warning  Method 'createEndHandler' has too many parameters (6). Maximum allowed is 4  max-params
+  289:26  warning  No magic number: 1024                                                        no-magic-numbers
+  289:33  warning  No magic number: 1024                                                        no-magic-numbers
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/src/routes/analytics.ts
+   14:18  warning  No magic number: 500  no-magic-numbers
+   27:18  warning  No magic number: 500  no-magic-numbers
+   39:20  warning  No magic number: 404  no-magic-numbers
+   46:18  warning  No magic number: 500  no-magic-numbers
+   57:18  warning  No magic number: 201  no-magic-numbers
+   63:18  warning  No magic number: 500  no-magic-numbers
+   82:20  warning  No magic number: 404  no-magic-numbers
+   85:20  warning  No magic number: 500  no-magic-numbers
+   99:18  warning  No magic number: 201  no-magic-numbers
+  106:20  warning  No magic number: 404  no-magic-numbers
+  109:20  warning  No magic number: 500  no-magic-numbers
+  127:18  warning  No magic number: 500  no-magic-numbers
+  136:58  warning  No magic number: 30   no-magic-numbers
+  142:18  warning  No magic number: 500  no-magic-numbers
+  156:18  warning  No magic number: 500  no-magic-numbers
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/src/routes/backup.ts
+   70:18  warning  No magic number: 201  no-magic-numbers
+   77:18  warning  No magic number: 500  no-magic-numbers
+  107:18  warning  No magic number: 500  no-magic-numbers
+  118:20  warning  No magic number: 400  no-magic-numbers
+  134:18  warning  No magic number: 500  no-magic-numbers
+  148:20  warning  No magic number: 400  no-magic-numbers
+  155:20  warning  No magic number: 404  no-magic-numbers
+  169:18  warning  No magic number: 500  no-magic-numbers
+  203:18  warning  No magic number: 500  no-magic-numbers
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/src/routes/bdd-scenarios.ts
+   19:16  warning  No magic number: 500  no-magic-numbers
+   38:16  warning  No magic number: 500  no-magic-numbers
+   56:16  warning  No magic number: 500  no-magic-numbers
+   78:16  warning  No magic number: 500  no-magic-numbers
+   93:25  warning  No magic number: 400  no-magic-numbers
+  100:16  warning  No magic number: 201  no-magic-numbers
+  106:16  warning  No magic number: 500  no-magic-numbers
+  122:25  warning  No magic number: 400  no-magic-numbers
+  135:16  warning  No magic number: 500  no-magic-numbers
+  154:16  warning  No magic number: 500  no-magic-numbers
+  173:16  warning  No magic number: 500  no-magic-numbers
+  188:25  warning  No magic number: 400  no-magic-numbers
+  201:16  warning  No magic number: 500  no-magic-numbers
+  243:16  warning  No magic number: 500  no-magic-numbers
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/src/routes/claude-workers.ts
+   134:62  warning  No magic number: 36                                                 no-magic-numbers
+   134:76  warning  No magic number: 9                                                  no-magic-numbers
+   440:64  warning  No magic number: 36                                                 no-magic-numbers
+   440:78  warning  No magic number: 9                                                  no-magic-numbers
+   461:23  warning  Async arrow function has a complexity of 13. Maximum allowed is 10  complexity
+   466:25  warning  No magic number: 400                                                no-magic-numbers
+   492:25  warning  No magic number: 500                                                no-magic-numbers
+   654:8   warning  Async arrow function has a complexity of 19. Maximum allowed is 10  complexity
+   804:16  warning  No magic number: 500                                                no-magic-numbers
+   849:23  warning  No magic number: 404                                                no-magic-numbers
+   932:23  warning  No magic number: 404                                                no-magic-numbers
+   977:23  warning  No magic number: 404                                                no-magic-numbers
+   994:16  warning  No magic number: 500                                                no-magic-numbers
+  1009:23  warning  No magic number: 400                                                no-magic-numbers
+  1018:23  warning  No magic number: 404                                                no-magic-numbers
+  1025:23  warning  No magic number: 400                                                no-magic-numbers
+  1032:23  warning  No magic number: 400                                                no-magic-numbers
+  1067:16  warning  No magic number: 500                                                no-magic-numbers
+  1082:23  warning  No magic number: 404                                                no-magic-numbers
+  1139:16  warning  No magic number: 500                                                no-magic-numbers
+  1149:42  warning  Async arrow function has a complexity of 11. Maximum allowed is 10  complexity
+  1154:23  warning  No magic number: 404                                                no-magic-numbers
+  1161:23  warning  No magic number: 400                                                no-magic-numbers
+  1230:16  warning  No magic number: 500                                                no-magic-numbers
+  1245:23  warning  No magic number: 404                                                no-magic-numbers
+  1252:23  warning  No magic number: 400                                                no-magic-numbers
+  1265:25  warning  No magic number: 404                                                no-magic-numbers
+  1290:25  warning  No magic number: 500                                                no-magic-numbers
+  1297:16  warning  No magic number: 500                                                no-magic-numbers
+  1312:23  warning  No magic number: 404                                                no-magic-numbers
+  1337:23  warning  No magic number: 404                                                no-magic-numbers
+  1365:23  warning  No magic number: 404                                                no-magic-numbers
+  1374:23  warning  No magic number: 404                                                no-magic-numbers
+  1414:16  warning  No magic number: 500                                                no-magic-numbers
+  1439:16  warning  No magic number: 500                                                no-magic-numbers
+  1454:23  warning  No magic number: 404                                                no-magic-numbers
+  1461:17  warning  No magic number: 200                                                no-magic-numbers
+  1539:46  warning  No magic number: 500                                                no-magic-numbers
+  1568:23  warning  No magic number: 400                                                no-magic-numbers
+  1577:23  warning  No magic number: 404                                                no-magic-numbers
+  1584:23  warning  No magic number: 400                                                no-magic-numbers
+  1591:23  warning  No magic number: 400                                                no-magic-numbers
+  1626:16  warning  No magic number: 500                                                no-magic-numbers
+  1643:23  warning  No magic number: 404                                                no-magic-numbers
+  1650:23  warning  No magic number: 400                                                no-magic-numbers
+  1668:25  warning  No magic number: 400                                                no-magic-numbers
+  1678:86  warning  No magic number: 50                                                 no-magic-numbers
+  1730:16  warning  No magic number: 500                                                no-magic-numbers
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/src/routes/e2e.ts
+   38:39  warning  No magic number: 3600000  no-magic-numbers
+   49:39  warning  No magic number: 7200000  no-magic-numbers
+   72:42  warning  No magic number: 8        no-magic-numbers
+   72:47  warning  No magic number: 4        no-magic-numbers
+   75:20  warning  No magic number: 0.7      no-magic-numbers
+   75:42  warning  No magic number: 0.3      no-magic-numbers
+   76:24  warning  No magic number: 20000    no-magic-numbers
+   76:48  warning  No magic number: 20000    no-magic-numbers
+   85:42  warning  No magic number: 3600000  no-magic-numbers
+   92:42  warning  No magic number: 7200000  no-magic-numbers
+  149:16  warning  No magic number: 500      no-magic-numbers
+  159:25  warning  No magic number: 404      no-magic-numbers
+  168:16  warning  No magic number: 500      no-magic-numbers
+  183:33  warning  No magic number: 0.2      no-magic-numbers
+  184:47  warning  No magic number: 24       no-magic-numbers
+  184:52  warning  No magic number: 60       no-magic-numbers
+  184:57  warning  No magic number: 60       no-magic-numbers
+  185:19  warning  No magic number: 2000     no-magic-numbers
+  185:42  warning  No magic number: 3000     no-magic-numbers
+  186:32  warning  No magic number: 0.8      no-magic-numbers
+  203:16  warning  No magic number: 500      no-magic-numbers
+  227:16  warning  No magic number: 500      no-magic-numbers
+  256:8   warning  No magic number: 5000     no-magic-numbers
+  268:16  warning  No magic number: 500      no-magic-numbers
+  295:16  warning  No magic number: 500      no-magic-numbers
+  306:25  warning  No magic number: 400      no-magic-numbers
+  347:16  warning  No magic number: 500      no-magic-numbers
+  389:16  warning  No magic number: 500      no-magic-numbers
+  469:16  warning  No magic number: 500      no-magic-numbers
+  508:16  warning  No magic number: 500      no-magic-numbers
+  535:8   warning  No magic number: 5000     no-magic-numbers
+  548:16  warning  No magic number: 500      no-magic-numbers
+  597:16  warning  No magic number: 500      no-magic-numbers
+  607:25  warning  No magic number: 400      no-magic-numbers
+  642:16  warning  No magic number: 500      no-magic-numbers
+  652:25  warning  No magic number: 400      no-magic-numbers
+  681:16  warning  No magic number: 500      no-magic-numbers
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/src/routes/permissions.ts
+   50:17  warning  No magic number: 500                                          no-magic-numbers
+   73:17  warning  No magic number: 500                                          no-magic-numbers
+   85:18  warning  No magic number: 500                                          no-magic-numbers
+   95:27  warning  No magic number: 400                                          no-magic-numbers
+  119:18  warning  No magic number: 201                                          no-magic-numbers
+  122:18  warning  No magic number: 500                                          no-magic-numbers
+  136:27  warning  No magic number: 404                                          no-magic-numbers
+  155:18  warning  No magic number: 500                                          no-magic-numbers
+  168:27  warning  No magic number: 404                                          no-magic-numbers
+  180:18  warning  No magic number: 500                                          no-magic-numbers
+  190:27  warning  No magic number: 400                                          no-magic-numbers
+  210:18  warning  No magic number: 500                                          no-magic-numbers
+  226:18  warning  No magic number: 500                                          no-magic-numbers
+  237:18  warning  No magic number: 500                                          no-magic-numbers
+  248:18  warning  No magic number: 500                                          no-magic-numbers
+  262:27  warning  No magic number: 404                                          no-magic-numbers
+  269:27  warning  No magic number: 400                                          no-magic-numbers
+  279:47  warning  Arrow function has a complexity of 14. Maximum allowed is 10  complexity
+  326:23  warning  No magic number: 900                                          no-magic-numbers
+  339:23  warning  No magic number: 900                                          no-magic-numbers
+  375:17  warning  No magic number: 500                                          no-magic-numbers
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/src/routes/settings.ts
+   19:18  warning  No magic number: 500  no-magic-numbers
+   34:20  warning  No magic number: 400  no-magic-numbers
+   40:20  warning  No magic number: 500  no-magic-numbers
+   56:16  warning  No magic number: 500  no-magic-numbers
+   73:18  warning  No magic number: 400  no-magic-numbers
+   79:18  warning  No magic number: 500  no-magic-numbers
+  111:18  warning  No magic number: 500  no-magic-numbers
+  124:20  warning  No magic number: 400  no-magic-numbers
+  130:20  warning  No magic number: 500  no-magic-numbers
+  161:18  warning  No magic number: 201  no-magic-numbers
+  167:20  warning  No magic number: 400  no-magic-numbers
+  172:20  warning  No magic number: 409  no-magic-numbers
+  175:20  warning  No magic number: 500  no-magic-numbers
+  192:20  warning  No magic number: 400  no-magic-numbers
+  197:20  warning  No magic number: 404  no-magic-numbers
+  200:20  warning  No magic number: 500  no-magic-numbers
+  214:20  warning  No magic number: 404  no-magic-numbers
+  216:20  warning  No magic number: 404  no-magic-numbers
+  219:20  warning  No magic number: 500  no-magic-numbers
+  232:20  warning  No magic number: 404  no-magic-numbers
+  239:18  warning  No magic number: 500  no-magic-numbers
+  251:18  warning  No magic number: 500  no-magic-numbers
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/src/routes/tasks.ts
+  123:45  warning  No magic number: 60                                                 no-magic-numbers
+  123:50  warning  No magic number: 60                                                 no-magic-numbers
+  124:48  warning  No magic number: 60                                                 no-magic-numbers
+  124:53  warning  No magic number: 60                                                 no-magic-numbers
+  124:68  warning  No magic number: 60                                                 no-magic-numbers
+  148:18  warning  No magic number: 500                                                no-magic-numbers
+  195:42  warning  No magic number: 60                                                 no-magic-numbers
+  205:55  warning  No magic number: 30                                                 no-magic-numbers
+  285:18  warning  No magic number: 500                                                no-magic-numbers
+  307:27  warning  No magic number: 404                                                no-magic-numbers
+  335:18  warning  No magic number: 500                                                no-magic-numbers
+  340:20  warning  Async arrow function has a complexity of 13. Maximum allowed is 10  complexity
+  351:27  warning  No magic number: 400                                                no-magic-numbers
+  396:18  warning  No magic number: 201                                                no-magic-numbers
+  399:18  warning  No magic number: 500                                                no-magic-numbers
+  404:22  warning  Async arrow function has a complexity of 23. Maximum allowed is 10  complexity
+  412:27  warning  No magic number: 404                                                no-magic-numbers
+  457:31  warning  No magic number: 400                                                no-magic-numbers
+  471:31  warning  No magic number: 400                                                no-magic-numbers
+  487:31  warning  No magic number: 400                                                no-magic-numbers
+  537:18  warning  No magic number: 500                                                no-magic-numbers
+  550:27  warning  No magic number: 404                                                no-magic-numbers
+  561:18  warning  No magic number: 500                                                no-magic-numbers
+  568:33  warning  Async arrow function has a complexity of 14. Maximum allowed is 10  complexity
+  577:27  warning  No magic number: 400                                                no-magic-numbers
+  591:27  warning  No magic number: 404                                                no-magic-numbers
+  609:18  warning  No magic number: 201                                                no-magic-numbers
+  625:18  warning  No magic number: 500                                                no-magic-numbers
+  630:44  warning  Async arrow function has a complexity of 18. Maximum allowed is 10  complexity
+  640:27  warning  No magic number: 404                                                no-magic-numbers
+  652:27  warning  No magic number: 404                                                no-magic-numbers
+  729:18  warning  No magic number: 500                                                no-magic-numbers
+  747:27  warning  No magic number: 404                                                no-magic-numbers
+  761:18  warning  No magic number: 500                                                no-magic-numbers
+  782:27  warning  No magic number: 404                                                no-magic-numbers
+  808:18  warning  No magic number: 500                                                no-magic-numbers
+  825:27  warning  No magic number: 400                                                no-magic-numbers
+  842:27  warning  No magic number: 404                                                no-magic-numbers
+  878:18  warning  No magic number: 201                                                no-magic-numbers
+  895:18  warning  No magic number: 500                                                no-magic-numbers
+  914:27  warning  No magic number: 404                                                no-magic-numbers
+  999:18  warning  No magic number: 500                                                no-magic-numbers
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/src/services/analytics.service.ts
+  338:60  warning  No magic number: 36    no-magic-numbers
+  338:74  warning  No magic number: 9     no-magic-numbers
+  681:86  warning  No magic number: 0.9   no-magic-numbers
+  682:86  warning  No magic number: 0.95  no-magic-numbers
+  683:86  warning  No magic number: 0.99  no-magic-numbers
+  756:36  warning  No magic number: 50    no-magic-numbers
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/src/services/bdd-scenario-service.ts
+   47:30  warning  Method 'parseBDDFeatureFile' has a complexity of 15. Maximum allowed is 10  complexity
+  379:43  warning  No magic number: 0.3                                                        no-magic-numbers
+  380:51  warning  No magic number: 5000                                                       no-magic-numbers
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/src/tools/ai-code-reviewer.ts
+  316:18  warning  No magic number: 40  no-magic-numbers
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/src/types/settings.types.ts
+   6:45  warning  No magic number: 10000   no-magic-numbers
+  18:43  warning  No magic number: 300000  no-magic-numbers
+  18:59  warning  No magic number: 30000   no-magic-numbers
+  43:48  warning  No magic number: 20      no-magic-numbers
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/src/utils/claude-executor.ts
+  149:28  warning  Method 'parseShellCommand' has a complexity of 14. Maximum allowed is 10                complexity
+  263:42  warning  Method 'isCommandDeniedByClaudeSettings' has a complexity of 11. Maximum allowed is 10  complexity
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/src/utils/claude-log-processor.ts
+   11:22  warning  Method 'toNormalizedEntries' has a complexity of 18. Maximum allowed is 10  complexity
+  111:26  warning  Method 'inferActionType' has a complexity of 32. Maximum allowed is 10      complexity
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/src/utils/claude-validation-factory.ts
+  25:16  warning  Static method 'create' has a complexity of 11. Maximum allowed is 10  complexity
+  52:55  warning  No magic number: 180000                                               no-magic-numbers
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/src/utils/claude-validation-wrapper.ts
+  62:59  warning  No magic number: 180000  no-magic-numbers
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/src/utils/json.ts
+  75:40  warning  No magic number: 200  no-magic-numbers
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/src/utils/log-cleaner.ts
+  61:44  warning  No magic number: 24  no-magic-numbers
+  61:49  warning  No magic number: 60  no-magic-numbers
+  61:54  warning  No magic number: 60  no-magic-numbers
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/src/utils/log-manager.ts
+   19:26  warning  No magic number: 50    no-magic-numbers
+   19:31  warning  No magic number: 1024  no-magic-numbers
+   19:38  warning  No magic number: 1024  no-magic-numbers
+  105:71  warning  No magic number: 1024  no-magic-numbers
+  180:38  warning  No magic number: 60    no-magic-numbers
+  180:43  warning  No magic number: 60    no-magic-numbers
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/src/utils/optimized-log-cleaner.ts
+   88:38  warning  No magic number: 1024  no-magic-numbers
+   88:45  warning  No magic number: 1024  no-magic-numbers
+  218:57  warning  No magic number: 24    no-magic-numbers
+  218:62  warning  No magic number: 60    no-magic-numbers
+  218:67  warning  No magic number: 60    no-magic-numbers
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/src/utils/permissions.ts
+  169:22  warning  Method 'ruleMatches' has a complexity of 12. Maximum allowed is 10  complexity
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/src/utils/settings-loader.ts
+  14:32  warning  No magic number: 30000  no-magic-numbers
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/src/utils/worktree-manager.ts
+  266:45  warning  No magic number: 9  no-magic-numbers
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/ui/scripts/generate-step-definitions.ts
+   17:3  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+   27:5  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+   44:7  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+   64:3  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+   65:3  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+   72:3  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+   75:3  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+   78:5  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+   82:5  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  118:5  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  120:7  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  121:7  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  123:9  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  127:5  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  132:3  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  137:3  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  138:3  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  139:3  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  147:7  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  148:7  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  149:7  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  150:7  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  151:7  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+  152:7  warning  Unexpected console statement. Only these console methods are allowed: warn, error  no-console
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/ui/src/App.tsx
+  19:25  warning  No magic number: 60  no-magic-numbers
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/ui/src/features/analytics/components/Analytics.tsx
+  17:20  warning  No magic number: 60  no-magic-numbers
+  23:20  warning  No magic number: 60  no-magic-numbers
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/ui/src/features/analytics/components/AnalyticsComponents.tsx
+   46:10  warning  No magic number: 2000                                                 no-magic-numbers
+  140:8   warning  Function 'StageDetail' has a complexity of 16. Maximum allowed is 10  complexity
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/ui/src/features/analytics/components/StageHistoryView.tsx
+  273:32  warning  No magic number: 20  no-magic-numbers
+  290:53  warning  No magic number: -8  no-magic-numbers
+  369:46  warning  No magic number: 30  no-magic-numbers
+  374:20  warning  No magic number: 60  no-magic-numbers
+  380:20  warning  No magic number: 60  no-magic-numbers
+  391:24  warning  No magic number: 4   no-magic-numbers
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/ui/src/features/analytics/components/ValidationChart.tsx
+   78:38  warning  No magic number: 0.8  no-magic-numbers
+   80:42  warning  No magic number: 0.5  no-magic-numbers
+  100:40  warning  No magic number: 0.8  no-magic-numbers
+  102:44  warning  No magic number: 0.5  no-magic-numbers
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/ui/src/features/bdd/components/BDDExecutionHistory.tsx
+  30:65  warning  Arrow function has too many lines (323). Maximum allowed is 200  max-lines-per-function
+  34:52  warning  No magic number: 30                                              no-magic-numbers
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/ui/src/features/bdd/components/BDDScenarioManager.tsx
+  59:1  warning  Function 'BDDScenarioForm' has a complexity of 15. Maximum allowed is 10  complexity
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/ui/src/features/bdd/components/BDDScenariosDashboard.tsx
+  111:8  warning  Function 'BDDScenariosDashboard' has too many lines (241). Maximum allowed is 200  max-lines-per-function
+  111:8  warning  Function 'BDDScenariosDashboard' has a complexity of 31. Maximum allowed is 10     complexity
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/ui/src/features/logs/components/DisplayConversationEntry.tsx
+  27:22  warning  Arrow function has too many statements (30). Maximum allowed is 25                                      max-statements
+  27:22  warning  Arrow function has a complexity of 26. Maximum allowed is 10                                            complexity
+  44:13  warning  Variable name `action_type` must match one of the following formats: camelCase, PascalCase, UPPER_CASE  @typescript-eslint/naming-convention
+  44:26  warning  Variable name `tool_name` must match one of the following formats: camelCase, PascalCase, UPPER_CASE    @typescript-eslint/naming-convention
+  83:29  warning  Arrow function has a complexity of 14. Maximum allowed is 10                                            complexity
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/ui/src/features/logs/components/EnhancedLogEntryRow.tsx
+  29:22  warning  Arrow function has a complexity of 29. Maximum allowed is 10                                            complexity
+  46:13  warning  Variable name `action_type` must match one of the following formats: camelCase, PascalCase, UPPER_CASE  @typescript-eslint/naming-convention
+  46:26  warning  Variable name `tool_name` must match one of the following formats: camelCase, PascalCase, UPPER_CASE    @typescript-eslint/naming-convention
+  81:29  warning  Arrow function has a complexity of 17. Maximum allowed is 10                                            complexity
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/ui/src/features/logs/components/LogEntryRow.tsx
+   31:31  warning  Arrow function has a complexity of 33. Maximum allowed is 10                               complexity
+  118:1   warning  Function 'LogEntryRow' has too many lines (360). Maximum allowed is 200                    max-lines-per-function
+  118:1   warning  Function 'LogEntryRow' has a complexity of 11. Maximum allowed is 10                       complexity
+  249:3   warning  Function 'extractContentFromResponse' has too many statements (35). Maximum allowed is 25  max-statements
+  249:3   warning  Function 'extractContentFromResponse' has a complexity of 26. Maximum allowed is 10        complexity
+  498:9   warning  Arrow function has a complexity of 19. Maximum allowed is 10                               complexity
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/ui/src/features/logs/components/LogsViewer.tsx
+  20:16  warning  Function 'LogsViewer' has a complexity of 12. Maximum allowed is 10  complexity
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/ui/src/features/logs/components/SimpleLogViewer.tsx
+  23:41   warning  Arrow function has a complexity of 28. Maximum allowed is 10  complexity
+  57:104  warning  No magic number: -8                                           no-magic-numbers
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/ui/src/features/logs/components/VibeLogs.tsx
+  30:22  warning  Arrow function has a complexity of 29. Maximum allowed is 10                                            complexity
+  47:13  warning  Variable name `action_type` must match one of the following formats: camelCase, PascalCase, UPPER_CASE  @typescript-eslint/naming-convention
+  47:26  warning  Variable name `tool_name` must match one of the following formats: camelCase, PascalCase, UPPER_CASE    @typescript-eslint/naming-convention
+  82:29  warning  Arrow function has a complexity of 17. Maximum allowed is 10                                            complexity
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/ui/src/features/tasks/components/TaskAnalytics.tsx
+  144:8   warning  Function 'TaskAnalytics' has too many lines (273). Maximum allowed is 200  max-lines-per-function
+  153:20  warning  No magic number: 60                                                        no-magic-numbers
+  225:24  warning  No magic number: 4                                                         no-magic-numbers
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/ui/src/features/tasks/components/TaskDetail.tsx
+  57:8  warning  Function 'TaskDetail' has too many lines (228). Maximum allowed is 200  max-lines-per-function
+  57:8  warning  Function 'TaskDetail' has a complexity of 18. Maximum allowed is 10     complexity
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/ui/src/features/tasks/components/TaskLogs.tsx
+  14:8   warning  Function 'TaskLogs' has a complexity of 11. Maximum allowed is 10  complexity
+  53:46  warning  No magic number: -2                                                no-magic-numbers
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/ui/src/features/validation/components/RecentRuns.tsx
+  15:1  warning  Function 'StageDetail' has a complexity of 16. Maximum allowed is 10  complexity
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/ui/src/features/validation/components/ValidationRunDetail.tsx
+   30:1  warning  Function 'StageDetailExpanded' has a complexity of 18. Maximum allowed is 10        complexity
+  114:8  warning  Function 'ValidationRunDetail' has too many statements (27). Maximum allowed is 25  max-statements
+  114:8  warning  Function 'ValidationRunDetail' has a complexity of 22. Maximum allowed is 10        complexity
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/ui/src/features/validation/components/ValidationRunsViewer.tsx
+  67:50  warning  No magic number: -2  no-magic-numbers
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/ui/src/features/workers/components/WorkerCard.tsx
+  64:8   warning  Function 'WorkerCard' has too many lines (222). Maximum allowed is 200  max-lines-per-function
+  64:8   warning  Function 'WorkerCard' has a complexity of 21. Maximum allowed is 10     complexity
+  81:49  warning  No magic number: 60                                                     no-magic-numbers
+  81:54  warning  No magic number: 60                                                     no-magic-numbers
+  82:52  warning  No magic number: 60                                                     no-magic-numbers
+  82:57  warning  No magic number: 60                                                     no-magic-numbers
+  82:72  warning  No magic number: 60                                                     no-magic-numbers
+  83:52  warning  No magic number: 60                                                     no-magic-numbers
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/ui/src/features/workers/components/WorkerInfo.tsx
+   22:8   warning  Function 'WorkerInfo' has a complexity of 12. Maximum allowed is 10  complexity
+  108:43  warning  No magic number: -2                                                  no-magic-numbers
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/ui/src/hooks/useProcessesLogs.ts
+   44:46  warning  No magic number: 10000  no-magic-numbers
+   85:35  warning  No magic number: 3000   no-magic-numbers
+   89:53  warning  No magic number: 3000   no-magic-numbers
+   97:53  warning  No magic number: 1500   no-magic-numbers
+  102:53  warning  No magic number: 2000   no-magic-numbers
+  114:53  warning  No magic number: 2500   no-magic-numbers
+  124:37  warning  No magic number: 1500   no-magic-numbers
+  124:57  warning  No magic number: 500    no-magic-numbers
+  162:10  warning  No magic number: 5000   no-magic-numbers
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/ui/src/pages/WorkersDashboard.tsx
+   61:38  warning  No magic number: 2000                                                         no-magic-numbers
+  186:8   warning  Function 'WorkersDashboard' has too many lines (219). Maximum allowed is 200  max-lines-per-function
+  186:8   warning  Function 'WorkersDashboard' has a complexity of 16. Maximum allowed is 10     complexity
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/ui/src/shared/components/Sidebar.tsx
+  255:29  warning  No magic number: 768  no-magic-numbers
+
+/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/ui/src/test/setup.ts
+  31:17  warning  No magic number: 10000  no-magic-numbers
+
+✖ 504 problems (2 errors, 502 warnings)
+

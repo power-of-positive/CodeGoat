@@ -109,7 +109,7 @@ const mockAnalytics = {
 };
 
 // GET /api/e2e/suites - Get all E2E test suites
-router.get('/suites', async (req, res) => {
+router.get('/suites', (req, res) => {
   try {
     const { limit = '50', offset = '0', status, dateFrom, dateTo } = req.query;
 
@@ -151,7 +151,7 @@ router.get('/suites', async (req, res) => {
 });
 
 // GET /api/e2e/suites/:suiteId - Get specific test suite
-router.get('/suites/:suiteId', async (req, res) => {
+router.get('/suites/:suiteId', (req, res) => {
   try {
     const suite = mockTestSuites.find(s => s.id === req.params.suiteId);
     
@@ -170,7 +170,7 @@ router.get('/suites/:suiteId', async (req, res) => {
 });
 
 // GET /api/e2e/history - Get test execution history
-router.get('/history', async (req, res) => {
+router.get('/history', (req, res) => {
   try {
     const { testFile, testName } = req.query;
 
@@ -205,7 +205,7 @@ router.get('/history', async (req, res) => {
 });
 
 // GET /api/e2e/analytics - Get E2E test analytics
-router.get('/analytics', async (req, res) => {
+router.get('/analytics', (req, res) => {
   try {
     const { days = '30' } = req.query;
 
@@ -229,7 +229,7 @@ router.get('/analytics', async (req, res) => {
 });
 
 // POST /api/e2e/run - Trigger E2E test run
-router.post('/run', async (req, res) => {
+router.post('/run', (req, res) => {
   try {
     const { testFile, testName, browser = 'chromium', headless = true } = req.body;
 
@@ -270,7 +270,7 @@ router.post('/run', async (req, res) => {
 });
 
 // GET /api/e2e/runs/:runId - Get test run status
-router.get('/runs/:runId', async (req, res) => {
+router.get('/runs/:runId', (req, res) => {
   try {
     const { runId } = req.params;
 
@@ -349,7 +349,7 @@ router.post('/tasks/:taskId/scenarios/:scenarioId/link-test', async (req, res) =
 });
 
 // GET /api/e2e/test-files - Get available test files
-router.get('/test-files', async (req, res) => {
+router.get('/test-files', (req, res) => {
   try {
     // In a real implementation, this would scan the e2e directory
     const mockTestFiles = [
@@ -471,7 +471,7 @@ router.get('/coverage', async (req, res) => {
 });
 
 // GET /api/e2e/scenario-suggestions - Get linking suggestions for scenarios
-router.get('/scenario-suggestions', async (req, res) => {
+router.get('/scenario-suggestions', (req, res) => {
   try {
     // scenarioId parameter is available for future use
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -510,7 +510,7 @@ router.get('/scenario-suggestions', async (req, res) => {
 });
 
 // POST /api/e2e/cucumber/run - Run cucumber tests
-router.post('/cucumber/run', async (req, res) => {
+router.post('/cucumber/run', (req, res) => {
   try {
     const { features, tags, parallel } = req.body;
     
@@ -550,7 +550,7 @@ router.post('/cucumber/run', async (req, res) => {
 });
 
 // GET /api/e2e/cucumber/results/:runId - Get cucumber test results
-router.get('/cucumber/results/:runId', async (req, res) => {
+router.get('/cucumber/results/:runId', (req, res) => {
   try {
     const { runId } = req.params;
     
@@ -599,7 +599,7 @@ router.get('/cucumber/results/:runId', async (req, res) => {
 });
 
 // POST /api/e2e/gherkin/validate - Validate Gherkin syntax
-router.post('/gherkin/validate', async (req, res) => {
+router.post('/gherkin/validate', (req, res) => {
   try {
     const { gherkinContent } = req.body;
     
@@ -644,7 +644,7 @@ router.post('/gherkin/validate', async (req, res) => {
 });
 
 // POST /api/e2e/step-definitions/generate - Generate step definitions from Gherkin
-router.post('/step-definitions/generate', async (req, res) => {
+router.post('/step-definitions/generate', (req, res) => {
   try {
     const { gherkinContent } = req.body;
     

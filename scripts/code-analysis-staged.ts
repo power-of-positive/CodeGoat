@@ -119,8 +119,12 @@ export function outputResults(
   const blocked = duplicateCheck.blocked || exportCheck.blocked;
   const reasons: string[] = [];
 
-  if (duplicateCheck.blocked) reasons.push(duplicateCheck.details);
-  if (exportCheck.blocked) reasons.push(exportCheck.details);
+  if (duplicateCheck.blocked) {
+    reasons.push(duplicateCheck.details);
+  }
+  if (exportCheck.blocked) {
+    reasons.push(exportCheck.details);
+  }
 
   console.log('📊 Quick Analysis Results:');
   console.log(`   ${duplicateCheck.details}`);
@@ -156,8 +160,12 @@ export async function runAnalysis(): Promise<{
   const blocked = duplicateCheck.blocked || exportCheck.blocked;
   const reasons: string[] = [];
 
-  if (duplicateCheck.blocked) reasons.push(duplicateCheck.details);
-  if (exportCheck.blocked) reasons.push(exportCheck.details);
+  if (duplicateCheck.blocked) {
+    reasons.push(duplicateCheck.details);
+  }
+  if (exportCheck.blocked) {
+    reasons.push(exportCheck.details);
+  }
 
   return {
     blocked,

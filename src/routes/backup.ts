@@ -32,7 +32,7 @@ function listBackups(): BackupInfo[] {
       // Parse filename to extract metadata
       const match = file.match(/kanban-backup-(manual|auto)-(.+?)(?:-(.+?))?\.db$/);
       const type = (match?.[1] as 'manual' | 'auto') || 'manual';
-      const timestampRaw = match?.[2] || '';
+      const timestampRaw = match?.[2] ?? '';
       // Convert ISO string format back: 2025-08-22T07-10-28-901Z -> 2025-08-22T07:10:28.901Z
       const timestamp = timestampRaw.replace(/T(\d{2})-(\d{2})-(\d{2})-(\d{3})Z$/, 'T$1:$2:$3.$4Z') || '';
       const description = match?.[3]?.replace(/-/g, ' ');
@@ -51,7 +51,7 @@ function listBackups(): BackupInfo[] {
 }
 
 function createBackupHandler(logger: ILogger) {
-  return async (req: Request, res: Response): Promise<void> => {
+  return (req: Request, res: Response): void => {
     try {
       const { description } = req.body;
       
@@ -83,7 +83,7 @@ function createBackupHandler(logger: ILogger) {
 }
 
 function getBackupsHandler(logger: ILogger) {
-  return async (req: Request, res: Response): Promise<void> => {
+  return (req: Request, res: Response): void => {
     try {
       const { limit = 20 } = req.query;
       const backups = listBackups().slice(0, parseInt(limit as string));
@@ -110,7 +110,7 @@ function getBackupsHandler(logger: ILogger) {
 }
 
 function restoreBackupHandler(logger: ILogger) {
-  return async (req: Request, res: Response): Promise<void> => {
+  return (req: Request, res: Response): void => {
     try {
       const { filename } = req.params;
       
@@ -140,7 +140,7 @@ function restoreBackupHandler(logger: ILogger) {
 }
 
 function deleteBackupHandler(logger: ILogger) {
-  return async (req: Request, res: Response): Promise<void> => {
+  return (req: Request, res: Response): void => {
     try {
       const { filename } = req.params;
       
@@ -175,7 +175,7 @@ function deleteBackupHandler(logger: ILogger) {
 }
 
 function getBackupStatusHandler(logger: ILogger) {
-  return async (req: Request, res: Response): Promise<void> => {
+  return (req: Request, res: Response): void => {
     try {
       const backups = listBackups();
       const manualBackups = backups.filter(b => b.type === 'manual');

@@ -41,7 +41,9 @@ export function runPrettierFormat(projectRoot: string, stagedFiles: string[]): C
     `npx prettier --write ${existingPrettierFiles.map(f => `"${f}"`).join(' ')}`,
     projectRoot
   );
-  if (!formatResult.success) return formatResult;
+  if (!formatResult.success) {
+    return formatResult;
+  }
 
   const restageResult = restageFiles(projectRoot, existingPrettierFiles);
   if (!restageResult.success) {
@@ -72,7 +74,9 @@ export function runEslintFix(projectRoot: string, stagedFiles: string[]): CheckR
     `npx eslint --fix ${existingEslintFiles.map(f => `"${f}"`).join(' ')}`,
     projectRoot
   );
-  if (!fixResult.success) return fixResult;
+  if (!fixResult.success) {
+    return fixResult;
+  }
 
   const restageResult = restageFiles(projectRoot, existingEslintFiles);
   if (!restageResult.success) {

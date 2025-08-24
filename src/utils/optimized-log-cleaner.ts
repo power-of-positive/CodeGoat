@@ -141,10 +141,18 @@ export class OptimizedLogCleaner {
    */
   private extractLogLevel(filename: string): string {
     const name = filename.toLowerCase();
-    if (name.includes('error') || name.includes('exception')) return 'error';
-    if (name.includes('warn')) return 'warn';
-    if (name.includes('info') || name.includes('access')) return 'info';
-    if (name.includes('debug')) return 'debug';
+    if (name.includes('error') || name.includes('exception')) {
+      return 'error';
+    }
+    if (name.includes('warn')) {
+      return 'warn';
+    }
+    if (name.includes('info') || name.includes('access')) {
+      return 'info';
+    }
+    if (name.includes('debug')) {
+      return 'debug';
+    }
     return 'info'; // default
   }
 

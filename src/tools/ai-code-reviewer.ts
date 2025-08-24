@@ -25,10 +25,10 @@ const logger = new WinstonLogger({
 // Configuration factory function for testability
 export function getConfig(): Config {
   return {
-    openaiApiKey: process.env.OPENAI_API_KEY || process.env.OPENROUTER_API_KEY,
-    apiEndpoint: process.env.AI_REVIEWER_ENDPOINT || 'https://openrouter.ai/api/v1',
-    model: process.env.AI_REVIEWER_MODEL || 'openrouter/anthropic/claude-3.5-sonnet',
-    maxSeverityToBlock: process.env.AI_REVIEWER_MAX_SEVERITY || 'medium', // Options: critical, high, medium, low, info
+    openaiApiKey: process.env.OPENAI_API_KEY ?? process.env.OPENROUTER_API_KEY,
+    apiEndpoint: process.env.AI_REVIEWER_ENDPOINT ?? 'https://openrouter.ai/api/v1',
+    model: process.env.AI_REVIEWER_MODEL ?? 'openrouter/anthropic/claude-3.5-sonnet',
+    maxSeverityToBlock: process.env.AI_REVIEWER_MAX_SEVERITY ?? 'medium', // Options: critical, high, medium, low, info
     enabled: process.env.AI_REVIEWER_ENABLED !== 'false',
     outputFile: path.join(process.cwd(), 'ai-review-results.json'),
   };
@@ -43,7 +43,7 @@ const SEVERITY_LEVELS: Record<string, number> = {
   critical: 5,
 };
 
-export async function getStagedFiles(): Promise<string[]> {
+export function getStagedFiles(): string[] {
   try {
     const output = execSync('git diff --cached --name-only --diff-filter=AM', {
       encoding: 'utf8',
@@ -65,7 +65,7 @@ export async function getStagedFiles(): Promise<string[]> {
   }
 }
 
-export async function getFileContent(filePath: string): Promise<string | null> {
+export function getFileContent(filePath: string): string | null {
   try {
     return fs.readFileSync(path.join(process.cwd(), filePath), 'utf8');
   } catch (error) {
@@ -128,7 +128,7 @@ function buildAPIRequest(prompt: string, config: Config): object {
 
 function extractJSONFromResponse(reviewText: string): string {
   const jsonMatch =
-    reviewText.match(/```(?:json)?\s*(\{[\s\S]*\})\s*```/) || reviewText.match(/(\{[\s\S]*\})/);
+    reviewText.match(/```(?:json)?\s*(\{[\s\S]*\})\s*```/) ?? reviewText.match(/(\{[\s\S]*\})/);
   return jsonMatch ? jsonMatch[1] : reviewText;
 }
 
@@ -243,7 +243,7 @@ export async function reviewCode(filePath: string, content: string): Promise<Rev
 
 export function shouldBlockCommit(allReviews: ReviewItem[], maxSeverity?: string): boolean {
   const config = getConfig();
-  const blockingSeverity = SEVERITY_LEVELS[maxSeverity || config.maxSeverityToBlock];
+  const blockingSeverity = SEVERITY_LEVELS[maxSeverity ?? config.maxSeverityToBlock];
 
   // Check if any review meets or exceeds the blocking threshold
   const blockingReviews = allReviews.filter(
@@ -270,7 +270,9 @@ export function formatResults(results: FileReviewResult[]): FormattedResults {
   // Group by severity
   const groupedBySeverity = allReviews.reduce(
     (acc, review) => {
-      if (!acc[review.severity]) acc[review.severity] = [];
+      if (!acc[review.severity]) {
+        acc[review.severity] = [];
+      }
       acc[review.severity].push(review);
       return acc;
     },
@@ -317,7 +319,9 @@ function outputBasicSummary(results: FormattedResults): void {
 }
 
 function outputSeverityBreakdown(results: FormattedResults): void {
-  if (results.summary.totalIssues === 0) return;
+  if (results.summary.totalIssues === 0) {
+    return;
+  }
 
   const isTest = process.env.NODE_ENV === 'test';
   const log = isTest ? console.log : logger.info.bind(logger);
@@ -334,7 +338,9 @@ function outputNotableIssues(results: FormattedResults): void {
     review => SEVERITY_LEVELS[review.severity] >= SEVERITY_LEVELS.medium
   );
 
-  if (highSeverityIssues.length === 0) return;
+  if (highSeverityIssues.length === 0) {
+    return;
+  }
 
   logger.info('\n📋 Notable Issues:');
   highSeverityIssues.forEach(review => {
@@ -374,7 +380,9 @@ function outputBlockingIssues(results: FormattedResults, config: Config): void {
 
   const blockingBySeverity = blockingIssues.reduce(
     (acc, issue) => {
-      if (!acc[issue.severity]) acc[issue.severity] = 0;
+      if (!acc[issue.severity]) {
+        acc[issue.severity] = 0;
+      }
       acc[issue.severity]++;
       return acc;
     },
@@ -414,7 +422,7 @@ export async function main(): Promise<void> {
 
   logger.info('🤖 Running AI code review...');
 
-  const stagedFiles = await getStagedFiles();
+  const stagedFiles = getStagedFiles();
 
   if (stagedFiles.length === 0) {
     logger.info('No relevant files to review.');
@@ -426,7 +434,7 @@ export async function main(): Promise<void> {
   const results: FileReviewResult[] = [];
 
   for (const filePath of stagedFiles) {
-    const content = await getFileContent(filePath);
+    const content = getFileContent(filePath);
     if (content) {
       logger.info(`  Reviewing ${filePath}...`);
       const review = await reviewCode(filePath, content);

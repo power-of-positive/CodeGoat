@@ -109,7 +109,9 @@ function getGitStatus(): { modified: string[]; untracked: string[] } {
 }
 
 function formatFileList(files: string[], maxDisplay: number = 10): string {
-  if (files.length === 0) return 'none';
+  if (files.length === 0) {
+    return 'none';
+  }
 
   const displayFiles = files.slice(0, maxDisplay);
   const result = displayFiles.map(f => `  - ${f}`).join('\n');
@@ -153,7 +155,9 @@ function checkUncommittedFiles(): void {
     console.log('Modified files:');
     console.log(formatFileList(filteredModified));
     hasWarnings = true;
-    if (config.failOnExcess) shouldFail = true;
+    if (config.failOnExcess) {
+      shouldFail = true;
+    }
   }
 
   // Check untracked files
@@ -164,7 +168,9 @@ function checkUncommittedFiles(): void {
     console.log('Untracked files:');
     console.log(formatFileList(filteredUntracked));
     hasWarnings = true;
-    if (config.failOnExcess) shouldFail = true;
+    if (config.failOnExcess) {
+      shouldFail = true;
+    }
   }
 
   // Provide guidance

@@ -114,7 +114,7 @@ export class PermissionManager {
       const result: PermissionResult = {
         allowed: matchingRule.allowed,
         reason:
-          matchingRule.reason ||
+          matchingRule.reason ??
           `Rule ${matchingRule.id}: ${matchingRule.allowed ? 'allowed' : 'denied'}`,
         matchingRule,
       };

@@ -15,7 +15,9 @@ export function checkPlaywrightCoverage(files: string): string {
   let comments = '';
 
   for (const file of fileList) {
-    if (!file) continue;
+    if (!file) {
+      continue;
+    }
 
     // Check if it's a UI component file that needs Playwright tests
     if (isUiComponentFile(file) && fs.existsSync(file)) {

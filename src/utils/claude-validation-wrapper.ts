@@ -198,11 +198,11 @@ export class ClaudeValidationWrapper {
 
           resolve({
             success,
-            totalStages: results.totalStages || 0,
-            passed: results.passed || 0,
-            failed: results.failed || 0,
-            totalTime: results.totalTime || 0,
-            stages: results.stages || [],
+            totalStages: results.totalStages ?? 0,
+            passed: results.passed ?? 0,
+            failed: results.failed ?? 0,
+            totalTime: results.totalTime ?? 0,
+            stages: results.stages ?? [],
           });
 
           await runner.cleanup();
@@ -212,7 +212,7 @@ export class ClaudeValidationWrapper {
         }
       };
 
-      runValidationAsync();
+      runValidationAsync().catch(reject);
     });
   }
 

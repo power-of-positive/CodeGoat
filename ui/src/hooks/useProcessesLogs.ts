@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import type { UnifiedLogEntry, ProcessStartPayload } from '../types/logs';
-import type { NormalizedEntry } from '../../../shared/types';
+import type { UnifiedLogEntry, ProcessStartPayload } from '../shared/types/logs';
+import type { NormalizedEntry } from '../shared/types/index';
 
 export interface ExecutionProcess {
   id: string;

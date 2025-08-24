@@ -154,8 +154,8 @@ app.get('*', (req: Request, res: Response) => {
 // Create HTTP server
 const httpServer = createServer(app);
 
-const PORT = process.env.PORT || 3000;
-const HOST = process.env.HOST || 'localhost';
+const PORT = process.env.PORT ?? 3000;
+const HOST = process.env.HOST ?? 'localhost';
 
 const server = httpServer.listen(Number(PORT), HOST, () => {
   logger.info(`Validation analytics server running on ${HOST}:${PORT}`);

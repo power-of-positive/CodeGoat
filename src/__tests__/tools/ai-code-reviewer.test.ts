@@ -283,7 +283,7 @@ describe('AI Code Reviewer', () => {
         'src/index.ts\nsrc/component.tsx\nsrc/utils.js\nsrc/app.jsx\nREADME.md\npackage.json\n'
       );
 
-      const files = await getStagedFiles();
+      const files = getStagedFiles();
 
       expect(files).toEqual(['src/index.ts', 'src/component.tsx', 'src/utils.js', 'src/app.jsx']);
       expect(mockExecSync).toHaveBeenCalledWith('git diff --cached --name-only --diff-filter=AM', {
@@ -295,7 +295,7 @@ describe('AI Code Reviewer', () => {
     it('should filter out non-JS/TS files', async () => {
       mockExecSync.mockReturnValue('README.md\npackage.json\n.gitignore\nDockerfile\n');
 
-      const files = await getStagedFiles();
+      const files = getStagedFiles();
 
       expect(files).toEqual([]);
     });
@@ -303,7 +303,7 @@ describe('AI Code Reviewer', () => {
     it('should handle empty git output', async () => {
       mockExecSync.mockReturnValue('');
 
-      const files = await getStagedFiles();
+      const files = getStagedFiles();
 
       expect(files).toEqual([]);
     });
@@ -313,7 +313,7 @@ describe('AI Code Reviewer', () => {
         throw new Error('fatal: not a git repository');
       });
 
-      const files = await getStagedFiles();
+      const files = getStagedFiles();
 
       expect(files).toEqual([]);
     });
@@ -329,7 +329,7 @@ describe('AI Code Reviewer', () => {
       const mockContent = 'const hello = "world";';
       mockFs.readFileSync.mockReturnValue(mockContent);
 
-      const content = await getFileContent('src/test.ts');
+      const content = getFileContent('src/test.ts');
 
       expect(content).toBe(mockContent);
       expect(mockFs.readFileSync).toHaveBeenCalledWith(
@@ -343,7 +343,7 @@ describe('AI Code Reviewer', () => {
         throw new Error('ENOENT: no such file or directory');
       });
 
-      const content = await getFileContent('nonexistent.ts');
+      const content = getFileContent('nonexistent.ts');
 
       expect(content).toBeNull();
     });
@@ -353,7 +353,7 @@ describe('AI Code Reviewer', () => {
         throw new Error('EACCES: permission denied');
       });
 
-      const content = await getFileContent('protected.ts');
+      const content = getFileContent('protected.ts');
 
       expect(content).toBeNull();
     });

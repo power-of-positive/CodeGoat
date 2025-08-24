@@ -17,7 +17,9 @@ export function runFrontendLinting(projectRoot: string): CheckResult {
   validateDirectoryExists(frontendDir);
 
   const lintResult = execCommand('npm run lint', frontendDir);
-  if (!lintResult.success) return lintResult;
+  if (!lintResult.success) {
+    return lintResult;
+  }
 
   return execCommand('npm run format:check', frontendDir);
 }

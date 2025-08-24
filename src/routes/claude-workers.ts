@@ -202,7 +202,7 @@ async function runValidationChecks(
 
       // Create detailed failure message
       const failedStages = validationRun.stages.filter(stage => stage.status === 'failed');
-      const failureMessage = `Validation failed on ${failedStages.length} stage(s): ${failedStages.map(s => s.name).join(', ')}. Please fix the following issues and try again:\n\n${failedStages.map(stage => `• ${stage.name}: ${stage.error || 'Failed without specific error message'}`).join('\n')}`;
+      const failureMessage = `Validation failed on ${failedStages.length} stage(s): ${failedStages.map(s => s.name).join(', ')}. Please fix the following issues and try again:\n\n${failedStages.map(stage => `• ${stage.name}: ${stage.error ?? 'Failed without specific error message'}`).join('\n')}`;
 
       return {
         success: false,
@@ -230,17 +230,17 @@ async function runValidationChecks(
 /**
  * Restart worker with validation feedback
  */
-async function restartWorkerWithFeedback(
+function restartWorkerWithFeedback(
   worker: ClaudeWorker,
   validationMessage: string
-): Promise<void> {
+): void {
   try {
     console.error(
-      `🔄 Restarting worker ${worker.id} with validation feedback (attempt ${(worker.validationAttempts || 0) + 1}/${worker.maxValidationAttempts})`
+      `🔄 Restarting worker ${worker.id} with validation feedback (attempt ${(worker.validationAttempts ?? 0) + 1}/${worker.maxValidationAttempts})`
     );
 
     // Increment validation attempts
-    worker.validationAttempts = (worker.validationAttempts || 0) + 1;
+    worker.validationAttempts = (worker.validationAttempts ?? 0) + 1;
 
     // Stop current process if running (it should already be finished, but just in case)
     if (worker.process && !worker.process.killed) {
@@ -317,7 +317,7 @@ async function getMaxValidationAttempts(): Promise<number> {
     const settingsPath = path.join(process.cwd(), 'settings.json');
     const settingsContent = await fs.promises.readFile(settingsPath, 'utf-8');
     const settings = JSON.parse(settingsContent);
-    return settings.validation?.maxAttempts || 3;
+    return settings.validation?.maxAttempts ?? 3;
   } catch (error) {
     console.error('Failed to load validation settings, using default maxAttempts=3:', error);
     return 3;
@@ -401,22 +401,34 @@ function isNonCommand(str: string): boolean {
   const trimmed = str.trim();
 
   // Skip empty strings
-  if (!trimmed) return true;
+  if (!trimmed) {
+    return true;
+  }
 
   // Skip pure output/log messages
-  if (/^(error|warning|info|debug|log):/i.test(trimmed)) return true;
+  if (/^(error|warning|info|debug|log):/i.test(trimmed)) {
+    return true;
+  }
 
   // Skip URLs
-  if (/^https?:\/\//.test(trimmed)) return true;
+  if (/^https?:\/\//.test(trimmed)) {
+    return true;
+  }
 
   // Skip file paths without command context
-  if (/^[./~]/.test(trimmed) && !trimmed.includes(' ')) return true;
+  if (/^[./~]/.test(trimmed) && !trimmed.includes(' ')) {
+    return true;
+  }
 
   // Skip numbers/timestamps
-  if (/^\d+([:.]\d+)*$/.test(trimmed)) return true;
+  if (/^\d+([:.]\d+)*$/.test(trimmed)) {
+    return true;
+  }
 
   // Skip JSON-like content
-  if (/^[{[]/.test(trimmed)) return true;
+  if (/^[{[]/.test(trimmed)) {
+    return true;
+  }
 
   return false;
 }
@@ -590,7 +602,7 @@ router.post('/start', async (req, res) => {
         try {
           const json = JSON.parse(line);
           if (worker.claudeLogProcessor) {
-            const entries = worker.claudeLogProcessor.toNormalizedEntries(json, worker.worktreePath || '');
+            const entries = worker.claudeLogProcessor.toNormalizedEntries(json, worker.worktreePath ?? '');
             // Convert to our internal format
             worker.structuredEntries.push(...entries.map(entry => ({
               type: entry.entry_type.type,
@@ -638,7 +650,8 @@ router.post('/start', async (req, res) => {
     }
 
     // Handle process completion
-    claudeProcess.on('close', async code => {
+    claudeProcess.on('close', code => {
+      (async () => {
       try {
         worker.endTime = new Date();
         const duration = worker.endTime.getTime() - worker.startTime.getTime();
@@ -684,14 +697,14 @@ router.post('/start', async (req, res) => {
               console.error(`❌ Worker ${workerId} failed validation checks`);
 
               // Check if we can retry with feedback
-              const currentAttempts = worker.validationAttempts || 0;
-              const maxAttempts = worker.maxValidationAttempts || 3;
+              const currentAttempts = worker.validationAttempts ?? 0;
+              const maxAttempts = worker.maxValidationAttempts ?? 3;
 
               if (currentAttempts < maxAttempts && validationResult.message) {
                 console.error(
                   `🔄 Restarting worker ${workerId} with validation feedback (attempt ${currentAttempts + 1}/${maxAttempts})`
                 );
-                await restartWorkerWithFeedback(worker, validationResult.message);
+                restartWorkerWithFeedback(worker, validationResult.message);
                 // Don't clean up worktree yet, worker is restarting
                 return;
               } else {
@@ -731,6 +744,10 @@ router.post('/start', async (req, res) => {
           logStreamClosed = true;
         }
       }
+      })().catch(error => {
+        console.error(`❌ Unhandled async error in worker ${workerId} completion:`, error);
+        worker.status = 'failed';
+      });
     });
 
     claudeProcess.on('error', error => {
@@ -1011,7 +1028,7 @@ router.post('/:workerId/message', (req, res) => {
     });
   }
 
-  if (!worker.process || !worker.process.stdin) {
+  if (!worker.process?.stdin) {
     return res.status(400).json({
       success: false,
       error: 'Worker process is not available for input',
@@ -1543,7 +1560,7 @@ router.get('/:workerId/enhanced-logs', (req, res) => {
 /**
  * Send follow-up comment to a running worker
  */
-router.post('/:workerId/follow-up', async (req, res) => {
+router.post('/:workerId/follow-up', (req, res) => {
   const { workerId } = req.params;
   const { prompt } = req.body;
 
@@ -1570,7 +1587,7 @@ router.post('/:workerId/follow-up', async (req, res) => {
     });
   }
 
-  if (!worker.process || !worker.process.stdin) {
+  if (!worker.process?.stdin) {
     return res.status(400).json({
       success: false,
       error: 'Worker process is not available for input',
@@ -1659,7 +1676,7 @@ router.post('/:workerId/merge', async (req, res) => {
 
     // Create commit message
     const defaultMessage = `Task ${worker.taskId}: ${worker.taskContent.substring(0, 50)}...`;
-    const finalMessage = commitMessage || defaultMessage;
+    const finalMessage = commitMessage ?? defaultMessage;
 
     // Commit changes
     execSync(`git commit -m "${finalMessage}"`, { cwd: worktreePath });

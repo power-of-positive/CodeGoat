@@ -5,15 +5,13 @@ import {
   settingsSchema,
   fallbackSettingsSchema,
   validationStageSchema,
+  type Settings,
+  type PartialSettings,
+  type FallbackSettings,
+  type ValidationSettings,
+  type ValidationStage,
+  type LoggingSettings,
 } from '../types/settings.types';
-import type {
-  Settings,
-  PartialSettings,
-  FallbackSettings,
-  ValidationSettings,
-  ValidationStage,
-} from '../types/settings.types';
-import type { LoggingSettings } from '../types/settings.types';
 import { DEFAULT_SETTINGS } from '../constants/settings.constants';
 
 // Re-export types for backward compatibility
@@ -32,7 +30,7 @@ export class SettingsService {
 
   constructor(logger: ILogger, settingsPath?: string) {
     this.logger = logger;
-    this.settingsPath = settingsPath || path.join(process.cwd(), 'settings.json');
+    this.settingsPath = settingsPath ?? path.join(process.cwd(), 'settings.json');
   }
 
   /**
@@ -119,7 +117,7 @@ export class SettingsService {
   async getFallbackSettings(): Promise<FallbackSettings> {
     const settings = await this.loadSettings();
     const defaultSettings = await DEFAULT_SETTINGS;
-    return settings.fallback || defaultSettings.fallback!;
+    return settings.fallback ?? defaultSettings.fallback!;
   }
 
   /**
@@ -142,7 +140,7 @@ export class SettingsService {
   async getValidationSettings(): Promise<ValidationSettings> {
     const settings = await this.loadSettings();
     const defaultSettings = await DEFAULT_SETTINGS;
-    return settings.validation || defaultSettings.validation!;
+    return settings.validation ?? defaultSettings.validation!;
   }
 
   /**
@@ -297,6 +295,6 @@ export class SettingsService {
   async getLoggingSettings(): Promise<LoggingSettings> {
     const settings = await this.loadSettings();
     const defaultSettings = await DEFAULT_SETTINGS;
-    return settings.logging || defaultSettings.logging!;
+    return settings.logging ?? defaultSettings.logging!;
   }
 }
