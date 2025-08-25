@@ -34,8 +34,8 @@ function App(): React.JSX.Element {
             <Route path="/" element={<Navigate to="/analytics" replace />} />
             <Route path="/analytics" element={<Analytics />} />
             <Route path="/stage-history" element={<StageHistoryDashboard />} />
-            <Route path="/tasks" element={<TaskBoard />} />
-            <Route path="/task-management" element={<TaskManagement />} />
+            <Route path="/kanban" element={<TaskBoard />} />
+            <Route path="/tasks" element={<TaskManagement />} />
             <Route path="/tasks/:taskId" element={<TaskDetail />} />
             <Route path="/task-analytics" element={<TaskAnalytics />} />
             <Route path="/bdd-tests" element={<BDDTestsDashboard />} />

@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Task Management UI', () => {
+test.describe('Tasks UI', () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to the task management page
     await page.goto('/tasks');
@@ -23,7 +23,7 @@ test.describe('Task Management UI', () => {
       // Should be on the tasks page
       await expect(page).toHaveURL(/.*\/tasks$/);
       
-      const heading = page.locator('text=Task Management');
+      const heading = page.locator('text=Tasks');
       if (await heading.count() > 0) {
         await expect(heading).toBeVisible();
       }
@@ -44,7 +44,7 @@ test.describe('Task Management UI', () => {
     await page.waitForLoadState('networkidle');
     
     // Check main page elements
-    const heading = page.locator('text=Task Management');
+    const heading = page.locator('text=Tasks');
     if (await heading.count() > 0) {
       await expect(heading).toBeVisible();
     }
@@ -107,7 +107,7 @@ test.describe('Task Management UI', () => {
 
     // The loading state might be very brief, so we'll accept if we see it or if it's already loaded
     const loadingText = page.locator('text=Loading tasks...');
-    const mainContent = page.locator('text=Task Management');
+    const mainContent = page.locator('text=Tasks');
 
     // Wait for either loading state or main content
     await expect(loadingText.or(mainContent)).toBeVisible({ timeout: 5000 });
@@ -484,7 +484,7 @@ test.describe('Task Management UI', () => {
     await page.setViewportSize({ width: 375, height: 667 });
 
     // The page should still be functional
-    await expect(page.locator('h1:has-text("Task Management")')).toBeVisible();
+    await expect(page.locator('h1:has-text("Tasks")')).toBeVisible();
     await expect(page.locator('button:has-text("Add Task")')).toBeVisible();
 
     // Kanban columns should be horizontally scrollable

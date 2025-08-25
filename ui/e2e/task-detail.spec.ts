@@ -95,7 +95,7 @@ test.describe('Task Detail Management', () => {
 
     // Should be on tasks page
     await expect(page).toHaveURL('/tasks');
-    await expect(page.locator('h1:has-text("Task Management")')).toBeVisible();
+    await expect(page.locator('h1:has-text("Tasks")')).toBeVisible();
   });
 
   test('should display validation runs section', async ({ page }) => {

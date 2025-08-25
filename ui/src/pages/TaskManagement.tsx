@@ -704,7 +704,7 @@ export function TaskManagement() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Task Management</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Tasks</h1>
           <p className="text-gray-600 mt-1">
             Comprehensive task management with advanced filtering and CRUD operations
           </p>

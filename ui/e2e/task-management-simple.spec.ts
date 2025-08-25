@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Task Management', () => {
+test.describe('Tasks', () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to the tasks page
     await page.goto('/');
@@ -22,7 +22,7 @@ test.describe('Task Management', () => {
     await page.waitForLoadState('networkidle');
     
     // Check main heading
-    const mainHeading = page.locator('text=Task Management');
+    const mainHeading = page.locator('text=Tasks');
     if (await mainHeading.count() > 0) {
       await expect(mainHeading).toBeVisible();
     }
@@ -130,7 +130,7 @@ test.describe('Task Management', () => {
     }
 
     // Should eventually show the task management page or be on right route
-    const taskManagementHeading = page.locator('text=Task Management');
+    const taskManagementHeading = page.locator('text=Tasks');
     if (await taskManagementHeading.count() > 0) {
       await expect(taskManagementHeading).toBeVisible({ timeout: 10000 });
     } else {
@@ -145,7 +145,7 @@ test.describe('Task Management', () => {
     await page.setViewportSize({ width: 375, height: 667 });
 
     // Main elements should still be visible if they exist
-    const taskManagementHeading = page.locator('text=Task Management');
+    const taskManagementHeading = page.locator('text=Tasks');
     if (await taskManagementHeading.count() > 0) {
       await expect(taskManagementHeading).toBeVisible();
     }
@@ -168,7 +168,7 @@ test.describe('Task Management', () => {
     await page.waitForLoadState('networkidle');
 
     // Should load the tasks page or be on the right route
-    const taskManagementHeading = page.locator('text=Task Management');
+    const taskManagementHeading = page.locator('text=Tasks');
     if (await taskManagementHeading.count() > 0) {
       await expect(taskManagementHeading).toBeVisible({ timeout: 10000 });
     }
@@ -195,13 +195,13 @@ test.describe('Task Management', () => {
       await expect(errorMessage.first()).toBeVisible();
     } else {
       // If no specific error UI, page should still load without crashing
-      await expect(page.locator('h1:has-text("Task Management")')).toBeVisible({ timeout: 10000 });
+      await expect(page.locator('h1:has-text("Tasks")')).toBeVisible({ timeout: 10000 });
     }
   });
 
   test('should show consistent styling', async ({ page }) => {
     // Check heading styling
-    const heading = page.locator('h1:has-text("Task Management")');
+    const heading = page.locator('h1:has-text("Tasks")');
     await expect(heading).toHaveCSS('font-weight', '700');
 
     // Check button styling
@@ -251,6 +251,6 @@ test.describe('Task Management', () => {
     }
 
     // Page should still function normally
-    await expect(page.locator('h1:has-text("Task Management")')).toBeVisible();
+    await expect(page.locator('h1:has-text("Tasks")')).toBeVisible();
   });
 });

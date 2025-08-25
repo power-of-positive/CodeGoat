@@ -12,14 +12,14 @@ test.describe('Task Management', () => {
     await page.click('a:has-text("Tasks")');
 
     // Wait for tasks content to load
-    await page.waitForSelector('h1:has-text("Task Management")', { timeout: 10000 });
+    await page.waitForSelector('h1:has-text("Tasks")', { timeout: 10000 });
   });
 
   test('should display task management page with all sections', async ({ page }) => {
     await page.waitForLoadState('networkidle');
     
     // Check main heading
-    const mainHeading = page.locator('text=Task Management');
+    const mainHeading = page.locator('text=Tasks');
     if (await mainHeading.count() > 0) {
       await expect(mainHeading).toBeVisible();
     }

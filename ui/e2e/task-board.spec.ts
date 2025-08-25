@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Task Board Management', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/tasks');
+    await page.goto('/kanban');
     await page.waitForLoadState('networkidle');
   });
 
@@ -11,7 +11,7 @@ test.describe('Task Board Management', () => {
     // And I have access to the Task Board
     // And there are existing tasks in different statuses
     
-    // When I navigate to the Tasks page
+    // When I navigate to the Kanban page
     // Then I should see the task board with columns for different statuses
     await expect(page.locator('[data-testid="task-board"]')).toBeVisible();
     

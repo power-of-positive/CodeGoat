@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Permissions and Task Management Integration', () => {
+test.describe('Permissions and Tasks Integration', () => {
   test.beforeEach(async ({ page }) => {
     // Start from the dashboard
     await page.goto('/');
@@ -30,7 +30,7 @@ test.describe('Permissions and Task Management Integration', () => {
       await page.waitForLoadState('networkidle');
       await expect(page).toHaveURL('/tasks');
       
-      const taskManagement = page.locator('text=Task Management');
+      const taskManagement = page.locator('text=Tasks');
       if (await taskManagement.count() > 0) {
         await expect(taskManagement).toBeVisible();
       }
@@ -71,7 +71,7 @@ test.describe('Permissions and Task Management Integration', () => {
 
     // Direct navigation to tasks
     await page.goto('/tasks');
-    await expect(page.locator('h1:has-text("Task Management")')).toBeVisible();
+    await expect(page.locator('h1:has-text("Tasks")')).toBeVisible();
 
     // Navigate to task detail via URL (if tasks exist)
     const taskCards = page.locator('[data-testid^="task-card-"]');
@@ -102,7 +102,7 @@ test.describe('Permissions and Task Management Integration', () => {
     await page.click('a:has-text("Tasks")');
 
     // Check for consistent header styling
-    const tasksHeader = page.locator('h1:has-text("Task Management")');
+    const tasksHeader = page.locator('h1:has-text("Tasks")');
     await expect(tasksHeader).toHaveCSS('font-weight', '700'); // Bold
 
     // Check for consistent button styling
@@ -127,7 +127,7 @@ test.describe('Permissions and Task Management Integration', () => {
     // Use browser forward button
     await page.goForward();
     await expect(page).toHaveURL('/tasks');
-    await expect(page.locator('h1:has-text("Task Management")')).toBeVisible();
+    await expect(page.locator('h1:has-text("Tasks")')).toBeVisible();
   });
 
   test('should preserve form state when navigating away and back', async ({ page }) => {
@@ -194,7 +194,7 @@ test.describe('Permissions and Task Management Integration', () => {
 
     // Navigate to tasks - should handle error gracefully
     await page.click('a:has-text("Tasks")');
-    await expect(page.locator('h1:has-text("Task Management")')).toBeVisible();
+    await expect(page.locator('h1:has-text("Tasks")')).toBeVisible();
   });
 
   test('should maintain authentication state across navigation', async ({ page }) => {
@@ -241,7 +241,7 @@ test.describe('Permissions and Task Management Integration', () => {
 
     // Should end up on tasks page without errors
     await expect(page).toHaveURL('/tasks');
-    await expect(page.locator('h1:has-text("Task Management")')).toBeVisible();
+    await expect(page.locator('h1:has-text("Tasks")')).toBeVisible();
   });
 
   test('should work correctly with different viewport sizes', async ({ page }) => {
@@ -255,7 +255,7 @@ test.describe('Permissions and Task Management Integration', () => {
 
     await page.click('a:has-text("Tasks")');
     await expect(page).toHaveURL('/tasks');
-    await expect(page.locator('h1:has-text("Task Management")')).toBeVisible();
+    await expect(page.locator('h1:has-text("Tasks")')).toBeVisible();
 
     // Test tablet viewport
     await page.setViewportSize({ width: 768, height: 1024 });

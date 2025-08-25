@@ -42,15 +42,15 @@ const navItems: NavItem[] = [
     description: 'Advanced stage performance analytics and trends',
   },
   {
-    href: '/tasks',
+    href: '/kanban',
     icon: CheckSquare,
-    label: 'Tasks',
+    label: 'Kanban',
     description: 'Kanban board for task management',
   },
   {
-    href: '/task-management',
+    href: '/tasks',
     icon: List,
-    label: 'Task Management',
+    label: 'Tasks',
     description: 'Advanced task CRUD with filtering and search',
   },
   {

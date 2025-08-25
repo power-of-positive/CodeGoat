@@ -8,8 +8,8 @@ test.describe('Task Management Basic Tests', () => {
     // Wait for the page to load
     await page.waitForLoadState('networkidle');
 
-    // Check if we can see the task management heading
-    const taskHeading = page.locator('text=Task Management');
+    // Check if we can see the tasks heading
+    const taskHeading = page.locator('text=Tasks');
     if (await taskHeading.count() > 0) {
       await expect(taskHeading).toBeVisible();
     } else {
@@ -23,7 +23,7 @@ test.describe('Task Management Basic Tests', () => {
     await page.waitForLoadState('networkidle');
 
     // Check if main heading is available
-    const mainHeading = page.locator('text=Task Management');
+    const mainHeading = page.locator('text=Tasks');
     if (await mainHeading.count() > 0) {
       await expect(mainHeading).toBeVisible();
     }

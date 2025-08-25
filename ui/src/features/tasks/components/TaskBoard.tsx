@@ -582,10 +582,10 @@ export function TaskBoard() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
-              Tasks
+              Kanban
             </h1>
             <p className="text-gray-600">
-              Manage development tasks and track progress
+              Kanban board for task management and progress tracking
             </p>
           </div>
           <Button onClick={() => setShowCreateForm(true)}>

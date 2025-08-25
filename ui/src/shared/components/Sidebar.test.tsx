@@ -60,8 +60,8 @@ describe('Sidebar', () => {
       // Check that all navigation items are rendered
       expect(screen.getByText('Analytics')).toBeInTheDocument();
       expect(screen.getByText('Stage History')).toBeInTheDocument();
+      expect(screen.getByText('Kanban')).toBeInTheDocument();
       expect(screen.getByText('Tasks')).toBeInTheDocument();
-      expect(screen.getByText('Task Management')).toBeInTheDocument();
       expect(screen.getByText('Task Analytics')).toBeInTheDocument();
       expect(screen.getByText('BDD Tests')).toBeInTheDocument();
       expect(screen.getByText('Workers')).toBeInTheDocument();
@@ -146,8 +146,8 @@ describe('Sidebar', () => {
       
       expect(hrefs).toContain('/analytics');
       expect(hrefs).toContain('/stage-history');
+      expect(hrefs).toContain('/kanban');
       expect(hrefs).toContain('/tasks');
-      expect(hrefs).toContain('/task-management');
       expect(hrefs).toContain('/task-analytics');
       expect(hrefs).toContain('/bdd-tests');
       expect(hrefs).toContain('/workers');
