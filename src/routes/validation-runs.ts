@@ -120,7 +120,7 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
         sessionId: dbRun.sessionId || undefined,
         timestamp: dbRun.timestamp.toISOString(),
         startTime: dbRun.startTime ? Number(dbRun.startTime) : undefined,
-        totalTime: dbRun.totalTime,
+        totalTime: Number(dbRun.totalTime),
         totalStages: dbRun.totalStages,
         passedStages: dbRun.passedStages,
         failedStages: dbRun.failedStages,
@@ -134,7 +134,7 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
           stageId: stage.stageId,
           stageName: stage.stageName,
           success: stage.success,
-          duration: stage.duration,
+          duration: Number(stage.duration),
           command: stage.command || undefined,
           exitCode: stage.exitCode || undefined,
           output: stage.output || undefined,
@@ -198,7 +198,7 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
         sessionId: dbRun.sessionId || undefined,
         timestamp: dbRun.timestamp.toISOString(),
         startTime: dbRun.startTime ? Number(dbRun.startTime) : undefined,
-        totalTime: dbRun.totalTime,
+        totalTime: Number(dbRun.totalTime),
         totalStages: dbRun.totalStages,
         passedStages: dbRun.passedStages,
         failedStages: dbRun.failedStages,
@@ -212,7 +212,7 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
           stageId: stage.stageId,
           stageName: stage.stageName,
           success: stage.success,
-          duration: stage.duration,
+          duration: Number(stage.duration),
           command: stage.command || undefined,
           exitCode: stage.exitCode || undefined,
           output: stage.output || undefined,
@@ -311,9 +311,9 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
           successfulRuns: successCount,
           failedRuns: stage._count.stageId - successCount,
           successRate: Math.round(successRate * 100) / 100,
-          totalDuration: stage._sum.duration || 0,
+          totalDuration: Number(stage._sum.duration) || 0,
           avgDuration: stage._sum.duration && stage._count.stageId > 0 
-            ? Math.round((stage._sum.duration / stage._count.stageId) * 100) / 100 
+            ? Math.round((Number(stage._sum.duration) / stage._count.stageId) * 100) / 100 
             : 0
         };
       });
@@ -357,7 +357,7 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
             successfulRuns,
             failedRuns,
             successRate: Math.round(successRate * 100) / 100,
-            averageDuration: Math.round((avgDuration._avg.totalTime || 0) * 100) / 100,
+            averageDuration: Math.round((Number(avgDuration._avg.totalTime) || 0) * 100) / 100,
             period: `Last ${days} days`,
           },
           stageStatistics: enrichedStageStats,
@@ -556,10 +556,10 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
           successfulRuns: successCount,
           failedRuns: failureCount,
           successRate: Math.round(successRate * 100) / 100,
-          totalDuration: stage._sum.duration || 0,
-          avgDuration: Math.round((stage._avg.duration || 0) * 100) / 100,
-          minDuration: stage._min.duration || 0,
-          maxDuration: stage._max.duration || 0,
+          totalDuration: Number(stage._sum.duration) || 0,
+          avgDuration: Math.round((Number(stage._avg.duration) || 0) * 100) / 100,
+          minDuration: Number(stage._min.duration) || 0,
+          maxDuration: Number(stage._max.duration) || 0,
           reliability: successRate >= 95 ? 'excellent' : 
                       successRate >= 85 ? 'good' : 
                       successRate >= 70 ? 'fair' : 'poor'
@@ -584,7 +584,7 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
         
         acc[stageKey].runs.push(stage);
         if (stage.success) {acc[stageKey].successCount++;}
-        acc[stageKey].totalDuration += stage.duration;
+        acc[stageKey].totalDuration += Number(stage.duration);
         
         return acc;
       }, {} as Record<string, any>);
@@ -692,7 +692,16 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
       const runsQuery: any = {
         where: whereClause,
         orderBy: { timestamp: 'asc' },
-        select: {
+      };
+
+      if (includeStages === 'true') {
+        runsQuery.include = {
+          stages: {
+            orderBy: { order: 'asc' }
+          }
+        };
+      } else {
+        runsQuery.select = {
           id: true,
           timestamp: true,
           success: true,
@@ -703,21 +712,6 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
           triggerType: true,
           environment: true,
           gitBranch: true
-        }
-      };
-
-      if (includeStages === 'true') {
-        runsQuery.include = {
-          stages: {
-            select: {
-              stageId: true,
-              stageName: true,
-              success: true,
-              duration: true,
-              order: true
-            },
-            orderBy: { order: 'asc' }
-          }
         };
       }
 
@@ -773,7 +767,7 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
             if (stage.success) {
               acc[timeKey].stagePerformance[key].success++;
             }
-            acc[timeKey].stagePerformance[key].avgDuration += stage.duration;
+            acc[timeKey].stagePerformance[key].avgDuration += Number(stage.duration);
           });
         }
 
@@ -783,7 +777,7 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
       // Finalize calculations
       const timeline = Object.values(timelineData).map((period: any) => {
         // Calculate average duration for the period
-        const totalDuration = period.runs.reduce((sum: number, run: any) => sum + run.totalTime, 0);
+        const totalDuration = period.runs.reduce((sum: number, run: any) => sum + Number(run.totalTime), 0);
         period.averageDuration = period.totalRuns > 0 ? totalDuration / period.totalRuns : 0;
 
         // Finalize stage performance calculations
@@ -909,7 +903,7 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
             totalRuns: stage._count.stageId,
             successfulRuns: successCount,
             successRate: Math.round(stageSuccessRate * 100) / 100,
-            avgDuration: Math.round((stage._avg.duration || 0) * 100) / 100
+            avgDuration: Math.round((Number(stage._avg.duration) || 0) * 100) / 100
           };
         });
 
@@ -918,7 +912,7 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
           successfulRuns: successRuns,
           failedRuns: totalRuns - successRuns,
           successRate: Math.round(successRate * 100) / 100,
-          avgDuration: Math.round((avgDuration._avg.totalTime || 0) * 100) / 100,
+          avgDuration: Math.round((Number(avgDuration._avg.totalTime) || 0) * 100) / 100,
           stages: enrichedStages
         };
       };
