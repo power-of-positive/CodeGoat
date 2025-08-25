@@ -211,6 +211,33 @@ describe('EnhancedLogEntryRow', () => {
       expect(screen.getByTestId('settings-icon')).toBeInTheDocument();
       expect(screen.getByText('Unknown tool')).toBeInTheDocument();
     });
+
+    it('renders tool_use with command_run action and shows actual command', () => {
+      const normalizedEntry: NormalizedEntry = {
+        entry_type: { 
+          type: 'tool_use',
+          tool_name: 'Bash',
+          action_type: { action: 'command_run', command: 'npm run build' }
+        },
+        content: 'Command executed successfully',
+        timestamp: '2023-01-01T00:00:00Z'
+      };
+
+      const entry: UnifiedLogEntry = {
+        id: 'test-1',
+        ts: 1,
+        processId: 'worker-123',
+        processName: 'Test Worker',
+        channel: 'normalized',
+        payload: normalizedEntry
+      };
+
+      render(<EnhancedLogEntryRow entry={entry} index={0} />);
+
+      expect(screen.getByTestId('terminal-icon')).toBeInTheDocument();
+      expect(screen.getByText(/🔧 Bash Command: npm run build/)).toBeInTheDocument();
+      expect(screen.getByText(/Command executed successfully/)).toBeInTheDocument();
+    });
   });
 
   describe('process_start channel', () => {

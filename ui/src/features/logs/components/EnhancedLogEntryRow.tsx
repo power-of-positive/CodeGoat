@@ -169,6 +169,22 @@ const StderrEntry: React.FC<{ content: string }> = ({ content }) => (
 );
 
 const DisplayConversationEntry: React.FC<{ entry: NormalizedEntry }> = ({ entry }) => {
+  // For tool use with command run, extract and display the actual command
+  const getDisplayContent = () => {
+    if (entry.entry_type.type === 'tool_use' && 
+        entry.entry_type.action_type && 
+        entry.entry_type.action_type.action === 'command_run') {
+      // Type guard to ensure we have a command_run action with command field
+      const actionType = entry.entry_type.action_type as { action: 'command_run'; command: string };
+      if (actionType.command) {
+        return `🔧 Bash Command: ${actionType.command}\n\n${entry.content}`;
+      }
+    }
+    return entry.content;
+  };
+
+  const displayContent = getDisplayContent();
+
   return (
     <div className="px-4 py-1">
       <div className="flex items-start gap-3">
@@ -179,11 +195,11 @@ const DisplayConversationEntry: React.FC<{ entry: NormalizedEntry }> = ({ entry 
           <div className={getContentClassName(entry.entry_type)}>
             {shouldRenderMarkdown(entry.entry_type) ? (
               <MarkdownRenderer
-                content={entry.content}
+                content={displayContent}
                 className="whitespace-pre-wrap break-words"
               />
             ) : (
-              entry.content
+              displayContent
             )}
           </div>
         </div>
