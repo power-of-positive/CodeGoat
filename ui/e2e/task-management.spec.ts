@@ -16,7 +16,7 @@ test.describe('Task Management', () => {
   });
 
   test('should display task management page with all sections', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Check main heading
     const mainHeading = page.locator('text=Tasks');
@@ -57,7 +57,7 @@ test.describe('Task Management', () => {
   });
 
   test('should show task counts in column headers', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Check that column headers show task counts if they exist
     const pendingHeader = page.locator('text=Pending').first();
@@ -85,7 +85,7 @@ test.describe('Task Management', () => {
   });
 
   test('should open add task dialog when clicking Add Task', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Try to click add task button if available
     const addTaskButton = page.locator('text=Add Task');
@@ -141,7 +141,7 @@ test.describe('Task Management', () => {
   });
 
   test('should close add task dialog when clicking Cancel', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Try to open dialog if Add Task button exists
     const addTaskButton = page.locator('text=Add Task');
@@ -199,7 +199,7 @@ test.describe('Task Management', () => {
   });
 
   test('should validate required fields in add task form', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Try to open add task dialog if button exists
     const addTaskButton = page.locator('text=Add Task');
@@ -230,7 +230,7 @@ test.describe('Task Management', () => {
   });
 
   test('should display tasks in correct columns based on status', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Check columns and tasks if they exist
     const pendingColumn = page.locator('[data-testid="pending-column"]');
@@ -278,7 +278,7 @@ test.describe('Task Management', () => {
   });
 
   test('should open task detail when clicking on a task', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Find any task card
     const taskCard = page.locator('[data-testid^="task-card-"]').first();
@@ -311,7 +311,7 @@ test.describe('Task Management', () => {
   });
 
   test('should navigate back from task detail to task board', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Find and click on a task
     const taskCard = page.locator('[data-testid^="task-card-"]').first();
@@ -414,7 +414,7 @@ test.describe('Task Management', () => {
 
   test('should load tasks from API correctly', async ({ page }) => {
     // Wait for initial load
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Check that API calls were made by looking for task cards
     // This indirectly tests that the API integration is working

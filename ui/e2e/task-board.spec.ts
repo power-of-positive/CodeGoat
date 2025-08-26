@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Task Board Management', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/kanban');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('should display task board layout', async ({ page }) => {

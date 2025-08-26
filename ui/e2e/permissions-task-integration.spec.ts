@@ -4,17 +4,17 @@ test.describe('Permissions and Tasks Integration', () => {
   test.beforeEach(async ({ page }) => {
     // Start from the dashboard
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('should navigate between permissions and tasks pages', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Try to navigate to permissions
     const permissionsLink = page.locator('text=Permissions');
     if (await permissionsLink.count() > 0) {
       await permissionsLink.click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       await expect(page).toHaveURL('/permissions');
       
       const permissionEditor = page.locator('text=Permission Editor');
@@ -27,7 +27,7 @@ test.describe('Permissions and Tasks Integration', () => {
     const tasksLink = page.locator('text=Tasks');
     if (await tasksLink.count() > 0) {
       await tasksLink.click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       await expect(page).toHaveURL('/tasks');
       
       const taskManagement = page.locator('text=Tasks');
@@ -39,7 +39,7 @@ test.describe('Permissions and Tasks Integration', () => {
     // Try to navigate back to permissions
     if (await permissionsLink.count() > 0) {
       await permissionsLink.click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       await expect(page).toHaveURL('/permissions');
       
       const permissionEditor = page.locator('text=Permission Editor');

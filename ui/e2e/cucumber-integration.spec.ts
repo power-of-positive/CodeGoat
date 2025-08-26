@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Cucumber Integration with BDD Scenarios', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/bdd-tests');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('should validate gherkin syntax in BDD scenarios', async ({ page }) => {
@@ -221,7 +221,7 @@ Feature: Login Validation
 test.describe('Cucumber Step Definitions Management', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/bdd-tests');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await page.getByRole('tab', { name: 'Test Mapping' }).click();
   });
 
@@ -311,7 +311,7 @@ async function(buttonText: string) {
 test.describe('BDD and Playwright Test Execution Integration', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/bdd-tests');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('should execute BDD scenarios through Playwright test runner', async ({ page }) => {

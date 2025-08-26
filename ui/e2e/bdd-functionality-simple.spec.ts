@@ -4,7 +4,7 @@ test.describe('BDD Tests Page - Basic Functionality', () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to BDD Tests page
     await page.goto('/bdd-tests');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('should load BDD tests page successfully', async ({ page }) => {
@@ -68,7 +68,7 @@ test.describe('BDD Tests Page - Basic Functionality', () => {
 
     // Reload the page
     await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Content should still be visible after reload
     const refreshedContent = page.locator('#root, main').first();
@@ -99,7 +99,7 @@ test.describe('BDD Tests Page - Basic Functionality', () => {
 test.describe('BDD Scenario Features', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/bdd-tests');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('should display BDD-related content', async ({ page }) => {

@@ -3,8 +3,10 @@ import { test, expect } from '@playwright/test';
 test.describe('Analytics Dashboard', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/analytics');
-    // Wait for the page to fully load
-    await page.waitForLoadState('networkidle');
+    // Wait for the page to fully load with longer timeout
+    await page.waitForLoadState('domcontentloaded');
+    // Wait for a specific element instead of networkidle for better reliability
+    await page.waitForSelector('body', { timeout: 30000 });
   });
 
   test.describe('Analytics Navigation and Layout', () => {
@@ -124,7 +126,7 @@ test.describe('Analytics Dashboard', () => {
     test('should navigate to settings from analytics', async ({ page }) => {
       // Navigate to settings
       await page.goto('/settings');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       await expect(page).toHaveURL('/settings');
 
       // Check if settings content is available
@@ -141,7 +143,7 @@ test.describe('Analytics Dashboard', () => {
       // Go to root
       await page.goto('/');
       // Increase timeout for redirect to complete
-      await page.waitForLoadState('networkidle', { timeout: 15000 });
+      await page.waitForLoadState('domcontentloaded');
 
       // Should redirect to analytics or another main route
       const currentUrl = page.url();

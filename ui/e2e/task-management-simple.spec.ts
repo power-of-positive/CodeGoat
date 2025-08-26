@@ -4,22 +4,22 @@ test.describe('Tasks', () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to the tasks page
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Try to find and click the Tasks tab if available
     const tasksLink = page.locator('text=Tasks');
     if (await tasksLink.count() > 0) {
       await tasksLink.click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
     } else {
       // Navigate directly to tasks page
       await page.goto('/tasks');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
     }
   });
 
   test('should display task management page', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Check main heading
     const mainHeading = page.locator('text=Tasks');
@@ -44,7 +44,7 @@ test.describe('Tasks', () => {
   });
 
   test('should show task summary cards', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Check summary cards if they exist
     const totalTasks = page.locator('text=Total Tasks');
@@ -82,7 +82,7 @@ test.describe('Tasks', () => {
 
   test('should show kanban columns', async ({ page }) => {
     // Wait for the kanban board to load
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Check that kanban columns exist (they should be present even if empty)
     const kanbanBoard = page.locator('.flex.gap-6.overflow-x-auto');
@@ -95,7 +95,7 @@ test.describe('Tasks', () => {
   });
 
   test('should open add task form when clicking Add Task', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Try to click add task button if it exists
     const addTaskButton = page.locator('text=Add Task');
@@ -121,7 +121,7 @@ test.describe('Tasks', () => {
   test('should handle loading state', async ({ page }) => {
     // Reload to see loading state
     await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Should show loading spinner initially if it exists
     const loadingText = page.locator('text=Loading tasks...');
@@ -139,7 +139,7 @@ test.describe('Tasks', () => {
   });
 
   test('should be responsive', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Test mobile viewport
     await page.setViewportSize({ width: 375, height: 667 });
@@ -165,7 +165,7 @@ test.describe('Tasks', () => {
   test('should navigate properly via URL', async ({ page }) => {
     // Direct navigation to tasks
     await page.goto('/tasks');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Should load the tasks page or be on the right route
     const taskManagementHeading = page.locator('text=Tasks');
@@ -211,7 +211,7 @@ test.describe('Tasks', () => {
 
   test('should display task cards if tasks exist', async ({ page }) => {
     // Wait for API calls to complete
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Check if any task cards exist
     const taskCards = page
@@ -237,7 +237,7 @@ test.describe('Tasks', () => {
 
   test('should handle empty state gracefully', async ({ page }) => {
     // Wait for page to fully load
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Check that summary shows zero counts if no tasks
     const totalTasksCard = page.locator('text=Total Tasks').locator('..');

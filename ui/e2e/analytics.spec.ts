@@ -6,11 +6,11 @@ test.describe('Analytics Page', () => {
     await page.goto('/analytics');
 
     // Wait for page to fully load
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('should display analytics page header', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Check for main heading with flexible matching
     const mainHeading = page.locator('h1:has-text("Validation Analytics"), h1:has-text("Analytics"), h1').first();
@@ -35,7 +35,7 @@ test.describe('Analytics Page', () => {
   });
 
   test('should display summary cards', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Look for specific metrics summary grid layout
     const metricsGrid = page.getByTestId('metrics-summary');
@@ -70,7 +70,7 @@ test.describe('Analytics Page', () => {
   });
 
   test('should display analytics sections', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Check for stage performance section with flexible matching
     const stageSection = page.locator('text=Stage Performance, text=Performance Overview, text=Stage');
@@ -89,7 +89,7 @@ test.describe('Analytics Page', () => {
   });
 
   test('should handle empty state gracefully', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Analytics might be empty on first load
     const noStagesMessage = page.locator('text=No validation stages data available, text=No data available, text=No stages');
@@ -107,13 +107,13 @@ test.describe('Analytics Page', () => {
   });
 
   test('should allow refreshing analytics data', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Look for refresh button and click if available
     const refreshButton = page.locator('button:has-text("Refresh")');
     if (await refreshButton.count() > 0 && await refreshButton.isVisible()) {
       await refreshButton.click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
     }
 
     // At minimum, verify page functionality
@@ -121,7 +121,7 @@ test.describe('Analytics Page', () => {
   });
 
   test('should display analytics navigation item', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Check that analytics navigation item exists and is visible
     const analyticsNav = page.locator('a[href="/analytics"], nav a:has-text("Analytics")').first();
@@ -136,7 +136,7 @@ test.describe('Analytics Page', () => {
 
       // Click analytics nav to ensure it works
       await analyticsNav.click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
     }
 
     // Verify we're on analytics page
@@ -155,7 +155,7 @@ test.describe('Analytics Page', () => {
 
     // Navigate to analytics with errors
     await page.goto('/analytics');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Look for error messages if they exist
     const errorMessage = page.locator('text=Failed to load, text=Error loading, text=Could not load');

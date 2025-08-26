@@ -13,7 +13,6 @@ import { AnalyticsHeader, MetricsSummary } from './AnalyticsComponents';
 import { RecentRuns } from '../../validation/components/RecentRuns';
 
 // Constants
-const MINUTES_IN_HOUR = 60;
 const MS_PER_SECOND = 1000;
 const SECONDS_PER_MINUTE = 60;
 const CACHE_STALE_TIME_MINUTES = 5;

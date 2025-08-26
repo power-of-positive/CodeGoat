@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Permission Management', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/permissions');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('should display permissions overview', async ({ page }) => {
@@ -191,7 +191,7 @@ test.describe('Permission Management', () => {
       await dateFilter.fill('2024-01-01');
       
       // Then the audit entries should be filtered
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       await expect(page.locator('[data-testid="filtered-audit-entries"]')).toBeVisible();
     }
   });

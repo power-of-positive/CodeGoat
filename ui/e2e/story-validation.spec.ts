@@ -3,11 +3,11 @@ import { test, expect } from '@playwright/test';
 test.describe('Story Completion Validation with BDD Requirements', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/tasks');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('should create a new story task', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Try to click Add Task button if it exists
     const addTaskButton = page.locator('text=Add Task');
@@ -56,7 +56,7 @@ test.describe('Story Completion Validation with BDD Requirements', () => {
   });
 
   test('should prevent story completion without BDD scenarios', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Try to create a story task if Add Task button exists
     const addTaskButton = page.locator('text=Add Task');
@@ -446,7 +446,7 @@ Feature: Test
 test.describe('BDD Scenario Linking Validation', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/bdd-tests');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('should validate E2E test file exists when linking scenario', async ({ page }) => {

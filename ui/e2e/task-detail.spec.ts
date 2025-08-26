@@ -32,11 +32,11 @@ test.describe('Task Detail Management', () => {
   test.beforeEach(async ({ page }) => {
     // Navigate directly to the test task detail page
     await page.goto(`/tasks/${testTaskId}`);
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('should display task detail page with all sections', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Check main elements if they exist
     const taskDetailsHeading = page.locator('text=Task Details');

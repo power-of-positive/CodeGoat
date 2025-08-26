@@ -4,22 +4,22 @@ test.describe('Permissions Management', () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to the permissions page
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Try to find and click the Permissions tab if available
     const permissionsLink = page.locator('text=Permissions');
     if (await permissionsLink.count() > 0) {
       await permissionsLink.click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
     } else {
       // Navigate directly to permissions page
       await page.goto('/permissions');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
     }
   });
 
   test('should display permissions page', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Check main heading
     const mainHeading = page.locator('text=Permission Editor');
@@ -38,7 +38,7 @@ test.describe('Permissions Management', () => {
   });
 
   test('should show global configuration section', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Check global configuration section
     const globalConfig = page.locator('text=Global Configuration');
@@ -67,7 +67,7 @@ test.describe('Permissions Management', () => {
   });
 
   test('should have functional buttons', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Check add rule button if it exists
     const addRuleButton = page.locator('text=Add Rule');
@@ -111,7 +111,7 @@ test.describe('Permissions Management', () => {
   });
 
   test('should open add rule dialog when clicking Add Rule', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Try to click add rule button if it exists
     const addRuleButton = page.locator('text=Add Rule');
@@ -147,7 +147,7 @@ test.describe('Permissions Management', () => {
   test('should handle page loading states', async ({ page }) => {
     // Reload page to see loading state
     await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Should eventually show the permission editor or be on the right route
     const permissionEditor = page.locator('text=Permission Editor');
@@ -159,7 +159,7 @@ test.describe('Permissions Management', () => {
   });
 
   test('should maintain responsive layout', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Test mobile viewport
     await page.setViewportSize({ width: 375, height: 667 });
@@ -186,7 +186,7 @@ test.describe('Permissions Management', () => {
   test('should navigate properly via URL', async ({ page }) => {
     // Direct navigation to permissions
     await page.goto('/permissions');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Should load the permissions page or be on right route
     const permissionEditor = page.locator('text=Permission Editor');

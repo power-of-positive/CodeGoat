@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Worker Detail Management', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/workers');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('should display worker execution details', async ({ page }) => {
@@ -146,7 +146,7 @@ test.describe('Worker Detail Management', () => {
       await page.getByRole('button', { name: /confirm/i }).click();
       
       // Then the worker should be terminated
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       
       // And I should see the updated worker status
       await expect(page.locator('[data-testid="worker-status"]')).toContainText(/terminated|stopped/i);

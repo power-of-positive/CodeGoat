@@ -6,15 +6,18 @@
 
 import { runPrecommitChecks } from './lib';
 
+// Constants
+const SEPARATOR_LINE_LENGTH = 80;
+
 async function main(): Promise<void> {
   console.log('🧪 Testing comprehensive blocking system...');
 
   try {
     const result = await runPrecommitChecks();
 
-    console.log('\n='.repeat(80));
+    console.log('\n='.repeat(SEPARATOR_LINE_LENGTH));
     console.log('RESULT:', JSON.stringify(result, null, 2));
-    console.log('='.repeat(80));
+    console.log('='.repeat(SEPARATOR_LINE_LENGTH));
 
     if (result.decision === 'block') {
       console.log('\n🚫 BLOCKED - Claude would receive this feedback:');

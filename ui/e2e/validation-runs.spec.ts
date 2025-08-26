@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Validation Run Details', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/analytics');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('should show validation run details', async ({ page }) => {

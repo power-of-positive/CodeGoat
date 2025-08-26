@@ -4,6 +4,10 @@ import { Request, Response, NextFunction } from 'express';
 import { ILogger, LogEntry } from './logger-interface';
 import { safeStringify, getSafeSize } from './utils/json';
 
+// Constants
+const BYTES_PER_KB = 1024;
+const KB_PER_MB = 1024;
+
 export interface WinstonLoggerConfig {
   level: string;
   logsDir: string;
@@ -294,7 +298,7 @@ export class WinstonLogger implements ILogger {
 
     // Check if body is too large (> 1MB)
     const bodyStr = safeStringify(req.body);
-    if (bodyStr.length > 1024 * 1024) {
+    if (bodyStr.length > BYTES_PER_KB * KB_PER_MB) {
       return `[Body too large: ${getSafeSize(req.body)}]`;
     }
 

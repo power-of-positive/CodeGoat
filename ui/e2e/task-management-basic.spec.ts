@@ -6,7 +6,7 @@ test.describe('Task Management Basic Tests', () => {
     await page.goto('/tasks');
 
     // Wait for the page to load
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Check if we can see the tasks heading
     const taskHeading = page.locator('text=Tasks');
@@ -20,7 +20,7 @@ test.describe('Task Management Basic Tests', () => {
 
   test('should display basic page elements', async ({ page }) => {
     await page.goto('/tasks');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Check if main heading is available
     const mainHeading = page.locator('text=Tasks');
@@ -56,7 +56,7 @@ test.describe('Task Management Basic Tests', () => {
 
   test('should open task creation form', async ({ page }) => {
     await page.goto('/tasks');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Try to click Add Task button if available
     const addTaskButton = page.locator('text=Add Task');
@@ -98,7 +98,7 @@ test.describe('Task Management Basic Tests', () => {
 
   test('should navigate to task details page', async ({ page }) => {
     await page.goto('/tasks/test-id');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Wait a bit more for content to load
     await page.waitForTimeout(1000);

@@ -4,22 +4,22 @@ test.describe('Permissions Management', () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to the permissions page
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Try to find and click the Permissions tab if available
     const permissionsLink = page.locator('text=Permissions');
     if (await permissionsLink.count() > 0) {
       await permissionsLink.click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
     } else {
       // Navigate directly to permissions page if tab doesn't exist
       await page.goto('/permissions');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
     }
   });
 
   test('should display permissions page with all sections', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Check main heading
     const mainHeading = page.locator('text=Permission Editor');
@@ -60,7 +60,7 @@ test.describe('Permissions Management', () => {
   });
 
   test('should have functional add and test buttons', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Check add rule button if it exists
     const addRuleButton = page.locator('text=Add Rule');
@@ -215,7 +215,7 @@ test.describe('Permissions Management', () => {
   });
 
   test('should save permissions successfully', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Try to add a new rule if the button exists
     const addCommandRuleButton = page.locator('text=Add Command Rule');
@@ -257,7 +257,7 @@ test.describe('Permissions Management', () => {
   });
 
   test('should persist changes after page reload', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Try to add and configure a rule if buttons exist
     const addCommandRuleButton = page.locator('text=Add Command Rule');
@@ -291,7 +291,7 @@ test.describe('Permissions Management', () => {
 
       // Reload the page
       await page.reload();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       // Verify the changes persisted if they exist
       const rules = page.locator('[data-testid^="command-rule-"]');

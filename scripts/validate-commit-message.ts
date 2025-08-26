@@ -8,6 +8,9 @@
 import * as fs from 'fs';
 import { execSync } from 'child_process';
 
+// Constants
+const TASK_CONTENT_DISPLAY_LENGTH = 60;
+
 interface Task {
   id: string; // CODEGOAT-001, CODEGOAT-055, etc.
   content: string;
@@ -179,7 +182,99 @@ function getCommitMessage(): string {
 }
 
 /**
- * Handle task creation or status updates
+ * Extract task content from commit message using various patterns
+ */
+function extractTaskContent(taskId: string, commitMessage: string): string {
+  let content = `Task ${taskId}`;
+
+  // Try different patterns to extract content
+  const patterns = [
+    /^CODEGOAT-\d+:\s*(.+)/i, // "CODEGOAT-42: fix bug"
+    /^TASK-\d+:\s*(.+)/i, // "TASK-001: implement feature" (legacy)
+    /^[A-Z]+-\d+:\s*(.+)/i, // Generic "PREFIX-123: description"
+  ];
+
+  for (const pattern of patterns) {
+    const contentMatch = commitMessage.match(pattern);
+    if (contentMatch) {
+      content = contentMatch[1].split('\n')[0].trim();
+      break;
+    }
+  }
+
+  // If no pattern matched, use the first line of the commit message
+  if (content === `Task ${taskId}`) {
+    const firstLine = commitMessage.split('\n')[0].trim();
+    content = firstLine || content;
+  }
+
+  return content;
+}
+
+/**
+ * Create a new task when it doesn't exist
+ */
+async function handleNewTask(
+  config: CommitMessageConfig,
+  taskId: string,
+  commitMessage: string
+): Promise<void> {
+  console.log(`📝 Task ${taskId} not found, creating new task...`);
+
+  const content = extractTaskContent(taskId, commitMessage);
+
+  const newTask = await createTask(config.apiBaseUrl, {
+    content,
+    status: 'in_progress',
+    priority: 'medium',
+    taskType: 'task',
+    executorId: 'claude-code',
+  });
+
+  if (newTask) {
+    console.log(`✅ Created new task [${newTask.id}]: ${newTask.content}`);
+    console.log(`   Status: ${newTask.status}, Priority: ${newTask.priority}`);
+  } else {
+    console.warn('⚠️  Failed to create task, but allowing commit to proceed');
+  }
+}
+
+/**
+ * Handle existing task status updates
+ */
+async function handleExistingTask(
+  config: CommitMessageConfig,
+  task: Task,
+  commitMessage: string
+): Promise<void> {
+  console.log(`✅ Found existing task [${task.id}]: ${task.content.substring(0, TASK_CONTENT_DISPLAY_LENGTH)}...`);
+  console.log(`   Current status: ${task.status}, Priority: ${task.priority}`);
+
+  // Check if this commit indicates task completion
+  const isCompletionCommit = isTaskCompletionCommit(commitMessage);
+
+  if (isCompletionCommit && task.status !== 'completed') {
+    console.log(`🎉 Commit indicates task completion, marking task [${task.id}] as completed...`);
+    const updated = await updateTaskStatus(config.apiBaseUrl, task.id, 'completed');
+    if (updated) {
+      console.log(`✅ Task [${task.id}] marked as completed`);
+    } else {
+      console.warn('⚠️  Failed to update task status to completed, but allowing commit to proceed');
+    }
+  } else if (task.status === 'pending') {
+    // If task is pending and not a completion commit, mark it as in_progress
+    console.log(`🔄 Marking task [${task.id}] as in_progress...`);
+    const updated = await updateTaskStatus(config.apiBaseUrl, task.id, 'in_progress');
+    if (updated) {
+      console.log(`✅ Task [${task.id}] marked as in_progress`);
+    } else {
+      console.warn('⚠️  Failed to update task status, but allowing commit to proceed');
+    }
+  }
+}
+
+/**
+ * Handle task creation or status updates (simplified main function)
  */
 async function handleTaskOperations(
   config: CommitMessageConfig,
@@ -190,74 +285,9 @@ async function handleTaskOperations(
   const task = tasks.find(t => t.id === taskId);
 
   if (!task) {
-    // Task doesn't exist, create it as in_progress
-    console.log(`📝 Task ${taskId} not found, creating new task...`);
-
-    // Extract task content from commit message
-    let content = `Task ${taskId}`;
-
-    // Try different patterns to extract content
-    const patterns = [
-      /^CODEGOAT-\d+:\s*(.+)/i, // "CODEGOAT-42: fix bug"
-      /^TASK-\d+:\s*(.+)/i, // "TASK-001: implement feature" (legacy)
-      /^[A-Z]+-\d+:\s*(.+)/i, // Generic "PREFIX-123: description"
-    ];
-
-    for (const pattern of patterns) {
-      const contentMatch = commitMessage.match(pattern);
-      if (contentMatch) {
-        content = contentMatch[1].split('\n')[0].trim();
-        break;
-      }
-    }
-
-    // If no pattern matched, use the first line of the commit message
-    if (content === `Task ${taskId}`) {
-      const firstLine = commitMessage.split('\n')[0].trim();
-      content = firstLine || content;
-    }
-
-    const newTask = await createTask(config.apiBaseUrl, {
-      content,
-      status: 'in_progress',
-      priority: 'medium',
-      taskType: 'task',
-      executorId: 'claude-code',
-    });
-
-    if (newTask) {
-      console.log(`✅ Created new task [${newTask.id}]: ${newTask.content}`);
-      console.log(`   Status: ${newTask.status}, Priority: ${newTask.priority}`);
-    } else {
-      console.warn('⚠️  Failed to create task, but allowing commit to proceed');
-    }
+    await handleNewTask(config, taskId, commitMessage);
   } else {
-    console.log(`✅ Found existing task [${task.id}]: ${task.content.substring(0, 60)}...`);
-    console.log(`   Current status: ${task.status}, Priority: ${task.priority}`);
-
-    // Check if this commit indicates task completion
-    const isCompletionCommit = isTaskCompletionCommit(commitMessage);
-
-    if (isCompletionCommit && task.status !== 'completed') {
-      console.log(`🎉 Commit indicates task completion, marking task [${task.id}] as completed...`);
-      const updated = await updateTaskStatus(config.apiBaseUrl, task.id, 'completed');
-      if (updated) {
-        console.log(`✅ Task [${task.id}] marked as completed`);
-      } else {
-        console.warn(
-          '⚠️  Failed to update task status to completed, but allowing commit to proceed'
-        );
-      }
-    } else if (task.status === 'pending') {
-      // If task is pending and not a completion commit, mark it as in_progress
-      console.log(`🔄 Marking task [${task.id}] as in_progress...`);
-      const updated = await updateTaskStatus(config.apiBaseUrl, task.id, 'in_progress');
-      if (updated) {
-        console.log(`✅ Task [${task.id}] marked as in_progress`);
-      } else {
-        console.warn('⚠️  Failed to update task status, but allowing commit to proceed');
-      }
-    }
+    await handleExistingTask(config, task, commitMessage);
   }
 }
 

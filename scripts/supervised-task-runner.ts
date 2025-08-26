@@ -3,6 +3,12 @@
 import { ClaudeSupervisor } from './claude-supervisor';
 import { promises as fs } from 'fs';
 
+// Constants
+const TASK_TIMEOUT_MINUTES = 45;
+const MS_PER_SECOND = 1000;
+const SECONDS_PER_MINUTE = 60;
+const SEPARATOR_LINE_LENGTH = 80;
+
 interface TodoTask {
   content: string;
   status: 'pending' | 'in_progress' | 'completed';
@@ -17,7 +23,7 @@ class SupervisedTaskRunner {
     this.todoFile = todoFile;
     this.supervisor = new ClaudeSupervisor({
       maxAttempts: 15,
-      sessionTimeout: 45 * 60 * 1000, // 45 minutes for complex tasks
+      sessionTimeout: TASK_TIMEOUT_MINUTES * SECONDS_PER_MINUTE * MS_PER_SECOND, // 45 minutes for complex tasks
     });
   }
 
@@ -136,9 +142,9 @@ Begin working on the primary task now.`;
     let failed = 0;
     
     for (const task of pendingTasks) {
-      console.log(`\n${'='.repeat(80)}`);
+      console.log(`\n${'='.repeat(SEPARATOR_LINE_LENGTH)}`);
       console.log(`📋 Task ${task.id}: ${task.content}`);
-      console.log(`${'='.repeat(80)}\n`);
+      console.log(`${'='.repeat(SEPARATOR_LINE_LENGTH)}\n`);
       
       const success = await this.runTask(task.id);
       

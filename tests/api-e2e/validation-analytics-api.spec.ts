@@ -1,6 +1,6 @@
 import { spec } from 'pactum';
 import { AddressInfo } from 'net';
-import app from '../../src/index';
+import app, { cleanupIntervals } from '../../src/index';
 
 describe('Validation Analytics API E2E Tests', () => {
   let server: any;
@@ -17,6 +17,9 @@ describe('Validation Analytics API E2E Tests', () => {
   });
 
   afterAll(async () => {
+    // Clean up intervals first
+    cleanupIntervals();
+    
     if (server) {
       await new Promise(resolve => {
         server.close(() => {

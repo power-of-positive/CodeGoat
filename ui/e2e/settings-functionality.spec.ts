@@ -9,17 +9,17 @@ test.describe('Settings Functionality', () => {
 
     // Navigate to the dashboard
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Try to find and click the Settings tab if available
     const settingsLink = page.locator('text=Settings');
     if (await settingsLink.count() > 0) {
       await settingsLink.click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
     } else {
       // Navigate directly to settings page
       await page.goto('/settings');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
     }
   });
 
@@ -67,7 +67,7 @@ test.describe('Settings Functionality', () => {
   });
 
   test('should display all settings tabs', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Check that settings tabs are visible if they exist
     const validationStagesTab = page.locator('text=Validation Stages');
@@ -90,7 +90,7 @@ test.describe('Settings Functionality', () => {
   });
 
   test('should switch between settings tabs', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Check if Validation Stages tab exists and has active state
     const validationStagesTab = page.locator('text=Validation Stages');

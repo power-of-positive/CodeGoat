@@ -3,6 +3,10 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
+// Constants
+const DELAY_SHORT_MS = 2000;
+const DELAY_MEDIUM_MS = 5000;
+
 // Todo list item interface - aligned with API format
 interface TodoItem {
   id: string; // CODEGOAT-001, CODEGOAT-055, etc.
@@ -78,7 +82,7 @@ async function isServerRunning(): Promise<boolean> {
   try {
     const response = await fetch(`${API_BASE_URL}/tasks`, {
       method: 'HEAD',
-      signal: AbortSignal.timeout(2000), // 2 second timeout
+      signal: AbortSignal.timeout(DELAY_SHORT_MS), // 2 second timeout
     });
     return response.ok;
   } catch {
@@ -98,7 +102,7 @@ async function fetchTasksFromAPI(): Promise<TodoItem[]> {
       headers: {
         'Content-Type': 'application/json',
       },
-      signal: AbortSignal.timeout(5000), // 5 second timeout
+      signal: AbortSignal.timeout(DELAY_MEDIUM_MS), // 5 second timeout
     });
 
     if (!response.ok) {

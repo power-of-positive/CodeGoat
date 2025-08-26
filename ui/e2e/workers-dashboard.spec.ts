@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Workers Dashboard', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/workers');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('should display workers overview', async ({ page }) => {
@@ -106,7 +106,7 @@ test.describe('Workers Dashboard', () => {
         await page.getByRole('button', { name: /start worker/i }).click();
         
         // Then a new worker should be created
-        await page.waitForLoadState('networkidle');
+        await page.waitForLoadState('domcontentloaded');
         
         // And I should see the new worker in the dashboard
         await expect(page.locator('[data-testid="worker-card"]')).toBeVisible();

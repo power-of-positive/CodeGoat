@@ -19,6 +19,9 @@ import { Settings, ValidationStage } from '../src/types/settings.types';
 import { PrismaClient } from '@prisma/client';
 import { getEnabledValidationStages } from '../src/services/validation-stage-config.service';
 
+// Constants
+const DEFAULT_STAGE_TIMEOUT_MS = 30000;
+
 const execAsync = promisify(exec);
 
 interface ValidationError {
@@ -276,7 +279,7 @@ class ValidationRunner {
 
     try {
       const options = {
-        timeout: stage.timeout || 30000,
+        timeout: stage.timeout || DEFAULT_STAGE_TIMEOUT_MS,
         cwd: stage.workingDir || process.cwd(),
         encoding: 'utf8' as const,
       };

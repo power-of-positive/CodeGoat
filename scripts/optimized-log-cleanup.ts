@@ -135,7 +135,7 @@ async function main() {
       logsDir,
       maxLogFiles: 25,
       maxLogAge: 14,
-      maxLogSize: 5 * 1024 * 1024,
+      maxLogSize: 5 * BYTES_PER_KB * KB_PER_MB,
       compressionEnabled: true,
       retentionPolicy: {
         critical: 60,

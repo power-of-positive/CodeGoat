@@ -4,18 +4,18 @@ import { UnifiedLogEntry } from '../../../shared/types/logs';
 
 // Mock Virtuoso
 jest.mock('react-virtuoso', () => ({
-  Virtuoso: ({ data, itemContent, style, followOutput, components }: any) => (
+  Virtuoso: (props: { data: any; itemContent: any; style: any; followOutput: any; components?: any }) => (
     <div 
       data-testid="virtuoso" 
-      style={style}
-      data-follow-output={followOutput}
+      style={props.style}
+      data-follow-output={props.followOutput}
     >
-      {data.map((item: any, index: number) => (
+      {props.data.map((item: any, index: number) => (
         <div key={index} data-testid={`virtuoso-item-${index}`}>
-          {itemContent(index, item)}
+          {props.itemContent(index, item)}
         </div>
       ))}
-      {components?.Footer && <div data-testid="virtuoso-footer">{components.Footer()}</div>}
+      {props.components?.Footer && <div data-testid="virtuoso-footer">{props.components.Footer()}</div>}
     </div>
   ),
 }));

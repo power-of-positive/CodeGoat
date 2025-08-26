@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('BDD Testing Dashboard', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/bdd-tests');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('should display BDD testing overview', async ({ page }) => {
@@ -11,7 +11,7 @@ test.describe('BDD Testing Dashboard', () => {
     // And there are BDD scenarios and Cucumber features
     
     // When I navigate to the BDD Testing page
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Check if BDD content is available
     const bddContent = page.locator('text=BDD Tests Dashboard');
@@ -47,7 +47,7 @@ test.describe('BDD Testing Dashboard', () => {
 
   test('should browse feature files and scenarios', async ({ page }) => {
     // Given I am on the BDD Testing page
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Check if BDD content is available
     const bddContent = page.locator('text=BDD Tests Dashboard');
@@ -91,7 +91,7 @@ test.describe('BDD Testing Dashboard', () => {
 
   test('should run BDD scenario tests', async ({ page }) => {
     // Given I am on the BDD Testing page
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Check if BDD content is available
     const bddContent = page.locator('text=BDD Tests Dashboard');
@@ -138,7 +138,7 @@ test.describe('BDD Testing Dashboard', () => {
 
   test('should create new BDD scenario', async ({ page }) => {
     // Given I am on the BDD Testing page
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Check if BDD content is available
     const bddContent = page.locator('text=BDD Tests Dashboard');
@@ -207,7 +207,7 @@ test.describe('BDD Testing Dashboard', () => {
 
   test('should link scenarios to Playwright tests', async ({ page }) => {
     // Given I am on the BDD Testing page
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Check if BDD content is available
     const bddContent = page.locator('text=BDD Tests Dashboard');
@@ -267,7 +267,7 @@ test.describe('BDD Testing Dashboard', () => {
 
   test('should show test coverage report', async ({ page }) => {
     // Given I am on the BDD Testing page
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Check if BDD content is available
     const bddContent = page.locator('text=BDD Tests Dashboard');
@@ -317,7 +317,7 @@ test.describe('BDD Testing Dashboard', () => {
 
   test('should generate step definitions from scenarios', async ({ page }) => {
     // Given I am on the BDD Testing page
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Check if BDD content is available
     const bddContent = page.locator('text=BDD Tests Dashboard');

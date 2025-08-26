@@ -18,6 +18,11 @@ import { Button } from '../../../shared/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../shared/ui/card';
 import { Badge } from '../../../shared/ui/badge';
 
+// Time constants
+const MS_PER_SECOND = 1000;
+const SECONDS_PER_MINUTE = 60;
+const MINUTES_PER_HOUR = 60;
+
 interface WorkerStatus {
   id: string;
   taskId: string;
@@ -67,9 +72,9 @@ function formatDuration(startTime: string, endTime?: string) {
   const end = endTime ? new Date(endTime) : new Date();
   const duration = end.getTime() - start.getTime();
 
-  const hours = Math.floor(duration / (1000 * 60 * 60));
-  const minutes = Math.floor((duration % (1000 * 60 * 60)) / (1000 * 60));
-  const seconds = Math.floor((duration % (1000 * 60)) / 1000);
+  const hours = Math.floor(duration / (MS_PER_SECOND * SECONDS_PER_MINUTE * MINUTES_PER_HOUR));
+  const minutes = Math.floor((duration % (MS_PER_SECOND * SECONDS_PER_MINUTE * MINUTES_PER_HOUR)) / (MS_PER_SECOND * SECONDS_PER_MINUTE));
+  const seconds = Math.floor((duration % (MS_PER_SECOND * SECONDS_PER_MINUTE)) / MS_PER_SECOND);
 
   if (hours > 0) {
     return `${hours}h ${minutes}m ${seconds}s`;

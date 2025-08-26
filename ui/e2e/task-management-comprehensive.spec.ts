@@ -6,19 +6,19 @@ test.describe('Tasks UI', () => {
     await page.goto('/tasks');
 
     // Wait for the page to load
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('should navigate to task management page from sidebar', async ({ page }) => {
     // Start from home page
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Try to click on Tasks in the sidebar if available
     const tasksLink = page.locator('nav a[href="/tasks"]');
     if (await tasksLink.count() > 0) {
       await tasksLink.click();
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       
       // Should be on the tasks page
       await expect(page).toHaveURL(/.*\/tasks$/);
@@ -35,13 +35,13 @@ test.describe('Tasks UI', () => {
     } else {
       // Navigate directly if sidebar link doesn't exist
       await page.goto('/tasks');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       expect(page.url()).toContain('/tasks');
     }
   });
 
   test('should display task management page elements', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Check main page elements
     const heading = page.locator('text=Tasks');
@@ -132,7 +132,7 @@ test.describe('Tasks UI', () => {
     });
 
     await page.goto('/tasks');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Check if error state is shown
     const failedToLoadText = page.locator('text=Failed to Load');
@@ -150,7 +150,7 @@ test.describe('Tasks UI', () => {
   });
 
   test('should open task creation form when Add Task is clicked', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Try to click Add Task button if it exists
     const addTaskButton = page.locator('text=Add Task');

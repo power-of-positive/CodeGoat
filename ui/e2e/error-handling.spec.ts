@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Error Handling and Recovery', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('should handle network connectivity issues', async ({ page }) => {
@@ -36,7 +36,7 @@ test.describe('Error Handling and Recovery', () => {
       await retryButton.click();
       
       // Then the data should load successfully
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       await expect(page.locator('[data-testid="metrics-summary"]')).toBeVisible();
     }
   });
@@ -56,7 +56,7 @@ test.describe('Error Handling and Recovery', () => {
     
     // And I refresh the page
     await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Then I should see an appropriate error message
     await expect(page.locator('[data-testid="api-error"]')).toBeVisible();
@@ -70,7 +70,7 @@ test.describe('Error Handling and Recovery', () => {
     await page.locator('[data-testid="retry-button"]').click();
     
     // Then the page should recover
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('should handle validation failures with clear feedback', async ({ page }) => {
@@ -126,7 +126,7 @@ test.describe('Error Handling and Recovery', () => {
     });
     
     await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Then I should see the failure status clearly
     await expect(page.locator('[data-testid="worker-status"]')).toContainText(/failed|error/i);
@@ -231,7 +231,7 @@ test.describe('Error Handling and Recovery', () => {
     });
     
     await page.reload();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Then I should see a fallback or warning message
     const compatibilityWarning = page.locator('[data-testid="compatibility-warning"]');
@@ -256,7 +256,7 @@ test.describe('Error Handling and Recovery', () => {
     
     // When I navigate to analytics
     await page.goto('/analytics');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     // Then I should see a data error message
     await expect(page.locator('[data-testid="data-error"]')).toBeVisible();
@@ -271,7 +271,7 @@ test.describe('Error Handling and Recovery', () => {
     await page.locator('[data-testid="refresh-data"]').click();
     
     // Then the page should recover with valid data
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await expect(page.locator('[data-testid="metrics-summary"]')).toBeVisible();
   });
 

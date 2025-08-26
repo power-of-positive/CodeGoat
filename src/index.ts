@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import express, { Request, Response, NextFunction } from 'express';
-import { createServer } from 'http';
+import { createServer, Server } from 'http';
 import path from 'path';
 import { WinstonLogger } from './logger-winston';
 import { LogCleaner } from './utils/log-cleaner';
@@ -167,28 +167,37 @@ const httpServer = createServer(app);
 const PORT = process.env.PORT ?? 3000;
 const HOST = process.env.HOST ?? 'localhost';
 
-const server = httpServer.listen(Number(PORT), HOST, () => {
-  logger.info(`Validation analytics server running on ${HOST}:${PORT}`);
+// Only start server if not in test environment
+let server: Server | undefined;
+if (process.env.NODE_ENV !== 'test') {
+  server = httpServer.listen(Number(PORT), HOST, () => {
+    logger.info(`Validation analytics server running on ${HOST}:${PORT}`);
 
-  // Run initial log cleanup
-  void logCleaner.cleanLogs();
-
-  // Schedule log cleanup every 6 hours
-  const SIX_HOURS = 6 * 60 * 60 * 1000;
-  setInterval(() => {
+    // Run initial log cleanup
     void logCleaner.cleanLogs();
-  }, SIX_HOURS);
-});
 
-// Set reasonable server timeout
-server.timeout = 30000; // 30 seconds
+    // Schedule log cleanup every 6 hours
+    const SIX_HOURS = 6 * 60 * 60 * 1000;
+    setInterval(() => {
+      void logCleaner.cleanLogs();
+    }, SIX_HOURS);
+  });
+
+  // Set reasonable server timeout
+  server.timeout = 30000; // 30 seconds
+}
 
 // Initialize log management
 import { logManager } from './utils/log-manager';
 
 // Schedule daily log cleanup
-logManager.scheduleCleanup(24);
+const logCleanupInterval = logManager.scheduleCleanup(24);
 console.error('🧹 Log cleanup scheduled to run every 24 hours');
+
+// Export cleanup function for tests
+export const cleanupIntervals = () => {
+  clearInterval(logCleanupInterval);
+};
 
 // Global error handlers to prevent server crashes
 process.on('uncaughtException', error => {
@@ -208,10 +217,14 @@ process.on('unhandledRejection', (reason, promise) => {
 process.on('SIGTERM', () => {
   logger.info('SIGTERM signal received: closing server');
 
-  server.close(() => {
-    logger.info('HTTP server closed');
+  if (server) {
+    server.close(() => {
+      logger.info('HTTP server closed');
+      process.exit(0);
+    });
+  } else {
     process.exit(0);
-  });
+  }
 });
 
 export default app;

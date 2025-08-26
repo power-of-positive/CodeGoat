@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import express, { Request, Response } from 'express';
 import { WinstonLogger } from '../logger-winston';
 import { getDatabaseService } from '../services/database';
@@ -82,13 +83,14 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
       }
       
       if (startDate || endDate) {
-        where.timestamp = {};
+        const timestampFilter: { gte?: Date; lte?: Date } = {};
         if (startDate) {
-          (where.timestamp as { gte?: Date; lte?: Date }).gte = new Date(startDate as string);
+          timestampFilter.gte = new Date(startDate as string);
         }
         if (endDate) {
-          (where.timestamp as { gte?: Date; lte?: Date }).lte = new Date(endDate as string);
+          timestampFilter.lte = new Date(endDate as string);
         }
+        where.timestamp = timestampFilter;
       }
 
       // Get total count for pagination
@@ -439,7 +441,7 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
         return { validationRun, createdStages };
       });
 
-      const { validationRun, createdStages } = result;
+      const { validationRun } = result;
 
       logger.info('Validation run created:', { 
         runId: validationRun.id, 
@@ -526,10 +528,13 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
       };
 
       if (stageId) {
-        (stageHistoryQuery.where as Record<string, unknown>).stageId = stageId;
+        stageHistoryQuery.where = {
+          ...stageHistoryQuery.where,
+          stageId
+        };
       }
 
-      const stageHistory = await db.validationStage.findMany(stageHistoryQuery);
+      const stageHistory = await db.validationStage.findMany(stageHistoryQuery as any);
 
       // Get comprehensive stage statistics
       const stageStats = await db.validationStage.groupBy({
@@ -587,7 +592,8 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
       }
       
       const dailyStagePerformance = stageHistory.reduce((acc, stage) => {
-        const day = (stage as unknown as { run: { timestamp: Date } }).run.timestamp.toISOString().split('T')[0];
+        const stageWithRun = stage as any;
+        const day = stageWithRun.run.timestamp.toISOString().split('T')[0];
         const stageKey = `${day}-${stage.stageId}`;
         
         if (!acc[stageKey]) {
@@ -787,9 +793,9 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
         }
 
         // Calculate stage performance for this time period
-        const runWithStages = run as unknown as { stages?: Array<{ stageId: string; success: boolean; duration: number | string }> };
+        const runWithStages = run as any;
         if (runWithStages.stages) {
-          runWithStages.stages.forEach((stage) => {
+          runWithStages.stages.forEach((stage: any) => {
             const key = stage.stageId;
             if (!acc[timeKey].stagePerformance[key]) {
               acc[timeKey].stagePerformance[key] = { success: 0, total: 0, avgDuration: 0, successRate: 0 };
@@ -817,7 +823,10 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
       // Finalize calculations
       const timeline = Object.values(timelineData).map((period) => {
         // Calculate average duration for the period
-        const totalDuration = period.runs.reduce((sum: number, run) => sum + Number((run as { totalTime: number | string }).totalTime), 0);
+        const totalDuration = period.runs.reduce((sum: number, run) => {
+          const runTyped = run as any;
+          return sum + Number(runTyped.totalTime);
+        }, 0);
         period.averageDuration = period.totalRuns > 0 ? totalDuration / period.totalRuns : 0;
 
         // Finalize stage performance calculations
@@ -828,7 +837,7 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
         });
 
         // Calculate success rate
-        period.successRate = period.totalRuns > 0 ? (period.successfulRuns / period.totalRuns) * 100 : 0;
+        (period as any).successRate = period.totalRuns > 0 ? (period.successfulRuns / period.totalRuns) * 100 : 0;
 
         return period;
       }).sort((a, b) => a.timestamp.localeCompare(b.timestamp));

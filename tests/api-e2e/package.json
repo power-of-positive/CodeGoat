@@ -2,8 +2,8 @@
   "name": "validation-analytics-api-e2e",
   "version": "1.0.0",
   "scripts": {
-    "test": "jest",
-    "test:watch": "jest --watch"
+    "test": "NODE_ENV=test jest --forceExit --detectOpenHandles",
+    "test:watch": "NODE_ENV=test jest --watch"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",

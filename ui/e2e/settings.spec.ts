@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Settings Management', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/settings');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('should display settings page', async ({ page }) => {
@@ -54,7 +54,7 @@ test.describe('Settings Management', () => {
     await expect(page.locator('[data-testid="settings-saved"]')).toBeVisible();
     
     // And the stage should be disabled in validation runs
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await expect(unitTestsToggle).not.toBeChecked();
   });
 

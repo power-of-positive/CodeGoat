@@ -4,7 +4,7 @@ test.describe('BDD Tests Dashboard', () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to BDD Tests page
     await page.goto('/bdd-tests');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('should display BDD Tests Dashboard with all sections', async ({ page }) => {
@@ -87,7 +87,7 @@ test.describe('BDD Tests Dashboard', () => {
 test.describe('BDD Scenario Management', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/bdd-tests');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('should display scenario list and controls', async ({ page }) => {
@@ -169,7 +169,7 @@ Feature: User Authentication
 test.describe('BDD Scenario Execution History', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/bdd-tests');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Switch to Execution History tab
     await page.getByRole('tab', { name: 'Execution History' }).click();
@@ -218,7 +218,7 @@ test.describe('BDD Scenario Execution History', () => {
 test.describe('BDD to E2E Test Mapping', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/bdd-tests');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Switch to Test Mapping tab
     await page.getByRole('tab', { name: 'Test Mapping' }).click();
@@ -269,7 +269,7 @@ test.describe('BDD Integration with Tasks', () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to tasks page first
     await page.goto('/tasks');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('should prevent story completion without BDD scenarios', async ({ page }) => {
@@ -349,7 +349,7 @@ test.describe('BDD Integration with Tasks', () => {
 test.describe('BDD Analytics and Reporting', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/analytics');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('should show BDD-related metrics in analytics', async ({ page }) => {
@@ -389,7 +389,7 @@ test.describe('BDD Analytics and Reporting', () => {
 test.describe('Validation Run Details with BDD Integration', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/analytics');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('should navigate to validation run details from analytics', async ({ page }) => {

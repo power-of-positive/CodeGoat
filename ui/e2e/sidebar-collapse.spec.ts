@@ -9,11 +9,11 @@ test.describe('Sidebar Collapse Functionality', () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to a page that has the sidebar layout
     await page.goto('/dashboard');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('should display sidebar in expanded state by default', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     const sidebar = page.locator('[data-testid="sidebar"]');
     if (await sidebar.count() > 0) {
@@ -57,7 +57,7 @@ test.describe('Sidebar Collapse Functionality', () => {
   });
 
   test('should collapse sidebar when toggle button is clicked', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     
     const sidebar = page.locator('[data-testid="sidebar"]');
     const toggleButton = page.locator('[data-testid="sidebar-toggle"]');
@@ -170,14 +170,14 @@ test.describe('Sidebar Collapse Functionality', () => {
 
     // Navigate to different pages
     await page.locator('[data-testid="nav-analytics"]').click();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Sidebar should still be collapsed
     await expect(page.getByText('CodeGoat')).not.toBeVisible();
 
     // Navigate to settings
     await page.locator('[data-testid="nav-settings"]').click();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Sidebar should still be collapsed
     await expect(page.getByText('CodeGoat')).not.toBeVisible();
@@ -209,7 +209,7 @@ test.describe('Sidebar Collapse Functionality', () => {
 
     for (const pagePath of pages) {
       await page.goto(pagePath);
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
 
       const toggleButton = page.locator('[data-testid="sidebar-toggle"]');
       const sidebar = page.locator('[data-testid="sidebar"]');
@@ -267,7 +267,7 @@ test.describe('Sidebar Collapse Functionality', () => {
     // Navigate to analytics while collapsed (analytics should definitely exist)
     const analyticsLink = page.locator('[data-testid="nav-analytics"]');
     await analyticsLink.click();
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Wait a bit for the active state to update
     await page.waitForTimeout(500);

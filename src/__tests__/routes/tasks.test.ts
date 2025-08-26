@@ -42,8 +42,9 @@ describe('Tasks Route - Story Completion Validation', () => {
     logger = new WinstonLogger();
     app.use('/api/tasks', createTaskRoutes(logger));
 
-    // Clear all mocks
+    // Clear all mocks and reset database service
     jest.clearAllMocks();
+    (getDatabaseService as jest.Mock).mockReturnValue(mockDb);
   });
 
   describe('PUT /api/tasks/:id - Story Completion Validation', () => {

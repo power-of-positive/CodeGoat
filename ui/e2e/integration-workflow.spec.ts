@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Integration Workflow', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
   });
 
   test('should complete full task lifecycle', async ({ page }) => {
@@ -71,7 +71,7 @@ test.describe('Integration Workflow', () => {
         await page.getByRole('button', { name: /start worker/i }).click();
         
         // Verify worker is created
-        await page.waitForLoadState('networkidle');
+        await page.waitForLoadState('domcontentloaded');
         await expect(page.locator('[data-testid="worker-card"]')).toBeVisible();
       }
     }
@@ -195,7 +195,7 @@ test.describe('Integration Workflow', () => {
     const agentFilter = page.locator('[data-testid="agent-filter"]');
     if (await agentFilter.count() > 0) {
       await agentFilter.selectOption('claude_cli');
-      await page.waitForLoadState('networkidle');
+      await page.waitForLoadState('domcontentloaded');
       
       // Should see filtered metrics
       await expect(page.locator('[data-testid="filtered-metrics"]')).toBeVisible();
@@ -266,7 +266,7 @@ test.describe('Integration Workflow', () => {
           if (await taskSelect.count() > 0 && await taskSelect.locator('option').count() > 1) {
             await taskSelect.selectOption({ index: 0 });
             await page.getByRole('button', { name: /start worker/i }).click();
-            await page.waitForLoadState('networkidle');
+            await page.waitForLoadState('domcontentloaded');
           } else {
             // No tasks available, close dialog
             const closeButton = page.locator('[data-testid="close-dialog"]');

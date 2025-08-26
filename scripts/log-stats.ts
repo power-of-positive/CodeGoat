@@ -18,6 +18,8 @@ const HOURS_PER_DAY = 24;
 const MINUTES_PER_HOUR = 60;
 const SECONDS_PER_MINUTE = 60;
 const MS_PER_SECOND = 1000;
+const LEVEL_NAME_PADDING = 8;
+const SIZE_PADDING = 8;
 const MS_PER_DAY = HOURS_PER_DAY * MINUTES_PER_HOUR * SECONDS_PER_MINUTE * MS_PER_SECOND;
 
 // Log analysis thresholds
@@ -82,7 +84,7 @@ function displaySizeByLevel(stats: LogStats): void {
   )) {
     const percentage = (((size as number) / totalSizeForPercentage) * 100).toFixed(PERCENTAGE_DECIMAL_PLACES);
     console.log(
-      `  ${level.padEnd(8)}: ${((size as number) / BYTES_PER_MB).toFixed(DECIMAL_PLACES).padStart(8)} MB (${percentage.padStart(5)}%)`
+      `  ${level.padEnd(LEVEL_NAME_PADDING)}: ${((size as number) / BYTES_PER_MB).toFixed(DECIMAL_PLACES).padStart(SIZE_PADDING)} MB (${percentage.padStart(5)}%)`
     );
   }
 }

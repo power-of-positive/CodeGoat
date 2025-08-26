@@ -4,6 +4,13 @@ import { promises as fs } from 'fs';
 import * as path from 'path';
 import { spawn } from 'child_process';
 
+// Time constants
+const DAYS_TO_KEEP_LOGS = 7;
+const HOURS_PER_DAY = 24;
+const MINUTES_PER_HOUR = 60;
+const SECONDS_PER_MINUTE = 60;
+const MS_PER_SECOND = 1000;
+
 interface SessionStatus {
   sessionId: string;
   status: 'running' | 'completed' | 'failed';
@@ -165,7 +172,7 @@ class SupervisorMonitor {
     try {
       const files = await fs.readdir(this.logDir);
       const now = Date.now();
-      const maxAge = 7 * 24 * 60 * 60 * 1000; // 7 days
+      const maxAge = DAYS_TO_KEEP_LOGS * HOURS_PER_DAY * MINUTES_PER_HOUR * SECONDS_PER_MINUTE * MS_PER_SECOND; // 7 days
       
       let cleanedCount = 0;
       

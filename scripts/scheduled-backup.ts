@@ -2,6 +2,10 @@
 
 import { createBackup, cleanupOldBackups } from './database-backup';
 
+// Time constants
+const SECONDS_PER_MINUTE = 60;
+const MS_PER_SECOND = 1000;
+
 // Configuration for scheduled backups
 const BACKUP_CONFIG = {
   intervalMinutes: 60, // Backup every hour by default
@@ -46,7 +50,7 @@ async function main() {
       // Set up interval for periodic backups
       setInterval(async () => {
         await performScheduledBackup();
-      }, BACKUP_CONFIG.intervalMinutes * 60 * 1000);
+      }, BACKUP_CONFIG.intervalMinutes * SECONDS_PER_MINUTE * MS_PER_SECOND);
       
       // Keep the process alive
       process.stdin.resume();

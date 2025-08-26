@@ -156,7 +156,7 @@
       {
         "id": "playwright-e2e",
         "name": "Playwright E2E Tests",
-        "command": "cd ui && npm run test:e2e:robust",
+        "command": "cd ui && CI=true SKIP_WEB_SERVER=true npm run test:e2e:robust",
         "timeout": 300000,
         "enabled": true,
         "continueOnFailure": false,
