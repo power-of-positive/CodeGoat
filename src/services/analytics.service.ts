@@ -807,8 +807,8 @@ export class AnalyticsService {
           name: stage.stageName,
           success: stage.success,
           duration: stage.duration,
-          output: stage.output || undefined,
-          error: stage.errorMessage || undefined,
+          output: stage.output ?? undefined,
+          error: stage.errorMessage ?? undefined,
         })), // Transform stages to match expected interface
       }));
     } catch (error) {

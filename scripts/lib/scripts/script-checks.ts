@@ -9,6 +9,10 @@ import { runScriptLinting } from './script-linting';
 import { runScriptCoverage } from '../coverage-analysis';
 import { execCommand } from '../utils/command-utils';
 
+// Constants
+const SCRIPT_UNIT_TEST_TIMEOUT_MS = 180000; // 3 minutes
+const SCRIPT_COVERAGE_TIMEOUT_MS = 120000; // 2 minutes
+
 /**
  * Run script unit tests to catch real test failures
  */
@@ -18,7 +22,7 @@ function runScriptUnitTests(projectRoot: string): {
 } {
   try {
     console.log('🧪 Running scripts unit tests...');
-    const result = execCommand('npm run test:scripts', projectRoot, 180000); // 3 minute timeout
+    const result = execCommand('npm run test:scripts', projectRoot, SCRIPT_UNIT_TEST_TIMEOUT_MS);
 
     if (!result.success) {
       return {
@@ -81,7 +85,7 @@ export function runScriptChecks(
   // Only run tests for changed files to speed up precommit
   const coverageResult = runScriptCoverage({
     scriptsDir: projectRoot,
-    timeout: 120000, // 2 minute timeout for coverage during precommit
+    timeout: SCRIPT_COVERAGE_TIMEOUT_MS,
     changedFiles: scriptFiles,
   });
 

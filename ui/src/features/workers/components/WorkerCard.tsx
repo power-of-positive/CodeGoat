@@ -61,6 +61,289 @@ const statusIcons = {
   stopped: Square,
 } as const;
 
+// Utility function to format duration
+function formatDuration(startTime: string, endTime?: string) {
+  const start = new Date(startTime);
+  const end = endTime ? new Date(endTime) : new Date();
+  const duration = end.getTime() - start.getTime();
+
+  const hours = Math.floor(duration / (1000 * 60 * 60));
+  const minutes = Math.floor((duration % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((duration % (1000 * 60)) / 1000);
+
+  if (hours > 0) {
+    return `${hours}h ${minutes}m ${seconds}s`;
+  }
+  if (minutes > 0) {
+    return `${minutes}m ${seconds}s`;
+  }
+  return `${seconds}s`;
+}
+
+// Worker header component
+function WorkerHeader({ worker, isExpanded, onToggleExpanded }: {
+  worker: WorkerStatus;
+  isExpanded: boolean;
+  onToggleExpanded: () => void;
+}) {
+  const StatusIcon = statusIcons[worker.status];
+
+  return (
+    <div
+      className="cursor-pointer -m-6 p-6 rounded-lg"
+      onClick={onToggleExpanded}
+    >
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-3">
+          <div className="flex items-center">
+            {isExpanded ? (
+              <ChevronDown className="h-4 w-4 text-gray-500" />
+            ) : (
+              <ChevronRight className="h-4 w-4 text-gray-500" />
+            )}
+          </div>
+          <StatusIcon className="h-5 w-5 text-gray-600" />
+          <div>
+            <CardTitle className="text-sm font-medium">
+              Worker {worker.id.split('-').pop()}
+            </CardTitle>
+            <p className="text-xs text-gray-500">{worker.taskId}</p>
+          </div>
+        </div>
+        <WorkerBadges worker={worker} />
+      </div>
+    </div>
+  );
+}
+
+// Worker badges component
+function WorkerBadges({ worker }: { worker: WorkerStatus }) {
+  return (
+    <div className="flex items-center space-x-2">
+      <Badge className={`text-xs ${statusStyles[worker.status]}`}>
+        {worker.status.toUpperCase()}
+      </Badge>
+      {worker.pid && (
+        <Badge variant="outline" className="text-xs">
+          PID: {worker.pid}
+        </Badge>
+      )}
+      {worker.blockedCommands > 0 && (
+        <Badge variant="outline" className="text-xs bg-red-50 border-red-300 text-red-700">
+          🚫 {worker.blockedCommands} blocked
+        </Badge>
+      )}
+      <ValidationBadges worker={worker} />
+    </div>
+  );
+}
+
+// Validation badges component
+function ValidationBadges({ worker }: { worker: WorkerStatus }) {
+  return (
+    <>
+      {worker.validationPassed === false && worker.status === 'failed' && (
+        <Badge
+          variant="outline"
+          className="text-xs bg-orange-50 border-orange-300 text-orange-700"
+        >
+          ⚠️ Validation Failed
+        </Badge>
+      )}
+      {worker.validationPassed === true && worker.status === 'completed' && (
+        <Badge
+          variant="outline"
+          className="text-xs bg-green-50 border-green-300 text-green-700"
+        >
+          ✅ Validated
+        </Badge>
+      )}
+      {worker.validationRuns && worker.validationRuns > 0 && (
+        <Badge
+          variant="outline"
+          className="text-xs bg-purple-50 border-purple-300 text-purple-700"
+        >
+          🔍 {worker.validationRuns} validation{worker.validationRuns > 1 ? 's' : ''}
+        </Badge>
+      )}
+    </>
+  );
+}
+
+// Worker details component
+function WorkerDetails({ worker }: { worker: WorkerStatus }) {
+  return (
+    <div className="space-y-3">
+      <TaskContent taskContent={worker.taskContent} />
+      <TimingInfo worker={worker} />
+      <LogFileInfo logFile={worker.logFile} />
+      <PermissionSystemInfo worker={worker} />
+    </div>
+  );
+}
+
+// Task content component
+function TaskContent({ taskContent }: { taskContent: string }) {
+  return (
+    <div>
+      <p className="text-sm font-medium text-gray-700 mb-1">Task:</p>
+      <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded border">
+        {taskContent}
+      </p>
+    </div>
+  );
+}
+
+// Timing info component
+function TimingInfo({ worker }: { worker: WorkerStatus }) {
+  return (
+    <div className="grid grid-cols-2 gap-4 text-sm">
+      <div>
+        <p className="font-medium text-gray-700">Started:</p>
+        <p className="text-gray-600">{new Date(worker.startTime).toLocaleString()}</p>
+      </div>
+      <div>
+        <p className="font-medium text-gray-700">Duration:</p>
+        <div className="flex items-center space-x-1">
+          <Clock className="h-3 w-3 text-gray-500" />
+          <p className="text-gray-600">
+            {formatDuration(worker.startTime, worker.endTime)}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Log file info component
+function LogFileInfo({ logFile }: { logFile: string }) {
+  return (
+    <div>
+      <p className="text-sm font-medium text-gray-700 mb-1">Log File:</p>
+      <p className="text-xs text-gray-500 font-mono bg-gray-50 p-1 rounded">
+        {logFile}
+      </p>
+    </div>
+  );
+}
+
+// Permission system info component
+function PermissionSystemInfo({ worker }: { worker: WorkerStatus }) {
+  return (
+    <div className="grid grid-cols-2 gap-4 text-sm">
+      <div>
+        <p className="font-medium text-gray-700">Permission System:</p>
+        <div className="flex items-center space-x-1">
+          {worker.hasPermissionSystem ? (
+            <>
+              <CheckCircle className="h-3 w-3 text-green-600" />
+              <p className="text-green-600">Active</p>
+            </>
+          ) : (
+            <>
+              <XCircle className="h-3 w-3 text-red-600" />
+              <p className="text-red-600">Inactive</p>
+            </>
+          )}
+        </div>
+      </div>
+      <div>
+        <p className="font-medium text-gray-700">Blocked Commands:</p>
+        <p className={`${worker.blockedCommands > 0 ? 'text-red-600' : 'text-gray-600'}`}>
+          {worker.blockedCommands}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// Worker actions component
+function WorkerActions({ worker, actions }: {
+  worker: WorkerStatus;
+  actions: {
+    onViewLogs: (workerId: string) => void;
+    onStopWorker: (workerId: string) => void;
+    onMergeWorktree: (workerId: string) => void;
+    onOpenVSCode: (workerId: string) => void;
+    onViewBlockedCommands: (workerId: string) => void;
+    onViewValidationRuns: (workerId: string) => void;
+  };
+}) {
+  const canMerge = (worker.status === 'completed' || worker.status === 'stopped') && worker.validationPassed;
+  
+  return (
+    <div className="flex space-x-2 pt-2 border-t">
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={() => actions.onViewLogs(worker.id)}
+        className="flex items-center space-x-1"
+      >
+        <Terminal className="h-3 w-3" />
+        <span>Details</span>
+      </Button>
+
+      {worker.status === 'running' && (
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => actions.onStopWorker(worker.id)}
+          className="flex items-center space-x-1 text-red-600"
+        >
+          <Square className="h-3 w-3" />
+          <span>Stop</span>
+        </Button>
+      )}
+
+      {canMerge && (
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => actions.onMergeWorktree(worker.id)}
+          className="flex items-center space-x-1 text-green-600"
+        >
+          <GitMerge className="h-3 w-3" />
+          <span>Merge</span>
+        </Button>
+      )}
+
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={() => actions.onOpenVSCode(worker.id)}
+        className="flex items-center space-x-1 text-blue-600"
+      >
+        <Code2 className="h-3 w-3" />
+        <span>VSCode</span>
+      </Button>
+
+      {worker.blockedCommands > 0 && (
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => actions.onViewBlockedCommands(worker.id)}
+          className="flex items-center space-x-1 text-orange-600"
+        >
+          <ShieldAlert className="h-3 w-3" />
+          <span>Blocked ({worker.blockedCommands})</span>
+        </Button>
+      )}
+
+      {worker.validationRuns && worker.validationRuns > 0 && (
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => actions.onViewValidationRuns(worker.id)}
+          className="flex items-center space-x-1 text-purple-600"
+        >
+          <FileCheck className="h-3 w-3" />
+          <span>Validations ({worker.validationRuns})</span>
+        </Button>
+      )}
+    </div>
+  );
+}
+
 export function WorkerCard({
   worker,
   onViewLogs,
@@ -71,227 +354,29 @@ export function WorkerCard({
   onViewValidationRuns,
 }: WorkerCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const StatusIcon = statusIcons[worker.status];
-
-  const formatDuration = (startTime: string, endTime?: string) => {
-    const start = new Date(startTime);
-    const end = endTime ? new Date(endTime) : new Date();
-    const duration = end.getTime() - start.getTime();
-
-    const hours = Math.floor(duration / (1000 * 60 * 60));
-    const minutes = Math.floor((duration % (1000 * 60 * 60)) / (1000 * 60));
-    const seconds = Math.floor((duration % (1000 * 60)) / 1000);
-
-    if (hours > 0) {
-      return `${hours}h ${minutes}m ${seconds}s`;
-    }
-    if (minutes > 0) {
-      return `${minutes}m ${seconds}s`;
-    }
-    return `${seconds}s`;
+  
+  const actions = {
+    onViewLogs,
+    onStopWorker,
+    onMergeWorktree,
+    onOpenVSCode,
+    onViewBlockedCommands,
+    onViewValidationRuns,
   };
 
   return (
     <Card className="mb-4">
       <CardHeader className="pb-3">
-        <div
-          className="cursor-pointer -m-6 p-6 rounded-lg"
-          onClick={() => setIsExpanded(!isExpanded)}
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="flex items-center">
-                {isExpanded ? (
-                  <ChevronDown className="h-4 w-4 text-gray-500" />
-                ) : (
-                  <ChevronRight className="h-4 w-4 text-gray-500" />
-                )}
-              </div>
-              <StatusIcon className="h-5 w-5 text-gray-600" />
-              <div>
-                <CardTitle className="text-sm font-medium">
-                  Worker {worker.id.split('-').pop()}
-                </CardTitle>
-                <p className="text-xs text-gray-500">{worker.taskId}</p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Badge className={`text-xs ${statusStyles[worker.status]}`}>
-                {worker.status.toUpperCase()}
-              </Badge>
-              {worker.pid && (
-                <Badge variant="outline" className="text-xs">
-                  PID: {worker.pid}
-                </Badge>
-              )}
-              {worker.blockedCommands > 0 && (
-                <Badge variant="outline" className="text-xs bg-red-50 border-red-300 text-red-700">
-                  🚫 {worker.blockedCommands} blocked
-                </Badge>
-              )}
-              {worker.validationPassed === false && worker.status === 'failed' && (
-                <Badge
-                  variant="outline"
-                  className="text-xs bg-orange-50 border-orange-300 text-orange-700"
-                >
-                  ⚠️ Validation Failed
-                </Badge>
-              )}
-              {worker.validationPassed === true && worker.status === 'completed' && (
-                <Badge
-                  variant="outline"
-                  className="text-xs bg-green-50 border-green-300 text-green-700"
-                >
-                  ✅ Validated
-                </Badge>
-              )}
-              {worker.validationRuns && worker.validationRuns > 0 && (
-                <Badge
-                  variant="outline"
-                  className="text-xs bg-purple-50 border-purple-300 text-purple-700"
-                >
-                  🔍 {worker.validationRuns} validation{worker.validationRuns > 1 ? 's' : ''}
-                </Badge>
-              )}
-            </div>
-          </div>
-        </div>
+        <WorkerHeader 
+          worker={worker} 
+          isExpanded={isExpanded} 
+          onToggleExpanded={() => setIsExpanded(!isExpanded)}
+        />
       </CardHeader>
-
       {isExpanded && (
         <CardContent className="pt-0">
-          <div className="space-y-3">
-            {/* Task Content */}
-            <div>
-              <p className="text-sm font-medium text-gray-700 mb-1">Task:</p>
-              <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded border">
-                {worker.taskContent}
-              </p>
-            </div>
-
-            {/* Timing Info */}
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <p className="font-medium text-gray-700">Started:</p>
-                <p className="text-gray-600">{new Date(worker.startTime).toLocaleString()}</p>
-              </div>
-              <div>
-                <p className="font-medium text-gray-700">Duration:</p>
-                <div className="flex items-center space-x-1">
-                  <Clock className="h-3 w-3 text-gray-500" />
-                  <p className="text-gray-600">
-                    {formatDuration(worker.startTime, worker.endTime)}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Log File Path */}
-            <div>
-              <p className="text-sm font-medium text-gray-700 mb-1">Log File:</p>
-              <p className="text-xs text-gray-500 font-mono bg-gray-50 p-1 rounded">
-                {worker.logFile}
-              </p>
-            </div>
-
-            {/* Permission System Status */}
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <p className="font-medium text-gray-700">Permission System:</p>
-                <div className="flex items-center space-x-1">
-                  {worker.hasPermissionSystem ? (
-                    <>
-                      <CheckCircle className="h-3 w-3 text-green-600" />
-                      <p className="text-green-600">Active</p>
-                    </>
-                  ) : (
-                    <>
-                      <XCircle className="h-3 w-3 text-red-600" />
-                      <p className="text-red-600">Inactive</p>
-                    </>
-                  )}
-                </div>
-              </div>
-              <div>
-                <p className="font-medium text-gray-700">Blocked Commands:</p>
-                <p className={`${worker.blockedCommands > 0 ? 'text-red-600' : 'text-gray-600'}`}>
-                  {worker.blockedCommands}
-                </p>
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="flex space-x-2 pt-2 border-t">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => onViewLogs(worker.id)}
-                className="flex items-center space-x-1"
-              >
-                <Terminal className="h-3 w-3" />
-                <span>Details</span>
-              </Button>
-
-              {worker.status === 'running' && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => onStopWorker(worker.id)}
-                  className="flex items-center space-x-1 text-red-600"
-                >
-                  <Square className="h-3 w-3" />
-                  <span>Stop</span>
-                </Button>
-              )}
-
-              {(worker.status === 'completed' || worker.status === 'stopped') &&
-                worker.validationPassed && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => onMergeWorktree(worker.id)}
-                    className="flex items-center space-x-1 text-green-600"
-                  >
-                    <GitMerge className="h-3 w-3" />
-                    <span>Merge</span>
-                  </Button>
-                )}
-
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => onOpenVSCode(worker.id)}
-                className="flex items-center space-x-1 text-blue-600"
-              >
-                <Code2 className="h-3 w-3" />
-                <span>VSCode</span>
-              </Button>
-
-              {worker.blockedCommands > 0 && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => onViewBlockedCommands(worker.id)}
-                  className="flex items-center space-x-1 text-orange-600"
-                >
-                  <ShieldAlert className="h-3 w-3" />
-                  <span>Blocked ({worker.blockedCommands})</span>
-                </Button>
-              )}
-
-              {worker.validationRuns && worker.validationRuns > 0 && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => onViewValidationRuns(worker.id)}
-                  className="flex items-center space-x-1 text-purple-600"
-                >
-                  <FileCheck className="h-3 w-3" />
-                  <span>Validations ({worker.validationRuns})</span>
-                </Button>
-              )}
-            </div>
-          </div>
+          <WorkerDetails worker={worker} />
+          <WorkerActions worker={worker} actions={actions} />
         </CardContent>
       )}
     </Card>

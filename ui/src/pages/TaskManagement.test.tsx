@@ -114,7 +114,7 @@ describe('TaskManagement', () => {
 
       // Wait for the component to load the data
       await waitFor(() => {
-        expect(screen.getByText('Task Management')).toBeInTheDocument();
+        expect(screen.getByText('Tasks')).toBeInTheDocument();
       });
 
       // Check header elements
@@ -228,7 +228,7 @@ describe('TaskManagement', () => {
 
       // Wait for the component to load and show the header
       await waitFor(() => {
-        expect(screen.getByText('Task Management')).toBeInTheDocument();
+        expect(screen.getByText('Tasks')).toBeInTheDocument();
       });
 
       // Now find and click the Add Task button
@@ -261,7 +261,7 @@ describe('TaskManagement', () => {
 
       // Wait for the component to load
       await waitFor(() => {
-        expect(screen.getByText('Task Management')).toBeInTheDocument();
+        expect(screen.getByText('Tasks')).toBeInTheDocument();
       });
 
       // Open create form
@@ -300,7 +300,7 @@ describe('TaskManagement', () => {
 
       // Wait for the component to load
       await waitFor(() => {
-        expect(screen.getByText('Task Management')).toBeInTheDocument();
+        expect(screen.getByText('Tasks')).toBeInTheDocument();
       });
 
       // Open create form
@@ -324,7 +324,7 @@ describe('TaskManagement', () => {
 
       // Wait for the component to load
       await waitFor(() => {
-        expect(screen.getByText('Task Management')).toBeInTheDocument();
+        expect(screen.getByText('Tasks')).toBeInTheDocument();
       });
 
       // Open create form
@@ -350,7 +350,7 @@ describe('TaskManagement', () => {
 
       // Wait for the component to load first
       await waitFor(() => {
-        expect(screen.getByText('Task Management')).toBeInTheDocument();
+        expect(screen.getByText('Tasks')).toBeInTheDocument();
       });
       
       await waitFor(() => {
@@ -384,7 +384,7 @@ describe('TaskManagement', () => {
 
       // Wait for the component to load first
       await waitFor(() => {
-        expect(screen.getByText('Task Management')).toBeInTheDocument();
+        expect(screen.getByText('Tasks')).toBeInTheDocument();
       });
       
       await waitFor(() => {
@@ -449,7 +449,7 @@ describe('TaskManagement', () => {
 
       // Wait for the component to load first
       await waitFor(() => {
-        expect(screen.getByText('Task Management')).toBeInTheDocument();
+        expect(screen.getByText('Tasks')).toBeInTheDocument();
       });
       
       await waitFor(() => {
@@ -482,7 +482,7 @@ describe('TaskManagement', () => {
 
       // Wait for the component to load first
       await waitFor(() => {
-        expect(screen.getByText('Task Management')).toBeInTheDocument();
+        expect(screen.getByText('Tasks')).toBeInTheDocument();
       });
       
       await waitFor(() => {
@@ -512,7 +512,7 @@ describe('TaskManagement', () => {
 
       // Wait for the component to load first
       await waitFor(() => {
-        expect(screen.getByText('Task Management')).toBeInTheDocument();
+        expect(screen.getByText('Tasks')).toBeInTheDocument();
       });
 
       // Initially filters should be closed

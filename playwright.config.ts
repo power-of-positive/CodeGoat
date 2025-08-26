@@ -1,5 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const GLOBAL_TIMEOUT_SECONDS = 30;
+
 /**
  * @see https://playwright.dev/docs/test-configuration
  */
@@ -44,7 +46,7 @@ export default defineConfig({
 
   
   /* Global test timeout */
-  timeout: 30 * 1000,
+  timeout: GLOBAL_TIMEOUT_SECONDS * 1000,
   
   /* Expect timeout for assertions */
   expect: {

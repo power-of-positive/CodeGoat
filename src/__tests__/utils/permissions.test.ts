@@ -8,7 +8,16 @@ import {
   PermissionRule,
   PermissionConfig,
   PermissionContext,
-} from '../permissions';
+} from '../../utils/permissions';
+import { WinstonLogger } from '../../logger-winston';
+
+// Mock logger
+const mockLogger = {
+  debug: jest.fn(),
+  info: jest.fn(),
+  warn: jest.fn(),
+  error: jest.fn(),
+} as unknown as WinstonLogger;
 
 describe('PermissionManager', () => {
   let manager: PermissionManager;
@@ -301,6 +310,138 @@ describe('PermissionManager', () => {
     });
   });
 
+  describe('logging functionality', () => {
+    it('should log permission check results when logging enabled', () => {
+      const loggingConfig = {
+        ...basicConfig,
+        enableLogging: true,
+      };
+      const loggingManager = new PermissionManager(loggingConfig, mockLogger);
+      jest.clearAllMocks();
+
+      const context: PermissionContext = {
+        action: ActionType.FILE_READ,
+        worktreeDir: '/test/workspace',
+      };
+
+      loggingManager.checkPermission(context);
+
+      expect(mockLogger.info).toHaveBeenCalledWith('Permission check result', expect.objectContaining({
+        action: ActionType.FILE_READ,
+        allowed: true,
+        ruleId: 'allow-file-read',
+      }));
+    });
+
+    it('should log default permission results when logging enabled', () => {
+      const loggingConfig = {
+        ...basicConfig,
+        enableLogging: true,
+      };
+      const loggingManager = new PermissionManager(loggingConfig, mockLogger);
+      jest.clearAllMocks();
+
+      const context: PermissionContext = {
+        action: ActionType.NETWORK_REQUEST,
+        target: 'http://example.com',
+      };
+
+      loggingManager.checkPermission(context);
+
+      expect(mockLogger.info).toHaveBeenCalledWith('Permission check result (default)', expect.objectContaining({
+        action: ActionType.NETWORK_REQUEST,
+        allowed: false,
+        reason: expect.stringContaining('No matching rule found'),
+      }));
+    });
+
+    it('should log invalid pattern warnings', () => {
+      const loggingManager = new PermissionManager(basicConfig, mockLogger);
+      jest.clearAllMocks();
+
+      // Add a rule with an invalid regex pattern
+      loggingManager.addRule({
+        id: 'invalid-pattern',
+        action: ActionType.SYSTEM_COMMAND,
+        scope: PermissionScope.PATTERN,
+        target: '[invalid-regex', // Invalid regex pattern
+        allowed: true,
+        reason: 'Invalid pattern test',
+        priority: 100,
+      });
+
+      const context: PermissionContext = {
+        action: ActionType.SYSTEM_COMMAND,
+        target: 'test command',
+      };
+
+      loggingManager.checkPermission(context);
+
+      expect(mockLogger.warn).toHaveBeenCalledWith('Invalid pattern in permission rule', expect.objectContaining({
+        pattern: '[invalid-regex',
+        error: expect.any(String),
+      }));
+    });
+  });
+
+  describe('scope matching edge cases', () => {
+    it('should return true for GLOBAL scope', () => {
+      const context: PermissionContext = {
+        action: ActionType.FILE_DELETE,
+        target: '/any/file',
+      };
+
+      const result = manager.checkPermission(context);
+      expect(result.allowed).toBe(false);
+      expect(result.matchingRule?.scope).toBe(PermissionScope.GLOBAL);
+    });
+
+    it('should return false for WORKTREE scope when no worktreeDir provided', () => {
+      const context: PermissionContext = {
+        action: ActionType.FILE_READ,
+        target: '/some/file',
+        // Missing worktreeDir
+      };
+
+      const result = manager.checkPermission(context);
+      expect(result.allowed).toBe(false);
+      expect(result.appliedDefault).toBe(true);
+    });
+
+    it('should return true for WORKTREE scope when target is undefined', () => {
+      const context: PermissionContext = {
+        action: ActionType.FILE_READ,
+        worktreeDir: '/test/workspace',
+        // No target specified
+      };
+
+      const result = manager.checkPermission(context);
+      expect(result.allowed).toBe(true);
+      expect(result.matchingRule?.id).toBe('allow-file-read');
+    });
+
+    it('should handle SPECIFIC_PATH scope with missing target or rule target', () => {
+      manager.addRule({
+        id: 'rule-without-target',
+        action: ActionType.PROCESS_SPAWN,
+        scope: PermissionScope.SPECIFIC_PATH,
+        // Missing target
+        allowed: true,
+        reason: 'Rule without target',
+        priority: 100,
+      });
+
+      const context: PermissionContext = {
+        action: ActionType.PROCESS_SPAWN,
+        target: '/some/process',
+      };
+
+      const result = manager.checkPermission(context);
+      expect(result.allowed).toBe(false);
+      expect(result.appliedDefault).toBe(true);
+    });
+  });
+
   describe('path matching', () => {
     it('should match exact paths', () => {
       const context: PermissionContext = {
@@ -452,6 +593,21 @@ describe('DefaultPermissions', () => {
 
       const result = manager.checkPermission(context);
       expect(result.allowed).toBe(false);
+    });
+
+    it('should create consistent configurations', () => {
+      // Test that all default configuration methods are callable
+      const restrictive = DefaultPermissions.restrictive();
+      const permissive = DefaultPermissions.permissive(); 
+      const development = DefaultPermissions.development();
+
+      expect(restrictive.rules.length).toBeGreaterThan(0);
+      expect(permissive.rules.length).toBeGreaterThan(0);
+      expect(development.rules.length).toBeGreaterThan(0);
+
+      // Each should have different characteristics
+      expect(restrictive.defaultAllow).not.toBe(permissive.defaultAllow);
+      expect(restrictive.strictMode).not.toBe(permissive.strictMode);
     });
   });
 });

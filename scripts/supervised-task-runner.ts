@@ -25,7 +25,7 @@ class SupervisedTaskRunner {
     try {
       const content = await fs.readFile(this.todoFile, 'utf8');
       return JSON.parse(content);
-    } catch (error) {
+    } catch {
       console.log('📝 No todo file found, creating empty list');
       return [];
     }
@@ -216,7 +216,7 @@ Examples:
   
   try {
     switch (command) {
-      case 'run':
+      case 'run': {
         const taskId = args[1];
         if (!taskId) {
           console.error('❌ Task ID required');
@@ -225,13 +225,15 @@ Examples:
         const success = await runner.runTask(taskId);
         process.exit(success ? 0 : 1);
         break;
+      }
         
-      case 'run-all':
+      case 'run-all': {
         const results = await runner.runAllPendingTasks();
         process.exit(results.failed === 0 ? 0 : 1);
         break;
+      }
         
-      case 'status':
+      case 'status': {
         const todos = await runner.loadTodos();
         console.log(`📊 Task Status:`);
         console.log(`  Total: ${todos.length}`);
@@ -239,6 +241,7 @@ Examples:
         console.log(`  In Progress: ${todos.filter(t => t.status === 'in_progress').length}`);
         console.log(`  Completed: ${todos.filter(t => t.status === 'completed').length}`);
         break;
+      }
         
       default:
         console.error(`❌ Unknown command: ${command}`);

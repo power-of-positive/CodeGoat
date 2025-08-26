@@ -1,6 +1,20 @@
 import { useState, useEffect, useRef } from 'react';
 import type { UnifiedLogEntry, ProcessStartPayload, NormalizedEntry } from '../shared/types/logs';
 
+// Constants
+const MOCK_LOG_TIMEFRAMES = {
+  BASE_OFFSET_MS: 10000,
+  MESSAGE_INTERVAL_MS: 1000,
+  ERROR_DELAY_MS: 3000,
+  NORMALIZED_START_DELAY_MS: 1500,
+  NORMALIZED_INTERVAL_MS: 500,
+  USER_MESSAGE_DELAY_MS: 1500,
+  TOOL_USE_DELAY_MS: 2000,
+  ASSISTANT_DELAY_MS: 2500
+};
+
+const STREAMING_INTERVAL_MS = 5000;
+
 export interface ExecutionProcess {
   id: string;
   task_attempt_id: string;
@@ -40,7 +54,7 @@ export function useProcessesLogs(
         const mockEntries: UnifiedLogEntry[] = [];
 
         processes.forEach((process, processIndex) => {
-          const baseTimestamp = Date.now() - 10000 * (processes.length - processIndex);
+          const baseTimestamp = Date.now() - MOCK_LOG_TIMEFRAMES.BASE_OFFSET_MS * (processes.length - processIndex);
 
           // Add process start entry
           mockEntries.push({
@@ -69,11 +83,11 @@ export function useProcessesLogs(
           stdoutMessages.forEach((msg, msgIndex) => {
             mockEntries.push({
               id: `${process.id}-stdout-${msgIndex}`,
-              ts: baseTimestamp + msgIndex * 1000,
+              ts: baseTimestamp + msgIndex * MOCK_LOG_TIMEFRAMES.MESSAGE_INTERVAL_MS,
               processId: process.id,
               processName: process.run_reason,
               channel: 'stdout',
-              payload: `[${new Date(baseTimestamp + msgIndex * 1000).toLocaleTimeString()}] ${msg}`,
+              payload: `[${new Date(baseTimestamp + msgIndex * MOCK_LOG_TIMEFRAMES.MESSAGE_INTERVAL_MS).toLocaleTimeString()}] ${msg}`,
             });
           });
 
@@ -81,11 +95,11 @@ export function useProcessesLogs(
           if (process.status === 'failed') {
             mockEntries.push({
               id: `${process.id}-stderr-error`,
-              ts: baseTimestamp + 3000,
+              ts: baseTimestamp + MOCK_LOG_TIMEFRAMES.ERROR_DELAY_MS,
               processId: process.id,
               processName: process.run_reason,
               channel: 'stderr',
-              payload: `[${new Date(baseTimestamp + 3000).toLocaleTimeString()}] [ERROR] Process execution failed: Command not found`,
+              payload: `[${new Date(baseTimestamp + MOCK_LOG_TIMEFRAMES.ERROR_DELAY_MS).toLocaleTimeString()}] [ERROR] Process execution failed: Command not found`,
             });
           }
 
@@ -93,12 +107,12 @@ export function useProcessesLogs(
           if (process.run_reason === 'codingagent') {
             const normalizedEntries: NormalizedEntry[] = [
               {
-                timestamp: new Date(baseTimestamp + 1500).toISOString(),
+                timestamp: new Date(baseTimestamp + MOCK_LOG_TIMEFRAMES.USER_MESSAGE_DELAY_MS).toISOString(),
                 entry_type: { type: 'user_message' },
                 content: 'Please help me implement the enhanced logging functionality.',
               },
               {
-                timestamp: new Date(baseTimestamp + 2000).toISOString(),
+                timestamp: new Date(baseTimestamp + MOCK_LOG_TIMEFRAMES.TOOL_USE_DELAY_MS).toISOString(),
                 entry_type: {
                   type: 'tool_use',
                   tool_name: 'Read',
@@ -110,7 +124,7 @@ export function useProcessesLogs(
                 content: 'Reading log component file to understand current implementation...',
               },
               {
-                timestamp: new Date(baseTimestamp + 2500).toISOString(),
+                timestamp: new Date(baseTimestamp + MOCK_LOG_TIMEFRAMES.ASSISTANT_DELAY_MS).toISOString(),
                 entry_type: { type: 'assistant_message' },
                 content:
                   "I'll help you implement the enhanced logging functionality. Let me analyze the current log processing system and create improved components based on your requirements.",
@@ -120,7 +134,7 @@ export function useProcessesLogs(
             normalizedEntries.forEach((entry, entryIndex) => {
               mockEntries.push({
                 id: `${process.id}-normalized-${entryIndex}`,
-                ts: baseTimestamp + 1500 + entryIndex * 500,
+                ts: baseTimestamp + MOCK_LOG_TIMEFRAMES.NORMALIZED_START_DELAY_MS + entryIndex * MOCK_LOG_TIMEFRAMES.NORMALIZED_INTERVAL_MS,
                 processId: process.id,
                 processName: process.run_reason,
                 channel: 'normalized',
@@ -158,7 +172,7 @@ export function useProcessesLogs(
         };
 
         setEntries(prev => [...prev, newEntry]);
-      }, 5000); // Add new entry every 5 seconds
+      }, STREAMING_INTERVAL_MS);
     }
 
     return () => {

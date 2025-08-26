@@ -5,6 +5,10 @@
 import { validatePath } from './path-validation';
 import { validateCommand } from './command-validation';
 
+// Constants
+const MIN_PORT_NUMBER = 1;
+const MAX_PORT_NUMBER = 65535;
+
 /**
  * General input validation dispatcher
  */
@@ -25,8 +29,8 @@ export function validateInput(value: string, type: 'path' | 'command'): void {
  * Validate port number is in valid range
  */
 export function validatePort(port: number): void {
-  if (!Number.isInteger(port) || port < 1 || port > 65535) {
-    throw new Error(`Invalid port: ${port}. Must be integer between 1-65535`);
+  if (!Number.isInteger(port) || port < MIN_PORT_NUMBER || port > MAX_PORT_NUMBER) {
+    throw new Error(`Invalid port: ${port}. Must be integer between ${MIN_PORT_NUMBER}-${MAX_PORT_NUMBER}`);
   }
 }
 

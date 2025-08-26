@@ -5,6 +5,20 @@ import { promises as fs } from 'fs';
 import * as path from 'path';
 import * as readline from 'readline';
 
+// Constants
+const SESSION_TIMEOUT_MINUTES = 30;
+const HOOK_TIMEOUT_MINUTES = 5;
+const SECONDS_PER_MINUTE = 60;
+const MILLISECONDS_PER_SECOND = 1000;
+const MINUTES_TO_MS = SECONDS_PER_MINUTE * MILLISECONDS_PER_SECOND;
+const MAX_LOG_ENTRIES = 20;
+const PROMPT_PREVIEW_LENGTH = 100;
+const MAX_OUTPUT_LENGTH = 200;
+const SLEEP_BETWEEN_ATTEMPTS = 2000;
+const FORCE_COLOR_VALUE = '1';
+const DEFAULT_MAX_ATTEMPTS = 10;
+const FOLLOWUP_PREFIX_LENGTH = 9;
+
 interface SupervisorConfig {
   maxAttempts: number;
   sessionTimeout: number; // milliseconds
@@ -39,9 +53,9 @@ class ClaudeSupervisor {
 
   constructor(config: Partial<SupervisorConfig> = {}) {
     this.config = {
-      maxAttempts: 10,
-      sessionTimeout: 30 * 60 * 1000, // 30 minutes
-      hookTimeout: 5 * 60 * 1000, // 5 minutes
+      maxAttempts: DEFAULT_MAX_ATTEMPTS,
+      sessionTimeout: SESSION_TIMEOUT_MINUTES * MINUTES_TO_MS,
+      hookTimeout: HOOK_TIMEOUT_MINUTES * MINUTES_TO_MS,
       logDir: './logs/supervisor',
       claudeCommand: ['claude'],
       ...config
@@ -87,7 +101,7 @@ class ClaudeSupervisor {
           break;
         default:
           if (command.startsWith('followup ')) {
-            const message = input.substring(9);
+            const message = input.substring(FOLLOWUP_PREFIX_LENGTH);
             await this.addFollowup(message);
           } else {
             console.log('🤔 Unknown command. Type "help" for available commands.');
@@ -121,7 +135,7 @@ class ClaudeSupervisor {
 
   private showLogs(): void {
     console.log('\n📜 Recent Logs:');
-    this.logs.slice(-20).forEach(log => console.log(log));
+    this.logs.slice(-MAX_LOG_ENTRIES).forEach(log => console.log(log));
   }
 
   private log(message: string): void {
@@ -137,7 +151,7 @@ class ClaudeSupervisor {
     let attempts = 0;
     
     this.log(`🚀 Starting supervised Claude session: ${sessionId}`);
-    this.log(`📝 Initial prompt: ${initialPrompt.substring(0, 100)}...`);
+    this.log(`📝 Initial prompt: ${initialPrompt.substring(0, PROMPT_PREVIEW_LENGTH)}...`);
 
     const result: SessionResult = {
       success: false,
@@ -186,7 +200,7 @@ class ClaudeSupervisor {
       }
       
       // Brief pause between attempts
-      await this.sleep(2000);
+      await this.sleep(SLEEP_BETWEEN_ATTEMPTS);
     }
 
     if (!result.success) {
@@ -205,7 +219,7 @@ class ClaudeSupervisor {
       const logFile = path.join(this.config.logDir, `${sessionId}-attempt-${attempt}.log`);
       
       this.log(`🤖 Starting Claude session...`);
-      this.log(`📝 Prompt: ${prompt.substring(0, 100)}...`);
+      this.log(`📝 Prompt: ${prompt.substring(0, PROMPT_PREVIEW_LENGTH)}...`);
       
       // Use the same pattern as worker system
       const claudeCommand = 'npx';
@@ -224,7 +238,7 @@ class ClaudeSupervisor {
         cwd: process.cwd(),
         env: { 
           ...process.env, 
-          FORCE_COLOR: '1',
+          FORCE_COLOR: FORCE_COLOR_VALUE,
           CLAUDE_API_KEY: process.env.CLAUDE_API_KEY,
           CLAUDE_SUPERVISOR_SESSION: sessionId 
         }
@@ -369,7 +383,7 @@ class ClaudeSupervisor {
     for (const failure of failedStages) {
       prompt += `❌ ${failure.stage}: ${failure.error || 'Failed'}\n`;
       if (failure.output) {
-        prompt += `   Output: ${failure.output.substring(0, 200)}...\n`;
+        prompt += `   Output: ${failure.output.substring(0, MAX_OUTPUT_LENGTH)}...\n`;
       }
     }
     
@@ -465,7 +479,7 @@ Examples:
     } else if (arg === '--max-attempts') {
       config.maxAttempts = parseInt(args[++i]);
     } else if (arg === '--timeout') {
-      config.sessionTimeout = parseInt(args[++i]) * 60 * 1000;
+      config.sessionTimeout = parseInt(args[++i]) * MINUTES_TO_MS;
     } else {
       prompt = arg;
     }

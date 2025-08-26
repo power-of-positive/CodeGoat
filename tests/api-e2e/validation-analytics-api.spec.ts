@@ -1,14 +1,13 @@
 import { spec } from 'pactum';
 import { AddressInfo } from 'net';
-import { createApp } from '../../src/app';
+import app from '../../src/index';
 
 describe('Validation Analytics API E2E Tests', () => {
   let server: any;
   let baseUrl: string;
 
   beforeAll(async () => {
-    // Start the server on a random port for testing
-    const app = createApp();
+    // Start the server on a random port for testing  
     server = app.listen(0); // 0 = random available port
     const address = server.address() as AddressInfo;
     baseUrl = `http://localhost:${address.port}`;
@@ -19,7 +18,11 @@ describe('Validation Analytics API E2E Tests', () => {
 
   afterAll(async () => {
     if (server) {
-      await new Promise(resolve => server.close(resolve));
+      await new Promise(resolve => {
+        server.close(() => {
+          setTimeout(resolve, 100); // Give time for cleanup
+        });
+      });
     }
   });
 

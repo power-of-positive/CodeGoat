@@ -11,92 +11,136 @@ import { Button } from '../../../shared/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../shared/ui/card';
 import { ValidationRun, ValidationStageResult } from '../../../shared/types';
 
-// Component for stage detail (needed by ValidationRunItem)
-function StageDetail({ stage }: { stage: ValidationStageResult }) {
-  const [showLogs, setShowLogs] = useState(false);
+// Utility functions for stage details
+function getStageLogInfo(stage: ValidationStageResult) {
   const hasOutput = stage.output && stage.output.trim().length > 0;
   const hasError = stage.error && stage.error.trim().length > 0;
   const hasLogs = hasOutput || hasError;
+  return { hasOutput, hasError, hasLogs };
+}
+
+// Stage status indicator component
+function StageStatusIndicator({ success }: { success: boolean }) {
+  return success ? (
+    <div className="w-2 h-2 bg-green-500 rounded-full" />
+  ) : (
+    <div className="w-2 h-2 bg-red-500 rounded-full" />
+  );
+}
+
+// Stage header component
+function StageHeader({ stage, hasLogs, showLogs, onToggleLogs }: {
+  stage: ValidationStageResult;
+  hasLogs: boolean;
+  showLogs: boolean;
+  onToggleLogs: () => void;
+}) {
+  return (
+    <div
+      className="flex justify-between items-center py-2 px-3 cursor-pointer hover:bg-gray-50"
+      onClick={() => hasLogs && onToggleLogs()}
+    >
+      <div className="flex items-center gap-2">
+        <StageStatusIndicator success={stage.success} />
+        <span className="text-sm text-gray-900">
+          {stage.name || stage.id}
+        </span>
+        {hasLogs && (
+          <FileText
+            className="w-3 h-3 text-gray-400"
+            data-testid="file-icon"
+          />
+        )}
+      </div>
+      <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 text-xs">
+          <span className={stage.success ? 'text-green-600' : 'text-red-600'}>
+            {stage.success ? 'PASS' : 'FAIL'}
+          </span>
+          <span className="text-gray-500">
+            {(stage.duration / 1000).toFixed(1)}s
+          </span>
+        </div>
+        {hasLogs &&
+          (showLogs ? (
+            <ChevronDown
+              className="w-4 h-4 text-gray-400"
+              data-testid="chevron-down"
+            />
+          ) : (
+            <ChevronRight
+              className="w-4 h-4 text-gray-400"
+              data-testid="chevron-right"
+            />
+          ))}
+      </div>
+    </div>
+  );
+}
+
+// Stage logs content component
+function StageLogsContent({ stage, hasOutput, hasError }: {
+  stage: ValidationStageResult;
+  hasOutput: boolean;
+  hasError: boolean;
+}) {
+  return (
+    <div
+      className="border-t border-gray-200 p-3 bg-gray-50"
+      data-testid="stage-logs"
+    >
+      {hasError && (
+        <div className="mb-3">
+          <div className="text-xs font-medium text-red-700 mb-1">
+            Error Output:
+          </div>
+          <pre
+            className="text-xs bg-red-50 text-red-800 p-2 rounded border overflow-x-auto whitespace-pre-wrap"
+            data-testid="error-output"
+          >
+            {stage.error}
+          </pre>
+        </div>
+      )}
+
+      {hasOutput && (
+        <div>
+          <div className="text-xs font-medium text-gray-700 mb-1">
+            {hasError ? 'Standard Output:' : 'Output:'}
+          </div>
+          <pre
+            className="text-xs bg-white text-gray-800 p-2 rounded border overflow-x-auto whitespace-pre-wrap"
+            data-testid="standard-output"
+          >
+            {stage.output}
+          </pre>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Component for stage detail (needed by ValidationRunItem)
+function StageDetail({ stage }: { stage: ValidationStageResult }) {
+  const [showLogs, setShowLogs] = useState(false);
+  const { hasOutput, hasError, hasLogs } = getStageLogInfo(stage);
+
+  const handleToggleLogs = () => setShowLogs(!showLogs);
 
   return (
     <div className="border border-gray-200 rounded" data-testid="stage-detail">
-      <div
-        className="flex justify-between items-center py-2 px-3 cursor-pointer hover:bg-gray-50"
-        onClick={() => hasLogs && setShowLogs(!showLogs)}
-      >
-        <div className="flex items-center gap-2">
-          {stage.success ? (
-            <div className="w-2 h-2 bg-green-500 rounded-full" />
-          ) : (
-            <div className="w-2 h-2 bg-red-500 rounded-full" />
-          )}
-          <span className="text-sm text-gray-900">
-            {stage.name || stage.id}
-          </span>
-          {hasLogs && (
-            <FileText
-              className="w-3 h-3 text-gray-400"
-              data-testid="file-icon"
-            />
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-2 text-xs">
-            <span className={stage.success ? 'text-green-600' : 'text-red-600'}>
-              {stage.success ? 'PASS' : 'FAIL'}
-            </span>
-            <span className="text-gray-500">
-              {(stage.duration / 1000).toFixed(1)}s
-            </span>
-          </div>
-          {hasLogs &&
-            (showLogs ? (
-              <ChevronDown
-                className="w-4 h-4 text-gray-400"
-                data-testid="chevron-down"
-              />
-            ) : (
-              <ChevronRight
-                className="w-4 h-4 text-gray-400"
-                data-testid="chevron-right"
-              />
-            ))}
-        </div>
-      </div>
-
+      <StageHeader 
+        stage={stage} 
+        hasLogs={hasLogs} 
+        showLogs={showLogs} 
+        onToggleLogs={handleToggleLogs}
+      />
       {showLogs && hasLogs && (
-        <div
-          className="border-t border-gray-200 p-3 bg-gray-50"
-          data-testid="stage-logs"
-        >
-          {hasError && (
-            <div className="mb-3">
-              <div className="text-xs font-medium text-red-700 mb-1">
-                Error Output:
-              </div>
-              <pre
-                className="text-xs bg-red-50 text-red-800 p-2 rounded border overflow-x-auto whitespace-pre-wrap"
-                data-testid="error-output"
-              >
-                {stage.error}
-              </pre>
-            </div>
-          )}
-
-          {hasOutput && (
-            <div>
-              <div className="text-xs font-medium text-gray-700 mb-1">
-                {hasError ? 'Standard Output:' : 'Output:'}
-              </div>
-              <pre
-                className="text-xs bg-white text-gray-800 p-2 rounded border overflow-x-auto whitespace-pre-wrap"
-                data-testid="standard-output"
-              >
-                {stage.output}
-              </pre>
-            </div>
-          )}
-        </div>
+        <StageLogsContent 
+          stage={stage} 
+          hasOutput={hasOutput} 
+          hasError={hasError}
+        />
       )}
     </div>
   );

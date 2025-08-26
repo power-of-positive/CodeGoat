@@ -7,6 +7,12 @@ import { execSync } from 'child_process';
 import type { ReviewedFile, LLMReviewOutput } from './llm-reviewer-types';
 import type { LLMReviewerCore } from './llm-reviewer-core';
 
+// Constants
+const BYTES_PER_KB = 1024;
+const KB_PER_MB = 1024;
+const GIT_COMMAND_TIMEOUT_MS = 15000;
+const MAX_BUFFER_SIZE_BYTES = BYTES_PER_KB * KB_PER_MB; // 1MB
+
 /**
  * Validate project root path security
  */
@@ -39,8 +45,8 @@ export function getChangedFiles(projectRoot: string): string[] {
     const output = execSync('git diff --cached --name-only', {
       cwd: resolvedPath,
       encoding: 'utf-8',
-      timeout: 15000,
-      maxBuffer: 1024 * 1024,
+      timeout: GIT_COMMAND_TIMEOUT_MS,
+      maxBuffer: MAX_BUFFER_SIZE_BYTES,
     });
 
     const files = output

@@ -1,19 +1,16 @@
 import React, { useState, useMemo } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
+// import { useNavigate } from 'react-router-dom'; // Commented out - not currently used
 import {
   BarChart3,
   Clock,
   TrendingUp,
-  Calendar,
   Filter,
-  Eye,
   Settings,
   Download,
   RefreshCw,
   Maximize2,
   X,
-  ChevronDown,
-  ChevronRight,
   Info,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../shared/ui/card';
@@ -85,7 +82,7 @@ export function StageHistoryDashboard({
   stageId: initialStageId = ''
 }: StageHistoryDashboardProps) {
   const [searchParams, setSearchParams] = useSearchParams();
-  const navigate = useNavigate();
+  // const navigate = useNavigate(); // Commented out - not currently used
 
   // Parse initial state from URL parameters
   const currentView = (searchParams.get('view') || initialView) as keyof typeof VIEW_CONFIG;
@@ -202,7 +199,7 @@ export function StageHistoryDashboard({
   const CurrentViewComponent = currentViewConfig.component;
 
   const componentProps = useMemo(() => {
-    const baseProps: any = {};
+    const baseProps: Record<string, unknown> = {};
     
     // Calculate days for components that need it
     const startDate = new Date(filters.dateRange.start);

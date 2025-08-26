@@ -71,40 +71,56 @@ function shouldIgnoreFile(filePath: string, ignorePatterns: string[]): boolean {
   });
 }
 
+function isInPreCommitContext(): boolean {
+  return Boolean(
+    process.env.HUSKY_GIT_PARAMS ||
+    process.env.GIT_PARAMS ||
+    process.argv.includes('--pre-commit') ||
+    process.env.HUSKY || // Husky sets this environment variable
+    process.env.PRE_COMMIT || // Alternative detection
+    process.env.npm_lifecycle_event === 'precommit'
+  );
+}
+
+function getModifiedFiles(isPreCommit: boolean): string[] {
+  if (isPreCommit) {
+    // During pre-commit: only check unstaged changes (staged changes are expected)
+    const unstagedOutput = execSync('git diff --name-only', { encoding: 'utf-8' }).trim();
+    return unstagedOutput ? unstagedOutput.split('\n') : [];
+  } else {
+    // Normal mode: check all changes since last commit
+    const modifiedOutput = execSync('git diff --name-only HEAD', { encoding: 'utf-8' }).trim();
+    return modifiedOutput ? modifiedOutput.split('\n') : [];
+  }
+}
+
+function getUntrackedFiles(): string[] {
+  const untrackedOutput = execSync('git ls-files --others --exclude-standard', {
+    encoding: 'utf-8',
+  }).trim();
+  return untrackedOutput ? untrackedOutput.split('\n') : [];
+}
+
+// Execute git status retrieval with error handling
+function executeGitStatusRetrieval(): { modified: string[]; untracked: string[] } {
+  const isPreCommit = isInPreCommitContext();
+  const modified = getModifiedFiles(isPreCommit);
+  const untracked = getUntrackedFiles();
+  
+  return { modified, untracked };
+}
+
+// Handle git status errors
+function handleGitStatusError(error: unknown): never {
+  console.error('❌ Failed to get git status:', error);
+  process.exit(1);
+}
+
 function getGitStatus(): { modified: string[]; untracked: string[] } {
   try {
-    // Check if we're in a pre-commit context (during git commit)
-    // In pre-commit hooks, we should only check for unstaged changes
-    const isPreCommit =
-      process.env.HUSKY_GIT_PARAMS ||
-      process.env.GIT_PARAMS ||
-      process.argv.includes('--pre-commit') ||
-      process.env.HUSKY || // Husky sets this environment variable
-      process.env.PRE_COMMIT || // Alternative detection
-      process.env.npm_lifecycle_event === 'precommit';
-
-    let modified: string[] = [];
-
-    if (isPreCommit) {
-      // During pre-commit: only check unstaged changes (staged changes are expected)
-      const unstagedOutput = execSync('git diff --name-only', { encoding: 'utf-8' }).trim();
-      modified = unstagedOutput ? unstagedOutput.split('\n') : [];
-    } else {
-      // Normal mode: check all changes since last commit
-      const modifiedOutput = execSync('git diff --name-only HEAD', { encoding: 'utf-8' }).trim();
-      modified = modifiedOutput ? modifiedOutput.split('\n') : [];
-    }
-
-    // Get untracked files
-    const untrackedOutput = execSync('git ls-files --others --exclude-standard', {
-      encoding: 'utf-8',
-    }).trim();
-    const untracked = untrackedOutput ? untrackedOutput.split('\n') : [];
-
-    return { modified, untracked };
+    return executeGitStatusRetrieval();
   } catch (error) {
-    console.error('❌ Failed to get git status:', error);
-    process.exit(1);
+    return handleGitStatusError(error);
   }
 }
 

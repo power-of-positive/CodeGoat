@@ -5,6 +5,11 @@ import type { ReviewedFile } from './llm-reviewer-types';
 import type { LLMReviewerCore } from './llm-reviewer-core';
 import { reviewSingleFile } from './llm-reviewer-helpers';
 
+// Constants
+const DEFAULT_MAX_CONCURRENCY = 3;
+const DELAY_BETWEEN_BATCHES_MS = 100;
+const STAGGER_DELAY_PER_FILE_MS = 50;
+
 /**
  * Process files with rate limiting and concurrency control
  */
@@ -14,8 +19,8 @@ export async function processFiles(
   changedFiles: string[]
 ): Promise<ReviewedFile[]> {
   const reviews: ReviewedFile[] = [];
-  const maxConcurrency = Math.min(3, changedFiles.length);
-  const delayBetweenBatches = 100;
+  const maxConcurrency = Math.min(DEFAULT_MAX_CONCURRENCY, changedFiles.length);
+  const delayBetweenBatches = DELAY_BETWEEN_BATCHES_MS;
 
   for (let i = 0; i < changedFiles.length; i += maxConcurrency) {
     const batch = changedFiles.slice(i, i + maxConcurrency);
@@ -39,7 +44,7 @@ export async function processBatch(
 ): Promise<(ReviewedFile | null)[]> {
   const batchPromises = batch.map(async (file, index) => {
     if (index > 0) {
-      await new Promise(resolve => setTimeout(resolve, index * 50));
+      await new Promise(resolve => setTimeout(resolve, index * STAGGER_DELAY_PER_FILE_MS));
     }
     return reviewSingleFile(core, projectRoot, file);
   });

@@ -50,8 +50,9 @@ const dateRangeOptions = [
   { value: 'month', label: 'This Month' },
 ];
 
-export function TaskFilters({ filters, onFiltersChange, isOpen, onToggle }: FilterPanelProps) {
-  const clearAllFilters = () => {
+// Clear all filters utility
+function createClearAllFilters(onFiltersChange: (filters: TaskFiltersState) => void) {
+  return () => {
     onFiltersChange({
       status: 'all',
       priority: 'all',
@@ -61,171 +62,194 @@ export function TaskFilters({ filters, onFiltersChange, isOpen, onToggle }: Filt
       executor: '',
     });
   };
+}
 
-  const hasActiveFilters = Object.values(filters).some(
+// Check if any filters are active
+function hasActiveFilters(filters: TaskFiltersState): boolean {
+  return Object.values(filters).some(
     (value) => value && value !== 'all' && value !== ''
   );
+}
+
+// Filter header component
+function FilterHeader({ isOpen, onToggle, hasActiveFilters, onClearAll }: {
+  isOpen: boolean;
+  onToggle: () => void;
+  hasActiveFilters: boolean;
+  onClearAll: () => void;
+}) {
+  return (
+    <CardHeader className="pb-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onToggle}
+            className="flex items-center gap-2"
+          >
+            <Filter className="h-4 w-4" />
+            Filters & Search
+            {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </Button>
+          {hasActiveFilters && (
+            <Badge variant="secondary" className="text-xs">
+              Active
+            </Badge>
+          )}
+        </div>
+        {hasActiveFilters && (
+          <Button variant="ghost" size="sm" onClick={onClearAll}>
+            <X className="h-4 w-4 mr-1" />
+            Clear All
+          </Button>
+        )}
+      </div>
+    </CardHeader>
+  );
+}
+
+// Search input component
+function SearchInput({ filters, onFiltersChange }: {
+  filters: TaskFiltersState;
+  onFiltersChange: (filters: TaskFiltersState) => void;
+}) {
+  return (
+    <div>
+      <label htmlFor="search-tasks" className="block text-sm font-medium text-gray-700 mb-2">
+        Search Tasks
+      </label>
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+        <input
+          id="search-tasks"
+          type="text"
+          value={filters.search || ''}
+          onChange={(e) =>
+            onFiltersChange({ ...filters, search: e.target.value })
+          }
+          placeholder="Search by task content or ID..."
+          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md text-sm"
+        />
+      </div>
+    </div>
+  );
+}
+
+// Select filter component
+function SelectFilter({ label, value, options, onChange, id }: {
+  label: string;
+  value: string;
+  options: { value: string; label: string }[];
+  onChange: (value: string) => void;
+  id?: string;
+}) {
+  return (
+    <div>
+      <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-2">
+        {label}
+      </label>
+      <select
+        id={id}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full p-2 border border-gray-300 rounded-md text-sm"
+      >
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+// Text filter component
+function TextFilter({ label, value, onChange, placeholder, id }: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  id?: string;
+}) {
+  return (
+    <div>
+      <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-2">
+        {label}
+      </label>
+      <input
+        id={id}
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full p-2 border border-gray-300 rounded-md text-sm"
+      />
+    </div>
+  );
+}
+
+// Filter controls component
+function FilterControls({ filters, onFiltersChange }: {
+  filters: TaskFiltersState;
+  onFiltersChange: (filters: TaskFiltersState) => void;
+}) {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      <SelectFilter
+        label="Status"
+        id="filter-status"
+        value={filters.status || 'all'}
+        options={statusOptions}
+        onChange={(value) => onFiltersChange({ ...filters, status: value as TaskFiltersState['status'] })}
+      />
+      <SelectFilter
+        label="Priority"
+        id="filter-priority"
+        value={filters.priority || 'all'}
+        options={priorityOptions}
+        onChange={(value) => onFiltersChange({ ...filters, priority: value as TaskFiltersState['priority'] })}
+      />
+      <SelectFilter
+        label="Type"
+        value={filters.taskType || 'all'}
+        options={taskTypeOptions}
+        onChange={(value) => onFiltersChange({ ...filters, taskType: value as TaskFiltersState['taskType'] })}
+      />
+      <SelectFilter
+        label="Date Range"
+        value={filters.dateRange || 'all'}
+        options={dateRangeOptions}
+        onChange={(value) => onFiltersChange({ ...filters, dateRange: value as TaskFiltersState['dateRange'] })}
+      />
+      <TextFilter
+        label="Executor"
+        id="filter-executor"
+        value={filters.executor || ''}
+        onChange={(value) => onFiltersChange({ ...filters, executor: value })}
+        placeholder="Filter by executor..."
+      />
+    </div>
+  );
+}
+
+export function TaskFilters({ filters, onFiltersChange, isOpen, onToggle }: FilterPanelProps) {
+  const clearAllFilters = createClearAllFilters(onFiltersChange);
+  const hasActiveFiltersState = hasActiveFilters(filters);
 
   return (
     <Card className="mb-6">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onToggle}
-              className="flex items-center gap-2"
-            >
-              <Filter className="h-4 w-4" />
-              Filters & Search
-              {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-            </Button>
-            {hasActiveFilters && (
-              <Badge variant="secondary" className="text-xs">
-                Active
-              </Badge>
-            )}
-          </div>
-          {hasActiveFilters && (
-            <Button variant="ghost" size="sm" onClick={clearAllFilters}>
-              <X className="h-4 w-4 mr-1" />
-              Clear All
-            </Button>
-          )}
-        </div>
-      </CardHeader>
-
+      <FilterHeader 
+        isOpen={isOpen} 
+        onToggle={onToggle} 
+        hasActiveFilters={hasActiveFiltersState} 
+        onClearAll={clearAllFilters}
+      />
       {isOpen && (
         <CardContent className="space-y-4">
-          {/* Search */}
-          <div>
-            <label htmlFor="search-tasks" className="block text-sm font-medium text-gray-700 mb-2">
-              Search Tasks
-            </label>
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <input
-                id="search-tasks"
-                type="text"
-                value={filters.search || ''}
-                onChange={(e) =>
-                  onFiltersChange({ ...filters, search: e.target.value })
-                }
-                placeholder="Search by task content or ID..."
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md text-sm"
-              />
-            </div>
-          </div>
-
-          {/* Filter controls */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            <div>
-              <label htmlFor="filter-status" className="block text-sm font-medium text-gray-700 mb-2">
-                Status
-              </label>
-              <select
-                id="filter-status"
-                value={filters.status || 'all'}
-                onChange={(e) =>
-                  onFiltersChange({
-                    ...filters,
-                    status: e.target.value as TaskFiltersState['status'],
-                  })
-                }
-                className="w-full p-2 border border-gray-300 rounded-md text-sm"
-              >
-                {statusOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label htmlFor="filter-priority" className="block text-sm font-medium text-gray-700 mb-2">
-                Priority
-              </label>
-              <select
-                id="filter-priority"
-                value={filters.priority || 'all'}
-                onChange={(e) =>
-                  onFiltersChange({
-                    ...filters,
-                    priority: e.target.value as TaskFiltersState['priority'],
-                  })
-                }
-                className="w-full p-2 border border-gray-300 rounded-md text-sm"
-              >
-                {priorityOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Type
-              </label>
-              <select
-                value={filters.taskType || 'all'}
-                onChange={(e) =>
-                  onFiltersChange({
-                    ...filters,
-                    taskType: e.target.value as TaskFiltersState['taskType'],
-                  })
-                }
-                className="w-full p-2 border border-gray-300 rounded-md text-sm"
-              >
-                {taskTypeOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Date Range
-              </label>
-              <select
-                value={filters.dateRange || 'all'}
-                onChange={(e) =>
-                  onFiltersChange({
-                    ...filters,
-                    dateRange: e.target.value as TaskFiltersState['dateRange'],
-                  })
-                }
-                className="w-full p-2 border border-gray-300 rounded-md text-sm"
-              >
-                {dateRangeOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label htmlFor="filter-executor" className="block text-sm font-medium text-gray-700 mb-2">
-                Executor
-              </label>
-              <input
-                id="filter-executor"
-                type="text"
-                value={filters.executor || ''}
-                onChange={(e) =>
-                  onFiltersChange({ ...filters, executor: e.target.value })
-                }
-                placeholder="Filter by executor..."
-                className="w-full p-2 border border-gray-300 rounded-md text-sm"
-              />
-            </div>
-          </div>
+          <SearchInput filters={filters} onFiltersChange={onFiltersChange} />
+          <FilterControls filters={filters} onFiltersChange={onFiltersChange} />
         </CardContent>
       )}
     </Card>

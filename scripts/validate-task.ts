@@ -17,6 +17,7 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import { Settings, ValidationStage } from '../src/types/settings.types';
 import { PrismaClient } from '@prisma/client';
+import { getEnabledValidationStages } from '../src/services/validation-stage-config.service';
 
 const execAsync = promisify(exec);
 
@@ -225,18 +226,12 @@ class ValidationRunner {
     this.printValidationHeader();
 
     try {
-      const settings = await this.loadSettings();
-      const validationSettings = settings.validation;
-      const stages = validationSettings?.stages || [];
-
-      // Filter and sort enabled stages
-      const enabledStages = stages
-        .filter((stage: ValidationStage) => stage.enabled)
-        .sort((a: ValidationStage, b: ValidationStage) => (a.priority || 0) - (b.priority || 0));
+      // Load validation stages from database instead of settings.json
+      const enabledStages = await getEnabledValidationStages();
 
       if (enabledStages.length === 0) {
         console.log(
-          `${colors.yellow}⚠️  No validation stages configured or enabled${colors.reset}`
+          `${colors.yellow}⚠️  No validation stages configured or enabled in database${colors.reset}`
         );
         this.results.success = true;
         this.saveMetrics();
@@ -245,7 +240,7 @@ class ValidationRunner {
 
       this.results.totalStages = enabledStages.length;
       console.log(
-        `${colors.cyan}🎯 Running ${enabledStages.length} validation stages...\n${colors.reset}`
+        `${colors.cyan}🎯 Running ${enabledStages.length} validation stages from database...\n${colors.reset}`
       );
 
       let overallSuccess = true;
@@ -313,105 +308,122 @@ class ValidationRunner {
 
   private async saveMetrics(): Promise<void> {
     try {
-      // Find the current task to associate with this validation run
       const currentTaskId = await this.findCurrentTask();
-
-      // Save to database
-      try {
-        const validationRun = await this.db.validationRun.create({
-          data: {
-            taskId: currentTaskId,
-            timestamp: new Date(),
-            totalTime: this.results.totalTime,
-            totalStages: this.results.stages.length,
-            passedStages: this.results.stages.filter(s => s.success).length,
-            failedStages: this.results.stages.filter(s => !s.success).length,
-            success: this.results.success,
-            triggerType: 'validation_script',
-            environment: 'development',
-          },
-        });
-
-        // Create individual stage records
-        for (let i = 0; i < this.results.stages.length; i++) {
-          const stage = this.results.stages[i];
-          await this.db.validationStage.create({
-            data: {
-              runId: validationRun.id,
-              stageId: stage.id,
-              stageName: stage.name,
-              success: stage.success,
-              duration: stage.duration,
-              command: null, // Not available in ValidationStageResult
-              exitCode: null, // Not available in ValidationStageResult
-              output: stage.output || null,
-              errorMessage: stage.error || null,
-              enabled: true, // Default value
-              continueOnFailure: false, // Default value
-              order: i + 1,
-            },
-          });
-        }
-
-        if (currentTaskId) {
-          console.log(
-            `${colors.cyan}📊 Validation run saved to database and associated with task ${currentTaskId}${colors.reset}`
-          );
-        } else {
-          console.log(
-            `${colors.cyan}📊 Validation run saved to database (no associated task)${colors.reset}`
-          );
-        }
-      } catch (dbError) {
-        console.warn(
-          `${colors.yellow}⚠️  Could not save to database: ${(dbError as Error).message}${colors.reset}`
-        );
-      }
-
-      // Also save to file for backward compatibility
-      const metricsPath = path.join(process.cwd(), 'validation-metrics.json');
-      let existingMetrics: ValidationMetrics[] = [];
-
-      try {
-        const content = await fs.readFile(metricsPath, 'utf-8');
-        existingMetrics = JSON.parse(content);
-      } catch {
-        // File doesn't exist, start with empty array
-      }
-
-      const metricsEntry = {
-        timestamp: new Date().toISOString(),
-        startTime: this.startTime,
-        totalTime: this.results.totalTime,
-        totalDuration: this.results.totalTime,
-        totalStages: this.results.totalStages,
-        passed: this.results.passed,
-        failed: this.results.failed,
-        success: this.results.success,
-        sessionId: this.sessionId,
-        stages: this.results.stages.map(stage => ({
-          id: stage.id,
-          name: stage.name,
-          success: stage.success,
-          duration: stage.duration,
-          output: stage.output,
-          error: stage.error,
-        })),
-      };
-
-      existingMetrics.push(metricsEntry);
-
-      // Keep only the last 1000 entries
-      if (existingMetrics.length > 1000) {
-        existingMetrics = existingMetrics.slice(-1000);
-      }
-
-      await fs.writeFile(metricsPath, JSON.stringify(existingMetrics, null, 2));
+      await this.saveToDatabase(currentTaskId);
+      await this.saveToFile();
     } catch (error) {
       console.warn(
         `${colors.yellow}⚠️  Could not save metrics: ${(error as Error).message}${colors.reset}`
       );
     }
+  }
+
+  private async saveToDatabase(currentTaskId: string | null): Promise<void> {
+    try {
+      const validationRun = await this.db.validationRun.create({
+        data: {
+          taskId: currentTaskId,
+          timestamp: new Date(),
+          totalTime: this.results.totalTime,
+          totalStages: this.results.stages.length,
+          passedStages: this.results.stages.filter(s => s.success).length,
+          failedStages: this.results.stages.filter(s => !s.success).length,
+          success: this.results.success,
+          triggerType: 'validation_script',
+          environment: 'development',
+        },
+      });
+
+      await this.createStageRecords(validationRun.id);
+      this.logDatabaseSaveResult(currentTaskId);
+    } catch (dbError) {
+      console.warn(
+        `${colors.yellow}⚠️  Could not save to database: ${(dbError as Error).message}${colors.reset}`
+      );
+    }
+  }
+
+  private async createStageRecords(runId: string): Promise<void> {
+    for (let i = 0; i < this.results.stages.length; i++) {
+      const stage = this.results.stages[i];
+      await this.db.validationStage.create({
+        data: {
+          runId,
+          stageId: stage.id,
+          stageName: stage.name,
+          success: stage.success,
+          duration: stage.duration,
+          command: null,
+          exitCode: null,
+          output: stage.output || null,
+          errorMessage: stage.error || null,
+          enabled: true,
+          continueOnFailure: false,
+          order: i + 1,
+        },
+      });
+    }
+  }
+
+  private logDatabaseSaveResult(currentTaskId: string | null): void {
+    if (currentTaskId) {
+      console.log(
+        `${colors.cyan}📊 Validation run saved to database and associated with task ${currentTaskId}${colors.reset}`
+      );
+    } else {
+      console.log(
+        `${colors.cyan}📊 Validation run saved to database (no associated task)${colors.reset}`
+      );
+    }
+  }
+
+  private async saveToFile(): Promise<void> {
+    const metricsPath = path.join(process.cwd(), 'validation-metrics.json');
+    const existingMetrics = await this.loadExistingMetrics(metricsPath);
+    const metricsEntry = this.createMetricsEntry();
+    
+    existingMetrics.push(metricsEntry);
+    
+    const trimmedMetrics = this.trimMetricsHistory(existingMetrics);
+    await fs.writeFile(metricsPath, JSON.stringify(trimmedMetrics, null, 2));
+  }
+
+  private async loadExistingMetrics(metricsPath: string): Promise<ValidationMetrics[]> {
+    try {
+      const content = await fs.readFile(metricsPath, 'utf-8');
+      return JSON.parse(content);
+    } catch {
+      return [];
+    }
+  }
+
+  private createMetricsEntry() {
+    return {
+      timestamp: new Date().toISOString(),
+      startTime: this.startTime,
+      totalTime: this.results.totalTime,
+      totalDuration: this.results.totalTime,
+      totalStages: this.results.totalStages,
+      passed: this.results.passed,
+      failed: this.results.failed,
+      success: this.results.success,
+      sessionId: this.sessionId,
+      stages: this.results.stages.map(stage => ({
+        id: stage.id,
+        name: stage.name,
+        success: stage.success,
+        duration: stage.duration,
+        output: stage.output,
+        error: stage.error,
+      })),
+    };
+  }
+
+  private trimMetricsHistory(existingMetrics: ValidationMetrics[]): ValidationMetrics[] {
+    const MAX_ENTRIES = 1000;
+    return existingMetrics.length > MAX_ENTRIES 
+      ? existingMetrics.slice(-MAX_ENTRIES)
+      : existingMetrics;
   }
 
   private printSummary(): void {

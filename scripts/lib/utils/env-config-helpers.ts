@@ -4,6 +4,10 @@
 import * as path from 'path';
 import * as fs from 'fs';
 
+// Constants for character code validation
+const MIN_PRINTABLE_CHAR_CODE = 31; // Characters above 31 are printable (32 and above)
+const DELETE_CHAR_CODE = 127; // DEL character code
+
 export type EnvLoadResult = {
   success: boolean;
   envPath?: string;
@@ -46,7 +50,7 @@ export function processVariables(
             .split('')
             .filter(char => {
               const code = char.charCodeAt(0);
-              return code > 31 && code !== 127;
+              return code > MIN_PRINTABLE_CHAR_CODE && code !== DELETE_CHAR_CODE;
             })
             .join('')
         : String(value);

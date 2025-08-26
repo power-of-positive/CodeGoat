@@ -7,6 +7,9 @@
 import { execSync } from 'child_process';
 import * as fs from 'fs';
 
+// Constants
+const DUPLICATION_ESTIMATION_FACTOR = 0.3;
+
 export function getStagedFiles(): string[] {
   try {
     return execSync('git diff --cached --name-only', { encoding: 'utf-8' })
@@ -72,7 +75,7 @@ export function analyzeFileExports(file: string): {
     const content = fs.readFileSync(file, 'utf-8');
     const exportMatches =
       content.match(/^export\s+(const|function|class|interface|type)\s+\w+/gm) || [];
-    const estimated = Math.floor(exportMatches.length * 0.3);
+    const estimated = Math.floor(exportMatches.length * DUPLICATION_ESTIMATION_FACTOR);
     return { count: exportMatches.length, estimated };
   } catch {
     return { count: 0, estimated: 0 };

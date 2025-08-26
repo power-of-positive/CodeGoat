@@ -42,7 +42,7 @@ interface ValidationLogResponse {
   level: string;
   message: string;
   timestamp: string;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
 }
 
 export function createValidationRunRoutes(logger: WinstonLogger) {
@@ -67,7 +67,7 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
       const offset = (pageNum - 1) * limitNum;
 
       // Build where clause based on filters
-      const where: any = {};
+      const where: Record<string, unknown> = {};
       
       if (success !== undefined) {
         where.success = success === 'true';
@@ -84,10 +84,10 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
       if (startDate || endDate) {
         where.timestamp = {};
         if (startDate) {
-          where.timestamp.gte = new Date(startDate as string);
+          (where.timestamp as { gte?: Date; lte?: Date }).gte = new Date(startDate as string);
         }
         if (endDate) {
-          where.timestamp.lte = new Date(endDate as string);
+          (where.timestamp as { gte?: Date; lte?: Date }).lte = new Date(endDate as string);
         }
       }
 
@@ -116,8 +116,8 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
 
       const runs: ValidationRunResponse[] = dbRuns.map(dbRun => ({
         id: dbRun.id,
-        taskId: dbRun.taskId || undefined,
-        sessionId: dbRun.sessionId || undefined,
+        taskId: dbRun.taskId ?? undefined,
+        sessionId: dbRun.sessionId ?? undefined,
         timestamp: dbRun.timestamp.toISOString(),
         startTime: dbRun.startTime ? Number(dbRun.startTime) : undefined,
         totalTime: Number(dbRun.totalTime),
@@ -125,20 +125,20 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
         passedStages: dbRun.passedStages,
         failedStages: dbRun.failedStages,
         success: dbRun.success,
-        triggerType: dbRun.triggerType || undefined,
-        environment: dbRun.environment || undefined,
-        gitCommit: dbRun.gitCommit || undefined,
-        gitBranch: dbRun.gitBranch || undefined,
+        triggerType: dbRun.triggerType ?? undefined,
+        environment: dbRun.environment ?? undefined,
+        gitCommit: dbRun.gitCommit ?? undefined,
+        gitBranch: dbRun.gitBranch ?? undefined,
         stages: dbRun.stages.map(stage => ({
           id: stage.id,
           stageId: stage.stageId,
           stageName: stage.stageName,
           success: stage.success,
           duration: Number(stage.duration),
-          command: stage.command || undefined,
-          exitCode: stage.exitCode || undefined,
-          output: stage.output || undefined,
-          errorMessage: stage.errorMessage || undefined,
+          command: stage.command ?? undefined,
+          exitCode: stage.exitCode ?? undefined,
+          output: stage.output ?? undefined,
+          errorMessage: stage.errorMessage ?? undefined,
           enabled: stage.enabled,
           continueOnFailure: stage.continueOnFailure,
           order: stage.order,
@@ -194,8 +194,8 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
 
       const run: ValidationRunResponse & { logs: ValidationLogResponse[] } = {
         id: dbRun.id,
-        taskId: dbRun.taskId || undefined,
-        sessionId: dbRun.sessionId || undefined,
+        taskId: dbRun.taskId ?? undefined,
+        sessionId: dbRun.sessionId ?? undefined,
         timestamp: dbRun.timestamp.toISOString(),
         startTime: dbRun.startTime ? Number(dbRun.startTime) : undefined,
         totalTime: Number(dbRun.totalTime),
@@ -203,27 +203,27 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
         passedStages: dbRun.passedStages,
         failedStages: dbRun.failedStages,
         success: dbRun.success,
-        triggerType: dbRun.triggerType || undefined,
-        environment: dbRun.environment || undefined,
-        gitCommit: dbRun.gitCommit || undefined,
-        gitBranch: dbRun.gitBranch || undefined,
+        triggerType: dbRun.triggerType ?? undefined,
+        environment: dbRun.environment ?? undefined,
+        gitCommit: dbRun.gitCommit ?? undefined,
+        gitBranch: dbRun.gitBranch ?? undefined,
         stages: dbRun.stages.map(stage => ({
           id: stage.id,
           stageId: stage.stageId,
           stageName: stage.stageName,
           success: stage.success,
           duration: Number(stage.duration),
-          command: stage.command || undefined,
-          exitCode: stage.exitCode || undefined,
-          output: stage.output || undefined,
-          errorMessage: stage.errorMessage || undefined,
+          command: stage.command ?? undefined,
+          exitCode: stage.exitCode ?? undefined,
+          output: stage.output ?? undefined,
+          errorMessage: stage.errorMessage ?? undefined,
           enabled: stage.enabled,
           continueOnFailure: stage.continueOnFailure,
           order: stage.order,
         })),
         logs: dbRun.logs.map(log => ({
           id: log.id,
-          stageId: log.stageId || undefined,
+          stageId: log.stageId ?? undefined,
           level: log.level.toLowerCase(),
           message: log.message,
           timestamp: log.timestamp.toISOString(),
@@ -247,7 +247,7 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
       const daysAgo = new Date();
       daysAgo.setDate(daysAgo.getDate() - parseInt(days as string));
 
-      const whereClause: any = {
+      const whereClause: Record<string, unknown> = {
         timestamp: { gte: daysAgo }
       };
       
@@ -301,7 +301,7 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
 
       // Combine stage statistics
       const enrichedStageStats = stageStats.map(stage => {
-        const successCount = stageSuccessStats.find(s => s.stageId === stage.stageId)?._count.stageId || 0;
+        const successCount = stageSuccessStats.find(s => s.stageId === stage.stageId)?._count.stageId ?? 0;
         const successRate = stage._count.stageId > 0 ? (successCount / stage._count.stageId) * 100 : 0;
         
         return {
@@ -393,49 +393,53 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
       }
 
       const totalStages = stages.length;
-      const passedStages = stages.filter((s: any) => s.success).length;
+      const passedStages = stages.filter((s: { success: boolean }) => s.success).length;
       const failedStages = totalStages - passedStages;
       const success = failedStages === 0;
 
-      // Create validation run
-      const validationRun = await db.validationRun.create({
-        data: {
-          taskId: taskId || null,
-          sessionId: sessionId || null,
-          totalTime: totalTime || 0,
-          totalStages,
-          passedStages,
-          failedStages,
-          success,
-          triggerType,
-          environment,
-          gitCommit: gitCommit || null,
-          gitBranch: gitBranch || null,
-        }
-      });
-
-      // Create validation stages
-      const createdStages = [];
-      for (let i = 0; i < stages.length; i++) {
-        const stage = stages[i];
-        const createdStage = await db.validationStage.create({
+      // Create validation run and stages atomically in a transaction
+      const result = await db.$transaction(async (tx) => {
+        // Create validation run
+        const validationRun = await tx.validationRun.create({
           data: {
-            runId: validationRun.id,
-            stageId: stage.stageId || stage.id,
-            stageName: stage.stageName || stage.name,
-            success: stage.success || false,
-            duration: stage.duration || 0,
-            command: stage.command || null,
-            exitCode: stage.exitCode || null,
-            output: stage.output || null,
-            errorMessage: stage.errorMessage || stage.error || null,
-            enabled: stage.enabled ?? true,
-            continueOnFailure: stage.continueOnFailure ?? false,
-            order: i + 1,
+            taskId: taskId ?? null,
+            sessionId: sessionId ?? null,
+            totalTime: totalTime ?? 0,
+            totalStages,
+            passedStages,
+            failedStages,
+            success,
+            triggerType,
+            environment,
+            gitCommit: gitCommit ?? null,
+            gitBranch: gitBranch ?? null,
           }
         });
-        createdStages.push(createdStage);
-      }
+
+        // Create validation stages in batch
+        const stageData = stages.map((stage, i) => ({
+          runId: validationRun.id,
+          stageId: stage.stageId ?? stage.id,
+          stageName: stage.stageName ?? stage.name,
+          success: stage.success ?? false,
+          duration: stage.duration ?? 0,
+          command: stage.command ?? null,
+          exitCode: stage.exitCode ?? null,
+          output: stage.output ?? null,
+          errorMessage: stage.errorMessage ?? stage.error ?? null,
+          enabled: stage.enabled ?? true,
+          continueOnFailure: stage.continueOnFailure ?? false,
+          order: i + 1,
+        }));
+
+        const createdStages = await Promise.all(
+          stageData.map(data => tx.validationStage.create({ data }))
+        );
+
+        return { validationRun, createdStages };
+      });
+
+      const { validationRun, createdStages } = result;
 
       logger.info('Validation run created:', { 
         runId: validationRun.id, 
@@ -472,7 +476,7 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
       } = req.query;
       
       // Build date filter
-      let dateFilter: any = {};
+      let dateFilter: Record<string, unknown> = {};
       if (startDate && endDate) {
         dateFilter = {
           timestamp: {
@@ -488,13 +492,19 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
         };
       }
 
-      const whereClause: any = dateFilter;
+      const whereClause: Record<string, unknown> = dateFilter;
       if (environment) {
         whereClause.environment = environment;
       }
 
       // Get stage performance over time with detailed breakdown
-      const stageHistoryQuery: any = {
+      interface StageHistoryQuery {
+        where: Record<string, unknown>;
+        orderBy: Array<Record<string, unknown>>;
+        include: Record<string, unknown>;
+      }
+      
+      const stageHistoryQuery: StageHistoryQuery = {
         where: {
           run: whereClause
         },
@@ -516,7 +526,7 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
       };
 
       if (stageId) {
-        stageHistoryQuery.where.stageId = stageId;
+        (stageHistoryQuery.where as Record<string, unknown>).stageId = stageId;
       }
 
       const stageHistory = await db.validationStage.findMany(stageHistoryQuery);
@@ -545,7 +555,7 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
 
       // Calculate detailed metrics for each stage
       const enrichedStageStats = stageStats.map(stage => {
-        const successCount = stageSuccessStats.find(s => s.stageId === stage.stageId)?._count.stageId || 0;
+        const successCount = stageSuccessStats.find(s => s.stageId === stage.stageId)?._count.stageId ?? 0;
         const failureCount = stage._count.stageId - successCount;
         const successRate = stage._count.stageId > 0 ? (successCount / stage._count.stageId) * 100 : 0;
         
@@ -567,8 +577,17 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
       });
 
       // Group stage history by day for trend analysis
+      interface DailyStageData {
+        date: string;
+        stageId: string;
+        stageName: string;
+        runs: typeof stageHistory;
+        successCount: number;
+        totalDuration: number;
+      }
+      
       const dailyStagePerformance = stageHistory.reduce((acc, stage) => {
-        const day = (stage as any).run.timestamp.toISOString().split('T')[0];
+        const day = (stage as unknown as { run: { timestamp: Date } }).run.timestamp.toISOString().split('T')[0];
         const stageKey = `${day}-${stage.stageId}`;
         
         if (!acc[stageKey]) {
@@ -583,13 +602,15 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
         }
         
         acc[stageKey].runs.push(stage);
-        if (stage.success) {acc[stageKey].successCount++;}
+        if (stage.success) {
+          acc[stageKey].successCount++;
+        }
         acc[stageKey].totalDuration += Number(stage.duration);
         
         return acc;
-      }, {} as Record<string, any>);
+      }, {} as Record<string, DailyStageData>);
 
-      const trendData = Object.values(dailyStagePerformance).map((data: any) => ({
+      const trendData = Object.values(dailyStagePerformance).map((data) => ({
         date: data.date,
         stageId: data.stageId,
         stageName: data.stageName,
@@ -680,7 +701,7 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
       const daysAgo = new Date();
       daysAgo.setDate(daysAgo.getDate() - parseInt(days as string));
 
-      const whereClause: any = {
+      const whereClause: Record<string, unknown> = {
         timestamp: { gte: daysAgo }
       };
       
@@ -689,7 +710,14 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
       }
 
       // Get all validation runs in the time period
-      const runsQuery: any = {
+      interface RunsQuery {
+        where: Record<string, unknown>;
+        orderBy: { timestamp: 'asc' };
+        include?: Record<string, unknown>;
+        select?: Record<string, boolean>;
+      }
+      
+      const runsQuery: RunsQuery = {
         where: whereClause,
         orderBy: { timestamp: 'asc' },
       };
@@ -724,10 +752,11 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
             return `${timestamp.toISOString().slice(0, 13)}:00:00`;
           case 'daily':
             return timestamp.toISOString().split('T')[0];
-          case 'weekly':
+          case 'weekly': {
             const weekStart = new Date(timestamp);
             weekStart.setDate(timestamp.getDate() - timestamp.getDay());
             return weekStart.toISOString().split('T')[0];
+          }
           default:
             return timestamp.toISOString().split('T')[0];
         }
@@ -744,7 +773,8 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
             successfulRuns: 0,
             failedRuns: 0,
             averageDuration: 0,
-            stagePerformance: {} as Record<string, { success: number; total: number; avgDuration: number }>
+            successRate: 0,
+            stagePerformance: {} as Record<string, { success: number; total: number; avgDuration: number; successRate: number }>
           };
         }
 
@@ -757,11 +787,12 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
         }
 
         // Calculate stage performance for this time period
-        if ((run as any).stages) {
-          (run as any).stages.forEach((stage: any) => {
+        const runWithStages = run as unknown as { stages?: Array<{ stageId: string; success: boolean; duration: number | string }> };
+        if (runWithStages.stages) {
+          runWithStages.stages.forEach((stage) => {
             const key = stage.stageId;
             if (!acc[timeKey].stagePerformance[key]) {
-              acc[timeKey].stagePerformance[key] = { success: 0, total: 0, avgDuration: 0 };
+              acc[timeKey].stagePerformance[key] = { success: 0, total: 0, avgDuration: 0, successRate: 0 };
             }
             acc[timeKey].stagePerformance[key].total++;
             if (stage.success) {
@@ -772,12 +803,21 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
         }
 
         return acc;
-      }, {} as Record<string, any>);
+      }, {} as Record<string, {
+        timestamp: string;
+        runs: typeof runs;
+        totalRuns: number;
+        successfulRuns: number;
+        failedRuns: number;
+        averageDuration: number;
+        successRate: number;
+        stagePerformance: Record<string, { success: number; total: number; avgDuration: number; successRate: number }>;
+      }>);
 
       // Finalize calculations
-      const timeline = Object.values(timelineData).map((period: any) => {
+      const timeline = Object.values(timelineData).map((period) => {
         // Calculate average duration for the period
-        const totalDuration = period.runs.reduce((sum: number, run: any) => sum + Number(run.totalTime), 0);
+        const totalDuration = period.runs.reduce((sum: number, run) => sum + Number((run as { totalTime: number | string }).totalTime), 0);
         period.averageDuration = period.totalRuns > 0 ? totalDuration / period.totalRuns : 0;
 
         // Finalize stage performance calculations
@@ -833,13 +873,15 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
       }
 
       const buildWhereClause = (startDate: string, endDate: string) => {
-        const where: any = {
+        const where: Record<string, unknown> = {
           timestamp: {
             gte: new Date(startDate),
             lte: new Date(endDate)
           }
         };
-        if (environment) {where.environment = environment;}
+        if (environment) {
+          where.environment = environment;
+        }
         return where;
       };
 
@@ -884,17 +926,29 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
         ])
       ]);
 
+      interface StageStats {
+        stageId: string;
+        stageName: string;
+        _count: { stageId: number };
+        _avg: { duration: number | null };
+      }
+      
+      interface StageSuccesses {
+        stageId: string;
+        _count: { stageId: number };
+      }
+      
       const buildPeriodSummary = (
         totalRuns: number,
         successRuns: number,
         avgDuration: { _avg: { totalTime: number | null } },
-        stageStats: any[],
-        stageSuccesses: any[]
+        stageStats: StageStats[],
+        stageSuccesses: StageSuccesses[]
       ) => {
         const successRate = totalRuns > 0 ? (successRuns / totalRuns) * 100 : 0;
         
         const enrichedStages = stageStats.map(stage => {
-          const successCount = stageSuccesses.find(s => s.stageId === stage.stageId)?._count.stageId || 0;
+          const successCount = stageSuccesses.find(s => s.stageId === stage.stageId)?._count.stageId ?? 0;
           const stageSuccessRate = stage._count.stageId > 0 ? (successCount / stage._count.stageId) * 100 : 0;
           
           return {

@@ -12,17 +12,24 @@ import { TimeSeriesCharts } from './TimeSeriesCharts';
 import { AnalyticsHeader, MetricsSummary } from './AnalyticsComponents';
 import { RecentRuns } from '../../validation/components/RecentRuns';
 
+// Constants
+const MINUTES_IN_HOUR = 60;
+const MS_PER_SECOND = 1000;
+const SECONDS_PER_MINUTE = 60;
+const CACHE_STALE_TIME_MINUTES = 5;
+const CACHE_STALE_TIME_MS = CACHE_STALE_TIME_MINUTES * SECONDS_PER_MINUTE * MS_PER_SECOND;
+
 function useAnalyticsData(agentFilter?: string) {
   const metricsQuery = useQuery({
     queryKey: ['validation-metrics', agentFilter],
     queryFn: () => analyticsApi.getValidationMetrics(agentFilter),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: CACHE_STALE_TIME_MS,
   });
 
   const runsQuery = useQuery({
     queryKey: ['validation-runs', agentFilter],
     queryFn: () => analyticsApi.getValidationRuns(agentFilter),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: CACHE_STALE_TIME_MS,
   });
 
   return {

@@ -111,6 +111,18 @@ function runCommand(command: string, description: string): void {
   }
 } */
 
+async function cleanupTestDirectory(fullPath: string): Promise<void> {
+  try {
+    const stats = fs.statSync(fullPath);
+    if (stats.isDirectory()) {
+      fs.rmSync(fullPath, { recursive: true, force: true });
+      log(`Cleaned up orphaned tmp directory: ${fullPath}`);
+    }
+  } catch (error) {
+    console.warn(`Failed to cleanup tmp directory ${fullPath}:`, error);
+  }
+}
+
 async function setupTestDatabase() {
   log('Setting up test database...');
 
@@ -160,15 +172,7 @@ async function main() {
 
         for (const testDir of testDirs) {
           const fullPath = path.join(tmpDir, testDir);
-          try {
-            const stats = fs.statSync(fullPath);
-            if (stats.isDirectory()) {
-              fs.rmSync(fullPath, { recursive: true, force: true });
-              log(`Cleaned up orphaned tmp directory: ${fullPath}`);
-            }
-          } catch (error) {
-            console.warn(`Failed to cleanup tmp directory ${fullPath}:`, error);
-          }
+          await cleanupTestDirectory(fullPath);
         }
       }
     }

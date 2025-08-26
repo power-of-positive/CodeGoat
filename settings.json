@@ -15,7 +15,7 @@
         "command": "npm run lint",
         "timeout": 90000,
         "enabled": true,
-        "continueOnFailure": true,
+        "continueOnFailure": false,
         "priority": 1
       },
       {

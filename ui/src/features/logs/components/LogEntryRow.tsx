@@ -4,8 +4,7 @@ import StdoutEntry from './StdoutEntry';
 import StderrEntry from './StderrEntry';
 import ProcessStartCard from './ProcessStartCard';
 import DisplayConversationEntry from './DisplayConversationEntry';
-import type { UnifiedLogEntry, ProcessStartPayload } from '../../../shared/types/logs';
-import type { NormalizedEntry } from '../../../shared/types/logs';
+import type { UnifiedLogEntry, ProcessStartPayload, NormalizedEntry } from '../../../shared/types/logs';
 import { formatStableTimestamp } from '../../../utils/timestamp';
 
 export interface LogEntry {

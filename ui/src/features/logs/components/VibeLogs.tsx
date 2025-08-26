@@ -17,8 +17,7 @@ import {
 } from 'lucide-react';
 import MarkdownRenderer from './MarkdownRenderer';
 import RawLogText from './RawLogText';
-import { UnifiedLogEntry, ProcessStartPayload } from '../../../shared/types/logs';
-import { NormalizedEntry } from '../../../shared/types/logs';
+import { UnifiedLogEntry, ProcessStartPayload, NormalizedEntry } from '../../../shared/types/logs';
 
 interface VibeLogsProps {
   entry: UnifiedLogEntry;

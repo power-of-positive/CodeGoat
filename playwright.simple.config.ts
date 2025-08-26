@@ -1,5 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const TIMEOUT_SECONDS = 30;
+
 export default defineConfig({
   testDir: './tests/e2e',
   fullyParallel: false,
@@ -19,7 +21,7 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
   ],
-  timeout: 30 * 1000,
+  timeout: TIMEOUT_SECONDS * 1000,
   expect: {
     timeout: 5 * 1000,
   },

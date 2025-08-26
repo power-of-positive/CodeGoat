@@ -33,15 +33,22 @@ export interface CheckRunner {
 }
 
 /**
+ * Configuration for running checks
+ */
+interface ChecksConfig {
+  projectRoot: string;
+  stagedFiles: StagedFiles;
+  fileArray: keyof StagedFiles;
+  checks: Array<{ runner: CheckRunner; name: string }>;
+  errorPrefix: string;
+}
+
+/**
  * Run a series of checks sequentially, stopping on first failure
  */
-export function runChecks(
-  projectRoot: string,
-  stagedFiles: StagedFiles,
-  fileArray: keyof StagedFiles,
-  checks: Array<{ runner: CheckRunner; name: string }>,
-  errorPrefix: string
-) {
+export function runChecks(config: ChecksConfig) {
+  const { projectRoot, stagedFiles, fileArray, checks, errorPrefix } = config;
+  
   try {
     validateStagedFiles(stagedFiles);
     if (stagedFiles[fileArray].length === 0) {

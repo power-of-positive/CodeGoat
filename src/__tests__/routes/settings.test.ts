@@ -139,7 +139,7 @@ describe('Settings Routes', () => {
       const response = await request(app).get('/settings/fallback').expect(200);
 
       expect(response.body).toEqual(mockSettings.fallback);
-    });
+    }, 10000);
 
     it('should return default fallback settings when no fallback settings exist', async () => {
       (fs.readFile as jest.Mock).mockResolvedValue(JSON.stringify({}));

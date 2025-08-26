@@ -195,6 +195,25 @@ model ExecutionMetric {
 
 
 
+// Validation stage configurations (replacing settings.json validation.stages)
+model ValidationStageConfig {
+  id                String    @id @default(uuid())
+  stageId           String    @unique @map("stage_id") // e.g., 'lint', 'typecheck', 'unit-tests-backend'
+  name              String    // Human-readable name
+  command           String    // Command to execute
+  timeout           Int       @default(60000) // Timeout in milliseconds
+  enabled           Boolean   @default(true)
+  continueOnFailure Boolean   @default(false) @map("continue_on_failure")
+  priority          Int       // Execution order
+  description       String?   // Optional description
+  environment       String?   // Environment requirements
+  category          String?   // Category like 'lint', 'test', 'build'
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+  
+  @@map("validation_stage_configs")
+}
+
 // Enhanced Validation runs (Associated with tasks)
 model ValidationRun {
   id            String    @id @default(uuid())
@@ -217,6 +236,11 @@ model ValidationRun {
   stages        ValidationStage[]
   logs          ValidationLog[]
   
+  @@index([timestamp])
+  @@index([success])
+  @@index([environment])
+  @@index([timestamp, success])
+  @@index([taskId])
   @@map("validation_runs")
 }
 

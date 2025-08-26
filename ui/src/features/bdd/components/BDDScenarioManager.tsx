@@ -63,9 +63,9 @@ function BDDScenarioForm({ scenario, onSave, onCancel }: BDDScenarioFormProps) {
   const [gherkinContent, setGherkinContent] = useState(
     scenario?.gherkinContent || ''
   );
-  const [given, setGiven] = useState(scenario?.given || '');
-  const [when, setWhen] = useState(scenario?.when || '');
-  const [then, setThen] = useState(scenario?.then || '');
+  const [given] = useState(scenario?.given || '');
+  const [when] = useState(scenario?.when || '');
+  const [then] = useState(scenario?.then || '');
   const [status, setStatus] = useState<BDDScenario['status']>(
     scenario?.status || 'pending'
   );

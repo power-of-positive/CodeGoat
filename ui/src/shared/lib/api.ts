@@ -60,6 +60,39 @@ interface StageMetric {
 
 const API_BASE = '/api';
 
+// Helper function to build query parameters for stage analytics
+function buildStageAnalyticsQueryParams(params?: {
+  days?: number;
+  environment?: string;
+  stageId?: string;
+  startDate?: string;
+  endDate?: string;
+}): string {
+  if (!params) {
+    return '';
+  }
+  
+  const queryParams = new URLSearchParams();
+  
+  if (params.days) {
+    queryParams.append('days', params.days.toString());
+  }
+  if (params.environment) {
+    queryParams.append('environment', params.environment);
+  }
+  if (params.stageId) {
+    queryParams.append('stageId', params.stageId);
+  }
+  if (params.startDate) {
+    queryParams.append('startDate', params.startDate);
+  }
+  if (params.endDate) {
+    queryParams.append('endDate', params.endDate);
+  }
+  
+  return queryParams.toString();
+}
+
 async function request<T>(url: string, options: RequestInit = {}): Promise<T> {
   const response = await fetch(`${API_BASE}${url}`, {
     headers: {
@@ -390,24 +423,8 @@ export const analyticsApi = {
       }>;
     };
   }> => {
-    const queryParams = new URLSearchParams();
-    if (params?.days) {
-      queryParams.append('days', params.days.toString());
-    }
-    if (params?.environment) {
-      queryParams.append('environment', params.environment);
-    }
-    if (params?.stageId) {
-      queryParams.append('stageId', params.stageId);
-    }
-    if (params?.startDate) {
-      queryParams.append('startDate', params.startDate);
-    }
-    if (params?.endDate) {
-      queryParams.append('endDate', params.endDate);
-    }
-    
-    const url = `/validation-runs/analytics/stages${queryParams.toString() ? `?${queryParams}` : ''}`;
+    const queryParams = buildStageAnalyticsQueryParams(params);
+    const url = `/validation-runs/analytics/stages${queryParams ? `?${queryParams}` : ''}`;
     return request(url);
   },
 

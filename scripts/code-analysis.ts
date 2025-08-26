@@ -3,6 +3,9 @@
 import { execSync } from 'child_process';
 import * as fs from 'fs';
 
+// Constants
+const MAGIC_TWENTY = 20;
+
 interface AnalysisResult {
   duplicates: {
     found: boolean;
@@ -56,11 +59,11 @@ const analyzeDeadCode = (): AnalysisResult['deadCode'] => {
   const unusedImports = run('npx unimported')
     .split('\n')
     .filter(l => l.trim() && !l.includes('✓'))
-    .slice(0, 20);
+    .slice(0, MAGIC_TWENTY);
   const unusedExports = run('npx ts-prune --project frontend/tsconfig.json')
     .split('\n')
     .filter(l => l.includes('used'))
-    .slice(0, 20);
+    .slice(0, MAGIC_TWENTY);
   return { unusedImports, unusedExports };
 };
 
@@ -99,15 +102,8 @@ ${
   fs.writeFileSync('./code-analysis/report.md', report);
 };
 
-async function main(): Promise<void> {
-  console.log('🚀 Starting automated code analysis...');
-
-  const result: AnalysisResult = {
-    duplicates: analyzeDuplicates(),
-    deadCode: analyzeDeadCode(),
-    summary: '',
-  };
-
+// Collect analysis issues
+function collectIssues(result: AnalysisResult): string[] {
   const issues = [];
   if (result.duplicates.percentage > 2) {
     issues.push(`${result.duplicates.percentage.toFixed(1)}% duplication`);
@@ -118,35 +114,72 @@ async function main(): Promise<void> {
   if (result.deadCode.unusedExports.length > 3) {
     issues.push(`${result.deadCode.unusedExports.length} unused exports`);
   }
+  return issues;
+}
 
-  result.summary =
-    issues.length === 0
-      ? '✅ No significant code quality issues detected'
-      : `⚠️ Issues found: ${issues.join(', ')}`;
+// Generate summary from issues
+function generateSummary(issues: string[]): string {
+  return issues.length === 0
+    ? '✅ No significant code quality issues detected'
+    : `⚠️ Issues found: ${issues.join(', ')}`;
+}
 
-  generateReport(result);
+// Check if analysis should block
+function shouldBlockAnalysis(result: AnalysisResult): boolean {
+  return (
+    result.duplicates.percentage > 5 ||
+    result.deadCode.unusedImports.length > 10 ||
+    result.deadCode.unusedExports.length > 5
+  );
+}
 
+// Collect blocking reasons
+function collectBlockingReasons(result: AnalysisResult): string[] {
+  const reasons = [];
+  if (result.duplicates.percentage > 5) {
+    reasons.push(`High duplication: ${result.duplicates.percentage.toFixed(1)}%`);
+  }
+  if (result.deadCode.unusedImports.length > 10) {
+    reasons.push(`Too many unused imports: ${result.deadCode.unusedImports.length}`);
+  }
+  if (result.deadCode.unusedExports.length > 5) {
+    reasons.push(`Unused exports: ${result.deadCode.unusedExports.length}`);
+  }
+  return reasons;
+}
+
+// Handle blocking issues
+function handleBlockingIssues(reasons: string[]): void {
+  console.error('🚫 Blocking issues:', reasons.join(', '));
+  console.log(JSON.stringify({ blocked: true, reasons }));
+  process.exit(1);
+}
+
+// Print analysis summary
+function printAnalysisSummary(result: AnalysisResult): void {
   console.log(
     `\n📊 Summary: Duplicates: ${result.duplicates.count} (${result.duplicates.percentage.toFixed(1)}%), Unused: ${result.deadCode.unusedImports.length} imports, ${result.deadCode.unusedExports.length} exports`
   );
+}
 
-  const shouldBlock =
-    result.duplicates.percentage > 5 ||
-    result.deadCode.unusedImports.length > 10 ||
-    result.deadCode.unusedExports.length > 5;
+async function main(): Promise<void> {
+  console.log('🚀 Starting automated code analysis...');
 
-  if (shouldBlock) {
-    const reasons = [];
-    if (result.duplicates.percentage > 5)
-      {reasons.push(`High duplication: ${result.duplicates.percentage.toFixed(1)}%`);}
-    if (result.deadCode.unusedImports.length > 10)
-      {reasons.push(`Too many unused imports: ${result.deadCode.unusedImports.length}`);}
-    if (result.deadCode.unusedExports.length > 5)
-      {reasons.push(`Unused exports: ${result.deadCode.unusedExports.length}`);}
+  const result: AnalysisResult = {
+    duplicates: analyzeDuplicates(),
+    deadCode: analyzeDeadCode(),
+    summary: '',
+  };
 
-    console.error('🚫 Blocking issues:', reasons.join(', '));
-    console.log(JSON.stringify({ blocked: true, reasons }));
-    process.exit(1);
+  const issues = collectIssues(result);
+  result.summary = generateSummary(issues);
+
+  generateReport(result);
+  printAnalysisSummary(result);
+
+  if (shouldBlockAnalysis(result)) {
+    const reasons = collectBlockingReasons(result);
+    handleBlockingIssues(reasons);
   }
 
   console.log('✅ Code analysis passed');

@@ -18,6 +18,14 @@ import { ValidationRunsViewer } from '../features/validation/components/Validati
 import { BlockedCommandsViewer } from '../features/permissions/components/BlockedCommandsViewer';
 import type { UnifiedLogEntry } from '../shared/types/logs';
 
+// Constants
+const AUTO_REFRESH_INTERVAL_MS = 2000;
+const LOG_PROCESSING_INTERVALS = {
+  BASE_INTERVAL_MS: 1000,
+  LINE_INTERVAL_MS: 100,
+  START_OFFSET_MS: 1000
+};
+
 interface WorkerStatus {
   id: string;
   taskId: string;
@@ -58,7 +66,7 @@ function LogViewer({ workerId, onClose }: LogViewerProps) {
   const { data: logsData } = useQuery<WorkerLogsResponse>({
     queryKey: ['worker-logs', workerId],
     queryFn: () => claudeWorkersApi.getWorkerLogs(workerId),
-    refetchInterval: isAutoRefresh ? 2000 : false,
+    refetchInterval: isAutoRefresh ? AUTO_REFRESH_INTERVAL_MS : false,
   });
 
   // Process logs into UnifiedLogEntry format to match TaskDetail
@@ -71,12 +79,12 @@ function LogViewer({ workerId, onClose }: LogViewerProps) {
       .split('\n')
       .filter((line: string) => line.trim());
     const entries: UnifiedLogEntry[] = [];
-    const baseTimestamp = Date.now() - lines.length * 1000;
+    const baseTimestamp = Date.now() - lines.length * LOG_PROCESSING_INTERVALS.BASE_INTERVAL_MS;
 
     // Add process start entry for consistency
     entries.push({
       id: `${workerId}-start`,
-      ts: baseTimestamp - 1000,
+      ts: baseTimestamp - LOG_PROCESSING_INTERVALS.START_OFFSET_MS,
       processId: workerId,
       processName: `claude-worker`,
       channel: 'process_start',
@@ -90,7 +98,7 @@ function LogViewer({ workerId, onClose }: LogViewerProps) {
 
     // Process each log line
     lines.forEach((line: string, index: number) => {
-      const timestamp = baseTimestamp + index * 100;
+      const timestamp = baseTimestamp + index * LOG_PROCESSING_INTERVALS.LINE_INTERVAL_MS;
 
       if (
         line.includes('[ERROR]') ||
@@ -183,24 +191,8 @@ function LogViewer({ workerId, onClose }: LogViewerProps) {
   );
 }
 
-export function WorkersDashboard() {
-  const [selectedWorkerId, setSelectedWorkerId] = useState<string | null>(null);
-  const [selectedBlockedWorkerId, setSelectedBlockedWorkerId] = useState<string | null>(null);
-  const [selectedValidationWorkerId, setSelectedValidationWorkerId] = useState<string | null>(null);
-  const queryClient = useQueryClient();
-
-  // Fetch workers status
-  const {
-    data: workersData,
-    isLoading,
-    error,
-  } = useQuery<WorkersStatusResponse>({
-    queryKey: ['workers-status'],
-    queryFn: claudeWorkersApi.getWorkersStatus,
-    refetchInterval: 3000, // Refresh every 3 seconds
-  });
-
-  // Stop worker mutation
+// Custom hook for worker mutations
+function useWorkerMutations(queryClient: { invalidateQueries: (query: { queryKey: string[] }) => void }) {
   const stopWorkerMutation = useMutation({
     mutationFn: claudeWorkersApi.stopWorker,
     onSuccess: () => {
@@ -212,7 +204,6 @@ export function WorkersDashboard() {
     },
   });
 
-  // Merge worktree mutation
   const mergeWorktreeMutation = useMutation({
     mutationFn: claudeWorkersApi.mergeWorktree,
     onSuccess: data => {
@@ -227,7 +218,6 @@ export function WorkersDashboard() {
     },
   });
 
-  // Open VSCode mutation
   const openVSCodeMutation = useMutation({
     mutationFn: claudeWorkersApi.openVSCode,
     onSuccess: data => {
@@ -246,34 +236,248 @@ export function WorkersDashboard() {
     },
   });
 
-  const navigate = useNavigate();
+  return { stopWorkerMutation, mergeWorktreeMutation, openVSCodeMutation };
+}
 
+// Worker action handlers
+function useWorkerActions(
+  navigate: (path: string) => void,
+  mutations: {
+    stopWorkerMutation: { mutate: (workerId: string) => void };
+    mergeWorktreeMutation: { mutate: (workerId: string) => void };
+    openVSCodeMutation: { mutate: (workerId: string) => void };
+  },
+  setters: {
+    setSelectedBlockedWorkerId: (id: string) => void;
+    setSelectedValidationWorkerId: (id: string) => void;
+  }
+) {
   const handleViewLogs = (workerId: string) => {
     navigate(`/workers/${workerId}`);
   };
 
   const handleStopWorker = (workerId: string) => {
     if (confirm('Are you sure you want to stop this worker?')) {
-      stopWorkerMutation.mutate(workerId);
+      mutations.stopWorkerMutation.mutate(workerId);
     }
   };
 
   const handleMergeWorktree = (workerId: string) => {
     if (confirm('Are you sure you want to merge the worktree changes to the main branch?')) {
-      mergeWorktreeMutation.mutate(workerId);
+      mutations.mergeWorktreeMutation.mutate(workerId);
     }
   };
 
   const handleOpenVSCode = (workerId: string) => {
-    openVSCodeMutation.mutate(workerId);
+    mutations.openVSCodeMutation.mutate(workerId);
   };
 
   const handleViewBlockedCommands = (workerId: string) => {
-    setSelectedBlockedWorkerId(workerId);
+    setters.setSelectedBlockedWorkerId(workerId);
   };
 
   const handleViewValidationRuns = (workerId: string) => {
-    setSelectedValidationWorkerId(workerId);
+    setters.setSelectedValidationWorkerId(workerId);
+  };
+
+  return {
+    handleViewLogs,
+    handleStopWorker,
+    handleMergeWorktree,
+    handleOpenVSCode,
+    handleViewBlockedCommands,
+    handleViewValidationRuns,
+  };
+}
+
+// Dashboard header component
+function DashboardHeader({ queryClient }: { queryClient: { invalidateQueries: (query: { queryKey: string[] }) => void } }) {
+  return (
+    <div className="flex items-center justify-between">
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">Claude Code Workers</h1>
+        <p className="text-gray-600">Monitor and manage Claude Code worker processes</p>
+      </div>
+      <Button
+        onClick={() => queryClient.invalidateQueries({ queryKey: ['workers-status'] })}
+        className="flex items-center space-x-2"
+      >
+        <RefreshCw className="h-4 w-4" />
+        <span>Refresh</span>
+      </Button>
+    </div>
+  );
+}
+
+// Stats card component
+function StatsCard({ icon: Icon, iconColor, title, value }: {
+  icon: React.ComponentType<{ className?: string }>;
+  iconColor: string;
+  title: string;
+  value: string | number;
+}) {
+  return (
+    <Card>
+      <CardContent className="p-6">
+        <div className="flex items-center">
+          <Icon className={`h-8 w-8 ${iconColor}`} />
+          <div className="ml-4">
+            <p className="text-sm font-medium text-gray-600">{title}</p>
+            <p className="text-2xl font-bold text-gray-900">{value}</p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// Stats cards component
+function StatsCards({ workersData }: { workersData: WorkersStatusResponse | undefined }) {
+  const workers = workersData?.workers || [];
+  const activeCount = workersData?.activeCount || 0;
+  const totalCount = workersData?.totalCount || 0;
+  const totalBlockedCommands = workersData?.totalBlockedCommands || 0;
+  
+  const successRate = totalCount > 0
+    ? Math.round((workers.filter(w => w.status === 'completed').length / totalCount) * 100)
+    : 0;
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <StatsCard icon={Zap} iconColor="text-blue-600" title="Active Workers" value={activeCount} />
+      <StatsCard icon={Terminal} iconColor="text-green-600" title="Total Workers" value={totalCount} />
+      <StatsCard icon={CheckCircle} iconColor="text-purple-600" title="Success Rate" value={`${successRate}%`} />
+      <StatsCard icon={XCircle} iconColor="text-red-600" title="Blocked Commands" value={totalBlockedCommands} />
+    </div>
+  );
+}
+
+// Workers list component
+function WorkersList({ workers, actions }: {
+  workers: WorkerStatus[];
+  actions: {
+    handleViewLogs: (workerId: string) => void;
+    handleStopWorker: (workerId: string) => void;
+    handleMergeWorktree: (workerId: string) => void;
+    handleOpenVSCode: (workerId: string) => void;
+    handleViewBlockedCommands: (workerId: string) => void;
+    handleViewValidationRuns: (workerId: string) => void;
+  };
+}) {
+  if (workers.length === 0) {
+    return (
+      <Card>
+        <CardContent className="p-12 text-center">
+          <Terminal className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No Workers</h3>
+          <p className="text-gray-600">
+            No Claude Code workers are currently running. Start a worker from the task board to
+            see it here.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div>
+      {workers.map(worker => (
+        <WorkerCard
+          key={worker.id}
+          worker={worker}
+          onViewLogs={actions.handleViewLogs}
+          onStopWorker={actions.handleStopWorker}
+          onMergeWorktree={actions.handleMergeWorktree}
+          onOpenVSCode={actions.handleOpenVSCode}
+          onViewBlockedCommands={actions.handleViewBlockedCommands}
+          onViewValidationRuns={actions.handleViewValidationRuns}
+        />
+      ))}
+    </div>
+  );
+}
+
+// Modal components
+function DashboardModals({ selections, setters }: {
+  selections: {
+    selectedWorkerId: string | null;
+    selectedBlockedWorkerId: string | null;
+    selectedValidationWorkerId: string | null;
+  };
+  setters: {
+    setSelectedWorkerId: (id: string | null) => void;
+    setSelectedBlockedWorkerId: (id: string | null) => void;
+    setSelectedValidationWorkerId: (id: string | null) => void;
+  };
+}) {
+  return (
+    <>
+      {selections.selectedWorkerId && (
+        <LogViewer workerId={selections.selectedWorkerId} onClose={() => setters.setSelectedWorkerId(null)} />
+      )}
+      {selections.selectedBlockedWorkerId && (
+        <BlockedCommandsViewer
+          workerId={selections.selectedBlockedWorkerId}
+          onClose={() => setters.setSelectedBlockedWorkerId(null)}
+        />
+      )}
+      {selections.selectedValidationWorkerId && (
+        <ValidationRunsViewer
+          workerId={selections.selectedValidationWorkerId}
+          onClose={() => setters.setSelectedValidationWorkerId(null)}
+        />
+      )}
+    </>
+  );
+}
+
+// Error state component
+function WorkersError() {
+  return (
+    <div className="p-6">
+      <div className="flex items-center justify-center min-h-96">
+        <div className="text-center">
+          <XCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Failed to Load Workers</h2>
+          <p className="text-gray-600">Could not load worker status</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function WorkersDashboard() {
+  const [selectedWorkerId, setSelectedWorkerId] = useState<string | null>(null);
+  const [selectedBlockedWorkerId, setSelectedBlockedWorkerId] = useState<string | null>(null);
+  const [selectedValidationWorkerId, setSelectedValidationWorkerId] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+
+  // Fetch workers status
+  const {
+    data: workersData,
+    isLoading,
+    error,
+  } = useQuery<WorkersStatusResponse>({
+    queryKey: ['workers-status'],
+    queryFn: claudeWorkersApi.getWorkersStatus,
+    refetchInterval: 3000, // Refresh every 3 seconds
+  });
+
+  const mutations = useWorkerMutations(queryClient);
+  const setters = { setSelectedBlockedWorkerId, setSelectedValidationWorkerId };
+  const actions = useWorkerActions(navigate, mutations, setters);
+
+  const selections = {
+    selectedWorkerId,
+    selectedBlockedWorkerId,
+    selectedValidationWorkerId,
+  };
+
+  const modalSetters = {
+    setSelectedWorkerId,
+    setSelectedBlockedWorkerId,
+    setSelectedValidationWorkerId,
   };
 
   if (isLoading) {
@@ -281,151 +485,19 @@ export function WorkersDashboard() {
   }
 
   if (error) {
-    return (
-      <div className="p-6">
-        <div className="flex items-center justify-center min-h-96">
-          <div className="text-center">
-            <XCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">Failed to Load Workers</h2>
-            <p className="text-gray-600">Could not load worker status</p>
-          </div>
-        </div>
-      </div>
-    );
+    return <WorkersError />;
   }
 
   const workers = workersData?.workers || [];
-  const activeCount = workersData?.activeCount || 0;
-  const totalCount = workersData?.totalCount || 0;
-  const totalBlockedCommands = workersData?.totalBlockedCommands || 0;
 
   return (
     <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Claude Code Workers</h1>
-          <p className="text-gray-600">Monitor and manage Claude Code worker processes</p>
-        </div>
-        <Button
-          onClick={() => queryClient.invalidateQueries({ queryKey: ['workers-status'] })}
-          className="flex items-center space-x-2"
-        >
-          <RefreshCw className="h-4 w-4" />
-          <span>Refresh</span>
-        </Button>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <Zap className="h-8 w-8 text-blue-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Active Workers</p>
-                <p className="text-2xl font-bold text-gray-900">{activeCount}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <Terminal className="h-8 w-8 text-green-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Workers</p>
-                <p className="text-2xl font-bold text-gray-900">{totalCount}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <CheckCircle className="h-8 w-8 text-purple-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Success Rate</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {totalCount > 0
-                    ? Math.round(
-                        (workers.filter(w => w.status === 'completed').length / totalCount) * 100
-                      )
-                    : 0}
-                  %
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <XCircle className="h-8 w-8 text-red-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Blocked Commands</p>
-                <p className="text-2xl font-bold text-gray-900">{totalBlockedCommands}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Log Viewer */}
-      {selectedWorkerId && (
-        <LogViewer workerId={selectedWorkerId} onClose={() => setSelectedWorkerId(null)} />
-      )}
-
-      {/* Blocked Commands Viewer */}
-      {selectedBlockedWorkerId && (
-        <BlockedCommandsViewer
-          workerId={selectedBlockedWorkerId}
-          onClose={() => setSelectedBlockedWorkerId(null)}
-        />
-      )}
-
-      {/* Validation Runs Viewer */}
-      {selectedValidationWorkerId && (
-        <ValidationRunsViewer
-          workerId={selectedValidationWorkerId}
-          onClose={() => setSelectedValidationWorkerId(null)}
-        />
-      )}
-
-      {/* Workers List */}
+      <DashboardHeader queryClient={queryClient} />
+      <StatsCards workersData={workersData} />
+      <DashboardModals selections={selections} setters={modalSetters} />
       <div>
         <h2 className="text-lg font-semibold text-gray-900 mb-4">Workers ({workers.length})</h2>
-
-        {workers.length === 0 ? (
-          <Card>
-            <CardContent className="p-12 text-center">
-              <Terminal className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No Workers</h3>
-              <p className="text-gray-600">
-                No Claude Code workers are currently running. Start a worker from the task board to
-                see it here.
-              </p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div>
-            {workers.map(worker => (
-              <WorkerCard
-                key={worker.id}
-                worker={worker}
-                onViewLogs={handleViewLogs}
-                onStopWorker={handleStopWorker}
-                onMergeWorktree={handleMergeWorktree}
-                onOpenVSCode={handleOpenVSCode}
-                onViewBlockedCommands={handleViewBlockedCommands}
-                onViewValidationRuns={handleViewValidationRuns}
-              />
-            ))}
-          </div>
-        )}
+        <WorkersList workers={workers} actions={actions} />
       </div>
     </div>
   );

@@ -5,6 +5,9 @@ import OpenAI from 'openai';
 import * as path from 'path';
 import type { ReviewResult } from './llm-reviewer-types';
 
+// Constants
+const DEFAULT_CONFIDENCE_LEVEL = 0.5;
+
 /**
  * Core LLM reviewer functionality
  */
@@ -127,7 +130,7 @@ Use "low" severity for minor style issues or suggestions.`;
       suggestions: Array.isArray(r.suggestions) ? r.suggestions : [],
       summary: typeof r.summary === 'string' ? r.summary : 'No summary provided',
       hasBlockingIssues: Boolean(r.hasBlockingIssues),
-      confidence: Math.max(0, Math.min(1, Number(r.confidence) || 0.5)),
+      confidence: Math.max(0, Math.min(1, Number(r.confidence) || DEFAULT_CONFIDENCE_LEVEL)),
     };
   }
 

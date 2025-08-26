@@ -7,6 +7,9 @@ import { act } from 'react';
 // Import Jest globals
 import { afterEach } from '@jest/globals';
 
+// Constants
+const TEST_TIMEOUT_MS = 10000; // 10 seconds
+
 // Polyfill TextEncoder/TextDecoder for React Router
 if (typeof global.TextEncoder === 'undefined') {
   global.TextEncoder = TextEncoder;
@@ -28,7 +31,7 @@ global.IntersectionObserver = jest.fn().mockImplementation(() => ({
 }));
 
 // Increase test timeout for potentially slow tests
-jest.setTimeout(10000);
+jest.setTimeout(TEST_TIMEOUT_MS);
 
 // Cleanup after each test
 afterEach(() => {

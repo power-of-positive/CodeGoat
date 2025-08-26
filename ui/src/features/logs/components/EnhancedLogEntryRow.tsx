@@ -16,8 +16,7 @@ import {
 } from 'lucide-react';
 import { Badge } from '../../../shared/ui/badge';
 import MarkdownRenderer from './MarkdownRenderer';
-import { UnifiedLogEntry, ProcessStartPayload } from '../../../shared/types/logs';
-import type { NormalizedEntry } from '../../../shared/types/logs';
+import { UnifiedLogEntry, ProcessStartPayload, NormalizedEntry } from '../../../shared/types/logs';
 
 interface EnhancedLogEntryRowProps {
   entry: UnifiedLogEntry;

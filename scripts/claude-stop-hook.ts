@@ -158,19 +158,22 @@ function parseValidationOutput(stdout: string, stderr: string, code: number | nu
           line.includes('Coverage')
       );
 
+    const MAX_ERROR_DISPLAY = 10;
     let detailedMessage = `Validation blocked with exit code 2`;
     if (errorLines.length > 0) {
-      detailedMessage += `:\n${errorLines.slice(0, 10).join('\n')}`;
+      detailedMessage += `:\n${errorLines.slice(0, MAX_ERROR_DISPLAY).join('\n')}`;
     }
-    if (errorLines.length > 10) {
-      detailedMessage += `\n... and ${errorLines.length - 10} more errors`;
+    if (errorLines.length > MAX_ERROR_DISPLAY) {
+      detailedMessage += `\n... and ${errorLines.length - MAX_ERROR_DISPLAY} more errors`;
     }
 
     return new Error(detailedMessage);
   } else {
+    const LAST_LINES_COUNT = 10;
+    const LAST_LINES_SLICE_OFFSET = -LAST_LINES_COUNT;
     let detailedMessage = `Validation failed with exit code ${code}`;
     if (fullOutput) {
-      const lastLines = fullOutput.split('\n').slice(-10).join('\n');
+      const lastLines = fullOutput.split('\n').slice(LAST_LINES_SLICE_OFFSET).join('\n');
       detailedMessage += `:\n${lastLines}`;
     }
     return new Error(detailedMessage);
@@ -223,10 +226,10 @@ function createValidationProcess(sessionId: string): Promise<void> {
 }
 
 /**
- * Handle validation checks with timeout (using settings.json with todo list validation)
+ * Handle validation checks with timeout (using database-driven validation stages with todo list validation)
  */
 async function handleValidationChecks(): Promise<void> {
-  console.error('🧪 Running complete validation pipeline including todo list...');
+  console.error('🧪 Running complete validation pipeline from database including todo list...');
 
   const VALIDATION_TIMEOUT = 1200000; // 20 minutes
   const timeoutPromise = new Promise<never>((_, reject) => {

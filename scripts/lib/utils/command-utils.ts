@@ -7,13 +7,20 @@ import { validateInput, validateDirectoryExists } from './validation-utils';
 import { CheckResult, CommandError } from './types';
 import { createSuccessResult, createFailureResult } from './result-utils';
 
+// Constants
+const DEFAULT_COMMAND_TIMEOUT_MS = 120000; // 2 minutes
+const SECRET_PREFIX_LENGTH = 4;
+const SECRET_SUFFIX_LENGTH = 4;
+const MIN_SECRET_LENGTH = 8;
+const MIN_SECRET_DETECTION_LENGTH = 32;
+
 /**
  * Execute a command safely with comprehensive validation and error handling
  */
 export function execCommand(
   command: string,
   cwd?: string,
-  timeout = 120000,
+  timeout = DEFAULT_COMMAND_TIMEOUT_MS,
   env?: Record<string, string>
 ): CheckResult {
   try {
@@ -50,8 +57,8 @@ function sanitizeError(errorText: string): string {
       .replace(/\/Users\/[^/\s]+/g, '/Users/***')
       .replace(/\/home\/[^/\s]+/g, '/home/***')
       // Remove potential tokens and secrets
-      .replace(/[a-zA-Z0-9_-]{32,}/g, match =>
-        match.length > 8 ? match.substring(0, 4) + '***' + match.substring(match.length - 4) : match
+      .replace(new RegExp(`[a-zA-Z0-9_-]{${MIN_SECRET_DETECTION_LENGTH},}`, 'g'), match =>
+        match.length > MIN_SECRET_LENGTH ? match.substring(0, SECRET_PREFIX_LENGTH) + '***' + match.substring(match.length - SECRET_SUFFIX_LENGTH) : match
       )
       // Remove environment variable assignments
       .replace(/\b[A-Z_]+=[^\s]+/g, match => {

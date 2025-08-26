@@ -335,4 +335,321 @@ describe('Tasks Route - Story Completion Validation', () => {
       expect(mockDb.task.update).toHaveBeenCalled();
     });
   });
+
+  describe('GET /api/tasks', () => {
+    it('should return all todo tasks successfully', async () => {
+      const mockTasks = [
+        {
+          id: 'CODEGOAT-001',
+          title: 'Test Task 1',
+          content: 'Test Task 1',
+          status: TaskStatus.PENDING,
+          priority: Priority.HIGH,
+          taskType: TaskType.TASK,
+          executorId: null,
+          startTime: null,
+          endTime: null,
+          duration: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          projectId: null,
+          parentTaskAttempt: null,
+          templateId: null,
+          tags: null,
+          description: null,
+        },
+        {
+          id: 'CODEGOAT-002',
+          title: 'Test Task 2',
+          content: 'Test Task 2',
+          status: TaskStatus.COMPLETED,
+          priority: Priority.MEDIUM,
+          taskType: TaskType.STORY,
+          executorId: 'user-123',
+          startTime: new Date('2024-01-01T10:00:00Z'),
+          endTime: new Date('2024-01-01T12:00:00Z'),
+          duration: '2h 0m',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          projectId: null,
+          parentTaskAttempt: null,
+          templateId: null,
+          tags: null,
+          description: null,
+        },
+      ];
+
+      mockDb.task.findMany.mockResolvedValue(mockTasks);
+
+      const response = await request(app)
+        .get('/api/tasks')
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data).toHaveLength(2);
+      expect(response.body.data[0].id).toBe('CODEGOAT-001');
+      expect(response.body.data[0].status).toBe('pending');
+      expect(response.body.data[1].id).toBe('CODEGOAT-002');
+      expect(response.body.data[1].status).toBe('completed');
+
+      expect(mockDb.task.findMany).toHaveBeenCalledWith({
+        where: {
+          OR: [
+            { projectId: null },
+            { id: { startsWith: 'CODEGOAT-' } },
+          ],
+        },
+        orderBy: [{ priority: 'desc' }, { createdAt: 'desc' }],
+      });
+    });
+
+    it('should handle database errors', async () => {
+      mockDb.task.findMany.mockRejectedValue(new Error('Database error'));
+
+      const response = await request(app)
+        .get('/api/tasks')
+        .expect(500);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toBe('Failed to fetch tasks');
+    });
+  });
+
+  describe('GET /api/tasks/analytics', () => {
+    it('should handle database errors in analytics', async () => {
+      mockDb.task.count.mockRejectedValue(new Error('Database error'));
+
+      const response = await request(app)
+        .get('/api/tasks/analytics')
+        .expect(500);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toBe('Failed to fetch task analytics');
+    });
+  });
+
+  describe('GET /api/tasks/:id', () => {
+    it('should return a specific task successfully', async () => {
+      const mockTask = {
+        id: 'CODEGOAT-001',
+        title: 'Test Task',
+        content: 'Test Task',
+        status: TaskStatus.IN_PROGRESS,
+        priority: Priority.HIGH,
+        taskType: TaskType.STORY,
+        executorId: 'user-123',
+        startTime: new Date('2024-01-01T10:00:00Z'),
+        endTime: null,
+        duration: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        projectId: null,
+        parentTaskAttempt: null,
+        templateId: null,
+        tags: null,
+        description: null,
+        validationRuns: [],
+        bddScenarios: [],
+      };
+
+      mockDb.task.findUnique.mockResolvedValue(mockTask);
+
+      const response = await request(app)
+        .get('/api/tasks/CODEGOAT-001')
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.id).toBe('CODEGOAT-001');
+      expect(response.body.data.status).toBe('in_progress');
+      expect(response.body.data.executorId).toBe('user-123');
+
+      expect(mockDb.task.findUnique).toHaveBeenCalledWith({
+        where: { id: 'CODEGOAT-001' },
+        include: {
+          validationRuns: {
+            orderBy: { createdAt: 'desc' },
+            take: 10,
+          },
+          bddScenarios: {
+            orderBy: { createdAt: 'asc' },
+          },
+        },
+      });
+    });
+
+    it('should return 404 for non-existent task', async () => {
+      mockDb.task.findUnique.mockResolvedValue(null);
+
+      const response = await request(app)
+        .get('/api/tasks/CODEGOAT-999')
+        .expect(404);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toBe('Task not found');
+    });
+
+    it('should handle database errors when fetching task', async () => {
+      mockDb.task.findUnique.mockRejectedValue(new Error('Database error'));
+
+      const response = await request(app)
+        .get('/api/tasks/CODEGOAT-001')
+        .expect(500);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toBe('Failed to fetch task');
+    });
+  });
+
+  describe('POST /api/tasks', () => {
+    it('should create a new task successfully', async () => {
+      const newTaskData = {
+        content: 'New test task',
+        priority: 'high',
+        taskType: 'task',
+      };
+
+      // Mock finding existing tasks to generate ID
+      mockDb.task.findMany.mockResolvedValue([
+        { id: 'CODEGOAT-005' }
+      ]);
+
+      const createdTask = {
+        id: 'CODEGOAT-006',
+        title: 'New test task',
+        content: 'New test task',
+        status: TaskStatus.PENDING,
+        priority: Priority.HIGH,
+        taskType: TaskType.TASK,
+        executorId: null,
+        startTime: null,
+        endTime: null,
+        duration: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        projectId: null,
+        parentTaskAttempt: null,
+        templateId: null,
+        tags: null,
+        description: null,
+      };
+
+      mockDb.task.create.mockResolvedValue(createdTask);
+
+      const response = await request(app)
+        .post('/api/tasks')
+        .send(newTaskData)
+        .expect(201);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.id).toBe('CODEGOAT-006');
+      expect(response.body.data.content).toBe('New test task');
+      expect(response.body.data.status).toBe('pending');
+
+      expect(mockDb.task.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          id: 'CODEGOAT-006',
+          title: 'New test task',
+          content: 'New test task',
+          status: TaskStatus.PENDING,
+          priority: Priority.HIGH,
+          taskType: TaskType.TASK,
+        }),
+      });
+    });
+
+    it('should handle missing content', async () => {
+      const response = await request(app)
+        .post('/api/tasks')
+        .send({
+          priority: 'high',
+          taskType: 'task',
+        })
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toBe('Task content is required');
+    });
+
+    it('should handle database errors during task creation', async () => {
+      mockDb.task.findMany.mockResolvedValue([]);
+      mockDb.task.create.mockRejectedValue(new Error('Database error'));
+
+      const response = await request(app)
+        .post('/api/tasks')
+        .send({
+          content: 'Test task',
+          priority: 'high',
+          taskType: 'task',
+        })
+        .expect(500);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toBe('Failed to create task');
+    });
+  });
+
+  describe('DELETE /api/tasks/:id', () => {
+    it('should delete a task successfully', async () => {
+      const existingTask = {
+        id: 'CODEGOAT-001',
+        title: 'Test Task',
+        content: 'Test Task',
+        status: TaskStatus.PENDING,
+        priority: Priority.HIGH,
+        taskType: TaskType.TASK,
+        executorId: null,
+        startTime: null,
+        endTime: null,
+        duration: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        projectId: null,
+        parentTaskAttempt: null,
+        templateId: null,
+        tags: null,
+        description: null,
+      };
+
+      mockDb.task.findUnique.mockResolvedValue(existingTask);
+      mockDb.task.delete.mockResolvedValue(existingTask);
+
+      const response = await request(app)
+        .delete('/api/tasks/CODEGOAT-001')
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.message).toBe('Task deleted successfully');
+
+      expect(mockDb.task.delete).toHaveBeenCalledWith({
+        where: { id: 'CODEGOAT-001' },
+      });
+    });
+
+    it('should return 404 when deleting non-existent task', async () => {
+      mockDb.task.findUnique.mockResolvedValue(null);
+
+      const response = await request(app)
+        .delete('/api/tasks/CODEGOAT-999')
+        .expect(404);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toBe('Task not found');
+      expect(mockDb.task.delete).not.toHaveBeenCalled();
+    });
+
+    it('should handle database errors during deletion', async () => {
+      mockDb.task.findUnique.mockResolvedValue({
+        id: 'CODEGOAT-001',
+        status: TaskStatus.PENDING,
+      });
+      mockDb.task.delete.mockRejectedValue(new Error('Database error'));
+
+      const response = await request(app)
+        .delete('/api/tasks/CODEGOAT-001')
+        .expect(500);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toBe('Failed to delete task');
+    });
+  });
 });

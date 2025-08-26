@@ -131,7 +131,7 @@ function parseTodoListFromJSON(filePath: string): TodoItem[] {
     const data = JSON.parse(content);
 
     // Handle different JSON formats and convert to new format
-    let rawTasks: any[] = [];
+    let rawTasks: unknown[] = [];
     if (Array.isArray(data)) {
       rawTasks = data;
     } else if (data.todos && Array.isArray(data.todos)) {
@@ -142,17 +142,28 @@ function parseTodoListFromJSON(filePath: string): TodoItem[] {
     }
 
     // Convert legacy format to new TodoItem format
-    return rawTasks.map((task: any) => ({
-      id: task.id?.startsWith('CODEGOAT-') ? task.id : `CODEGOAT-${String(task.id).padStart(3, '0')}`,
-      content: task.content || '',
-      status: task.status || 'pending',
-      priority: task.priority || 'medium',
-      taskType: task.taskType || 'task',
-      executorId: task.executorId,
-      startTime: task.startTime,
-      endTime: task.endTime,
-      duration: task.duration,
-    }));
+    return rawTasks.map((task: unknown) => {
+      const taskObj = task as Record<string, unknown>;
+      return {
+        id: typeof taskObj.id === 'string' && taskObj.id.startsWith('CODEGOAT-') 
+          ? taskObj.id 
+          : `CODEGOAT-${String(taskObj.id ?? '').padStart(3, '0')}`,
+        content: String(taskObj.content ?? ''),
+        status: (['pending', 'in_progress', 'completed'].includes(String(taskObj.status)) 
+          ? String(taskObj.status) 
+          : 'pending') as TodoItem['status'],
+        priority: (['low', 'medium', 'high'].includes(String(taskObj.priority)) 
+          ? String(taskObj.priority) 
+          : 'medium') as TodoItem['priority'],
+        taskType: (['story', 'task'].includes(String(taskObj.taskType)) 
+          ? String(taskObj.taskType) 
+          : 'task') as TodoItem['taskType'],
+        executorId: taskObj.executorId ? String(taskObj.executorId) : undefined,
+        startTime: taskObj.startTime ? String(taskObj.startTime) : undefined,
+        endTime: taskObj.endTime ? String(taskObj.endTime) : undefined,
+        duration: taskObj.duration ? String(taskObj.duration) : undefined,
+      };
+    });
   } catch (error) {
     console.error(`${colors.red}Error parsing JSON todo list: ${error}${colors.reset}`);
     return [];
@@ -162,7 +173,7 @@ function parseTodoListFromJSON(filePath: string): TodoItem[] {
 /**
  * Parse the TODO markdown file and extract todo items (deprecated - use API instead)
  */
-function parseTodoListFromMarkdown(filePath: string): TodoItem[] {
+function parseTodoListFromMarkdown(_filePath: string): TodoItem[] {
   console.warn(
     `${colors.yellow}⚠️  Markdown parsing is deprecated. Use API-based task management instead.${colors.reset}`
   );

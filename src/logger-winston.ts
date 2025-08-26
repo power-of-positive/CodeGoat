@@ -171,7 +171,14 @@ export class WinstonLogger implements ILogger {
       const requestData = this.captureRequestData(req);
       const chunks: Buffer[] = [];
 
-      res.end = this.createEndHandler(originalEnd, startTime, req, res, requestData, chunks);
+      res.end = this.createEndHandler({
+        originalEnd,
+        startTime,
+        req,
+        res,
+        requestData,
+        chunks
+      });
       next();
     };
   }
@@ -190,14 +197,15 @@ export class WinstonLogger implements ILogger {
     };
   }
 
-  private createEndHandler(
-    originalEnd: Response['end'],
-    startTime: number,
-    req: Request,
-    res: Response,
-    requestData: ReturnType<typeof this.captureRequestData>,
-    chunks: Buffer[]
-  ): Response['end'] {
+  private createEndHandler(config: {
+    originalEnd: Response['end'];
+    startTime: number;
+    req: Request;
+    res: Response;
+    requestData: { requestHeaders: Record<string, string>; requestBody: unknown; clientIp: string; userAgent: string };
+    chunks: Buffer[];
+  }): Response['end'] {
+    const { originalEnd, startTime, req, res, requestData, chunks } = config;
     const logAccess = this.logAccess.bind(this);
     const sanitizeHeaders = this.sanitizeHeaders.bind(this);
     const parseResponseBody = this.parseResponseBody.bind(this);

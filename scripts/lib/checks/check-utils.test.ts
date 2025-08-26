@@ -93,7 +93,13 @@ describe('check-utils', () => {
     });
 
     it('should run all checks successfully', async () => {
-      const result = await runChecks(mockProjectRoot, mockStagedFiles, 'allFiles', [], 'Test');
+      const result = await runChecks({
+        projectRoot: mockProjectRoot,
+        stagedFiles: mockStagedFiles,
+        fileArray: 'allFiles',
+        checks: [],
+        errorPrefix: 'Test'
+      });
 
       expect(result.failed).toBe(false);
       expect(result.output).toContain('');
@@ -105,13 +111,13 @@ describe('check-utils', () => {
         name: 'Frontend Linting',
       };
 
-      const result = await runChecks(
-        mockProjectRoot,
-        mockStagedFiles,
-        'allFiles',
-        [mockRunner],
-        'Test'
-      );
+      const result = await runChecks({
+        projectRoot: mockProjectRoot,
+        stagedFiles: mockStagedFiles,
+        fileArray: 'allFiles',
+        checks: [mockRunner],
+        errorPrefix: 'Test'
+      });
 
       expect(result.failed).toBe(true);
       expect(result.output).toContain('Frontend linting failed');
@@ -123,13 +129,13 @@ describe('check-utils', () => {
         name: 'Frontend Tests',
       };
 
-      const result = await runChecks(
-        mockProjectRoot,
-        mockStagedFiles,
-        'allFiles',
-        [mockRunner],
-        'Test'
-      );
+      const result = await runChecks({
+        projectRoot: mockProjectRoot,
+        stagedFiles: mockStagedFiles,
+        fileArray: 'allFiles',
+        checks: [mockRunner],
+        errorPrefix: 'Test'
+      });
 
       expect(result.failed).toBe(true);
       expect(result.output).toContain('Frontend tests failed');
@@ -141,13 +147,13 @@ describe('check-utils', () => {
         name: 'Playwright Tests',
       };
 
-      const result = await runChecks(
-        mockProjectRoot,
-        mockStagedFiles,
-        'allFiles',
-        [mockRunner],
-        'Test'
-      );
+      const result = await runChecks({
+        projectRoot: mockProjectRoot,
+        stagedFiles: mockStagedFiles,
+        fileArray: 'allFiles',
+        checks: [mockRunner],
+        errorPrefix: 'Test'
+      });
 
       expect(result.failed).toBe(true);
       expect(result.output).toContain('Playwright tests failed');
@@ -159,13 +165,13 @@ describe('check-utils', () => {
         name: 'Rust Formatting',
       };
 
-      const result = await runChecks(
-        mockProjectRoot,
-        mockStagedFiles,
-        'allFiles',
-        [mockRunner],
-        'Test'
-      );
+      const result = await runChecks({
+        projectRoot: mockProjectRoot,
+        stagedFiles: mockStagedFiles,
+        fileArray: 'allFiles',
+        checks: [mockRunner],
+        errorPrefix: 'Test'
+      });
 
       expect(result.failed).toBe(true);
       expect(result.output).toContain('Rust formatting failed');
@@ -177,13 +183,13 @@ describe('check-utils', () => {
         name: 'Rust Linting',
       };
 
-      const result = await runChecks(
-        mockProjectRoot,
-        mockStagedFiles,
-        'allFiles',
-        [mockRunner],
-        'Test'
-      );
+      const result = await runChecks({
+        projectRoot: mockProjectRoot,
+        stagedFiles: mockStagedFiles,
+        fileArray: 'allFiles',
+        checks: [mockRunner],
+        errorPrefix: 'Test'
+      });
 
       expect(result.failed).toBe(true);
       expect(result.output).toContain('Rust linting failed');
@@ -195,13 +201,13 @@ describe('check-utils', () => {
         name: 'API E2E Tests',
       };
 
-      const result = await runChecks(
-        mockProjectRoot,
-        mockStagedFiles,
-        'allFiles',
-        [mockRunner],
-        'Test'
-      );
+      const result = await runChecks({
+        projectRoot: mockProjectRoot,
+        stagedFiles: mockStagedFiles,
+        fileArray: 'allFiles',
+        checks: [mockRunner],
+        errorPrefix: 'Test'
+      });
 
       expect(result.failed).toBe(true);
       expect(result.output).toContain('API E2E tests failed');
@@ -213,7 +219,13 @@ describe('check-utils', () => {
         allFiles: [],
       };
 
-      const result = await runChecks(mockProjectRoot, emptyFiles, 'allFiles', [], 'Test');
+      const result = await runChecks({
+        projectRoot: mockProjectRoot,
+        stagedFiles: emptyFiles,
+        fileArray: 'allFiles',
+        checks: [],
+        errorPrefix: 'Test'
+      });
 
       expect(result.failed).toBe(false);
       expect(result.output).toBe('');

@@ -14,6 +14,10 @@ import { createValidationRunRoutes } from './routes/validation-runs';
 import claudeWorkersRouter from './routes/claude-workers';
 import { createDatabaseService } from './services/database';
 
+// Constants
+const BYTES_PER_KB = 1024;
+const KB_PER_MB = 1024;
+
 const app = express();
 
 const logsDir = path.join(process.cwd(), 'logs');
@@ -35,7 +39,7 @@ const logCleaner = new LogCleaner(
     logsDir,
     maxLogFiles: 25, // Reduced from 50 for better performance
     maxLogAge: 14, // Reduced from 30 days for active development
-    maxLogSize: 5 * 1024 * 1024, // 5MB instead of 10MB for more frequent rotation
+    maxLogSize: 5 * BYTES_PER_KB * KB_PER_MB, // 5MB instead of 10MB for more frequent rotation
   },
   logger
 );

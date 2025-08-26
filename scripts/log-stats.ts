@@ -10,6 +10,43 @@ import { join } from 'path';
 import { WinstonLogger } from '../src/logger-winston';
 import { OptimizedLogCleaner } from '../src/utils/optimized-log-cleaner';
 
+// Constants
+const BYTES_PER_KB = 1024;
+const KB_PER_MB = 1024;
+const BYTES_PER_MB = BYTES_PER_KB * KB_PER_MB;
+const HOURS_PER_DAY = 24;
+const MINUTES_PER_HOUR = 60;
+const SECONDS_PER_MINUTE = 60;
+const MS_PER_SECOND = 1000;
+const MS_PER_DAY = HOURS_PER_DAY * MINUTES_PER_HOUR * SECONDS_PER_MINUTE * MS_PER_SECOND;
+
+// Log analysis thresholds
+const LOG_FILE_COUNT_THRESHOLDS = {
+  HIGH: 100,
+  MODERATE: 50
+};
+const LOG_SIZE_THRESHOLDS_MB = {
+  HIGH: 500,
+  MODERATE: 100,
+  LARGE_AVG_FILE: 50,
+  MODERATE_AVG_FILE: 10
+};
+const LOG_AGE_THRESHOLDS_DAYS = {
+  VERY_OLD: 90,
+  OLD: 30
+};
+const LOG_LEVEL_PERCENTAGE_THRESHOLDS = {
+  DEBUG_WARNING: 0.3,
+  INFO_WARNING: 0.5
+};
+
+// Configuration defaults
+const DEFAULT_MAX_LOG_FILES = 50;
+const DEFAULT_MAX_LOG_AGE_DAYS = 30;
+const DEFAULT_MAX_LOG_SIZE_MB = 10;
+const DECIMAL_PLACES = 2;
+const PERCENTAGE_DECIMAL_PLACES = 1;
+
 interface LogStats {
   totalFiles: number;
   totalSize: number;
@@ -22,11 +59,11 @@ interface LogStats {
 function displayOverallStats(stats: LogStats): void {
   console.log('📈 Overall Statistics:');
   console.log(`  Total log files: ${stats.totalFiles}`);
-  console.log(`  Total size: ${(stats.totalSize / 1024 / 1024).toFixed(2)} MB`);
-  console.log(`  Average file size: ${(stats.averageFileSize / 1024).toFixed(2)} KB`);
+  console.log(`  Total size: ${(stats.totalSize / BYTES_PER_MB).toFixed(DECIMAL_PLACES)} MB`);
+  console.log(`  Average file size: ${(stats.averageFileSize / BYTES_PER_KB).toFixed(DECIMAL_PLACES)} KB`);
 
   if (stats.oldestFile && stats.newestFile) {
-    const ageInDays = (Date.now() - stats.oldestFile.getTime()) / (24 * 60 * 60 * 1000);
+    const ageInDays = (Date.now() - stats.oldestFile.getTime()) / MS_PER_DAY;
     console.log(
       `  Oldest file: ${stats.oldestFile.toLocaleDateString()} (${Math.floor(ageInDays)} days ago)`
     );
@@ -43,9 +80,9 @@ function displaySizeByLevel(stats: LogStats): void {
   for (const [level, size] of Object.entries(stats.sizeByLevel).sort(
     ([, a]: [string, number], [, b]: [string, number]) => b - a
   )) {
-    const percentage = (((size as number) / totalSizeForPercentage) * 100).toFixed(1);
+    const percentage = (((size as number) / totalSizeForPercentage) * 100).toFixed(PERCENTAGE_DECIMAL_PLACES);
     console.log(
-      `  ${level.padEnd(8)}: ${((size as number) / 1024 / 1024).toFixed(2).padStart(8)} MB (${percentage.padStart(5)}%)`
+      `  ${level.padEnd(8)}: ${((size as number) / BYTES_PER_MB).toFixed(DECIMAL_PLACES).padStart(8)} MB (${percentage.padStart(5)}%)`
     );
   }
 }
@@ -53,28 +90,28 @@ function displaySizeByLevel(stats: LogStats): void {
 function performHealthAssessment(stats: LogStats): void {
   console.log('\n🔍 Health Assessment:');
 
-  if (stats.totalFiles > 100) {
+  if (stats.totalFiles > LOG_FILE_COUNT_THRESHOLDS.HIGH) {
     console.log('  ⚠️  High number of log files - consider cleanup');
-  } else if (stats.totalFiles > 50) {
+  } else if (stats.totalFiles > LOG_FILE_COUNT_THRESHOLDS.MODERATE) {
     console.log('  ⚠️  Moderate number of log files - monitoring recommended');
   } else {
     console.log('  ✅ Log file count is healthy');
   }
 
-  if (stats.totalSize > 500 * 1024 * 1024) {
+  if (stats.totalSize > LOG_SIZE_THRESHOLDS_MB.HIGH * BYTES_PER_MB) {
     // 500MB
     console.log('  ⚠️  Large log directory size - cleanup recommended');
-  } else if (stats.totalSize > 100 * 1024 * 1024) {
+  } else if (stats.totalSize > LOG_SIZE_THRESHOLDS_MB.MODERATE * BYTES_PER_MB) {
     // 100MB
     console.log('  ⚠️  Moderate log directory size - monitoring recommended');
   } else {
     console.log('  ✅ Log directory size is healthy');
   }
 
-  if (stats.averageFileSize > 50 * 1024 * 1024) {
+  if (stats.averageFileSize > LOG_SIZE_THRESHOLDS_MB.LARGE_AVG_FILE * BYTES_PER_MB) {
     // 50MB
     console.log('  ⚠️  Large average file size - consider log rotation');
-  } else if (stats.averageFileSize > 10 * 1024 * 1024) {
+  } else if (stats.averageFileSize > LOG_SIZE_THRESHOLDS_MB.MODERATE_AVG_FILE * BYTES_PER_MB) {
     // 10MB
     console.log('  ⚠️  Moderate average file size - monitoring recommended');
   } else {
@@ -82,10 +119,10 @@ function performHealthAssessment(stats: LogStats): void {
   }
 
   if (stats.oldestFile) {
-    const ageInDays = (Date.now() - stats.oldestFile.getTime()) / (24 * 60 * 60 * 1000);
-    if (ageInDays > 90) {
+    const ageInDays = (Date.now() - stats.oldestFile.getTime()) / MS_PER_DAY;
+    if (ageInDays > LOG_AGE_THRESHOLDS_DAYS.VERY_OLD) {
       console.log('  ⚠️  Very old log files present - consider cleanup');
-    } else if (ageInDays > 30) {
+    } else if (ageInDays > LOG_AGE_THRESHOLDS_DAYS.OLD) {
       console.log('  ⚠️  Old log files present - monitoring recommended');
     } else {
       console.log('  ✅ Log file age is healthy');
@@ -95,16 +132,16 @@ function performHealthAssessment(stats: LogStats): void {
 
 function displayRecommendations(stats: LogStats): void {
   console.log('\n💡 Recommendations:');
-  if (stats.totalFiles > 50) {
+  if (stats.totalFiles > LOG_FILE_COUNT_THRESHOLDS.MODERATE) {
     console.log('  - Run log cleanup: npm run logs:clean:optimized');
   }
-  if (stats.totalSize > 100 * 1024 * 1024) {
+  if (stats.totalSize > LOG_SIZE_THRESHOLDS_MB.MODERATE * BYTES_PER_MB) {
     console.log('  - Enable log compression to reduce disk usage');
   }
-  if (stats.sizeByLevel.debug > stats.totalSize * 0.3) {
+  if (stats.sizeByLevel.debug > stats.totalSize * LOG_LEVEL_PERCENTAGE_THRESHOLDS.DEBUG_WARNING) {
     console.log('  - Consider reducing debug log level in production');
   }
-  if (stats.sizeByLevel.info > stats.totalSize * 0.5) {
+  if (stats.sizeByLevel.info > stats.totalSize * LOG_LEVEL_PERCENTAGE_THRESHOLDS.INFO_WARNING) {
     console.log('  - Review info log verbosity for optimization');
   }
 
@@ -129,9 +166,9 @@ async function main() {
   const cleaner = new OptimizedLogCleaner(
     {
       logsDir,
-      maxLogFiles: 50,
-      maxLogAge: 30,
-      maxLogSize: 10 * 1024 * 1024,
+      maxLogFiles: DEFAULT_MAX_LOG_FILES,
+      maxLogAge: DEFAULT_MAX_LOG_AGE_DAYS,
+      maxLogSize: DEFAULT_MAX_LOG_SIZE_MB * BYTES_PER_MB,
     },
     logger
   );

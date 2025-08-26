@@ -1,7 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import EnhancedLogEntryRow from './EnhancedLogEntryRow';
-import { UnifiedLogEntry, ProcessStartPayload } from '../../../shared/types/logs';
-import type { NormalizedEntry } from '../../../shared/types/logs';
+import { UnifiedLogEntry, ProcessStartPayload, NormalizedEntry } from '../../../shared/types/logs';
 
 // Mock lucide-react icons
 jest.mock('lucide-react', () => ({

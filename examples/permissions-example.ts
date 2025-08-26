@@ -339,8 +339,11 @@ async function permissionConfigComparisonExample() {
     { action: ActionType.FILE_DELETE, target: '/tmp/old-file.txt' },
   ];
 
+  const SEPARATOR_LENGTH = 70;
+  const COLUMN_PADDING = 25;
+  
   console.log('Action\t\t\tRestrictive\tPermissive\tDevelopment');
-  console.log('─'.repeat(70));
+  console.log('─'.repeat(SEPARATOR_LENGTH));
 
   testActions.forEach(({ action, target }) => {
     const results = Object.entries(configs).map(([_name, config]) => {
@@ -354,7 +357,7 @@ async function permissionConfigComparisonExample() {
     });
 
     const actionName = `${action} (${target?.split(' ')[0] || 'N/A'})`;
-    console.log(`${actionName.padEnd(25)}\t${results[0]}\t\t${results[1]}\t\t${results[2]}`);
+    console.log(`${actionName.padEnd(COLUMN_PADDING)}\t${results[0]}\t\t${results[1]}\t\t${results[2]}`);
   });
 }
 

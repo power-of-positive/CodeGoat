@@ -10,6 +10,27 @@ import { join } from 'path';
 import { WinstonLogger } from '../src/logger-winston';
 import { OptimizedLogCleaner } from '../src/utils/optimized-log-cleaner';
 
+// Constants
+const BYTES_PER_KB = 1024;
+const KB_PER_MB = 1024;
+const BYTES_PER_MB = BYTES_PER_KB * KB_PER_MB;
+const MS_PER_SECOND = 1000;
+const DECIMAL_PLACES = 2;
+const PERCENTAGE_DECIMAL_PLACES = 1;
+
+// Performance thresholds
+const PERFORMANCE_THRESHOLDS_MS = {
+  EXCELLENT: 5000,
+  GOOD: 15000
+};
+
+// Recommendation thresholds  
+const RECOMMENDATION_THRESHOLDS = {
+  MAX_FILES_WARNING: 30,
+  MAX_SIZE_MB_WARNING: 50,
+  MIN_FILES_FOR_COMPRESSION_RECOMMENDATION: 10
+};
+
 interface LogStats {
   totalFiles: number;
   totalSize: number;
@@ -29,8 +50,8 @@ interface CleanupResult {
 function displayPreCleanupStats(stats: LogStats): void {
   console.log('📊 Log directory statistics (before cleanup):');
   console.log(`  Total files: ${stats.totalFiles}`);
-  console.log(`  Total size: ${(stats.totalSize / 1024 / 1024).toFixed(2)} MB`);
-  console.log(`  Average file size: ${(stats.averageFileSize / 1024).toFixed(2)} KB`);
+  console.log(`  Total size: ${(stats.totalSize / BYTES_PER_MB).toFixed(DECIMAL_PLACES)} MB`);
+  console.log(`  Average file size: ${(stats.averageFileSize / BYTES_PER_KB).toFixed(DECIMAL_PLACES)} KB`);
 
   if (stats.oldestFile && stats.newestFile) {
     console.log(`  Oldest file: ${stats.oldestFile.toLocaleDateString()}`);
@@ -39,7 +60,7 @@ function displayPreCleanupStats(stats: LogStats): void {
 
   console.log('  Size by log level:');
   for (const [level, size] of Object.entries(stats.sizeByLevel)) {
-    console.log(`    ${level}: ${((size as number) / 1024 / 1024).toFixed(2)} MB`);
+    console.log(`    ${level}: ${((size as number) / BYTES_PER_MB).toFixed(DECIMAL_PLACES)} MB`);
   }
   console.log();
 }
@@ -49,28 +70,28 @@ function displayCleanupResults(result: CleanupResult): void {
   console.log('📈 Cleanup Results:');
   console.log(`  Files deleted: ${result.deletedFiles}`);
   console.log(`  Files compressed: ${result.compressedFiles}`);
-  console.log(`  Space freed: ${(result.freedSpace / 1024 / 1024).toFixed(2)} MB`);
+  console.log(`  Space freed: ${(result.freedSpace / BYTES_PER_MB).toFixed(DECIMAL_PLACES)} MB`);
   console.log(`  Processing time: ${result.processingTime} ms`);
 }
 
 function displayPostCleanupStats(statsBefore: LogStats, statsAfter: LogStats): void {
   console.log('\n📊 Log directory statistics (after cleanup):');
   console.log(`  Total files: ${statsAfter.totalFiles}`);
-  console.log(`  Total size: ${(statsAfter.totalSize / 1024 / 1024).toFixed(2)} MB`);
+  console.log(`  Total size: ${(statsAfter.totalSize / BYTES_PER_MB).toFixed(DECIMAL_PLACES)} MB`);
 
   const spaceSaved = statsBefore.totalSize - statsAfter.totalSize;
-  const percentageSaved = ((spaceSaved / statsBefore.totalSize) * 100).toFixed(1);
-  console.log(`  Space saved: ${(spaceSaved / 1024 / 1024).toFixed(2)} MB (${percentageSaved}%)`);
+  const percentageSaved = ((spaceSaved / statsBefore.totalSize) * 100).toFixed(PERCENTAGE_DECIMAL_PLACES);
+  console.log(`  Space saved: ${(spaceSaved / BYTES_PER_MB).toFixed(DECIMAL_PLACES)} MB (${percentageSaved}%)`);
 }
 
 function assessPerformance(statsBefore: LogStats, result: CleanupResult): void {
   console.log('\n⚡ Performance Assessment:');
-  const processingSpeed = statsBefore.totalSize / 1024 / 1024 / (result.processingTime / 1000);
+  const processingSpeed = statsBefore.totalSize / BYTES_PER_MB / (result.processingTime / MS_PER_SECOND);
   console.log(`  Processing speed: ${processingSpeed.toFixed(2)} MB/s`);
 
-  if (result.processingTime < 5000) {
+  if (result.processingTime < PERFORMANCE_THRESHOLDS_MS.EXCELLENT) {
     console.log('  Performance: Excellent ✅');
-  } else if (result.processingTime < 15000) {
+  } else if (result.processingTime < PERFORMANCE_THRESHOLDS_MS.GOOD) {
     console.log('  Performance: Good ✅');
   } else {
     console.log('  Performance: Needs optimization ⚠️');
@@ -83,13 +104,13 @@ function displayOptimizationRecommendations(
   statsBefore: LogStats
 ): void {
   console.log('\n💡 Recommendations:');
-  if (statsAfter.totalFiles > 30) {
+  if (statsAfter.totalFiles > RECOMMENDATION_THRESHOLDS.MAX_FILES_WARNING) {
     console.log('  - Consider reducing maxLogFiles for better performance');
   }
-  if (statsAfter.totalSize > 50 * 1024 * 1024) {
+  if (statsAfter.totalSize > RECOMMENDATION_THRESHOLDS.MAX_SIZE_MB_WARNING * BYTES_PER_MB) {
     console.log('  - Consider reducing maxLogAge for active development');
   }
-  if (result.compressedFiles === 0 && statsBefore.totalFiles > 10) {
+  if (result.compressedFiles === 0 && statsBefore.totalFiles > RECOMMENDATION_THRESHOLDS.MIN_FILES_FOR_COMPRESSION_RECOMMENDATION) {
     console.log('  - Consider enabling log compression to save space');
   }
   if (result.compressedFiles > 0) {

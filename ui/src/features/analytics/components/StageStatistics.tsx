@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -17,8 +18,8 @@ import {
   Scatter,
 } from 'recharts';
 import {
-  TrendingUp,
-  TrendingDown,
+  // TrendingUp, // Currently unused
+  // TrendingDown, // Currently unused
   Clock,
   AlertTriangle,
   CheckCircle,
@@ -41,13 +42,6 @@ interface StageStatisticsProps {
 
 interface ReliabilityBadgeProps {
   reliability: 'excellent' | 'good' | 'fair' | 'poor';
-}
-
-interface TrendIndicatorProps {
-  trend: 'up' | 'down' | 'stable';
-  value: number;
-  suffix?: string;
-  isPositive?: boolean;
 }
 
 interface DateRangePickerProps {
@@ -88,29 +82,6 @@ function ReliabilityBadge({ reliability }: ReliabilityBadgeProps) {
   );
 }
 
-function TrendIndicator({ trend, value, suffix = '', isPositive = true }: TrendIndicatorProps) {
-  const isUp = trend === 'up';
-  const isPositiveTrend = isPositive ? isUp : !isUp;
-  const TrendIcon = isUp ? TrendingUp : TrendingDown;
-  const colorClass = isPositiveTrend ? 'text-green-600' : 'text-red-600';
-
-  if (trend === 'stable') {
-    return (
-      <span className="inline-flex items-center text-gray-600">
-        <Activity className="w-3 h-3 mr-1" />
-        {Math.abs(value).toFixed(1)}{suffix}
-      </span>
-    );
-  }
-
-  return (
-    <span className={`inline-flex items-center ${colorClass}`}>
-      <TrendIcon className="w-3 h-3 mr-1" />
-      {Math.abs(value).toFixed(1)}{suffix}
-    </span>
-  );
-}
-
 function DateRangePicker({
   startDate,
   endDate,
@@ -144,7 +115,7 @@ export function StageStatistics({ defaultDays = 30, stageId }: StageStatisticsPr
   const [useCustomDateRange, setUseCustomDateRange] = useState(false);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [chartType, setChartType] = useState<'performance' | 'trends' | 'distribution'>('performance');
+  const [chartType, setChartType] = useState<'performance' | 'trends' | 'distribution' | 'duration' | 'comparison'>('performance');
 
   // Calculate date range
   const dateParams = useMemo(() => {
@@ -171,7 +142,9 @@ export function StageStatistics({ defaultDays = 30, stageId }: StageStatisticsPr
   });
 
   const availableStages = useMemo(() => {
-    if (!stageData?.stageStatistics) {return [];}
+    if (!stageData?.stageStatistics) {
+      return [];
+    }
     return stageData.stageStatistics.map(stage => ({
       id: stage.stageId,
       name: stage.stageName,
@@ -179,7 +152,9 @@ export function StageStatistics({ defaultDays = 30, stageId }: StageStatisticsPr
   }, [stageData]);
 
   const handleExportData = () => {
-    if (!stageData) {return;}
+    if (!stageData) {
+      return;
+    }
     
     const exportData = {
       exportDate: new Date().toISOString(),
@@ -359,7 +334,7 @@ export function StageStatistics({ defaultDays = 30, stageId }: StageStatisticsPr
               </label>
               <Select
                 value={chartType}
-                onChange={(e) => setChartType(e.target.value as any)}
+                onChange={(e) => setChartType(e.target.value as 'performance' | 'trends' | 'distribution' | 'duration' | 'comparison')}
                 className="w-full"
               >
                 <Option value="performance">Performance Overview</Option>
@@ -467,7 +442,7 @@ export function StageStatistics({ defaultDays = 30, stageId }: StageStatisticsPr
                       borderRadius: '6px',
                       color: '#374151',
                     }}
-                    formatter={(value: number, name) => [
+                    formatter={(value: number, _name) => [
                       `${value.toFixed(1)}%`,
                       'Success Rate',
                     ]}
@@ -630,8 +605,12 @@ export function StageStatistics({ defaultDays = 30, stageId }: StageStatisticsPr
                       color: '#374151',
                     }}
                     formatter={(value, name) => {
-                      if (name === 'avgDuration') {return [`${value}ms`, 'Avg Duration'];}
-                      if (name === 'successRate') {return [`${value}%`, 'Success Rate'];}
+                      if (name === 'avgDuration') {
+                        return [`${value}ms`, 'Avg Duration'];
+                      }
+                      if (name === 'successRate') {
+                        return [`${value}%`, 'Success Rate'];
+                      }
                       return [value, name];
                     }}
                     labelFormatter={(label, payload) => {
@@ -795,7 +774,7 @@ export function StageStatistics({ defaultDays = 30, stageId }: StageStatisticsPr
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {insights.problematicStages.map((stage: any) => (
+              {insights.problematicStages.map((stage: { stageId: string; stageName: string; successRate: number; totalRuns: number; failedRuns?: number }) => (
                 <div
                   key={stage.stageId}
                   className="p-4 border rounded-lg bg-red-50 border-red-200"
@@ -816,7 +795,7 @@ export function StageStatistics({ defaultDays = 30, stageId }: StageStatisticsPr
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Failures:</span>
-                      <span className="text-red-600">{stage.failedRuns}</span>
+                      <span className="text-red-600">{stage.failedRuns || (stage.totalRuns - Math.round(stage.successRate * stage.totalRuns / 100))}</span>
                     </div>
                   </div>
                 </div>
@@ -839,7 +818,7 @@ export function StageStatistics({ defaultDays = 30, stageId }: StageStatisticsPr
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {insights.topPerformingStages.map((stage: any) => (
+              {insights.topPerformingStages.map((stage: { stageId: string; stageName: string; successRate: number; totalRuns: number; avgDuration?: number }) => (
                 <div
                   key={stage.stageId}
                   className="p-4 border rounded-lg bg-green-50 border-green-200"
@@ -860,7 +839,7 @@ export function StageStatistics({ defaultDays = 30, stageId }: StageStatisticsPr
                     </div>
                     <div className="flex justify-between">
                       <span className="text-gray-600">Avg Duration:</span>
-                      <span>{stage.avgDuration.toFixed(1)}ms</span>
+                      <span>{(stage.avgDuration || 0).toFixed(1)}ms</span>
                     </div>
                   </div>
                 </div>

@@ -3,6 +3,10 @@ import { validateInput } from '../utils/validation-utils';
 import { CheckResult } from '../utils/types';
 import { findAvailablePort } from '../utils/port-utils';
 import * as path from 'path';
+
+// Constants
+const DEFAULT_API_PORT = 3001;
+const API_E2E_TIMEOUT_MS = 180000; // 3 minutes
 export {
   runFrontendLinting,
   runFrontendTests,
@@ -26,10 +30,10 @@ export async function runApiE2eTests(projectRoot: string): Promise<CheckResult> 
     // Resolve to absolute path to avoid validation issues with ".."
     const absoluteProjectRoot = path.resolve(projectRoot);
     validateInput(absoluteProjectRoot, 'path');
-    const availablePort = await findAvailablePort(3001);
+    const availablePort = await findAvailablePort(DEFAULT_API_PORT);
     console.log(`📡 Using port ${availablePort} for API E2E tests`);
 
-    const result = execCommand('npm run test:e2e:api', projectRoot, 180000, {
+    const result = execCommand('npm run test:e2e:api', projectRoot, API_E2E_TIMEOUT_MS, {
       BACKEND_PORT: availablePort.toString(),
     });
 

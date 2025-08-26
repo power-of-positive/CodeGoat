@@ -3,6 +3,18 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
+// Constants
+const BYTES_PER_KB = 1024;
+const SQLITE_HEADER_LENGTH = 16;
+const TABLE_PADDING = {
+  TYPE: 8,
+  FILENAME: 40, 
+  SIZE: 10,
+  DATE: 20
+};
+const SEPARATOR_LINE_LENGTH = 88;
+const DECIMAL_PLACES_FOR_SIZE = 1;
+
 // Configuration
 const CONFIG = {
   dbPath: path.join(process.cwd(), 'prisma', 'kanban.db'),
@@ -54,7 +66,7 @@ function createBackup(type: 'manual' | 'auto' = 'manual', description?: string):
     description,
   };
 
-  console.log(`✅ Backup created: ${filename} (${(stats.size / 1024).toFixed(1)} KB)`);
+  console.log(`✅ Backup created: ${filename} (${(stats.size / BYTES_PER_KB).toFixed(DECIMAL_PLACES_FOR_SIZE)} KB)`);
   return metadata;
 }
 
@@ -107,7 +119,7 @@ function restoreBackup(filename: string): void {
   fs.copyFileSync(backupPath, CONFIG.dbPath);
   
   const stats = fs.statSync(CONFIG.dbPath);
-  console.log(`✅ Database restored from: ${filename} (${(stats.size / 1024).toFixed(1)} KB)`);
+  console.log(`✅ Database restored from: ${filename} (${(stats.size / BYTES_PER_KB).toFixed(DECIMAL_PLACES_FOR_SIZE)} KB)`);
   console.log(`⚠️  Please restart the application to ensure proper database connection.`);
 }
 
@@ -146,7 +158,7 @@ function verifyBackup(filename: string): boolean {
   try {
     // Try to read the SQLite header to verify it's a valid database
     const buffer = fs.readFileSync(backupPath);
-    const header = buffer.subarray(0, 16).toString('ascii');
+    const header = buffer.subarray(0, SQLITE_HEADER_LENGTH).toString('ascii');
     
     if (header.startsWith('SQLite format 3')) {
       console.log(`✅ Backup verified: ${filename}`);
@@ -168,14 +180,14 @@ function formatBackupList(backups: BackupMetadata[]): void {
   }
 
   console.log('\n📦 Available Backups:\n');
-  console.log('Type'.padEnd(8) + 'Filename'.padEnd(40) + 'Size'.padEnd(10) + 'Date'.padEnd(20) + 'Description');
-  console.log('-'.repeat(88));
+  console.log('Type'.padEnd(TABLE_PADDING.TYPE) + 'Filename'.padEnd(TABLE_PADDING.FILENAME) + 'Size'.padEnd(TABLE_PADDING.SIZE) + 'Date'.padEnd(TABLE_PADDING.DATE) + 'Description');
+  console.log('-'.repeat(SEPARATOR_LINE_LENGTH));
   
   backups.forEach(backup => {
-    const type = backup.type.toUpperCase().padEnd(7);
-    const filename = backup.filename.padEnd(39);
-    const size = `${(backup.size / 1024).toFixed(1)} KB`.padEnd(9);
-    const date = new Date(backup.timestamp).toLocaleString().padEnd(19);
+    const type = backup.type.toUpperCase().padEnd(TABLE_PADDING.TYPE - 1);
+    const filename = backup.filename.padEnd(TABLE_PADDING.FILENAME - 1);
+    const size = `${(backup.size / BYTES_PER_KB).toFixed(DECIMAL_PLACES_FOR_SIZE)} KB`.padEnd(TABLE_PADDING.SIZE - 1);
+    const date = new Date(backup.timestamp).toLocaleString().padEnd(TABLE_PADDING.DATE - 1);
     const description = backup.description || '';
     
     console.log(`${type} ${filename} ${size} ${date} ${description}`);
@@ -235,7 +247,7 @@ function handleStatusCommand(): void {
   
   if (fs.existsSync(CONFIG.dbPath)) {
     const dbStats = fs.statSync(CONFIG.dbPath);
-    console.log(`Database Size: ${(dbStats.size / 1024).toFixed(1)} KB`);
+    console.log(`Database Size: ${(dbStats.size / BYTES_PER_KB).toFixed(DECIMAL_PLACES_FOR_SIZE)} KB`);
     console.log(`Last Modified: ${dbStats.mtime.toLocaleString()}`);
   } else {
     console.log('❌ Database file not found!');
@@ -248,7 +260,7 @@ function handleStatusCommand(): void {
   
   if (backups.length > 0) {
     const totalSize = backups.reduce((sum, b) => sum + b.size, 0);
-    console.log(`Total Backup Size: ${(totalSize / 1024).toFixed(1)} KB`);
+    console.log(`Total Backup Size: ${(totalSize / BYTES_PER_KB).toFixed(DECIMAL_PLACES_FOR_SIZE)} KB`);
     console.log(`Latest Backup: ${backups[0].filename} (${new Date(backups[0].timestamp).toLocaleString()})`);
   }
   console.log();
@@ -271,55 +283,91 @@ function showHelp(): void {
   console.log();
 }
 
+// Handle list commands
+function handleListCommands(command: string): void {
+  if (command === 'list' || command === 'ls') {
+    const backups = listBackups();
+    formatBackupList(backups);
+  }
+}
+
+// Handle restore commands
+function handleRestoreCommands(command: string, args: string[]): void {
+  if (command === 'restore') {
+    const filename = args[0];
+    if (!filename) {
+      console.error('❌ Please specify a backup filename to restore.');
+      console.error('Usage: npm run backup:restore <filename>');
+      process.exit(1);
+    }
+    restoreBackup(filename);
+  }
+}
+
+// Handle cleanup commands
+function handleCleanupCommands(command: string): void {
+  if (command === 'cleanup') {
+    cleanupOldBackups();
+    console.log('✅ Cleanup completed.');
+  }
+}
+
+// Handle status commands
+function handleStatusCommands(command: string): void {
+  if (command === 'status') {
+    handleStatusCommand();
+  }
+}
+
+// Execute command handler
+function executeCommand(command: string, args: string[]): void {
+  // Handle backup commands
+  if (['create', 'backup', 'auto'].includes(command)) {
+    handleBackupCommands(command, args);
+    return;
+  }
+
+  // Handle list commands
+  if (['list', 'ls'].includes(command)) {
+    handleListCommands(command);
+    return;
+  }
+
+  // Handle restore commands
+  if (command === 'restore') {
+    handleRestoreCommands(command, args);
+    return;
+  }
+
+  // Handle verify commands
+  if (['verify', 'verify-all'].includes(command)) {
+    handleVerifyCommands(command, args);
+    return;
+  }
+
+  // Handle cleanup commands
+  if (command === 'cleanup') {
+    handleCleanupCommands(command);
+    return;
+  }
+
+  // Handle status commands
+  if (command === 'status') {
+    handleStatusCommands(command);
+    return;
+  }
+
+  // Default: show help
+  showHelp();
+}
+
 // CLI Interface
 async function main() {
   const command = process.argv[2];
   const args = process.argv.slice(3);
 
   try {
-    switch (command) {
-      case 'create':
-      case 'backup':
-      case 'auto':
-        handleBackupCommands(command, args);
-        break;
-
-      case 'list':
-      case 'ls': {
-        const backups = listBackups();
-        formatBackupList(backups);
-        break;
-      }
-
-      case 'restore': {
-        const filename = args[0];
-        if (!filename) {
-          console.error('❌ Please specify a backup filename to restore.');
-          console.error('Usage: npm run backup:restore <filename>');
-          process.exit(1);
-        }
-        restoreBackup(filename);
-        break;
-      }
-
-      case 'verify':
-      case 'verify-all':
-        handleVerifyCommands(command, args);
-        break;
-
-      case 'cleanup':
-        cleanupOldBackups();
-        console.log('✅ Cleanup completed.');
-        break;
-
-      case 'status':
-        handleStatusCommand();
-        break;
-
-      default:
-        showHelp();
-        break;
-    }
+    executeCommand(command, args);
   } catch (error) {
     console.error('❌ Error:', error instanceof Error ? error.message : error);
     process.exit(1);

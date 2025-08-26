@@ -7,10 +7,24 @@ import type {
   ValidationStageMetrics,
 } from '../../types/analytics.types';
 import { createMockLogger } from '../../test-helpers/logger.mock';
+import { ValidationMetricsConverter } from '../../utils/validation-metrics-converter';
 
 // Mock fs module
 jest.mock('fs/promises');
 const mockedFs = fs as jest.Mocked<typeof fs>;
+
+// Mock ValidationMetricsConverter
+jest.mock('../../utils/validation-metrics-converter');
+const mockValidationMetricsConverter = ValidationMetricsConverter as jest.Mocked<typeof ValidationMetricsConverter>;
+
+// Mock PrismaClient
+jest.mock('@prisma/client');
+const mockPrismaClient = {
+  validationRun: {
+    findMany: jest.fn(),
+  },
+  $disconnect: jest.fn(),
+};
 
 describe('AnalyticsService', () => {
   let analyticsService: AnalyticsService;
@@ -26,6 +40,19 @@ describe('AnalyticsService', () => {
 
     // Clear all mocks
     jest.clearAllMocks();
+
+    // Setup ValidationMetricsConverter mocks
+    mockValidationMetricsConverter.calculateAnalytics = jest.fn().mockReturnValue({
+      totalSessions: 1,
+      successRate: 100,
+      averageTimeToSuccess: 1000,
+      averageAttemptsToSuccess: 1,
+      mostFailedStage: 'none',
+      stageSuccessRates: {},
+      averageStageTime: {},
+      dailyStats: {},
+    });
+    mockValidationMetricsConverter.convertToSessions = jest.fn().mockReturnValue([]);
   });
 
   describe('startSession', () => {
@@ -284,6 +311,58 @@ describe('AnalyticsService', () => {
         averageStageTime: {},
         dailyStats: {},
       });
+    });
+
+    it('should filter sessions by agent when agentFilter provided', async () => {
+      const sessions: SessionMetrics[] = [
+        {
+          sessionId: 'session_1',
+          startTime: Date.now(),
+          userPrompt: 'Task for agent-1',
+          taskDescription: 'Description for agent-1',
+          attempts: [],
+          finalSuccess: true,
+          totalValidationTime: 1000,
+          averageStageTime: 500,
+        },
+        {
+          sessionId: 'session_2',
+          startTime: Date.now(),
+          userPrompt: 'Task for agent-2',
+          taskDescription: 'Description for agent-2',
+          attempts: [],
+          finalSuccess: false,
+          totalValidationTime: 2000,
+          averageStageTime: 1000,
+        },
+      ];
+
+      mockedFs.readFile.mockResolvedValue(JSON.stringify(sessions));
+
+      const analytics = await analyticsService.getAnalytics('agent-1');
+
+      expect(analytics.totalSessions).toBe(1);
+      expect(analytics.successRate).toBe(100);
+    });
+
+    it('should fallback to validation metrics when no sessions exist', async () => {
+      // Mock sessions file to be empty/non-existent
+      mockedFs.readFile
+        .mockResolvedValueOnce(JSON.stringify([])) // sessions file empty
+        .mockResolvedValueOnce(JSON.stringify([ // metrics file has data
+          {
+            timestamp: new Date().toISOString(),
+            success: true,
+            stages: [
+              { id: 'lint', success: true, duration: 500 },
+              { id: 'test', success: true, duration: 1000 }
+            ]
+          }
+        ]));
+
+      const analytics = await analyticsService.getAnalytics();
+
+      expect(analytics.totalSessions).toBeGreaterThan(0);
     });
 
     it('should calculate analytics for multiple sessions', async () => {
@@ -575,6 +654,257 @@ describe('AnalyticsService', () => {
 
       expect(mockedFs.writeFile).not.toHaveBeenCalled();
       expect(mockLogger.info).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('database methods', () => {
+    it('should get validation runs from database', async () => {
+      const mockRuns = [
+        {
+          id: 'run1',
+          timestamp: new Date(),
+          success: true,
+          totalTime: 5000,
+          taskId: 'task1',
+          task: { id: 'task1' },
+          stages: [
+            {
+              stageId: 'lint',
+              stageName: 'Lint',
+              success: true,
+              duration: 2000,
+              output: 'All good',
+              errorMessage: null,
+              order: 1
+            }
+          ]
+        }
+      ];
+
+      // Mock Prisma client
+      const mockPrismaClient = {
+        validationRun: {
+          findMany: jest.fn().mockResolvedValue(mockRuns)
+        },
+        $disconnect: jest.fn()
+      };
+
+      // Replace the db instance
+      (analyticsService as any).db = mockPrismaClient;
+
+      const runs = await analyticsService.getValidationRuns(10);
+
+      expect(runs).toHaveLength(1);
+      expect(runs[0].id).toBe('run1');
+      expect(runs[0].stages[0].id).toBe('lint');
+    });
+
+    it('should get validation run statistics from database', async () => {
+      const mockRuns = [
+        {
+          id: 'run1',
+          timestamp: new Date(),
+          success: true,
+          totalTime: 5000,
+          stages: [
+            {
+              stageId: 'lint',
+              stageName: 'Lint',
+              success: true,
+              duration: 2000,
+              order: 1
+            }
+          ]
+        }
+      ];
+
+      const mockPrismaClient = {
+        validationRun: {
+          findMany: jest.fn().mockResolvedValue(mockRuns)
+        },
+        $disconnect: jest.fn()
+      };
+
+      (analyticsService as any).db = mockPrismaClient;
+
+      const stats = await analyticsService.getValidationRunStatistics(30);
+
+      expect(stats.totalRuns).toBe(1);
+      expect(stats.successfulRuns).toBe(1);
+      expect(stats.successRate).toBe(100);
+    });
+
+    it('should handle database errors gracefully', async () => {
+      const mockPrismaClient = {
+        validationRun: {
+          findMany: jest.fn().mockRejectedValue(new Error('Database error'))
+        },
+        $disconnect: jest.fn()
+      };
+
+      (analyticsService as any).db = mockPrismaClient;
+
+      const runs = await analyticsService.getValidationRuns();
+      expect(runs).toEqual([]);
+
+      const stats = await analyticsService.getValidationRunStatistics();
+      expect(stats.totalRuns).toBe(0);
+    });
+  });
+
+  describe('getStageHistory', () => {
+    it('should return stage history with trends', async () => {
+      const sessions: SessionMetrics[] = [
+        {
+          sessionId: 'session_1',
+          startTime: Date.now(),
+          attempts: [
+            {
+              attempt: 1,
+              timestamp: new Date().toISOString(),
+              startTime: Date.now(),
+              totalTime: 2000,
+              totalStages: 1,
+              passed: 1,
+              failed: 0,
+              success: true,
+              stages: [
+                { id: 'lint', name: 'Lint', success: true, duration: 1000, attempt: 1 }
+              ]
+            }
+          ],
+          finalSuccess: true,
+          totalValidationTime: 2000,
+          averageStageTime: 1000
+        }
+      ];
+
+      mockedFs.readFile
+        .mockResolvedValueOnce(JSON.stringify(sessions)) // loadAllSessions
+        .mockResolvedValueOnce(JSON.stringify([])); // loadValidationMetrics
+
+      const history = await analyticsService.getStageHistory('lint', 7);
+
+      expect(history.dailyMetrics).toBeDefined();
+      expect(history.trends).toBeDefined();
+      expect(history.trends.totalAttempts).toBeGreaterThanOrEqual(0);
+    });
+
+    it('should handle empty stage history', async () => {
+      mockedFs.readFile.mockResolvedValue(JSON.stringify([]));
+
+      const history = await analyticsService.getStageHistory('nonexistent', 7);
+
+      expect(history.dailyMetrics).toEqual([]);
+      expect(history.trends.totalAttempts).toBe(0);
+    });
+  });
+
+  describe('getStageStatistics', () => {
+    it('should return comprehensive stage statistics', async () => {
+      const sessions: SessionMetrics[] = [
+        {
+          sessionId: 'session_1',
+          startTime: Date.now(),
+          attempts: [
+            {
+              attempt: 1,
+              timestamp: new Date().toISOString(),
+              startTime: Date.now(),
+              totalTime: 2000,
+              totalStages: 1,
+              passed: 1,
+              failed: 0,
+              success: true,
+              stages: [
+                { 
+                  id: 'lint', 
+                  name: 'Lint', 
+                  success: true, 
+                  duration: 1000, 
+                  attempt: 1,
+                  output: 'All good',
+                  error: undefined
+                }
+              ]
+            }
+          ],
+          finalSuccess: true,
+          totalValidationTime: 2000,
+          averageStageTime: 1000
+        }
+      ];
+
+      mockedFs.readFile
+        .mockResolvedValueOnce(JSON.stringify(sessions)) // loadAllSessions
+        .mockResolvedValueOnce(JSON.stringify([])); // loadValidationMetrics
+
+      const stats = await analyticsService.getStageStatistics('lint');
+
+      expect(stats.overview).toBeDefined();
+      expect(stats.recentRuns).toBeDefined();
+      expect(stats.performanceMetrics).toBeDefined();
+      expect(stats.overview.totalAttempts).toBe(1);
+      expect(stats.overview.successRate).toBe(100);
+    });
+
+    it('should handle failed stages with error categorization', async () => {
+      const sessions: SessionMetrics[] = [
+        {
+          sessionId: 'session_1',
+          startTime: Date.now(),
+          attempts: [
+            {
+              attempt: 1,
+              timestamp: new Date().toISOString(),
+              startTime: Date.now(),
+              totalTime: 2000,
+              totalStages: 1,
+              passed: 0,
+              failed: 1,
+              success: false,
+              stages: [
+                { 
+                  id: 'test', 
+                  name: 'Test', 
+                  success: false, 
+                  duration: 2000, 
+                  attempt: 1,
+                  output: '',
+                  error: 'Test failure - compilation error occurred'
+                }
+              ]
+            }
+          ],
+          finalSuccess: false,
+          totalValidationTime: 2000,
+          averageStageTime: 2000
+        }
+      ];
+
+      mockedFs.readFile
+        .mockResolvedValueOnce(JSON.stringify(sessions))
+        .mockResolvedValueOnce(JSON.stringify([]));
+
+      const stats = await analyticsService.getStageStatistics('test');
+
+      expect(stats.overview.totalFailures).toBe(1);
+      expect(stats.overview.successRate).toBe(0);
+      expect(stats.performanceMetrics.failureReasons['Compilation Error']).toBe(1);
+    });
+  });
+
+  describe('dispose', () => {
+    it('should disconnect from database', async () => {
+      const mockPrismaClient = {
+        $disconnect: jest.fn()
+      };
+
+      (analyticsService as any).db = mockPrismaClient;
+
+      await analyticsService.dispose();
+
+      expect(mockPrismaClient.$disconnect).toHaveBeenCalled();
     });
   });
 

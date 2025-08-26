@@ -17,6 +17,9 @@ import {
 } from 'lucide-react';
 import { Button } from '../ui/button';
 
+// Constants
+const MOBILE_BREAKPOINT_PX = 768;
+
 interface SidebarProps {
   className?: string;
 }
@@ -273,7 +276,7 @@ export function Sidebar({ className = '' }: SidebarProps) {
 
   const handleMobileNavigate = () => {
     // Close mobile sidebar on navigation
-    if (window.innerWidth < 768) {
+    if (window.innerWidth < MOBILE_BREAKPOINT_PX) {
       setIsCollapsed(true);
     }
   };

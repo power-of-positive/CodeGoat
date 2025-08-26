@@ -5,6 +5,12 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { PrecommitResult } from '../utils/utils';
 
+// Constants
+const SECRET_PREFIX_LENGTH = 4;
+const SECRET_SUFFIX_LENGTH = 4;
+const MIN_SECRET_LENGTH = 8;
+const MIN_SECRET_DETECTION_LENGTH = 32;
+
 /**
  * Sanitize error messages to prevent sensitive data exposure
  */
@@ -18,8 +24,8 @@ function sanitizeErrorMessage(message: string): string {
       .replace(/\/Users\/[^/\s]+/g, '/Users/***')
       .replace(/\/home\/[^/\s]+/g, '/home/***')
       // Remove potential secrets (long alphanumeric strings)
-      .replace(/\b[a-zA-Z0-9_-]{32,}\b/g, match =>
-        match.length > 8 ? match.substring(0, 4) + '***' + match.substring(match.length - 4) : match
+      .replace(new RegExp(`\\b[a-zA-Z0-9_-]{${MIN_SECRET_DETECTION_LENGTH},}\\b`, 'g'), match =>
+        match.length > MIN_SECRET_LENGTH ? match.substring(0, SECRET_PREFIX_LENGTH) + '***' + match.substring(match.length - SECRET_SUFFIX_LENGTH) : match
       )
   );
 }

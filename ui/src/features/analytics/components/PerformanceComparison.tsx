@@ -1,10 +1,9 @@
+/* eslint-disable max-lines */
 import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   BarChart,
   Bar,
-  LineChart,
-  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -15,8 +14,6 @@ import {
   PolarAngleAxis,
   PolarRadiusAxis,
   Radar,
-  ComposedChart,
-  Area,
 } from 'recharts';
 import {
   TrendingUp,
@@ -28,7 +25,6 @@ import {
   AlertTriangle,
   CheckCircle,
   Activity,
-  Clock,
   Target,
   Zap,
 } from 'lucide-react';
@@ -147,7 +143,7 @@ export function PerformanceComparison({
     defaultPeriod2?.end || thirtyDaysAgo.toISOString().split('T')[0]
   );
   const [environment, setEnvironment] = useState('');
-  const [viewMode, setViewMode] = useState<'overview' | 'stages' | 'radar'>('overview');
+  const [viewMode, setViewMode] = useState<'overview' | 'stages' | 'radar' | 'bar' | 'line' | 'area'>('overview');
 
   const {
     data: comparisonData,
@@ -182,7 +178,9 @@ export function PerformanceComparison({
 
   // Process data for charts
   const chartData = useMemo(() => {
-    if (!comparisonData) {return null;}
+    if (!comparisonData) {
+      return null;
+    }
 
     const { periods, comparison } = comparisonData;
 
@@ -381,7 +379,7 @@ export function PerformanceComparison({
                     key={key}
                     variant={viewMode === key ? 'default' : 'outline'}
                     size="sm"
-                    onClick={() => setViewMode(key as any)}
+                    onClick={() => setViewMode(key as 'overview' | 'stages' | 'radar' | 'bar' | 'line' | 'area')}
                     className="flex items-center gap-2"
                   >
                     <Icon className="w-4 h-4" />

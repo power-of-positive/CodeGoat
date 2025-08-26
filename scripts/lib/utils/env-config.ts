@@ -56,15 +56,21 @@ export function loadProjectEnvSync(scriptsDepth: number = 2): EnvLoadResult {
 }
 
 /**
+ * Configuration for validating a single environment variable
+ */
+interface SingleVarConfig {
+  varName: string;
+  allowEmpty: boolean;
+  validateFormat: Record<string, RegExp>;
+  missing: string[];
+  invalid: Array<{ name: string; reason: string }>;
+}
+
+/**
  * Validate that required environment variables are present with enhanced validation
  */
-function validateSingleVar(
-  varName: string,
-  allowEmpty: boolean,
-  validateFormat: Record<string, RegExp>,
-  missing: string[],
-  invalid: Array<{ name: string; reason: string }>
-): void {
+function validateSingleVar(config: SingleVarConfig): void {
+  const { varName, allowEmpty, validateFormat, missing, invalid } = config;
   const value = process.env[varName];
   if (!value || (value.trim() === '' && !allowEmpty)) {
     missing.push(varName);
@@ -97,7 +103,13 @@ export function validateRequiredEnvVars(
   const invalid: Array<{ name: string; reason: string }> = [];
 
   requiredVars.forEach(varName => {
-    validateSingleVar(varName, allowEmpty, validateFormat, missing, invalid);
+    validateSingleVar({
+      varName,
+      allowEmpty,
+      validateFormat,
+      missing,
+      invalid
+    });
   });
 
   return {
