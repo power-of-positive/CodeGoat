@@ -20,7 +20,7 @@ async function main(): Promise<void> {
       console.error(JSON.stringify(result));
       process.exit(2);
     } else {
-      console.log('✅ All pre-commit checks passed!');
+      console.error('✅ All pre-commit checks passed!');
       console.error(JSON.stringify(result));
       process.exit(0);
     }

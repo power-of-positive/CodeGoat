@@ -17,8 +17,8 @@ export class LLMReviewerCore {
 
   constructor() {
     const apiKey = process.env.OPENAI_API_KEY;
-    console.log('🔍 LLMReviewerCore: Checking for OPENAI_API_KEY...');
-    console.log(`🔍 API Key found: ${apiKey ? 'Yes (length: ' + apiKey.length + ')' : 'No'}`);
+    console.error('🔍 LLMReviewerCore: Checking for OPENAI_API_KEY...');
+    console.error(`🔍 API Key found: ${apiKey ? 'Yes (length: ' + apiKey.length + ')' : 'No'}`);
 
     if (!apiKey) {
       console.error('❌ OPENAI_API_KEY environment variable is not set!');
@@ -31,7 +31,7 @@ export class LLMReviewerCore {
 
     this.openai = new OpenAI({ apiKey });
     this.model = process.env.LLM_REVIEWER_MODEL || 'gpt-4o-mini';
-    console.log(`✅ LLMReviewerCore initialized with model: ${this.model}`);
+    console.error(`✅ LLMReviewerCore initialized with model: ${this.model}`);
   }
 
   /**

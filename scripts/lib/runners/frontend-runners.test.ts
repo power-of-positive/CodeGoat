@@ -2,34 +2,30 @@
  * Tests for frontend-runners.ts
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+
 import { runFrontendLinting, runFrontendTests, runPlaywrightTests } from './frontend-runners';
 import { execCommand } from '../utils/command-utils';
 import { validateDirectoryExists } from '../utils/validation-utils';
 
 // Mock external dependencies
-vi.mock('../utils/command-utils');
-vi.mock('../utils/validation-utils');
+jest.mock('../utils/command-utils');
+jest.mock('../utils/validation-utils');
 
 describe('frontend-runners', () => {
   beforeEach(() => {
-    vi.resetAllMocks();
+    jest.resetAllMocks();
 
-    // Mock process.env
-    vi.stubGlobal('process', {
-      ...process,
-      env: { ...process.env },
-    });
+    // Mock process.env - Jest handles process.env automatically, no need to mock
 
     // Mock validation-utils - by default, don't throw
-    vi.mocked(validateDirectoryExists).mockImplementation(() => {
+    (validateDirectoryExists as jest.Mock).mockImplementation(() => {
       // Default: do nothing (validation passes)
     });
   });
 
   describe('runFrontendLinting', () => {
     it('should return CheckResult with correct structure', () => {
-      vi.mocked(execCommand).mockReturnValue({
+      (execCommand as jest.Mock).mockReturnValue({
         success: true,
         output: 'Linting passed',
       });
@@ -43,7 +39,7 @@ describe('frontend-runners', () => {
     });
 
     it('should handle invalid project root', () => {
-      vi.mocked(validateDirectoryExists).mockImplementation((dirPath: string) => {
+      (validateDirectoryExists as jest.Mock).mockImplementation((dirPath: string) => {
         if (
           !dirPath ||
           dirPath === '/frontend' ||
@@ -59,7 +55,7 @@ describe('frontend-runners', () => {
     });
 
     it('should call execCommand with correct parameters', () => {
-      vi.mocked(execCommand)
+      (execCommand as jest.Mock)
         .mockReturnValueOnce({ success: true, output: 'lint success' })
         .mockReturnValueOnce({ success: true, output: 'format success' });
 
@@ -72,7 +68,7 @@ describe('frontend-runners', () => {
 
   describe('runFrontendTests', () => {
     it('should return CheckResult with correct structure', () => {
-      vi.mocked(execCommand).mockReturnValue({
+      (execCommand as jest.Mock).mockReturnValue({
         success: true,
         output: 'Tests passed',
       });
@@ -86,7 +82,7 @@ describe('frontend-runners', () => {
     });
 
     it('should handle invalid project root', () => {
-      vi.mocked(validateDirectoryExists).mockImplementation((dirPath: string) => {
+      (validateDirectoryExists as jest.Mock).mockImplementation((dirPath: string) => {
         if (!dirPath || dirPath === '/frontend' || dirPath === 'frontend') {
           throw new Error('Directory does not exist');
         }
@@ -96,7 +92,7 @@ describe('frontend-runners', () => {
     });
 
     it('should call execCommand with correct parameters', () => {
-      vi.mocked(execCommand).mockReturnValue({
+      (execCommand as jest.Mock).mockReturnValue({
         success: true,
         output: 'test success',
       });
@@ -121,7 +117,7 @@ describe('frontend-runners', () => {
 
     it('should run tests when DISPLAY is set', () => {
       process.env.DISPLAY = ':0';
-      vi.mocked(execCommand).mockReturnValue({
+      (execCommand as jest.Mock).mockReturnValue({
         success: true,
         output: 'Playwright tests passed',
       });
@@ -135,7 +131,7 @@ describe('frontend-runners', () => {
     it('should run tests when CI is set', () => {
       delete process.env.DISPLAY;
       process.env.CI = 'true';
-      vi.mocked(execCommand).mockReturnValue({
+      (execCommand as jest.Mock).mockReturnValue({
         success: true,
         output: 'Playwright tests passed',
       });

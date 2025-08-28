@@ -213,12 +213,14 @@ function FilterControls({ filters, onFiltersChange }: {
       />
       <SelectFilter
         label="Type"
+        id="filter-type"
         value={filters.taskType || 'all'}
         options={taskTypeOptions}
         onChange={(value) => onFiltersChange({ ...filters, taskType: value as TaskFiltersState['taskType'] })}
       />
       <SelectFilter
         label="Date Range"
+        id="filter-date-range"
         value={filters.dateRange || 'all'}
         options={dateRangeOptions}
         onChange={(value) => onFiltersChange({ ...filters, dateRange: value as TaskFiltersState['dateRange'] })}

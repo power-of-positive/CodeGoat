@@ -6,6 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../../shared/ui/car
 import { Badge } from '../../../shared/ui/badge';
 import { claudeWorkersApi } from '../../../shared/lib/api';
 
+// Constants for ID parsing
+const ID_DISPLAY_PARTS_COUNT = 2; // Number of parts to show from the end of hyphen-separated IDs
+
 interface ValidationRunsViewerProps {
   workerId: string;
   onClose: () => void;
@@ -64,7 +67,7 @@ export function ValidationRunsViewer({ workerId, onClose }: ValidationRunsViewer
                         </span>
                       </div>
                       <div className="text-xs font-mono text-gray-400">
-                        {run.id.split('-').slice(-2).join('-')}
+                        {run.id.split('-').slice(-ID_DISPLAY_PARTS_COUNT).join('-')}
                       </div>
                     </div>
 

@@ -22,6 +22,9 @@ import {
 } from 'recharts';
 import { taskApi } from '../../../shared/lib/api';
 
+// Constants
+const DEFAULT_SELECTED_DAYS = 30;
+
 interface BDDExecutionHistoryProps {
   taskId: string;
   scenarioId: string;
@@ -31,7 +34,7 @@ const BDDExecutionHistory: React.FC<BDDExecutionHistoryProps> = ({
   taskId,
   scenarioId,
 }) => {
-  const [selectedDays, setSelectedDays] = useState(30);
+  const [selectedDays, setSelectedDays] = useState(DEFAULT_SELECTED_DAYS);
 
   const {
     data: executions,

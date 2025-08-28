@@ -12,7 +12,7 @@ import { createSuccessResult } from '../utils/result-utils';
  * Run frontend linting checks
  */
 export function runFrontendLinting(projectRoot: string): CheckResult {
-  console.log('🔍 Running frontend linting...');
+  console.error('🔍 Running frontend linting...');
   const frontendDir = path.join(projectRoot, 'frontend');
   validateDirectoryExists(frontendDir);
 
@@ -28,7 +28,7 @@ export function runFrontendLinting(projectRoot: string): CheckResult {
  * Run frontend unit tests
  */
 export function runFrontendTests(projectRoot: string): CheckResult {
-  console.log('🧪 Running frontend unit tests...');
+  console.error('🧪 Running frontend unit tests...');
   const frontendDir = path.join(projectRoot, 'frontend');
   validateDirectoryExists(frontendDir);
   return execCommand('npm run test:run', frontendDir);
@@ -42,10 +42,10 @@ export function runPlaywrightTests(projectRoot: string): CheckResult {
 
   const isHeadless = !process.env.DISPLAY && !process.env.CI && !process.env.GITHUB_ACTIONS;
   if (isHeadless) {
-    console.log('🎭 Skipping Playwright E2E tests (headless environment detected)');
+    console.error('🎭 Skipping Playwright E2E tests (headless environment detected)');
     return createSuccessResult('Skipped - headless environment');
   }
 
-  console.log('🎭 Running Playwright E2E tests...');
+  console.error('🎭 Running Playwright E2E tests...');
   return execCommand('npm run test:playwright', projectRoot);
 }

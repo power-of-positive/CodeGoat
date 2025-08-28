@@ -51,7 +51,7 @@ const tasks = [
 
 async function addTasks() {
   try {
-    console.log('Adding BDD-related tasks to database...');
+    console.error('Adding BDD-related tasks to database...');
 
     for (const taskData of tasks) {
       const task = await prisma.task.create({
@@ -62,10 +62,10 @@ async function addTasks() {
           startTime: taskData.status === TaskStatus.IN_PROGRESS ? new Date() : undefined,
         },
       });
-      console.log(`✓ Added task: ${task.content}`);
+      console.error(`✓ Added task: ${task.content}`);
     }
 
-    console.log('\n✅ All BDD tasks added successfully!');
+    console.error('\n✅ All BDD tasks added successfully!');
   } catch (error) {
     console.error('❌ Error adding tasks:', error);
     process.exit(1);

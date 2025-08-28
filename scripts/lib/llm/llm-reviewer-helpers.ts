@@ -54,7 +54,7 @@ export function getChangedFiles(projectRoot: string): string[] {
       .split('\n')
       .filter(f => f && /\.(ts|js|tsx|jsx|mts|cts|mjs|cjs)$/i.test(f));
     if (files.length > 0) {
-      console.log(`Found ${files.length} changed files for review`);
+      console.error(`Found ${files.length} changed files for review`);
     }
     return files;
   } catch (error) {
@@ -70,7 +70,7 @@ export function getChangedFiles(projectRoot: string): string[] {
  * Create empty result for no files
  */
 export function createEmptyResult(): LLMReviewOutput {
-  console.log('No changed files to review');
+  console.error('No changed files to review');
   return {
     structuredData: {
       files: [],

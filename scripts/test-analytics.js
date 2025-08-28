@@ -24,7 +24,7 @@ class AnalyticsDemo {
   }
 
   async log(message) {
-    console.log(`${colors.blue}[DEMO]${colors.reset} ${message}`);
+    console.error(`${colors.blue}[DEMO]${colors.reset} ${message}`);
   }
 
   async startServer() {
@@ -35,7 +35,7 @@ class AnalyticsDemo {
       return true;
     } catch {
       await this.log('❌ Server is not running. Please start the server first:');
-      console.log('   npm run dev');
+      console.error('   npm run dev');
       return false;
     }
   }
@@ -97,16 +97,16 @@ class AnalyticsDemo {
       const analytics = response.data;
       
       await this.log('📈 Current Analytics:');
-      console.log(`   Total sessions: ${analytics.totalSessions}`);
-      console.log(`   Success rate: ${analytics.successRate.toFixed(1)}%`);
-      console.log(`   Avg time to success: ${(analytics.averageTimeToSuccess / 1000).toFixed(1)}s`);
-      console.log(`   Avg attempts to success: ${analytics.averageAttemptsToSuccess.toFixed(1)}`);
-      console.log(`   Most failed stage: ${analytics.mostFailedStage}`);
+      console.error(`   Total sessions: ${analytics.totalSessions}`);
+      console.error(`   Success rate: ${analytics.successRate.toFixed(1)}%`);
+      console.error(`   Avg time to success: ${(analytics.averageTimeToSuccess / 1000).toFixed(1)}s`);
+      console.error(`   Avg attempts to success: ${analytics.averageAttemptsToSuccess.toFixed(1)}`);
+      console.error(`   Most failed stage: ${analytics.mostFailedStage}`);
       
       // Show stage success rates
-      console.log('   Stage success rates:');
+      console.error('   Stage success rates:');
       Object.entries(analytics.stageSuccessRates).forEach(([stage, stats]) => {
-        console.log(`     ${stage}: ${stats.rate.toFixed(1)}% (${stats.successes}/${stats.attempts})`);
+        console.error(`     ${stage}: ${stats.rate.toFixed(1)}% (${stats.successes}/${stats.attempts})`);
       });
       
       return analytics;
@@ -122,19 +122,19 @@ class AnalyticsDemo {
       const session = response.data;
       
       await this.log(`📄 Session Details (${sessionId}):`);
-      console.log(`   Start time: ${new Date(session.startTime).toISOString()}`);
-      console.log(`   End time: ${session.endTime ? new Date(session.endTime).toISOString() : 'Not ended'}`);
-      console.log(`   Total duration: ${session.totalDuration ? (session.totalDuration / 1000).toFixed(1) + 's' : 'N/A'}`);
-      console.log(`   Final success: ${session.finalSuccess}`);
-      console.log(`   Attempts: ${session.attempts.length}`);
-      console.log(`   Total validation time: ${(session.totalValidationTime / 1000).toFixed(1)}s`);
-      console.log(`   Average stage time: ${session.averageStageTime.toFixed(0)}ms`);
+      console.error(`   Start time: ${new Date(session.startTime).toISOString()}`);
+      console.error(`   End time: ${session.endTime ? new Date(session.endTime).toISOString() : 'Not ended'}`);
+      console.error(`   Total duration: ${session.totalDuration ? (session.totalDuration / 1000).toFixed(1) + 's' : 'N/A'}`);
+      console.error(`   Final success: ${session.finalSuccess}`);
+      console.error(`   Attempts: ${session.attempts.length}`);
+      console.error(`   Total validation time: ${(session.totalValidationTime / 1000).toFixed(1)}s`);
+      console.error(`   Average stage time: ${session.averageStageTime.toFixed(0)}ms`);
       
       session.attempts.forEach((attempt, index) => {
-        console.log(`   Attempt ${index + 1}: ${attempt.success ? 'SUCCESS' : 'FAILED'} (${attempt.totalTime}ms)`);
+        console.error(`   Attempt ${index + 1}: ${attempt.success ? 'SUCCESS' : 'FAILED'} (${attempt.totalTime}ms)`);
         attempt.stages.forEach(stage => {
           const status = stage.success ? '✅' : '❌';
-          console.log(`     ${status} ${stage.name}: ${stage.duration}ms`);
+          console.error(`     ${status} ${stage.name}: ${stage.duration}ms`);
         });
       });
       
@@ -147,8 +147,8 @@ class AnalyticsDemo {
 
   async demo() {
     try {
-      console.log(`${colors.bright}${colors.blue}🧪 Analytics & Validation Pipeline Demo${colors.reset}`);
-      console.log(`${colors.blue}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${colors.reset}`);
+      console.error(`${colors.bright}${colors.blue}🧪 Analytics & Validation Pipeline Demo${colors.reset}`);
+      console.error(`${colors.blue}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${colors.reset}`);
       
       // 1. Check server
       const serverRunning = await this.startServer();
@@ -169,17 +169,17 @@ class AnalyticsDemo {
       await this.endSession(sessionId, validationResults.success);
       
       // 5. Show session details
-      console.log('');
+      console.error('');
       await this.getSessionDetails(sessionId);
       
       // 6. Show overall analytics
-      console.log('');
+      console.error('');
       await this.getAnalytics();
       
-      console.log('');
-      console.log(`${colors.bright}${colors.green}✅ Analytics demo completed successfully!${colors.reset}`);
-      console.log(`${colors.cyan}💡 Session ID: ${sessionId}${colors.reset}`);
-      console.log(`${colors.cyan}📊 Visit http://localhost:3000/api/analytics to see all analytics${colors.reset}`);
+      console.error('');
+      console.error(`${colors.bright}${colors.green}✅ Analytics demo completed successfully!${colors.reset}`);
+      console.error(`${colors.cyan}💡 Session ID: ${sessionId}${colors.reset}`);
+      console.error(`${colors.cyan}📊 Visit http://localhost:3000/api/analytics to see all analytics${colors.reset}`);
       
     } catch (error) {
       console.error(`${colors.red}💥 Demo failed: ${error.message}${colors.reset}`);

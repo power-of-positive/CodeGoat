@@ -28,7 +28,7 @@ export { runTypeScriptCheck } from './format-typescript';
  * Run prettier formatting on staged files
  */
 export function runPrettierFormat(projectRoot: string, stagedFiles: string[]): CheckResult {
-  console.log('💅 Running prettier formatting on staged files...');
+  console.error('💅 Running prettier formatting on staged files...');
   validateDirectoryExists(projectRoot);
 
   const prettierFiles = filterPrettierFiles(stagedFiles);
@@ -61,7 +61,7 @@ export function runPrettierFormat(projectRoot: string, stagedFiles: string[]): C
  * Run ESLint auto-fixing on staged files
  */
 export function runEslintFix(projectRoot: string, stagedFiles: string[]): CheckResult {
-  console.log('🔧 Running ESLint auto-fix on staged files...');
+  console.error('🔧 Running ESLint auto-fix on staged files...');
   validateDirectoryExists(projectRoot);
 
   const eslintFiles = filterTsFiles(stagedFiles);

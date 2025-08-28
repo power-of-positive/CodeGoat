@@ -6,7 +6,7 @@ async function testValidationAssociation() {
   const db = new PrismaClient();
 
   try {
-    console.log('Testing validation run association...');
+    console.error('Testing validation run association...');
 
     // Find the current task
     const task = await db.todoTask.findFirst({
@@ -15,11 +15,11 @@ async function testValidationAssociation() {
     });
 
     if (!task) {
-      console.log('No task in progress found');
+      console.error('No task in progress found');
       return;
     }
 
-    console.log('Found task:', task.id);
+    console.error('Found task:', task.id);
 
     // Create a validation run
     const run = await db.validationRun.create({
@@ -40,7 +40,7 @@ async function testValidationAssociation() {
       },
     });
 
-    console.log('Created validation run:', run.id, 'associated with task:', task.id);
+    console.error('Created validation run:', run.id, 'associated with task:', task.id);
 
     // Verify the association
     const taskWithRuns = await db.todoTask.findUnique({
@@ -48,12 +48,12 @@ async function testValidationAssociation() {
       include: { validationRuns: { orderBy: { createdAt: 'desc' }, take: 3 } },
     });
 
-    console.log('Task now has', taskWithRuns?.validationRuns.length, 'validation runs');
+    console.error('Task now has', taskWithRuns?.validationRuns.length, 'validation runs');
 
     // Show the latest validation run details
     if (taskWithRuns?.validationRuns.length) {
       const latestRun = taskWithRuns.validationRuns[0];
-      console.log('Latest run:', {
+      console.error('Latest run:', {
         id: latestRun.id,
         success: latestRun.success,
         duration: latestRun.duration,

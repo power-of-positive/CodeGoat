@@ -10,21 +10,21 @@ import { runPrecommitChecks } from './lib';
 const SEPARATOR_LINE_LENGTH = 80;
 
 async function main(): Promise<void> {
-  console.log('🧪 Testing comprehensive blocking system...');
+  console.error('🧪 Testing comprehensive blocking system...');
 
   try {
     const result = await runPrecommitChecks();
 
-    console.log('\n='.repeat(SEPARATOR_LINE_LENGTH));
-    console.log('RESULT:', JSON.stringify(result, null, 2));
-    console.log('='.repeat(SEPARATOR_LINE_LENGTH));
+    console.error('\n='.repeat(SEPARATOR_LINE_LENGTH));
+    console.error('RESULT:', JSON.stringify(result, null, 2));
+    console.error('='.repeat(SEPARATOR_LINE_LENGTH));
 
     if (result.decision === 'block') {
-      console.log('\n🚫 BLOCKED - Claude would receive this feedback:');
-      console.log(result.reason);
+      console.error('\n🚫 BLOCKED - Claude would receive this feedback:');
+      console.error(result.reason);
       process.exit(1);
     } else {
-      console.log('\n✅ APPROVED - Claude would be allowed to continue');
+      console.error('\n✅ APPROVED - Claude would be allowed to continue');
       process.exit(0);
     }
   } catch (error) {

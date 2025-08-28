@@ -36,13 +36,18 @@ jest.mock('../ui/button', () => ({
 }));
 
 // Mock React Router
-jest.mock('react-router-dom', () => ({
-  ...jest.requireActual('react-router-dom'),
-  Link: ({ children, to, className, onClick }: any) => (
-    <a href={to} className={className} onClick={onClick}>{children}</a>
-  ),
-  useLocation: () => ({ pathname: '/' }),
-}));
+jest.mock('react-router-dom', () => {
+  const mockUseLocation = jest.fn(() => ({ pathname: '/' }));
+  return {
+    ...jest.requireActual('react-router-dom'),
+    Link: ({ children, to, className, onClick }: any) => (
+      <a href={to} className={className} onClick={onClick}>{children}</a>
+    ),
+    useLocation: mockUseLocation,
+  };
+});
+
+const { useLocation } = jest.requireMock('react-router-dom');
 
 const renderWithRouter = (component: React.ReactElement, initialRoute = '/') => {
   return render(
@@ -53,6 +58,11 @@ const renderWithRouter = (component: React.ReactElement, initialRoute = '/') => 
 };
 
 describe('Sidebar', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    useLocation.mockReturnValue({ pathname: '/' });
+  });
+
   describe('basic rendering', () => {
     it('renders sidebar with navigation items', () => {
       renderWithRouter(<Sidebar />);
@@ -156,24 +166,26 @@ describe('Sidebar', () => {
       expect(hrefs).toContain('/stage-management');
     });
 
-    it.skip('highlights active navigation item based on current route', () => {
+    it('highlights active navigation item based on current route', () => {
+      useLocation.mockReturnValue({ pathname: '/analytics' });
       renderWithRouter(<Sidebar />, '/analytics');
 
-      const analyticsLink = screen.getByRole('link', { name: /Analytics/ });
+      const analyticsLink = screen.getByRole('link', { name: /Analytics View validation metrics/ });
       expect(analyticsLink).toHaveClass('bg-blue-50');
     });
 
-    it.skip('highlights different active navigation item for different route', () => {
+    it('highlights different active navigation item for different route', () => {
+      useLocation.mockReturnValue({ pathname: '/settings' });
       renderWithRouter(<Sidebar />, '/settings');
 
       const settingsLink = screen.getByRole('link', { name: /Settings/ });
       expect(settingsLink).toHaveClass('bg-blue-50');
     });
 
-    it.skip('shows correct hover states for navigation items', () => {
+    it('shows correct hover states for navigation items', () => {
       renderWithRouter(<Sidebar />);
 
-      const analyticsLink = screen.getByRole('link', { name: /Analytics/ });
+      const analyticsLink = screen.getByRole('link', { name: /Analytics View validation metrics/ });
       expect(analyticsLink).toHaveClass('hover:bg-gray-50');
     });
   });

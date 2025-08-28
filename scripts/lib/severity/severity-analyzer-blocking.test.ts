@@ -2,7 +2,6 @@
  * Tests for severity-analyzer blocking decision logic
  * Focused on shouldBlockClaude and processReviewResults functions
  */
-import { describe, it, expect } from 'vitest';
 import { shouldBlockClaude, processReviewResults } from './severity-analyzer';
 
 describe('severity-analyzer blocking logic', () => {

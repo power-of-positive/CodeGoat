@@ -64,7 +64,7 @@ describe('ClaudeCodeExecutor Integration Tests', () => {
         });
         
         process.stdin.on('end', () => {
-          console.log('Received input:', input.trim());
+          console.error('Received input:', input.trim());
           console.error('This is stderr output');
           process.exit(0);
         });
@@ -90,7 +90,7 @@ describe('ClaudeCodeExecutor Integration Tests', () => {
       await writeFile(
         scriptPath,
         `
-        console.log('Starting script');
+        console.error('Starting script');
         console.error('Something went wrong');
         process.exit(1);
       `
@@ -116,7 +116,7 @@ describe('ClaudeCodeExecutor Integration Tests', () => {
       await mkdtemp(spacedDir);
 
       const scriptPath = join(spacedDir, 'script.js');
-      await writeFile(scriptPath, 'console.log("Script in spaced directory");');
+      await writeFile(scriptPath, 'console.error("Script in spaced directory");');
 
       executor = new ClaudeCodeExecutor({
         worktreeDir: tempDir,
@@ -134,7 +134,7 @@ describe('ClaudeCodeExecutor Integration Tests', () => {
       await writeFile(
         scriptPath,
         `
-        console.log('Args:', process.argv.slice(2).join(' | '));
+        console.error('Args:', process.argv.slice(2).join(' | '));
       `
       );
 

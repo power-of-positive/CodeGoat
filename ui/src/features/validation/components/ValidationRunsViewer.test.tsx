@@ -273,7 +273,7 @@ describe('ValidationRunsViewer', () => {
       });
     });
 
-    it.skip('should handle pending and skipped status styles', async () => {
+    it('should handle pending and skipped status styles', async () => {
       const pendingData = {
         ...mockValidationData,
         validationRuns: [
@@ -314,17 +314,26 @@ describe('ValidationRunsViewer', () => {
       );
 
       await waitFor(() => {
+        // Check pending status badge
         const pendingBadge = screen.getByText('PENDING');
         expect(pendingBadge).toHaveClass('bg-gray-100', 'text-gray-800', 'border-gray-300');
 
-        const skippedBadge = screen.getByText('SKIPPED');
-        expect(skippedBadge).toHaveClass('bg-yellow-100', 'text-yellow-800', 'border-yellow-300');
+        // Check that the failed run is displayed
+        const failedBadge = screen.getByText('FAILED');
+        expect(failedBadge).toHaveClass('bg-red-100', 'text-red-800', 'border-red-300');
+
+        // Check that the skipped stage is shown with yellow indicator
+        const stageIndicators = document.querySelectorAll('.w-2.h-2.rounded-full');
+        const yellowIndicator = Array.from(stageIndicators).find(el => 
+          el.classList.contains('bg-yellow-500')
+        );
+        expect(yellowIndicator).toBeInTheDocument();
       });
     });
   });
 
   describe('Stages Display', () => {
-    it.skip('should display stages with correct status indicators', async () => {
+    it('should display stages with correct status indicators', async () => {
       mockClaudeWorkersApi.getValidationRuns.mockResolvedValue(mockValidationData);
       const Wrapper = createWrapper();
 
@@ -335,9 +344,17 @@ describe('ValidationRunsViewer', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByText('Stages:')).toBeInTheDocument();
-        expect(screen.getByText('lint')).toBeInTheDocument();
-        expect(screen.getByText('test')).toBeInTheDocument();
+        // Check that stages sections are displayed for multiple runs
+        expect(screen.getAllByText('Stages:')).toHaveLength(3); // One for each validation run
+        
+        // Check that stage names are displayed
+        expect(screen.getAllByText('lint')).toHaveLength(3); // Appears in 3 validation runs
+        expect(screen.getAllByText('test')).toHaveLength(3); // Appears in 3 validation runs
+        expect(screen.getByText('build')).toBeInTheDocument();
+        
+        // Verify status indicators exist with different colors
+        const indicators = document.querySelectorAll('.w-2.h-2.rounded-full');
+        expect(indicators.length).toBeGreaterThan(0);
       });
     });
 
@@ -393,7 +410,7 @@ describe('ValidationRunsViewer', () => {
       });
     });
 
-    it.skip('should apply correct status colors to stage indicators', async () => {
+    it('should apply correct status colors to stage indicators', async () => {
       mockClaudeWorkersApi.getValidationRuns.mockResolvedValue(mockValidationData);
       const Wrapper = createWrapper();
 
@@ -404,12 +421,25 @@ describe('ValidationRunsViewer', () => {
       );
 
       await waitFor(() => {
-        const stageContainer = screen.getByText('lint').closest('.grid');
-        expect(stageContainer).toBeInTheDocument();
-
-        // Check for the presence of stage status indicators
-        const stageElements = screen.getAllByText('lint');
-        expect(stageElements.length).toBeGreaterThan(0);
+        // Check that stage indicators exist
+        const indicators = document.querySelectorAll('.w-2.h-2.rounded-full');
+        expect(indicators.length).toBeGreaterThan(0);
+        
+        // Verify different status colors exist
+        const greenIndicators = Array.from(indicators).filter(el => 
+          el.classList.contains('bg-green-500')
+        );
+        const redIndicators = Array.from(indicators).filter(el => 
+          el.classList.contains('bg-red-500')
+        );
+        const blueIndicators = Array.from(indicators).filter(el => 
+          el.classList.contains('bg-blue-500')
+        );
+        
+        // Should have multiple indicators for different stages/runs
+        expect(greenIndicators.length).toBeGreaterThan(0); // passed stages
+        expect(redIndicators.length).toBeGreaterThan(0); // failed stages
+        expect(blueIndicators.length).toBeGreaterThan(0); // running stages
       });
     });
 
@@ -562,7 +592,7 @@ describe('ValidationRunsViewer', () => {
       expect(mockClaudeWorkersApi.getValidationRuns).toHaveBeenCalledWith('worker-123-456');
     });
 
-    it.skip('should refetch data at specified intervals', async () => {
+    it('should refetch data at specified intervals', async () => {
       jest.useFakeTimers();
       mockClaudeWorkersApi.getValidationRuns.mockResolvedValue(mockValidationData);
       const Wrapper = createWrapper();
@@ -573,15 +603,18 @@ describe('ValidationRunsViewer', () => {
         </Wrapper>
       );
 
-      // Initial call
-      expect(mockClaudeWorkersApi.getValidationRuns).toHaveBeenCalledTimes(1);
+      // Wait for initial render and API call
+      await waitFor(() => {
+        expect(mockClaudeWorkersApi.getValidationRuns).toHaveBeenCalledTimes(1);
+      });
 
       // Advance timers to trigger refetch (5000ms interval)
       jest.advanceTimersByTime(5000);
 
+      // Wait for the refetch to complete
       await waitFor(() => {
         expect(mockClaudeWorkersApi.getValidationRuns).toHaveBeenCalledTimes(2);
-      });
+      }, { timeout: 1000 });
 
       jest.useRealTimers();
     });
@@ -636,7 +669,7 @@ describe('ValidationRunsViewer', () => {
       });
     });
 
-    it.skip('should handle keyboard navigation', async () => {
+    it('should handle keyboard navigation', async () => {
       mockClaudeWorkersApi.getValidationRuns.mockResolvedValue(mockValidationData);
       const onClose = jest.fn();
       const Wrapper = createWrapper();
@@ -649,11 +682,15 @@ describe('ValidationRunsViewer', () => {
 
       await waitFor(() => {
         const closeButton = screen.getByRole('button', { name: 'Close' });
-        closeButton.focus();
-        expect(closeButton).toHaveFocus();
+        expect(closeButton).toBeInTheDocument();
       });
 
-      // Test keyboard interaction
+      // Focus the close button and test keyboard interaction
+      const closeButton = screen.getByRole('button', { name: 'Close' });
+      closeButton.focus();
+      expect(closeButton).toHaveFocus();
+
+      // Test Enter key
       await userEvent.keyboard('{Enter}');
       expect(onClose).toHaveBeenCalledTimes(1);
     });

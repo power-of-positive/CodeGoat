@@ -13,6 +13,21 @@ import {
   PermissionContext,
 } from '../utils/permissions';
 
+// HTTP Status Codes
+const HTTP_STATUS = {
+  OK: 200,
+  CREATED: 201,
+  BAD_REQUEST: 400,
+  NOT_FOUND: 404,
+  CONFLICT: 409,
+  INTERNAL_SERVER_ERROR: 500,
+} as const;
+
+// Priority constants
+const PRIORITY_CONSTANTS = {
+  IMPORTED_RULE_BASE: 900,
+} as const;
+
 const PERMISSIONS_CONFIG_PATH = path.join(process.cwd(), 'permissions-config.json');
 
 // Helper function to read permissions config
@@ -47,7 +62,7 @@ export function createPermissionRoutes(logger: WinstonLogger) {
     } catch (error) {
       logger.error('Error fetching permissions config:', error as Error);
       res
-        .status(500)
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
         .json({ success: false, message: 'Failed to fetch permissions configuration' });
     }
   });
@@ -70,7 +85,7 @@ export function createPermissionRoutes(logger: WinstonLogger) {
     } catch (error) {
       logger.error('Error updating permissions config:', error as Error);
       res
-        .status(500)
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
         .json({ success: false, message: 'Failed to update permissions configuration' });
     }
   });
@@ -82,7 +97,7 @@ export function createPermissionRoutes(logger: WinstonLogger) {
       res.json({ success: true, data: config.rules });
     } catch (error) {
       logger.error('Error fetching permission rules:', error as Error);
-      res.status(500).json({ success: false, message: 'Failed to fetch permission rules' });
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Failed to fetch permission rules' });
     }
   });
 
@@ -92,7 +107,7 @@ export function createPermissionRoutes(logger: WinstonLogger) {
       const { action, scope, target, allowed, reason, priority } = req.body;
 
       if (!action || !scope || typeof allowed !== 'boolean' || typeof priority !== 'number') {
-        return res.status(400).json({
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
           success: false,
           message: 'Missing required fields: action, scope, allowed, priority',
         });
@@ -116,10 +131,10 @@ export function createPermissionRoutes(logger: WinstonLogger) {
       await writePermissionsConfig(config);
       logger.info('Created permission rule:', { ruleId: newRule.id, action, scope, allowed });
 
-      res.status(201).json({ success: true, data: newRule });
+      res.status(HTTP_STATUS.CREATED).json({ success: true, data: newRule });
     } catch (error) {
       logger.error('Error creating permission rule:', error as Error);
-      res.status(500).json({ success: false, message: 'Failed to create permission rule' });
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Failed to create permission rule' });
     }
   });
 
@@ -133,7 +148,7 @@ export function createPermissionRoutes(logger: WinstonLogger) {
       const ruleIndex = config.rules.findIndex(rule => rule.id === id);
 
       if (ruleIndex === -1) {
-        return res.status(404).json({ success: false, message: 'Permission rule not found' });
+        return res.status(HTTP_STATUS.NOT_FOUND).json({ success: false, message: 'Permission rule not found' });
       }
 
       const updatedRule = {
@@ -152,7 +167,7 @@ export function createPermissionRoutes(logger: WinstonLogger) {
       res.json({ success: true, data: updatedRule });
     } catch (error) {
       logger.error('Error updating permission rule:', error as Error);
-      res.status(500).json({ success: false, message: 'Failed to update permission rule' });
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Failed to update permission rule' });
     }
   });
 
@@ -165,7 +180,7 @@ export function createPermissionRoutes(logger: WinstonLogger) {
       const ruleIndex = config.rules.findIndex(rule => rule.id === id);
 
       if (ruleIndex === -1) {
-        return res.status(404).json({ success: false, message: 'Permission rule not found' });
+        return res.status(HTTP_STATUS.NOT_FOUND).json({ success: false, message: 'Permission rule not found' });
       }
 
       const deletedRule = config.rules[ruleIndex];
@@ -177,7 +192,7 @@ export function createPermissionRoutes(logger: WinstonLogger) {
       res.json({ success: true, message: 'Permission rule deleted successfully' });
     } catch (error) {
       logger.error('Error deleting permission rule:', error as Error);
-      res.status(500).json({ success: false, message: 'Failed to delete permission rule' });
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Failed to delete permission rule' });
     }
   });
 
@@ -187,7 +202,7 @@ export function createPermissionRoutes(logger: WinstonLogger) {
       const { action, target, worktreeDir } = req.body;
 
       if (!action) {
-        return res.status(400).json({
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
           success: false,
           message: 'Action is required for permission testing',
         });
@@ -207,7 +222,7 @@ export function createPermissionRoutes(logger: WinstonLogger) {
       res.json({ success: true, data: result });
     } catch (error) {
       logger.error('Error testing permission:', error as Error);
-      res.status(500).json({ success: false, message: 'Failed to test permission' });
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Failed to test permission' });
     }
   });
 
@@ -223,7 +238,7 @@ export function createPermissionRoutes(logger: WinstonLogger) {
       res.json({ success: true, data: defaults });
     } catch (error) {
       logger.error('Error fetching default permissions:', error as Error);
-      res.status(500).json({ success: false, message: 'Failed to fetch default permissions' });
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Failed to fetch default permissions' });
     }
   });
 
@@ -234,7 +249,7 @@ export function createPermissionRoutes(logger: WinstonLogger) {
       res.json({ success: true, data: actions });
     } catch (error) {
       logger.error('Error fetching action types:', error as Error);
-      res.status(500).json({ success: false, message: 'Failed to fetch action types' });
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Failed to fetch action types' });
     }
   });
 
@@ -245,7 +260,7 @@ export function createPermissionRoutes(logger: WinstonLogger) {
       res.json({ success: true, data: scopes });
     } catch (error) {
       logger.error('Error fetching permission scopes:', error as Error);
-      res.status(500).json({ success: false, message: 'Failed to fetch permission scopes' });
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Failed to fetch permission scopes' });
     }
   });
 
@@ -259,14 +274,14 @@ export function createPermissionRoutes(logger: WinstonLogger) {
         const data = await fs.readFile(claudeSettingsPath, 'utf-8');
         claudeSettings = JSON.parse(data);
       } catch {
-        return res.status(404).json({
+        return res.status(HTTP_STATUS.NOT_FOUND).json({
           success: false,
           message: '.claude/settings.json not found or invalid JSON',
         });
       }
 
       if (!claudeSettings.permissions?.deny || !Array.isArray(claudeSettings.permissions.deny)) {
-        return res.status(400).json({
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
           success: false,
           message: 'No permissions.deny array found in .claude/settings.json',
         });
@@ -323,7 +338,7 @@ export function createPermissionRoutes(logger: WinstonLogger) {
             target,
             allowed: false, // Claude settings deny list = not allowed
             reason: `Imported from .claude/settings.json deny list: ${denyPattern}`,
-            priority: 900 + index, // High priority for imported rules
+            priority: PRIORITY_CONSTANTS.IMPORTED_RULE_BASE + index, // High priority for imported rules
           };
 
           importedRules.push(rule);
@@ -336,7 +351,7 @@ export function createPermissionRoutes(logger: WinstonLogger) {
             target: denyPattern,
             allowed: false,
             reason: `Imported from .claude/settings.json deny list: ${denyPattern}`,
-            priority: 900 + index,
+            priority: PRIORITY_CONSTANTS.IMPORTED_RULE_BASE + index,
           };
 
           importedRules.push(rule);
@@ -372,7 +387,7 @@ export function createPermissionRoutes(logger: WinstonLogger) {
     } catch (error) {
       logger.error('Error importing Claude settings permissions:', error as Error);
       res
-        .status(500)
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
         .json({ success: false, message: 'Failed to import Claude settings permissions' });
     }
   });

@@ -4,21 +4,21 @@ async function testValidationLogs() {
     const response = await fetch('http://localhost:3000/api/analytics/sessions');
     const data = await response.json();
     
-    console.log('Sessions found:', data.sessions.length);
+    console.error('Sessions found:', data.sessions.length);
     
     if (data.sessions.length > 0) {
       const latestSession = data.sessions[0];
-      console.log('Latest session ID:', latestSession.sessionId);
-      console.log('Latest session stages:', latestSession.attempts[0].stages.length);
+      console.error('Latest session ID:', latestSession.sessionId);
+      console.error('Latest session stages:', latestSession.attempts[0].stages.length);
       
       const stagesWithLogs = latestSession.attempts[0].stages.filter(stage => 
         (stage.output && stage.output.trim()) || (stage.error && stage.error.trim())
       );
       
-      console.log('Stages with logs:', stagesWithLogs.length);
+      console.error('Stages with logs:', stagesWithLogs.length);
       
       if (stagesWithLogs.length > 0) {
-        console.log('First stage with logs:', {
+        console.error('First stage with logs:', {
           id: stagesWithLogs[0].id,
           name: stagesWithLogs[0].name,
           hasOutput: Boolean(stagesWithLogs[0].output),

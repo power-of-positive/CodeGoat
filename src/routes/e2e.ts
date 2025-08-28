@@ -2,6 +2,47 @@ import express from 'express';
 import { WinstonLogger } from '../logger-winston';
 import { getDatabaseService } from '../services/database';
 
+// HTTP Status Codes
+const HTTP_STATUS = {
+  OK: 200,
+  CREATED: 201,
+  BAD_REQUEST: 400,
+  NOT_FOUND: 404,
+  INTERNAL_SERVER_ERROR: 500,
+} as const;
+
+// Time constants (in milliseconds)
+const TIME_CONSTANTS = {
+  ONE_HOUR_MS: 3600000,
+  TWO_HOURS_MS: 7200000,
+  FIVE_SECONDS_MS: 5000,
+  TWO_SECONDS_MS: 2000,
+  THREE_SECONDS_MS: 3000,
+  TWENTY_SECONDS_MS: 20000,
+} as const;
+
+// Mock data constants
+const MOCK_CONSTANTS = {
+  RANDOM_BASE_RUNS: 5,
+  RANDOM_BASE_PASSED: 4,
+  SUCCESS_RATE_MIN: 0.7,
+  SUCCESS_RATE_RANGE: 0.3,
+  MOCK_FAILURE_THRESHOLD: 0.2,
+  MOCK_ERROR_THRESHOLD: 0.8,
+  HISTORY_DAYS: 30,
+  EXECUTION_HISTORY_LIMIT: 10,
+  TEST_DURATION_BASE: 2000,
+  TEST_DURATION_RANDOM: 3000,
+  HIGH_RUNS: 8,
+  LOW_RUNS: 4,
+  RANDOM_FAILED: 3,
+  RANDOM_SKIPPED: 2,
+  HOURS_PER_DAY: 24,
+  MINUTES_PER_HOUR: 60,
+  SECONDS_PER_MINUTE: 60,
+  MS_PER_SECOND: 1000,
+} as const;
+
 interface E2ETestSuite {
   id: string;
   suiteName: string;
@@ -35,7 +76,7 @@ const mockTestSuites: E2ETestSuite[] = [
     id: 'suite-2',
     suiteName: 'Authentication Tests',
     file: 'ui/e2e/auth.spec.ts',
-    executedAt: new Date(Date.now() - 3600000).toISOString(),
+    executedAt: new Date(Date.now() - TIME_CONSTANTS.ONE_HOUR_MS).toISOString(),
     duration: 12000,
     totalTests: 8,
     passedTests: 7,
@@ -46,7 +87,7 @@ const mockTestSuites: E2ETestSuite[] = [
     id: 'suite-3',
     suiteName: 'Task Management Tests',
     file: 'ui/e2e/task-management.spec.ts',
-    executedAt: new Date(Date.now() - 7200000).toISOString(),
+    executedAt: new Date(Date.now() - TIME_CONSTANTS.TWO_HOURS_MS).toISOString(),
     duration: 28000,
     totalTests: 15,
     passedTests: 15,
@@ -68,12 +109,12 @@ const mockAnalytics = {
     date.setDate(date.getDate() - i);
     return {
       date: date.toISOString().split('T')[0],
-      totalRuns: Math.floor(Math.random() * 10) + 5,
-      passed: Math.floor(Math.random() * 8) + 4,
-      failed: Math.floor(Math.random() * 3),
-      skipped: Math.floor(Math.random() * 2),
-      successRate: 0.7 + Math.random() * 0.3,
-      averageDuration: 20000 + Math.random() * 20000,
+      totalRuns: Math.floor(Math.random() * 10) + MOCK_CONSTANTS.RANDOM_BASE_RUNS,
+      passed: Math.floor(Math.random() * MOCK_CONSTANTS.HIGH_RUNS) + MOCK_CONSTANTS.LOW_RUNS,
+      failed: Math.floor(Math.random() * MOCK_CONSTANTS.RANDOM_FAILED),
+      skipped: Math.floor(Math.random() * MOCK_CONSTANTS.RANDOM_SKIPPED),
+      successRate: MOCK_CONSTANTS.SUCCESS_RATE_MIN + Math.random() * MOCK_CONSTANTS.SUCCESS_RATE_RANGE,
+      averageDuration: TIME_CONSTANTS.TWENTY_SECONDS_MS + Math.random() * TIME_CONSTANTS.TWENTY_SECONDS_MS,
     };
   }).reverse(),
   topFailingTests: [
@@ -82,14 +123,14 @@ const mockAnalytics = {
       testName: 'should handle invalid login attempts',
       failureRate: 0.15,
       recentFailures: 3,
-      lastFailure: new Date(Date.now() - 3600000).toISOString(),
+      lastFailure: new Date(Date.now() - TIME_CONSTANTS.ONE_HOUR_MS).toISOString(),
     },
     {
       testFile: 'ui/e2e/bdd-functionality-comprehensive.spec.ts',
       testName: 'should display analytics charts',
       failureRate: 0.08,
       recentFailures: 2,
-      lastFailure: new Date(Date.now() - 7200000).toISOString(),
+      lastFailure: new Date(Date.now() - TIME_CONSTANTS.TWO_HOURS_MS).toISOString(),
     },
   ],
   performanceTrends: [
@@ -146,7 +187,7 @@ router.get('/suites', (req, res) => {
     });
   } catch (error) {
     logger.error('Error fetching E2E test suites:', error as Error);
-    res.status(500).json({ success: false, message: 'Failed to fetch test suites' });
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Failed to fetch test suites' });
   }
 });
 
@@ -156,7 +197,7 @@ router.get('/suites/:suiteId', (req, res) => {
     const suite = mockTestSuites.find(s => s.id === req.params.suiteId);
     
     if (!suite) {
-      return res.status(404).json({ success: false, message: 'Test suite not found' });
+      return res.status(HTTP_STATUS.NOT_FOUND).json({ success: false, message: 'Test suite not found' });
     }
 
     res.json({
@@ -165,7 +206,7 @@ router.get('/suites/:suiteId', (req, res) => {
     });
   } catch (error) {
     logger.error('Error fetching test suite:', error as Error);
-    res.status(500).json({ success: false, message: 'Failed to fetch test suite' });
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Failed to fetch test suite' });
   }
 });
 
@@ -180,10 +221,10 @@ router.get('/history', (req, res) => {
       testName: testName as string,
       executions: Array.from({ length: 10 }, (_, i) => ({
         id: `execution-${i}`,
-        status: Math.random() > 0.2 ? 'passed' : 'failed',
-        executedAt: new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString(),
-        duration: 2000 + Math.random() * 3000,
-        error: Math.random() > 0.8 ? 'Test failed due to timeout' : null,
+        status: Math.random() > MOCK_CONSTANTS.MOCK_FAILURE_THRESHOLD ? 'passed' : 'failed',
+        executedAt: new Date(Date.now() - i * MOCK_CONSTANTS.HOURS_PER_DAY * MOCK_CONSTANTS.MINUTES_PER_HOUR * MOCK_CONSTANTS.SECONDS_PER_MINUTE * MOCK_CONSTANTS.MS_PER_SECOND).toISOString(),
+        duration: MOCK_CONSTANTS.TEST_DURATION_BASE + Math.random() * MOCK_CONSTANTS.TEST_DURATION_RANDOM,
+        error: Math.random() > MOCK_CONSTANTS.MOCK_ERROR_THRESHOLD ? 'Test failed due to timeout' : null,
       })),
       analytics: {
         totalRuns: 10,
@@ -200,7 +241,7 @@ router.get('/history', (req, res) => {
     });
   } catch (error) {
     logger.error('Error fetching test history:', error as Error);
-    res.status(500).json({ success: false, message: 'Failed to fetch test history' });
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Failed to fetch test history' });
   }
 });
 
@@ -224,7 +265,7 @@ router.get('/analytics', (req, res) => {
     });
   } catch (error) {
     logger.error('Error fetching E2E analytics:', error as Error);
-    res.status(500).json({ success: false, message: 'Failed to fetch analytics' });
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Failed to fetch analytics' });
   }
 });
 
@@ -253,7 +294,7 @@ router.post('/run', (req, res) => {
     setTimeout(() => {
       // Simulate test completion after a delay
       logger.info('E2E test run completed:', { runId });
-    }, 5000);
+    }, TIME_CONSTANTS.FIVE_SECONDS_MS);
 
     res.json({
       success: true,
@@ -265,7 +306,7 @@ router.post('/run', (req, res) => {
     });
   } catch (error) {
     logger.error('Error triggering E2E test run:', error as Error);
-    res.status(500).json({ success: false, message: 'Failed to trigger test run' });
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Failed to trigger test run' });
   }
 });
 
@@ -292,7 +333,7 @@ router.get('/runs/:runId', (req, res) => {
     });
   } catch (error) {
     logger.error('Error fetching test run status:', error as Error);
-    res.status(500).json({ success: false, message: 'Failed to fetch run status' });
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Failed to fetch run status' });
   }
 });
 
@@ -303,7 +344,7 @@ router.post('/tasks/:taskId/scenarios/:scenarioId/link-test', async (req, res) =
     const { playwrightTestFile, playwrightTestName, cucumberSteps } = req.body;
 
     if (!playwrightTestFile || !playwrightTestName) {
-      return res.status(400).json({
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
         success: false,
         message: 'Both playwrightTestFile and playwrightTestName are required',
       });
@@ -344,7 +385,7 @@ router.post('/tasks/:taskId/scenarios/:scenarioId/link-test', async (req, res) =
     });
   } catch (error) {
     logger.error('Error linking BDD scenario to test:', error as Error);
-    res.status(500).json({ success: false, message: 'Failed to link scenario to test' });
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Failed to link scenario to test' });
   }
 });
 
@@ -386,7 +427,7 @@ router.get('/test-files', (req, res) => {
     });
   } catch (error) {
     logger.error('Error fetching test files:', error as Error);
-    res.status(500).json({ success: false, message: 'Failed to fetch test files' });
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Failed to fetch test files' });
   }
 });
 
@@ -466,7 +507,7 @@ router.get('/coverage', async (req, res) => {
     });
   } catch (error) {
     logger.error('Error fetching BDD coverage:', error as Error);
-    res.status(500).json({ success: false, message: 'Failed to fetch coverage data' });
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Failed to fetch coverage data' });
   }
 });
 
@@ -505,7 +546,7 @@ router.get('/scenario-suggestions', (req, res) => {
     });
   } catch (error) {
     logger.error('Error fetching scenario suggestions:', error as Error);
-    res.status(500).json({ success: false, message: 'Failed to fetch suggestions' });
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Failed to fetch suggestions' });
   }
 });
 
@@ -532,7 +573,7 @@ router.post('/cucumber/run', (req, res) => {
     // Mock response
     setTimeout(() => {
       logger.info('Cucumber test run completed:', { runId });
-    }, 5000);
+    }, TIME_CONSTANTS.FIVE_SECONDS_MS);
     
     res.json({
       success: true,
@@ -545,7 +586,7 @@ router.post('/cucumber/run', (req, res) => {
     });
   } catch (error) {
     logger.error('Error running Cucumber tests:', error as Error);
-    res.status(500).json({ success: false, message: 'Failed to run Cucumber tests' });
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Failed to run Cucumber tests' });
   }
 });
 
@@ -594,7 +635,7 @@ router.get('/cucumber/results/:runId', (req, res) => {
     });
   } catch (error) {
     logger.error('Error fetching Cucumber results:', error as Error);
-    res.status(500).json({ success: false, message: 'Failed to fetch results' });
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Failed to fetch results' });
   }
 });
 
@@ -604,7 +645,7 @@ router.post('/gherkin/validate', (req, res) => {
     const { gherkinContent } = req.body;
     
     if (!gherkinContent) {
-      return res.status(400).json({
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
         success: false,
         message: 'Gherkin content is required'
       });
@@ -639,7 +680,7 @@ router.post('/gherkin/validate', (req, res) => {
     });
   } catch (error) {
     logger.error('Error validating Gherkin:', error as Error);
-    res.status(500).json({ success: false, message: 'Failed to validate Gherkin' });
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Failed to validate Gherkin' });
   }
 });
 
@@ -649,7 +690,7 @@ router.post('/step-definitions/generate', (req, res) => {
     const { gherkinContent } = req.body;
     
     if (!gherkinContent) {
-      return res.status(400).json({
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
         success: false,
         message: 'Gherkin content is required'
       });
@@ -678,7 +719,7 @@ router.post('/step-definitions/generate', (req, res) => {
     });
   } catch (error) {
     logger.error('Error generating step definitions:', error as Error);
-    res.status(500).json({ success: false, message: 'Failed to generate step definitions' });
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Failed to generate step definitions' });
   }
 });
 

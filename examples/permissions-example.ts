@@ -16,7 +16,7 @@ import {
 import { WinstonLogger } from '../src/logger-winston';
 
 async function basicPermissionExample() {
-  console.log('=== Basic Permission System Example ===\n');
+  console.error('=== Basic Permission System Example ===\n');
 
   // Create a restrictive permission configuration
   const config = DefaultPermissions.restrictive();
@@ -30,29 +30,29 @@ async function basicPermissionExample() {
   });
 
   // Check if execution is permitted
-  console.log('Execution permitted:', executor.isExecutionPermitted());
+  console.error('Execution permitted:', executor.isExecutionPermitted());
 
   // Check specific permissions
-  console.log('File read permitted:', executor.checkPermission(ActionType.FILE_READ));
-  console.log(
+  console.error('File read permitted:', executor.checkPermission(ActionType.FILE_READ));
+  console.error(
     'System command permitted:',
     executor.checkPermission(ActionType.SYSTEM_COMMAND, 'rm -rf /')
   );
-  console.log(
+  console.error(
     'Network request permitted:',
     executor.checkPermission(ActionType.NETWORK_REQUEST, 'http://malicious.com')
   );
 
   try {
     await executor.spawn('Write a hello world program');
-    console.log('✅ Execution succeeded');
+    console.error('✅ Execution succeeded');
   } catch (error) {
-    console.log('❌ Execution failed:', (error as Error).message);
+    console.error('❌ Execution failed:', (error as Error).message);
   }
 }
 
 async function customPermissionRulesExample() {
-  console.log('\n=== Custom Permission Rules Example ===\n');
+  console.error('\n=== Custom Permission Rules Example ===\n');
 
   // Start with a permissive base configuration
   const config = DefaultPermissions.permissive();
@@ -107,33 +107,33 @@ async function customPermissionRulesExample() {
   });
 
   // Test various permissions
-  console.log(
+  console.error(
     'Git status allowed:',
     executor.checkPermission(ActionType.SYSTEM_COMMAND, 'git status')
   );
-  console.log(
+  console.error(
     'File deletion allowed:',
     executor.checkPermission(ActionType.SYSTEM_COMMAND, 'rm important-file.txt')
   );
-  console.log(
+  console.error(
     'HTTP request allowed:',
     executor.checkPermission(ActionType.NETWORK_REQUEST, 'http://insecure.com')
   );
-  console.log(
+  console.error(
     'HTTPS request allowed:',
     executor.checkPermission(ActionType.NETWORK_REQUEST, 'https://secure.com')
   );
 
   try {
     await executor.spawn('Create a new feature with git integration');
-    console.log('✅ Development task succeeded');
+    console.error('✅ Development task succeeded');
   } catch (error) {
-    console.log('❌ Development task failed:', (error as Error).message);
+    console.error('❌ Development task failed:', (error as Error).message);
   }
 }
 
 async function workspaceIsolationExample() {
-  console.log('\n=== Workspace Isolation Example ===\n');
+  console.error('\n=== Workspace Isolation Example ===\n');
 
   const logger = new WinstonLogger();
 
@@ -172,30 +172,30 @@ async function workspaceIsolationExample() {
   );
 
   // Test workspace isolation
-  console.log(
+  console.error(
     'Write to worktree:',
     executor.checkPermission(ActionType.FILE_WRITE, '/tmp/isolated-workspace/file.txt')
   );
-  console.log('Write to /etc:', executor.checkPermission(ActionType.FILE_WRITE, '/etc/passwd'));
-  console.log(
+  console.error('Write to /etc:', executor.checkPermission(ActionType.FILE_WRITE, '/etc/passwd'));
+  console.error(
     'Write to /home:',
     executor.checkPermission(ActionType.FILE_WRITE, '/home/user/file.txt')
   );
-  console.log(
+  console.error(
     'Write to /tmp:',
     executor.checkPermission(ActionType.FILE_WRITE, '/tmp/other-file.txt')
   );
 
   try {
     await executor.spawn('Refactor code within workspace boundaries');
-    console.log('✅ Workspace-isolated task succeeded');
+    console.error('✅ Workspace-isolated task succeeded');
   } catch (error) {
-    console.log('❌ Workspace-isolated task failed:', (error as Error).message);
+    console.error('❌ Workspace-isolated task failed:', (error as Error).message);
   }
 }
 
 async function dynamicPermissionManagementExample() {
-  console.log('\n=== Dynamic Permission Management Example ===\n');
+  console.error('\n=== Dynamic Permission Management Example ===\n');
 
   const config = DefaultPermissions.development();
   const permissionManager = new PermissionManager(config);
@@ -206,13 +206,13 @@ async function dynamicPermissionManagementExample() {
     permissionManager,
   });
 
-  console.log(
+  console.error(
     'Initial network permission:',
     executor.checkPermission(ActionType.NETWORK_REQUEST, 'https://api.example.com')
   );
 
   // Dynamically add a restriction during runtime
-  console.log('\n--- Adding network restriction ---');
+  console.error('\n--- Adding network restriction ---');
   permissionManager.addRule({
     id: 'emergency-network-block',
     action: ActionType.NETWORK_REQUEST,
@@ -222,31 +222,31 @@ async function dynamicPermissionManagementExample() {
     priority: 500,
   });
 
-  console.log(
+  console.error(
     'Network permission after restriction:',
     executor.checkPermission(ActionType.NETWORK_REQUEST, 'https://api.example.com')
   );
 
   // Remove the restriction
-  console.log('\n--- Removing network restriction ---');
+  console.error('\n--- Removing network restriction ---');
   const removed = permissionManager.removeRule('emergency-network-block');
-  console.log('Rule removed:', removed);
-  console.log(
+  console.error('Rule removed:', removed);
+  console.error(
     'Network permission after removal:',
     executor.checkPermission(ActionType.NETWORK_REQUEST, 'https://api.example.com')
   );
 
   // Update configuration
-  console.log('\n--- Updating base configuration ---');
+  console.error('\n--- Updating base configuration ---');
   permissionManager.updateConfig({ defaultAllow: false });
-  console.log(
+  console.error(
     'Unknown action permitted:',
     executor.checkPermission(ActionType.ENVIRONMENT_WRITE, 'PATH')
   );
 }
 
 async function securityScenarioExample() {
-  console.log('\n=== Security Scenario Example ===\n');
+  console.error('\n=== Security Scenario Example ===\n');
 
   // Simulate a high-security environment
   const secureConfig = {
@@ -304,26 +304,26 @@ async function securityScenarioExample() {
     permissionManager: securePermissionManager,
   });
 
-  console.log('=== Security Policy Checks ===');
-  console.log('Claude execution:', secureExecutor.isExecutionPermitted());
-  console.log('File read:', secureExecutor.checkPermission(ActionType.FILE_READ));
-  console.log('File write:', secureExecutor.checkPermission(ActionType.FILE_WRITE));
-  console.log(
+  console.error('=== Security Policy Checks ===');
+  console.error('Claude execution:', secureExecutor.isExecutionPermitted());
+  console.error('File read:', secureExecutor.checkPermission(ActionType.FILE_READ));
+  console.error('File write:', secureExecutor.checkPermission(ActionType.FILE_WRITE));
+  console.error(
     'Network access:',
     secureExecutor.checkPermission(ActionType.NETWORK_REQUEST, 'https://trusted.com')
   );
-  console.log('System commands:', secureExecutor.checkPermission(ActionType.SYSTEM_COMMAND, 'ls'));
+  console.error('System commands:', secureExecutor.checkPermission(ActionType.SYSTEM_COMMAND, 'ls'));
 
   try {
     await secureExecutor.spawn('Analyze code without making changes');
-    console.log('✅ Secure analysis succeeded');
+    console.error('✅ Secure analysis succeeded');
   } catch (error) {
-    console.log('❌ Secure analysis failed:', (error as Error).message);
+    console.error('❌ Secure analysis failed:', (error as Error).message);
   }
 }
 
 async function permissionConfigComparisonExample() {
-  console.log('\n=== Permission Configuration Comparison ===\n');
+  console.error('\n=== Permission Configuration Comparison ===\n');
 
   const configs = {
     restrictive: DefaultPermissions.restrictive(),
@@ -342,8 +342,8 @@ async function permissionConfigComparisonExample() {
   const SEPARATOR_LENGTH = 70;
   const COLUMN_PADDING = 25;
   
-  console.log('Action\t\t\tRestrictive\tPermissive\tDevelopment');
-  console.log('─'.repeat(SEPARATOR_LENGTH));
+  console.error('Action\t\t\tRestrictive\tPermissive\tDevelopment');
+  console.error('─'.repeat(SEPARATOR_LENGTH));
 
   testActions.forEach(({ action, target }) => {
     const results = Object.entries(configs).map(([_name, config]) => {
@@ -357,7 +357,7 @@ async function permissionConfigComparisonExample() {
     });
 
     const actionName = `${action} (${target?.split(' ')[0] || 'N/A'})`;
-    console.log(`${actionName.padEnd(COLUMN_PADDING)}\t${results[0]}\t\t${results[1]}\t\t${results[2]}`);
+    console.error(`${actionName.padEnd(COLUMN_PADDING)}\t${results[0]}\t\t${results[1]}\t\t${results[2]}`);
   });
 }
 

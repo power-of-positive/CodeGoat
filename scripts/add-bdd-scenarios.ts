@@ -349,7 +349,7 @@ const bddScenarios: BDDScenarioData[] = [
 
 async function addBddScenarios() {
   try {
-    console.log('🔍 Adding comprehensive BDD scenarios to the database...');
+    console.error('🔍 Adding comprehensive BDD scenarios to the database...');
     
     let addedCount = 0;
     let skippedCount = 0;
@@ -362,7 +362,7 @@ async function addBddScenarios() {
         });
 
         if (!task) {
-          console.log(`⚠️  Task ${scenarioData.taskId} not found, skipping scenario: ${scenarioData.title}`);
+          console.error(`⚠️  Task ${scenarioData.taskId} not found, skipping scenario: ${scenarioData.title}`);
           skippedCount++;
           continue;
         }
@@ -376,7 +376,7 @@ async function addBddScenarios() {
         });
 
         if (existingScenario) {
-          console.log(`⚠️  Scenario already exists: ${scenarioData.title} for ${scenarioData.taskId}`);
+          console.error(`⚠️  Scenario already exists: ${scenarioData.title} for ${scenarioData.taskId}`);
           skippedCount++;
           continue;
         }
@@ -393,7 +393,7 @@ async function addBddScenarios() {
           }
         });
 
-        console.log(`✅ Added BDD scenario: ${scenarioData.title} for ${scenarioData.taskId}`);
+        console.error(`✅ Added BDD scenario: ${scenarioData.title} for ${scenarioData.taskId}`);
         addedCount++;
 
       } catch (error) {
@@ -401,10 +401,10 @@ async function addBddScenarios() {
       }
     }
 
-    console.log(`\n📊 Summary:`);
-    console.log(`   ✅ Added: ${addedCount} scenarios`);
-    console.log(`   ⚠️  Skipped: ${skippedCount} scenarios`);
-    console.log(`   📈 Total processed: ${bddScenarios.length} scenarios`);
+    console.error(`\n📊 Summary:`);
+    console.error(`   ✅ Added: ${addedCount} scenarios`);
+    console.error(`   ⚠️  Skipped: ${skippedCount} scenarios`);
+    console.error(`   📈 Total processed: ${bddScenarios.length} scenarios`);
 
   } catch (error) {
     console.error('💥 Script failed:', error);
@@ -418,7 +418,7 @@ async function addBddScenarios() {
 if (require.main === module) {
   addBddScenarios()
     .then(() => {
-      console.log('\n🎉 BDD scenario addition completed successfully!');
+      console.error('\n🎉 BDD scenario addition completed successfully!');
       process.exit(0);
     })
     .catch((error) => {

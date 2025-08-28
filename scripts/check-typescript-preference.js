@@ -34,12 +34,12 @@ function getAllFiles(dir, extension) {
 }
 
 function checkTypeScriptPreference() {
-  console.log('🔍 Checking TypeScript preference...');
+  console.error('🔍 Checking TypeScript preference...');
   
   const srcDir = path.join(process.cwd(), 'src');
   
   if (!fs.existsSync(srcDir)) {
-    console.log('✅ No src directory found, skipping TypeScript preference check');
+    console.error('✅ No src directory found, skipping TypeScript preference check');
     return;
   }
   
@@ -68,7 +68,7 @@ function checkTypeScriptPreference() {
     process.exit(1);
   }
   
-  console.log('✅ TypeScript preference check passed');
+  console.error('✅ TypeScript preference check passed');
 }
 
 if (require.main === module) {

@@ -36,14 +36,14 @@ class JestToVitestMigrator {
    * Main migration function
    */
   async migrate(): Promise<void> {
-    console.log('🔧 Starting Jest to Vitest migration...\n');
+    console.error('🔧 Starting Jest to Vitest migration...\n');
 
     if (this.options.dryRun) {
-      console.log('📋 DRY RUN MODE - No files will be modified\n');
+      console.error('📋 DRY RUN MODE - No files will be modified\n');
     }
 
     const testFiles = this.findTestFiles(this.options.targetDirectory);
-    console.log(`📁 Found ${testFiles.length} test files to analyze\n`);
+    console.error(`📁 Found ${testFiles.length} test files to analyze\n`);
 
     for (const file of testFiles) {
       try {
@@ -328,21 +328,21 @@ class JestToVitestMigrator {
    */
   private logResult(result: MigrationResult): void {
     const status = result.changed ? '✅' : '⚪';
-    console.log(`${status} ${result.file}`);
+    console.error(`${status} ${result.file}`);
 
     if (result.changes.length > 0) {
       result.changes.forEach(change => {
-        console.log(`   📝 ${change}`);
+        console.error(`   📝 ${change}`);
       });
     }
 
     if (result.errors.length > 0) {
       result.errors.forEach(error => {
-        console.log(`   ❌ ${error}`);
+        console.error(`   ❌ ${error}`);
       });
     }
 
-    console.log();
+    console.error();
   }
 
   /**
@@ -353,27 +353,27 @@ class JestToVitestMigrator {
     const changed = this.results.filter(r => r.changed).length;
     const errors = this.results.filter(r => r.errors.length > 0).length;
 
-    console.log('\n📊 Migration Summary:');
-    console.log(`   Total files: ${total}`);
-    console.log(`   Files changed: ${changed}`);
-    console.log(`   Files with errors: ${errors}`);
+    console.error('\n📊 Migration Summary:');
+    console.error(`   Total files: ${total}`);
+    console.error(`   Files changed: ${changed}`);
+    console.error(`   Files with errors: ${errors}`);
 
     if (this.options.dryRun) {
-      console.log('\n📋 This was a dry run - no files were modified');
+      console.error('\n📋 This was a dry run - no files were modified');
     }
 
     if (changed > 0 && !this.options.dryRun && !this.options.skipBackup) {
-      console.log('\n💾 Backup files created with .backup extension');
+      console.error('\n💾 Backup files created with .backup extension');
     }
 
-    console.log('\n✨ Migration completed!');
+    console.error('\n✨ Migration completed!');
 
     if (changed > 0) {
-      console.log('\n🔄 Next steps:');
-      console.log('   1. Review the changes and test your migrated files');
-      console.log('   2. Update your test scripts to use Vitest');
-      console.log('   3. Install jest-vitest-shims if needed for compatibility');
-      console.log("   4. Remove .backup files once you're satisfied with the results");
+      console.error('\n🔄 Next steps:');
+      console.error('   1. Review the changes and test your migrated files');
+      console.error('   2. Update your test scripts to use Vitest');
+      console.error('   3. Install jest-vitest-shims if needed for compatibility');
+      console.error("   4. Remove .backup files once you're satisfied with the results");
     }
   }
 }

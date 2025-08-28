@@ -2,7 +2,7 @@
  * Tests for check-runners.ts
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+
 import {
   runFrontendLinting,
   runFrontendTests,
@@ -18,23 +18,23 @@ import * as fs from 'fs';
 import { validateDirectoryExists } from '../utils/validation-utils';
 
 // Mock external dependencies
-vi.mock('child_process');
-vi.mock('path');
-vi.mock('fs');
-vi.mock('../utils/validation-utils');
+jest.mock('child_process');
+jest.mock('path');
+jest.mock('fs');
+jest.mock('../utils/validation-utils');
 
 describe('check-runners', () => {
   beforeEach(() => {
-    vi.resetAllMocks();
+    jest.resetAllMocks();
     // Mock process.cwd and process.env
-    vi.stubGlobal('process', {
-      ...process,
-      cwd: vi.fn().mockReturnValue('/mock'),
-      env: { ...process.env },
+    const mockCwd = jest.fn().mockReturnValue('/mock');
+    Object.defineProperty(process, 'cwd', {
+      value: mockCwd,
+      configurable: true,
     });
 
     // Mock fs functions for directory validation
-    vi.mocked(fs.existsSync).mockImplementation(pathArg => {
+    (fs.existsSync as jest.Mock).mockImplementation(pathArg => {
       const pathStr = String(pathArg);
       // Return false for empty strings, dangerous paths, and paths that should fail validation
       if (
@@ -48,31 +48,31 @@ describe('check-runners', () => {
       }
       return true;
     });
-    vi.mocked(fs.statSync).mockReturnValue({
+    (fs.statSync as jest.Mock).mockReturnValue({
       isDirectory: () => true,
     } as unknown as fs.Stats);
 
     // Mock path functions
-    vi.mocked(path.resolve).mockImplementation(p => {
+    (path.resolve as jest.Mock).mockImplementation(p => {
       if (!p || p === '') {
         return '/mock/';
       }
       return `/mock/${p}`.replace(/\/+/g, '/');
     });
-    vi.mocked(path.join).mockImplementation((...parts) => parts.join('/'));
+    (path.join as jest.Mock).mockImplementation((...parts) => parts.join('/'));
 
     // Mock execSync to return string by default
-    vi.mocked(execSync).mockReturnValue('Success' as unknown as Buffer);
+    (execSync as jest.Mock).mockReturnValue('Success' as unknown as Buffer);
 
     // Mock validation-utils - by default, don't throw
-    vi.mocked(validateDirectoryExists).mockImplementation(() => {
+    (validateDirectoryExists as jest.Mock).mockImplementation(() => {
       // Default: do nothing (validation passes)
     });
   });
 
   describe('runFrontendLinting', () => {
     it('should return CheckResult with correct structure', () => {
-      vi.mocked(execSync).mockReturnValue('Linting passed');
+      (execSync as jest.Mock).mockReturnValue('Linting passed');
 
       const result = runFrontendLinting('/mock/project');
 
@@ -83,7 +83,7 @@ describe('check-runners', () => {
     });
 
     it('should handle invalid project root', () => {
-      vi.mocked(validateDirectoryExists).mockImplementation((dirPath: string) => {
+      (validateDirectoryExists as jest.Mock).mockImplementation((dirPath: string) => {
         if (
           !dirPath ||
           dirPath === '/frontend' ||
@@ -101,7 +101,7 @@ describe('check-runners', () => {
 
   describe('runFrontendTests', () => {
     it('should return CheckResult with correct structure', () => {
-      vi.mocked(execSync).mockReturnValue('Tests passed');
+      (execSync as jest.Mock).mockReturnValue('Tests passed');
 
       const result = runFrontendTests('/mock/project');
 
@@ -112,7 +112,7 @@ describe('check-runners', () => {
     });
 
     it('should handle invalid project root', () => {
-      vi.mocked(validateDirectoryExists).mockImplementation((dirPath: string) => {
+      (validateDirectoryExists as jest.Mock).mockImplementation((dirPath: string) => {
         if (!dirPath || dirPath === '/frontend' || dirPath === 'frontend') {
           throw new Error('Directory does not exist');
         }
@@ -136,7 +136,7 @@ describe('check-runners', () => {
 
   describe('runRustFormatting', () => {
     it('should return CheckResult with correct structure', () => {
-      vi.mocked(execSync).mockReturnValue('Rust formatting passed');
+      (execSync as jest.Mock).mockReturnValue('Rust formatting passed');
 
       const result = runRustFormatting('/mock/project');
 
@@ -147,7 +147,7 @@ describe('check-runners', () => {
     });
 
     it('should handle invalid project root', () => {
-      vi.mocked(validateDirectoryExists).mockImplementation((dirPath: string) => {
+      (validateDirectoryExists as jest.Mock).mockImplementation((dirPath: string) => {
         if (
           !dirPath ||
           dirPath === '/backend' ||
@@ -163,7 +163,7 @@ describe('check-runners', () => {
     });
 
     it('should handle execSync throwing error', () => {
-      vi.mocked(execSync).mockImplementation(() => {
+      (execSync as jest.Mock).mockImplementation(() => {
         const error = new Error('spawnSync /bin/sh ENOENT') as Error & {
           status?: number;
           stderr?: string;
@@ -184,7 +184,7 @@ describe('check-runners', () => {
 
   describe('runRustLinting', () => {
     it('should return CheckResult with correct structure', () => {
-      vi.mocked(execSync).mockReturnValue('Clippy passed');
+      (execSync as jest.Mock).mockReturnValue('Clippy passed');
 
       const result = runRustLinting('/mock/project');
 
@@ -195,7 +195,7 @@ describe('check-runners', () => {
     });
 
     it('should handle invalid project root', () => {
-      vi.mocked(validateDirectoryExists).mockImplementation((dirPath: string) => {
+      (validateDirectoryExists as jest.Mock).mockImplementation((dirPath: string) => {
         if (
           !dirPath ||
           dirPath === '/backend' ||
@@ -211,7 +211,7 @@ describe('check-runners', () => {
     });
 
     it('should handle execSync throwing error', () => {
-      vi.mocked(execSync).mockImplementation(() => {
+      (execSync as jest.Mock).mockImplementation(() => {
         const error = new Error('spawnSync /bin/sh ENOENT') as Error & {
           status?: number;
           stderr?: string;
@@ -232,7 +232,7 @@ describe('check-runners', () => {
 
   describe('runPrettierFormat', () => {
     it('should format prettier-compatible files and re-stage them', () => {
-      vi.mocked(execSync).mockReturnValue('Success');
+      (execSync as jest.Mock).mockReturnValue('Success');
 
       const stagedFiles = ['src/test.ts', 'src/test.json', 'README.md'];
       const result = runPrettierFormat('/mock/project', stagedFiles);
@@ -255,7 +255,7 @@ describe('check-runners', () => {
 
   describe('runEslintFix', () => {
     it('should fix ESLint issues in TypeScript/JavaScript files and re-stage them', () => {
-      vi.mocked(execSync).mockReturnValue('Success');
+      (execSync as jest.Mock).mockReturnValue('Success');
 
       const stagedFiles = ['src/test.ts', 'src/test.tsx', 'src/test.js'];
       const result = runEslintFix('/mock/project', stagedFiles);

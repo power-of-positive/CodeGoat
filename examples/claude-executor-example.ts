@@ -9,7 +9,7 @@ import { ClaudeCodeExecutor } from '../src/utils/claude-executor';
 import { WinstonLogger } from '../src/logger-winston';
 
 async function basicExample() {
-  console.log('=== Basic Claude Executor Example ===\n');
+  console.error('=== Basic Claude Executor Example ===\n');
 
   // Create executor with basic configuration
   const executor = new ClaudeCodeExecutor({
@@ -20,21 +20,21 @@ async function basicExample() {
 
   try {
     const prompt = 'Write a hello world program in Python and save it to hello.py';
-    console.log('Sending prompt to Claude:', prompt);
+    console.error('Sending prompt to Claude:', prompt);
 
     const result = await executor.spawn(prompt);
 
-    console.log('\nExecution completed:');
-    console.log('Exit code:', result.exitCode);
-    console.log('Stdout length:', result.stdout.length);
-    console.log('Stderr length:', result.stderr.length);
+    console.error('\nExecution completed:');
+    console.error('Exit code:', result.exitCode);
+    console.error('Stdout length:', result.stdout.length);
+    console.error('Stderr length:', result.stderr.length);
 
     if (result.exitCode === 0) {
-      console.log('\n--- Claude Output ---');
-      console.log(result.stdout);
+      console.error('\n--- Claude Output ---');
+      console.error(result.stdout);
     } else {
-      console.log('\n--- Claude Errors ---');
-      console.log(result.stderr);
+      console.error('\n--- Claude Errors ---');
+      console.error(result.stderr);
     }
   } catch (error) {
     console.error('Error executing Claude:', error);
@@ -42,7 +42,7 @@ async function basicExample() {
 }
 
 async function exampleWithLogging() {
-  console.log('\n=== Claude Executor with Logging Example ===\n');
+  console.error('\n=== Claude Executor with Logging Example ===\n');
 
   // Create a logger instance
   const logger = new WinstonLogger();
@@ -61,7 +61,7 @@ async function exampleWithLogging() {
 
     const result = await executor.spawn(prompt);
 
-    console.log('Result:', {
+    console.error('Result:', {
       exitCode: result.exitCode,
       hasOutput: result.stdout.length > 0,
       hasErrors: result.stderr.length > 0,
@@ -72,7 +72,7 @@ async function exampleWithLogging() {
 }
 
 async function commandParsingExample() {
-  console.log('\n=== Command Parsing Example ===\n');
+  console.error('\n=== Command Parsing Example ===\n');
 
   // Example with complex command including quoted arguments
   const executor = new ClaudeCodeExecutor({
@@ -81,15 +81,15 @@ async function commandParsingExample() {
       'node script.js --config "path/with spaces/config.json" --verbose --flag \'single quotes\'',
   });
 
-  console.log('Worktree directory:', executor.getWorktreeDir());
-  console.log('Claude command:', executor.getClaudeCommand());
+  console.error('Worktree directory:', executor.getWorktreeDir());
+  console.error('Claude command:', executor.getClaudeCommand());
 
   // In a real scenario, this would execute the parsed command
-  console.log('Command would be parsed and executed with proper argument handling');
+  console.error('Command would be parsed and executed with proper argument handling');
 }
 
 async function errorHandlingExample() {
-  console.log('\n=== Error Handling Example ===\n');
+  console.error('\n=== Error Handling Example ===\n');
 
   // Example with invalid command to demonstrate error handling
   const executor = new ClaudeCodeExecutor({
@@ -100,12 +100,12 @@ async function errorHandlingExample() {
   try {
     await executor.spawn('This should fail');
   } catch (error) {
-    console.log('Successfully caught error:', (error as Error).message);
+    console.error('Successfully caught error:', (error as Error).message);
   }
 }
 
 async function multipleExecutorsExample() {
-  console.log('\n=== Multiple Executors Example ===\n');
+  console.error('\n=== Multiple Executors Example ===\n');
 
   // Create multiple executors with different configurations
   const executors = [
@@ -132,9 +132,9 @@ async function multipleExecutorsExample() {
 
   results.forEach(({ index, result, error }) => {
     if (error) {
-      console.log(`Executor ${index} failed:`, error);
+      console.error(`Executor ${index} failed:`, error);
     } else {
-      console.log(`Executor ${index} output:`, result?.stdout.trim());
+      console.error(`Executor ${index} output:`, result?.stdout.trim());
     }
   });
 }

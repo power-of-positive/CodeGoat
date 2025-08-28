@@ -2,7 +2,7 @@
  * Tests for validation-utils.ts
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+
 import * as fs from 'fs';
 import * as path from 'path';
 import {
@@ -13,20 +13,20 @@ import {
   validatePort,
 } from './validation-utils';
 
-vi.mock('fs');
-vi.mock('path');
+jest.mock('fs');
+jest.mock('path');
 
 describe('validation-utils', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-    vi.mocked(path.resolve).mockImplementation(p => (p.startsWith('/') ? p : `/current/dir/${p}`));
-    vi.mocked(path.normalize).mockImplementation(p => p);
+    jest.clearAllMocks();
+    (path.resolve as jest.Mock).mockImplementation(p => (p.startsWith('/') ? p : `/current/dir/${p}`));
+    (path.normalize as jest.Mock).mockImplementation(p => p);
   });
 
   describe('validateInput', () => {
     it('should validate path input', () => {
       const originalCwd = process.cwd;
-      process.cwd = vi.fn().mockReturnValue('/valid');
+      process.cwd = jest.fn().mockReturnValue('/valid');
 
       expect(() => validateInput('/valid/path', 'path')).not.toThrow();
 
@@ -62,8 +62,8 @@ describe('validation-utils', () => {
 
   describe('validateDirectoryExists', () => {
     it('should validate existing directory', () => {
-      vi.mocked(fs.existsSync).mockReturnValue(true);
-      vi.mocked(fs.statSync).mockReturnValue({
+      (fs.existsSync as jest.Mock).mockReturnValue(true);
+      (fs.statSync as jest.Mock).mockReturnValue({
         isDirectory: () => true,
       } as fs.Stats);
 
@@ -71,7 +71,7 @@ describe('validation-utils', () => {
     });
 
     it('should throw for non-existent directory', () => {
-      vi.mocked(fs.existsSync).mockReturnValue(false);
+      (fs.existsSync as jest.Mock).mockReturnValue(false);
 
       expect(() => validateDirectoryExists('/invalid/dir')).toThrow(
         'Directory does not exist: /invalid/dir'
@@ -79,8 +79,8 @@ describe('validation-utils', () => {
     });
 
     it('should throw for file instead of directory', () => {
-      vi.mocked(fs.existsSync).mockReturnValue(true);
-      vi.mocked(fs.statSync).mockImplementation(() => {
+      (fs.existsSync as jest.Mock).mockReturnValue(true);
+      (fs.statSync as jest.Mock).mockImplementation(() => {
         throw new Error('Path is not a directory: /file/path');
       });
 
@@ -90,8 +90,8 @@ describe('validation-utils', () => {
     });
 
     it('should handle fs.statSync errors', () => {
-      vi.mocked(fs.existsSync).mockReturnValue(true);
-      vi.mocked(fs.statSync).mockImplementation(() => {
+      (fs.existsSync as jest.Mock).mockReturnValue(true);
+      (fs.statSync as jest.Mock).mockImplementation(() => {
         throw new Error('Permission denied');
       });
 
@@ -103,9 +103,9 @@ describe('validation-utils', () => {
 
   describe('validatePath', () => {
     it('should validate safe paths', () => {
-      vi.mocked(path.resolve).mockReturnValue('/current/dir/safe/path');
+      (path.resolve as jest.Mock).mockReturnValue('/current/dir/safe/path');
       const originalCwd = process.cwd;
-      process.cwd = vi.fn().mockReturnValue('/current/dir');
+      process.cwd = jest.fn().mockReturnValue('/current/dir');
 
       expect(() => validatePath('safe/path')).not.toThrow();
 
@@ -139,7 +139,7 @@ describe('validation-utils', () => {
     });
 
     it('should throw for paths outside project root', () => {
-      vi.mocked(path.resolve).mockReturnValue('/outside/project');
+      (path.resolve as jest.Mock).mockReturnValue('/outside/project');
 
       expect(() => validatePath('/outside/path')).toThrow(
         'Invalid path: must be within project directory'

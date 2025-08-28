@@ -14,7 +14,7 @@ const BACKUP_CONFIG = {
 
 async function performScheduledBackup(): Promise<void> {
   try {
-    console.log('🕐 Starting scheduled backup...');
+    console.error('🕐 Starting scheduled backup...');
     
     // Create automated backup
     createBackup('auto', BACKUP_CONFIG.description);
@@ -22,7 +22,7 @@ async function performScheduledBackup(): Promise<void> {
     // Clean up old backups
     cleanupOldBackups();
     
-    console.log('✅ Scheduled backup completed successfully.');
+    console.error('✅ Scheduled backup completed successfully.');
   } catch (error) {
     console.error('❌ Scheduled backup failed:', error instanceof Error ? error.message : error);
     process.exit(1);
@@ -41,8 +41,8 @@ async function main() {
     }
 
     case 'start-daemon': {
-      console.log(`🔄 Starting backup daemon (every ${BACKUP_CONFIG.intervalMinutes} minutes)...`);
-      console.log('💡 Use Ctrl+C to stop the daemon.');
+      console.error(`🔄 Starting backup daemon (every ${BACKUP_CONFIG.intervalMinutes} minutes)...`);
+      console.error('💡 Use Ctrl+C to stop the daemon.');
       
       // Perform initial backup
       await performScheduledBackup();
@@ -58,25 +58,25 @@ async function main() {
     }
 
     case 'install-cron': {
-      console.log('\n📅 To install a cron job for automated backups, add this line to your crontab:\n');
-      console.log(`# Backup database every hour`);
-      console.log(`0 * * * * cd ${process.cwd()} && npm run backup:scheduled:run 2>&1 | logger -t database-backup`);
-      console.log('\nTo edit your crontab, run: crontab -e');
-      console.log();
+      console.error('\n📅 To install a cron job for automated backups, add this line to your crontab:\n');
+      console.error(`# Backup database every hour`);
+      console.error(`0 * * * * cd ${process.cwd()} && npm run backup:scheduled:run 2>&1 | logger -t database-backup`);
+      console.error('\nTo edit your crontab, run: crontab -e');
+      console.error();
       break;
     }
 
     default: {
-      console.log('\n⏰ Scheduled Database Backup\n');
-      console.log('Usage:');
-      console.log('  npm run backup:scheduled:run           - Run a single scheduled backup');
-      console.log('  npm run backup:scheduled:daemon        - Start backup daemon (runs continuously)');
-      console.log('  npm run backup:scheduled:install-cron  - Show cron installation instructions');
-      console.log();
-      console.log(`Configuration:`);
-      console.log(`  Interval: Every ${BACKUP_CONFIG.intervalMinutes} minutes`);
-      console.log(`  Description: "${BACKUP_CONFIG.description}"`);
-      console.log();
+      console.error('\n⏰ Scheduled Database Backup\n');
+      console.error('Usage:');
+      console.error('  npm run backup:scheduled:run           - Run a single scheduled backup');
+      console.error('  npm run backup:scheduled:daemon        - Start backup daemon (runs continuously)');
+      console.error('  npm run backup:scheduled:install-cron  - Show cron installation instructions');
+      console.error();
+      console.error(`Configuration:`);
+      console.error(`  Interval: Every ${BACKUP_CONFIG.intervalMinutes} minutes`);
+      console.error(`  Description: "${BACKUP_CONFIG.description}"`);
+      console.error();
       break;
     }
   }

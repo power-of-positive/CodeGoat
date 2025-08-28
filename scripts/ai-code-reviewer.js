@@ -33,7 +33,7 @@ async function getStagedFiles() {
       file.endsWith('.ts') || file.endsWith('.tsx') || file.endsWith('.js') || file.endsWith('.jsx')
     );
   } catch (error) {
-    console.log('No staged files or git error:', error.message);
+    console.error('No staged files or git error:', error.message);
     return [];
   }
 }
@@ -203,13 +203,13 @@ function outputResults(results) {
   fs.writeFileSync(CONFIG.outputFile, JSON.stringify(results, null, 2));
   
   // Console output
-  console.log('\n🤖 AI Code Review Results');
-  console.log('=' .repeat(40));
-  console.log(`Files reviewed: ${results.summary.totalFiles}`);
-  console.log(`Total issues: ${results.summary.totalIssues}`);
+  console.error('\n🤖 AI Code Review Results');
+  console.error('=' .repeat(40));
+  console.error(`Files reviewed: ${results.summary.totalFiles}`);
+  console.error(`Total issues: ${results.summary.totalIssues}`);
   
   if (results.summary.totalIssues > 0) {
-    console.log('\nIssues by severity:');
+    console.error('\nIssues by severity:');
     Object.entries(results.summary.bySeverity).forEach(([severity, count]) => {
       const emoji = {
         critical: '🔴',
@@ -218,7 +218,7 @@ function outputResults(results) {
         low: '🔵',
         info: '⚪'
       }[severity] || '⚪';
-      console.log(`  ${emoji} ${severity}: ${count}`);
+      console.error(`  ${emoji} ${severity}: ${count}`);
     });
 
     // Show high severity issues
@@ -227,52 +227,52 @@ function outputResults(results) {
     );
     
     if (highSeverityIssues.length > 0) {
-      console.log('\n📋 Notable Issues:');
+      console.error('\n📋 Notable Issues:');
       highSeverityIssues.forEach(review => {
         const location = review.line ? `:${review.line}` : '';
-        console.log(`\n  ${review.file}${location}`);
-        console.log(`  ${review.severity.toUpperCase()}: ${review.message}`);
+        console.error(`\n  ${review.file}${location}`);
+        console.error(`  ${review.severity.toUpperCase()}: ${review.message}`);
         if (review.suggestion) {
-          console.log(`  💡 ${review.suggestion}`);
+          console.error(`  💡 ${review.suggestion}`);
         }
       });
     }
   }
 
-  console.log(`\n📊 Detailed results saved to: ${CONFIG.outputFile}`);
+  console.error(`\n📊 Detailed results saved to: ${CONFIG.outputFile}`);
   
   if (results.blocked) {
-    console.log('\n❌ Commit blocked due to high severity issues!');
-    console.log(`   Configure AI_REVIEWER_MAX_SEVERITY to change blocking threshold.`);
-    console.log(`   Current threshold: ${CONFIG.maxSeverityToBlock}`);
+    console.error('\n❌ Commit blocked due to high severity issues!');
+    console.error(`   Configure AI_REVIEWER_MAX_SEVERITY to change blocking threshold.`);
+    console.error(`   Current threshold: ${CONFIG.maxSeverityToBlock}`);
   } else {
-    console.log('\n✅ No blocking issues found. Commit can proceed.');
+    console.error('\n✅ No blocking issues found. Commit can proceed.');
   }
 }
 
 async function main() {
   if (!CONFIG.enabled) {
-    console.log('AI code reviewer disabled (AI_REVIEWER_ENABLED=false)');
+    console.error('AI code reviewer disabled (AI_REVIEWER_ENABLED=false)');
     process.exit(0);
   }
 
-  console.log('🤖 Running AI code review...');
+  console.error('🤖 Running AI code review...');
   
   const stagedFiles = await getStagedFiles();
   
   if (stagedFiles.length === 0) {
-    console.log('No relevant files to review.');
+    console.error('No relevant files to review.');
     process.exit(0);
   }
 
-  console.log(`Reviewing ${stagedFiles.length} files...`);
+  console.error(`Reviewing ${stagedFiles.length} files...`);
 
   const results = [];
   
   for (const filePath of stagedFiles) {
     const content = await getFileContent(filePath);
     if (content) {
-      console.log(`  Reviewing ${filePath}...`);
+      console.error(`  Reviewing ${filePath}...`);
       const review = await reviewCode(filePath, content);
       results.push({
         file: filePath,

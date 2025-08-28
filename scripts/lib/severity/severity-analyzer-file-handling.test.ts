@@ -2,13 +2,13 @@
  * Tests for severity-analyzer file handling and error cases
  * Focused on file operations and edge case handling
  */
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+
 import * as fs from 'fs';
 import { analyzeLlmReviewSeverity } from './severity-analyzer';
 import { createExtendedTestSetup } from '../testing/test-mocks';
 
 // Mock external dependencies
-vi.mock('fs');
+jest.mock('fs');
 
 describe('severity-analyzer file handling', () => {
   const testSetup = createExtendedTestSetup();
@@ -16,13 +16,14 @@ describe('severity-analyzer file handling', () => {
   beforeEach(() => {
     testSetup.cleanup();
     // Reset all mocks to default behavior with fresh implementations
-    vi.mocked(fs.existsSync).mockImplementation(() => false);
-    vi.mocked(fs.readFileSync).mockImplementation(() => '');
+    (fs.existsSync as jest.Mock).mockImplementation(() => false);
+    (fs.readFileSync as jest.Mock).mockImplementation(() => '');
 
     // Mock process.cwd to return a valid path
-    vi.stubGlobal('process', {
-      ...process,
-      cwd: vi.fn().mockReturnValue('/test/project'),
+    const mockCwd = jest.fn().mockReturnValue('/test/project');
+    Object.defineProperty(process, 'cwd', {
+      value: mockCwd,
+      configurable: true,
     });
   });
 
@@ -44,7 +45,7 @@ describe('severity-analyzer file handling', () => {
     });
 
     it('should handle non-existent files gracefully', () => {
-      vi.mocked(fs.existsSync).mockReturnValue(false);
+      (fs.existsSync as jest.Mock).mockReturnValue(false);
 
       const result = analyzeLlmReviewSeverity('/test/project');
       expect(result).toBe('');
@@ -65,16 +66,16 @@ describe('severity-analyzer file handling', () => {
     });
 
     it('should handle empty or invalid review file content', () => {
-      vi.mocked(fs.existsSync).mockReturnValue(true);
-      vi.mocked(fs.readFileSync).mockReturnValue('');
+      (fs.existsSync as jest.Mock).mockReturnValue(true);
+      (fs.readFileSync as jest.Mock).mockReturnValue('');
 
       const result = analyzeLlmReviewSeverity('/test/project');
       expect(result).toBe('');
     });
 
     it('should handle file read errors', () => {
-      vi.mocked(fs.existsSync).mockReturnValue(true);
-      vi.mocked(fs.readFileSync).mockImplementation(() => {
+      (fs.existsSync as jest.Mock).mockReturnValue(true);
+      (fs.readFileSync as jest.Mock).mockImplementation(() => {
         throw new Error('File read error');
       });
 

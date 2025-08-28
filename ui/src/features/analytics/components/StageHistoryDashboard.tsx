@@ -20,6 +20,16 @@ import { StageStatistics } from './StageStatistics';
 import { HistoricalTimeline } from './HistoricalTimeline';
 import { PerformanceComparison } from './PerformanceComparison';
 
+// Constants
+const DEFAULT_DATE_RANGE_DAYS = 30;
+const HOURS_PER_DAY = 24;
+const MINUTES_PER_HOUR = 60;
+const SECONDS_PER_MINUTE = 60;
+const MILLISECONDS_PER_SECOND = 1000;
+const MILLISECONDS_PER_DAY = HOURS_PER_DAY * MINUTES_PER_HOUR * SECONDS_PER_MINUTE * MILLISECONDS_PER_SECOND;
+const DEFAULT_REFRESH_INTERVAL_MS = MINUTES_PER_HOUR * SECONDS_PER_MINUTE * MILLISECONDS_PER_SECOND; // 1 minute
+const QUICK_SELECT_PRESET_LIMIT = 4;
+
 interface StageHistoryDashboardProps {
   initialView?: 'statistics' | 'timeline' | 'comparison';
   stageId?: string;
@@ -43,19 +53,19 @@ const VIEW_CONFIG = {
     title: 'Stage Statistics',
     description: 'Detailed performance metrics and reliability analysis',
     icon: BarChart3,
-    component: StageStatistics,
+    component: 'StageStatistics',
   },
   timeline: {
     title: 'Historical Timeline',
     description: 'Interactive timeline view with animation and trends',
     icon: Clock,
-    component: HistoricalTimeline,
+    component: 'HistoricalTimeline',
   },
   comparison: {
     title: 'Performance Comparison',
     description: 'Compare performance between different time periods',
     icon: TrendingUp,
-    component: PerformanceComparison,
+    component: 'PerformanceComparison',
   },
 } as const;
 
@@ -85,7 +95,8 @@ export function StageHistoryDashboard({
   // const navigate = useNavigate(); // Commented out - not currently used
 
   // Parse initial state from URL parameters
-  const currentView = (searchParams.get('view') || initialView) as keyof typeof VIEW_CONFIG;
+  const viewFromURL = searchParams.get('view');
+  const currentView = (viewFromURL && viewFromURL in VIEW_CONFIG ? viewFromURL : initialView) as keyof typeof VIEW_CONFIG;
   const urlDateRange = searchParams.get('dateRange');
   const urlEnvironment = searchParams.get('environment') || '';
   const urlStageId = searchParams.get('stageId') || initialStageId;
@@ -93,7 +104,7 @@ export function StageHistoryDashboard({
   // Calculate default date range
   const getDefaultDateRange = (): DateRange => {
     const end = new Date();
-    const start = new Date(end.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const start = new Date(end.getTime() - DEFAULT_DATE_RANGE_DAYS * MILLISECONDS_PER_DAY);
     return {
       start: start.toISOString().split('T')[0],
       end: end.toISOString().split('T')[0],
@@ -117,7 +128,7 @@ export function StageHistoryDashboard({
       environment: urlEnvironment,
       stageId: urlStageId,
       autoRefresh: false,
-      refreshInterval: 60000, // 1 minute default
+      refreshInterval: DEFAULT_REFRESH_INTERVAL_MS,
     };
   });
 
@@ -167,7 +178,7 @@ export function StageHistoryDashboard({
 
   const handlePresetRangeSelect = (days: number) => {
     const end = new Date();
-    const start = new Date(end.getTime() - days * 24 * 60 * 60 * 1000);
+    const start = new Date(end.getTime() - days * MILLISECONDS_PER_DAY);
     const newRange = {
       start: start.toISOString().split('T')[0],
       end: end.toISOString().split('T')[0],
@@ -196,33 +207,49 @@ export function StageHistoryDashboard({
   };
 
   const currentViewConfig = VIEW_CONFIG[currentView];
-  const CurrentViewComponent = currentViewConfig.component;
+  
+  // Component mapping to avoid circular reference issues
+  const componentMap = {
+    StageStatistics,
+    HistoricalTimeline,
+    PerformanceComparison,
+  };
+  
+  const CurrentViewComponent = currentViewConfig ? componentMap[currentViewConfig.component as keyof typeof componentMap] : null;
 
   const componentProps = useMemo(() => {
-    const baseProps: Record<string, unknown> = {};
-    
     // Calculate days for components that need it
     const startDate = new Date(filters.dateRange.start);
     const endDate = new Date(filters.dateRange.end);
-    const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+    const days = Math.ceil((endDate.getTime() - startDate.getTime()) / MILLISECONDS_PER_DAY);
+    
+    // Base props that all components might need for testing
+    const baseProps = {
+      stageId: filters.stageId || undefined,
+      dateRange: filters.dateRange,
+      environment: filters.environment || 'all', // Default to 'all' for tests
+    };
     
     switch (currentView) {
       case 'statistics':
         return {
+          ...baseProps,
           defaultDays: days,
-          stageId: filters.stageId || undefined,
         };
       case 'timeline':
         return {
+          ...baseProps,
           defaultDays: days,
+          stageId: filters.stageId, // Override for timeline specifically
           autoRefresh: filters.autoRefresh,
           refreshInterval: filters.refreshInterval,
         };
       case 'comparison':
         return {
+          ...baseProps,
           defaultPeriod1: filters.dateRange,
           defaultPeriod2: {
-            start: new Date(startDate.getTime() - days * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            start: new Date(startDate.getTime() - days * MILLISECONDS_PER_DAY).toISOString().split('T')[0],
             end: filters.dateRange.start,
           },
         };
@@ -237,13 +264,13 @@ export function StageHistoryDashboard({
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
           <div className="flex items-center gap-3">
-            {React.createElement(currentViewConfig.icon, { className: "w-8 h-8 text-blue-600" })}
+            {currentViewConfig && React.createElement(currentViewConfig.icon, { className: "w-8 h-8 text-blue-600" })}
             <div>
               <h1 className="text-3xl font-bold text-gray-900">
                 Stage History & Performance Analytics
               </h1>
               <p className="text-gray-600 mt-1">
-                {currentViewConfig.description}
+                {currentViewConfig?.description}
               </p>
             </div>
           </div>
@@ -363,7 +390,7 @@ export function StageHistoryDashboard({
                   <div>
                     <label className="block text-xs text-gray-500 mb-1">Quick Select:</label>
                     <div className="flex flex-wrap gap-1">
-                      {PRESET_RANGES.slice(0, 4).map(preset => (
+                      {PRESET_RANGES.slice(0, QUICK_SELECT_PRESET_LIMIT).map(preset => (
                         <Button
                           key={preset.days}
                           variant="outline"
@@ -388,6 +415,7 @@ export function StageHistoryDashboard({
                   value={filters.environment}
                   onChange={(e) => handleFilterChange({ environment: e.target.value })}
                   className="w-full"
+                  data-testid="environment-select"
                 >
                   <Option value="">All Environments</Option>
                   <Option value="development">Development</Option>
@@ -405,6 +433,7 @@ export function StageHistoryDashboard({
                   value={filters.stageId}
                   onChange={(e) => handleFilterChange({ stageId: e.target.value })}
                   className="w-full"
+                  data-testid="stage-select"
                 >
                   <Option value="">All Stages</Option>
                   {/* These would be populated dynamically */}
@@ -477,7 +506,15 @@ export function StageHistoryDashboard({
 
       {/* Main Content */}
       <div>
-        <CurrentViewComponent {...componentProps} />
+        {CurrentViewComponent ? (
+          <CurrentViewComponent {...componentProps} />
+        ) : (
+          <div className="p-8 text-center">
+            <p className="text-red-500">
+              Component not found: {currentViewConfig?.component || 'unknown'}
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Footer with metadata */}

@@ -48,53 +48,53 @@ interface CleanupResult {
 }
 
 function displayPreCleanupStats(stats: LogStats): void {
-  console.log('📊 Log directory statistics (before cleanup):');
-  console.log(`  Total files: ${stats.totalFiles}`);
-  console.log(`  Total size: ${(stats.totalSize / BYTES_PER_MB).toFixed(DECIMAL_PLACES)} MB`);
-  console.log(`  Average file size: ${(stats.averageFileSize / BYTES_PER_KB).toFixed(DECIMAL_PLACES)} KB`);
+  console.error('📊 Log directory statistics (before cleanup):');
+  console.error(`  Total files: ${stats.totalFiles}`);
+  console.error(`  Total size: ${(stats.totalSize / BYTES_PER_MB).toFixed(DECIMAL_PLACES)} MB`);
+  console.error(`  Average file size: ${(stats.averageFileSize / BYTES_PER_KB).toFixed(DECIMAL_PLACES)} KB`);
 
   if (stats.oldestFile && stats.newestFile) {
-    console.log(`  Oldest file: ${stats.oldestFile.toLocaleDateString()}`);
-    console.log(`  Newest file: ${stats.newestFile.toLocaleDateString()}`);
+    console.error(`  Oldest file: ${stats.oldestFile.toLocaleDateString()}`);
+    console.error(`  Newest file: ${stats.newestFile.toLocaleDateString()}`);
   }
 
-  console.log('  Size by log level:');
+  console.error('  Size by log level:');
   for (const [level, size] of Object.entries(stats.sizeByLevel)) {
-    console.log(`    ${level}: ${((size as number) / BYTES_PER_MB).toFixed(DECIMAL_PLACES)} MB`);
+    console.error(`    ${level}: ${((size as number) / BYTES_PER_MB).toFixed(DECIMAL_PLACES)} MB`);
   }
-  console.log();
+  console.error();
 }
 
 function displayCleanupResults(result: CleanupResult): void {
-  console.log('✅ Cleanup completed successfully!\n');
-  console.log('📈 Cleanup Results:');
-  console.log(`  Files deleted: ${result.deletedFiles}`);
-  console.log(`  Files compressed: ${result.compressedFiles}`);
-  console.log(`  Space freed: ${(result.freedSpace / BYTES_PER_MB).toFixed(DECIMAL_PLACES)} MB`);
-  console.log(`  Processing time: ${result.processingTime} ms`);
+  console.error('✅ Cleanup completed successfully!\n');
+  console.error('📈 Cleanup Results:');
+  console.error(`  Files deleted: ${result.deletedFiles}`);
+  console.error(`  Files compressed: ${result.compressedFiles}`);
+  console.error(`  Space freed: ${(result.freedSpace / BYTES_PER_MB).toFixed(DECIMAL_PLACES)} MB`);
+  console.error(`  Processing time: ${result.processingTime} ms`);
 }
 
 function displayPostCleanupStats(statsBefore: LogStats, statsAfter: LogStats): void {
-  console.log('\n📊 Log directory statistics (after cleanup):');
-  console.log(`  Total files: ${statsAfter.totalFiles}`);
-  console.log(`  Total size: ${(statsAfter.totalSize / BYTES_PER_MB).toFixed(DECIMAL_PLACES)} MB`);
+  console.error('\n📊 Log directory statistics (after cleanup):');
+  console.error(`  Total files: ${statsAfter.totalFiles}`);
+  console.error(`  Total size: ${(statsAfter.totalSize / BYTES_PER_MB).toFixed(DECIMAL_PLACES)} MB`);
 
   const spaceSaved = statsBefore.totalSize - statsAfter.totalSize;
   const percentageSaved = ((spaceSaved / statsBefore.totalSize) * 100).toFixed(PERCENTAGE_DECIMAL_PLACES);
-  console.log(`  Space saved: ${(spaceSaved / BYTES_PER_MB).toFixed(DECIMAL_PLACES)} MB (${percentageSaved}%)`);
+  console.error(`  Space saved: ${(spaceSaved / BYTES_PER_MB).toFixed(DECIMAL_PLACES)} MB (${percentageSaved}%)`);
 }
 
 function assessPerformance(statsBefore: LogStats, result: CleanupResult): void {
-  console.log('\n⚡ Performance Assessment:');
+  console.error('\n⚡ Performance Assessment:');
   const processingSpeed = statsBefore.totalSize / BYTES_PER_MB / (result.processingTime / MS_PER_SECOND);
-  console.log(`  Processing speed: ${processingSpeed.toFixed(2)} MB/s`);
+  console.error(`  Processing speed: ${processingSpeed.toFixed(2)} MB/s`);
 
   if (result.processingTime < PERFORMANCE_THRESHOLDS_MS.EXCELLENT) {
-    console.log('  Performance: Excellent ✅');
+    console.error('  Performance: Excellent ✅');
   } else if (result.processingTime < PERFORMANCE_THRESHOLDS_MS.GOOD) {
-    console.log('  Performance: Good ✅');
+    console.error('  Performance: Good ✅');
   } else {
-    console.log('  Performance: Needs optimization ⚠️');
+    console.error('  Performance: Needs optimization ⚠️');
   }
 }
 
@@ -103,23 +103,23 @@ function displayOptimizationRecommendations(
   result: CleanupResult,
   statsBefore: LogStats
 ): void {
-  console.log('\n💡 Recommendations:');
+  console.error('\n💡 Recommendations:');
   if (statsAfter.totalFiles > RECOMMENDATION_THRESHOLDS.MAX_FILES_WARNING) {
-    console.log('  - Consider reducing maxLogFiles for better performance');
+    console.error('  - Consider reducing maxLogFiles for better performance');
   }
   if (statsAfter.totalSize > RECOMMENDATION_THRESHOLDS.MAX_SIZE_MB_WARNING * BYTES_PER_MB) {
-    console.log('  - Consider reducing maxLogAge for active development');
+    console.error('  - Consider reducing maxLogAge for active development');
   }
   if (result.compressedFiles === 0 && statsBefore.totalFiles > RECOMMENDATION_THRESHOLDS.MIN_FILES_FOR_COMPRESSION_RECOMMENDATION) {
-    console.log('  - Consider enabling log compression to save space');
+    console.error('  - Consider enabling log compression to save space');
   }
   if (result.compressedFiles > 0) {
-    console.log(`  - Log compression is working well (${result.compressedFiles} files compressed)`);
+    console.error(`  - Log compression is working well (${result.compressedFiles} files compressed)`);
   }
 }
 
 async function main() {
-  console.log('🧹 Starting optimized log cleanup...\n');
+  console.error('🧹 Starting optimized log cleanup...\n');
 
   const logsDir = join(process.cwd(), 'logs');
 
@@ -151,7 +151,7 @@ async function main() {
     const statsBefore = await cleaner.getLogStats();
     displayPreCleanupStats(statsBefore);
 
-    console.log('🚀 Performing optimized cleanup...');
+    console.error('🚀 Performing optimized cleanup...');
     const result = await cleaner.cleanLogs();
 
     displayCleanupResults(result);

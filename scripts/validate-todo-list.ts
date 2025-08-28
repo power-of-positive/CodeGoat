@@ -6,6 +6,11 @@ import * as path from 'path';
 // Constants
 const DELAY_SHORT_MS = 2000;
 const DELAY_MEDIUM_MS = 5000;
+const API_TIMEOUT_MS = 5000; // API request timeout
+const COMPLETION_PERCENTAGE_MULTIPLIER = 100;
+const ID_PADDING_LENGTH = 3; // For CODEGOAT-XXX format
+const MIN_TODO_ITEMS = 0;
+// Removed unused constant MAX_ALLOWED_IN_PROGRESS - using config.allowedInProgressTasks instead
 
 // Todo list item interface - aligned with API format
 interface TodoItem {
@@ -42,7 +47,8 @@ const TODO_LIST_FILES = [
 ];
 
 // API configuration
-const API_BASE_URL = 'http://localhost:3001/api';
+const API_PORT = 3001;
+const API_BASE_URL = `http://localhost:${API_PORT}/api`;
 const TASKS_ENDPOINT = `${API_BASE_URL}/tasks`;
 
 // Colors for console output
@@ -95,7 +101,7 @@ async function isServerRunning(): Promise<boolean> {
  */
 async function fetchTasksFromAPI(): Promise<TodoItem[]> {
   try {
-    console.log(`${colors.blue}🌐 Fetching tasks from API...${colors.reset}`);
+    console.error(`${colors.blue}🌐 Fetching tasks from API...${colors.reset}`);
 
     const response = await fetch(TASKS_ENDPOINT, {
       method: 'GET',
@@ -116,7 +122,7 @@ async function fetchTasksFromAPI(): Promise<TodoItem[]> {
     }
 
     const tasks = apiResponse.data;
-    console.log(
+    console.error(
       `${colors.green}✅ Successfully fetched ${tasks.length} tasks from API${colors.reset}`
     );
     return tasks;
@@ -124,6 +130,80 @@ async function fetchTasksFromAPI(): Promise<TodoItem[]> {
     console.error(`${colors.red}❌ Failed to fetch tasks from API: ${error}${colors.reset}`);
     throw error;
   }
+}
+
+/**
+ * Extract raw tasks from parsed JSON data
+ */
+function extractRawTasksFromData(data: unknown, filePath: string): unknown[] {
+  if (Array.isArray(data)) {
+    return data;
+  }
+  
+  if (data && typeof data === 'object' && 'todos' in data && Array.isArray((data as { todos: unknown }).todos)) {
+    return (data as { todos: unknown[] }).todos;
+  }
+  
+  console.error(`${colors.red}Invalid JSON format in ${filePath}${colors.reset}`);
+  return [];
+}
+
+/**
+ * Validate and format task ID
+ */
+function formatTaskId(id: unknown): string {
+  return typeof id === 'string' && id.startsWith('CODEGOAT-') 
+    ? id 
+    : `CODEGOAT-${String(id ?? '').padStart(ID_PADDING_LENGTH, '0')}`;
+}
+
+/**
+ * Validate and return status with default fallback
+ */
+function validateStatus(status: unknown): TodoItem['status'] {
+  const statusStr = String(status);
+  return (['pending', 'in_progress', 'completed'].includes(statusStr) 
+    ? statusStr 
+    : 'pending') as TodoItem['status'];
+}
+
+/**
+ * Validate and return priority with default fallback
+ */
+function validatePriority(priority: unknown): TodoItem['priority'] {
+  const priorityStr = String(priority);
+  return (['low', 'medium', 'high'].includes(priorityStr) 
+    ? priorityStr 
+    : 'medium') as TodoItem['priority'];
+}
+
+/**
+ * Validate and return taskType with default fallback
+ */
+function validateTaskType(taskType: unknown): TodoItem['taskType'] {
+  const taskTypeStr = String(taskType);
+  return (['story', 'task'].includes(taskTypeStr) 
+    ? taskTypeStr 
+    : 'task') as TodoItem['taskType'];
+}
+
+/**
+ * Convert a single task object to TodoItem format
+ */
+function convertTaskToTodoItem(task: unknown): TodoItem {
+  const taskObj = task as Record<string, unknown>;
+  
+  return {
+    id: formatTaskId(taskObj.id),
+    content: String(taskObj.content ?? ''),
+    status: validateStatus(taskObj.status),
+    priority: validatePriority(taskObj.priority),
+    taskType: validateTaskType(taskObj.taskType),
+    executorId: taskObj.executorId ? String(taskObj.executorId) : undefined,
+    startTime: taskObj.startTime ? String(taskObj.startTime) : undefined,
+    endTime: taskObj.endTime ? String(taskObj.endTime) : undefined,
+    duration: taskObj.duration ? String(taskObj.duration) : undefined,
+  };
 }
 
 /**
@@ -135,39 +215,13 @@ function parseTodoListFromJSON(filePath: string): TodoItem[] {
     const data = JSON.parse(content);
 
     // Handle different JSON formats and convert to new format
-    let rawTasks: unknown[] = [];
-    if (Array.isArray(data)) {
-      rawTasks = data;
-    } else if (data.todos && Array.isArray(data.todos)) {
-      rawTasks = data.todos;
-    } else {
-      console.error(`${colors.red}Invalid JSON format in ${filePath}${colors.reset}`);
+    const rawTasks = extractRawTasksFromData(data, filePath);
+    if (rawTasks.length === 0) {
       return [];
     }
 
     // Convert legacy format to new TodoItem format
-    return rawTasks.map((task: unknown) => {
-      const taskObj = task as Record<string, unknown>;
-      return {
-        id: typeof taskObj.id === 'string' && taskObj.id.startsWith('CODEGOAT-') 
-          ? taskObj.id 
-          : `CODEGOAT-${String(taskObj.id ?? '').padStart(3, '0')}`,
-        content: String(taskObj.content ?? ''),
-        status: (['pending', 'in_progress', 'completed'].includes(String(taskObj.status)) 
-          ? String(taskObj.status) 
-          : 'pending') as TodoItem['status'],
-        priority: (['low', 'medium', 'high'].includes(String(taskObj.priority)) 
-          ? String(taskObj.priority) 
-          : 'medium') as TodoItem['priority'],
-        taskType: (['story', 'task'].includes(String(taskObj.taskType)) 
-          ? String(taskObj.taskType) 
-          : 'task') as TodoItem['taskType'],
-        executorId: taskObj.executorId ? String(taskObj.executorId) : undefined,
-        startTime: taskObj.startTime ? String(taskObj.startTime) : undefined,
-        endTime: taskObj.endTime ? String(taskObj.endTime) : undefined,
-        duration: taskObj.duration ? String(taskObj.duration) : undefined,
-      };
-    });
+    return rawTasks.map(convertTaskToTodoItem);
   } catch (error) {
     console.error(`${colors.red}Error parsing JSON todo list: ${error}${colors.reset}`);
     return [];
@@ -269,7 +323,7 @@ async function autoAssignNextPendingTask(
     // Check if there's already a task in progress
     const inProgressTasks = todos.filter(task => task.status === 'in_progress');
     if (inProgressTasks.length > 0) {
-      console.log(
+      console.error(
         `${colors.blue}ℹ️  Task already in progress: ${inProgressTasks[0].content}${colors.reset}`
       );
       return { success: true, assignedTask: inProgressTasks[0] };
@@ -278,11 +332,11 @@ async function autoAssignNextPendingTask(
     // Find the next pending task by priority
     const nextTask = getNextTodoItem(todos.filter(task => task.status === 'pending'));
     if (!nextTask) {
-      console.log(`${colors.green}✅ No pending tasks to assign${colors.reset}`);
+      console.error(`${colors.green}✅ No pending tasks to assign${colors.reset}`);
       return { success: true };
     }
 
-    console.log(
+    console.error(
       `${colors.yellow}🔄 Auto-assigning pending task [${nextTask.id}] to in_progress: ${nextTask.content}${colors.reset}`
     );
 
@@ -295,7 +349,7 @@ async function autoAssignNextPendingTask(
       body: JSON.stringify({
         status: 'in_progress',
       }),
-      signal: AbortSignal.timeout(5000),
+      signal: AbortSignal.timeout(API_TIMEOUT_MS),
     });
 
     if (!response.ok) {
@@ -307,7 +361,7 @@ async function autoAssignNextPendingTask(
       throw new Error('API returned success: false');
     }
 
-    console.log(
+    console.error(
       `${colors.green}✅ Successfully assigned task [${result.data.id}] to in_progress: ${result.data.content}${colors.reset}`
     );
     return { success: true, assignedTask: result.data };
@@ -327,13 +381,13 @@ function displayStatistics(todos: TodoItem[]): void {
   const inProgressTasks = todos.filter(t => t.status === 'in_progress').length;
   const pendingTasks = todos.filter(t => t.status === 'pending').length;
 
-  const completionPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+  const completionPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * COMPLETION_PERCENTAGE_MULTIPLIER) : MIN_TODO_ITEMS;
 
-  console.log(`\n${colors.bold}${colors.blue}📊 Project Statistics:${colors.reset}`);
-  console.log(`${colors.green}✅ Completed: ${completedTasks}${colors.reset}`);
-  console.log(`${colors.yellow}🔄 In Progress: ${inProgressTasks}${colors.reset}`);
-  console.log(`${colors.blue}📋 Pending: ${pendingTasks}${colors.reset}`);
-  console.log(
+  console.error(`\n${colors.bold}${colors.blue}📊 Project Statistics:${colors.reset}`);
+  console.error(`${colors.green}✅ Completed: ${completedTasks}${colors.reset}`);
+  console.error(`${colors.yellow}🔄 In Progress: ${inProgressTasks}${colors.reset}`);
+  console.error(`${colors.blue}📋 Pending: ${pendingTasks}${colors.reset}`);
+  console.error(
     `${colors.bold}📈 Progress: ${completionPercentage}% (${completedTasks}/${totalTasks})${colors.reset}`
   );
 }
@@ -356,13 +410,13 @@ async function findAndParseTodoList(): Promise<{ todos: TodoItem[]; source: stri
       );
     }
   } else {
-    console.log(`${colors.yellow}⚠️  Server not running, trying file-based parsing${colors.reset}`);
+    console.error(`${colors.yellow}⚠️  Server not running, trying file-based parsing${colors.reset}`);
   }
 
   // Fallback: File-based parsing (legacy support)
   for (const filePath of TODO_LIST_FILES) {
     if (fs.existsSync(filePath)) {
-      console.log(`${colors.blue}📖 Found legacy todo list: ${path.basename(filePath)}${colors.reset}`);
+      console.error(`${colors.blue}📖 Found legacy todo list: ${path.basename(filePath)}${colors.reset}`);
 
       let todos: TodoItem[] = [];
       if (filePath.endsWith('.json')) {
@@ -386,13 +440,13 @@ function performBasicValidation(todos: TodoItem[], source: string): number {
     console.error(`${colors.red}❌ No todo list source found. Tried:${colors.reset}`);
     console.error(`${colors.red}   • Primary API: ${TASKS_ENDPOINT}${colors.reset}`);
     console.error(`${colors.red}   • Legacy files: ${TODO_LIST_FILES.map(f => path.basename(f)).join(', ')}${colors.reset}`);
-    console.error(`${colors.red}💡 Make sure the CodeGoat server is running on port 3001${colors.reset}`);
+    console.error(`${colors.red}💡 Make sure the CodeGoat server is running on port ${API_PORT}${colors.reset}`);
     return 1;
   }
 
   if (todos.length === 0) {
     if (source === 'API') {
-      console.log(`${colors.green}✅ No tasks found - all work complete!${colors.reset}`);
+      console.error(`${colors.green}✅ No tasks found - all work complete!${colors.reset}`);
       return 0; // Empty API response is valid (no tasks = all done)
     } else {
       console.error(`${colors.red}❌ No valid todo items found from ${source}${colors.reset}`);
@@ -404,7 +458,7 @@ function performBasicValidation(todos: TodoItem[], source: string): number {
 }
 
 function validateFormat(todos: TodoItem[]): number {
-  console.log(`${colors.blue}🔍 Validating todo list format...${colors.reset}`);
+  console.error(`${colors.blue}🔍 Validating todo list format...${colors.reset}`);
   const validation = validateTodoListFormat(todos);
 
   if (!validation.valid) {
@@ -415,7 +469,7 @@ function validateFormat(todos: TodoItem[]): number {
     return 1;
   }
 
-  console.log(`${colors.green}✅ Todo list format is valid${colors.reset}`);
+  console.error(`${colors.green}✅ Todo list format is valid${colors.reset}`);
   return 0;
 }
 
@@ -480,12 +534,12 @@ function logTaskStatus(todos: TodoItem[], shouldFail: boolean): number {
   const icon = shouldFail ? '🚫' : '⚠️ ';
   const color = shouldFail ? colors.red : colors.yellow;
 
-  console.log(
+  console.error(
     `\n${color}${colors.bold}${icon} Claude Code Stop ${messageType.toUpperCase()}: ${unfinishedTasks.length} unfinished task(s) detected${colors.reset}`
   );
-  console.log(`${color}📋 Unfinished tasks:${colors.reset}`);
+  console.error(`${color}📋 Unfinished tasks:${colors.reset}`);
   unfinishedTasks.forEach(task => {
-    console.log(
+    console.error(
       `${color}   • [${task.id}] [${task.priority.toUpperCase()}] ${task.content} (${task.status.replace('_', ' ').toUpperCase()})${colors.reset}`
     );
   });
@@ -509,8 +563,8 @@ function logTaskStatus(todos: TodoItem[], shouldFail: boolean): number {
 
     return 2;
   } else {
-    console.log(`\n${colors.yellow}💡 Consider completing tasks when convenient${colors.reset}`);
-    console.log(`\n${colors.green}✅ Todo list validation passed with warnings${colors.reset}`);
+    console.error(`\n${colors.yellow}💡 Consider completing tasks when convenient${colors.reset}`);
+    console.error(`\n${colors.green}✅ Todo list validation passed with warnings${colors.reset}`);
     return 0;
   }
 }
@@ -522,10 +576,10 @@ async function checkTaskCompletionAndAutoAssign(
   const pendingTasks = todos.filter(todo => todo.status === 'pending');
   const inProgressTasks = todos.filter(todo => todo.status === 'in_progress');
 
-  console.log(
+  console.error(
     `\n${colors.bold}${colors.blue}🔍 Task Completion Check & Auto-Assignment${colors.reset}`
   );
-  console.log(
+  console.error(
     `${colors.cyan}📊 Current status: ${pendingTasks.length} pending, ${inProgressTasks.length} in-progress${colors.reset}`
   );
 
@@ -544,12 +598,12 @@ async function checkTaskCompletionAndAutoAssign(
 
   const unfinishedTasks = todos.filter(todo => todo.status !== 'completed');
   if (unfinishedTasks.length === 0) {
-    console.log(
+    console.error(
       `\n${colors.bold}${colors.green}🎉 ALL TASKS COMPLETED! Claude Code is free to stop.${colors.reset}`
     );
   }
 
-  console.log(
+  console.error(
     `\n${colors.green}✅ Todo list validation passed - no blocking issues${colors.reset}`
   );
   return 0;
@@ -559,11 +613,11 @@ async function checkTaskCompletionAndAutoAssign(
  * Main execution function
  */
 async function main(): Promise<number> {
-  console.log(`${colors.bold}${colors.blue}🔍 Todo List Validation${colors.reset}\n`);
+  console.error(`${colors.bold}${colors.blue}🔍 Todo List Validation${colors.reset}\n`);
 
   const { todos, source } = await findAndParseTodoList();
 
-  console.log(`${colors.blue}📋 Using todo source: ${source}${colors.reset}\n`);
+  console.error(`${colors.blue}📋 Using todo source: ${source}${colors.reset}\n`);
 
   const basicValidationResult = performBasicValidation(todos, source);
   if (basicValidationResult !== 0) {

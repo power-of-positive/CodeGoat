@@ -4,7 +4,6 @@
 
 import * as fsSync from 'fs';
 import * as path from 'path';
-import * as process from 'process';
 import { findProjectRoot } from '../utils/review-utils';
 import { runAllChecks } from './precommit-checks';
 import { getStagedFiles, type StagedFiles } from '../files/staged-files';

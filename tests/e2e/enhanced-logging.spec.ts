@@ -19,7 +19,7 @@ test.describe('Enhanced Log Processing', () => {
       // Check for Enhanced badge
       const enhancedBadge = page.getByText('Enhanced');
       if (await enhancedBadge.isVisible()) {
-        console.log('✅ Enhanced logging is active');
+        console.error('✅ Enhanced logging is active');
         
         // Verify that we have structured log entries instead of raw JSON
         const logContent = await page.textContent('[data-testid="log-entries"]');
@@ -52,7 +52,7 @@ test.describe('Enhanced Log Processing', () => {
             fullPage: true 
           });
         } else {
-          console.log('✅ No raw JSON found - enhanced logging working correctly');
+          console.error('✅ No raw JSON found - enhanced logging working correctly');
         }
         
         // Check for structured log entry components
@@ -72,7 +72,7 @@ test.describe('Enhanced Log Processing', () => {
           foundStructured += count;
         }
         
-        console.log(`Found ${foundStructured} structured log elements`);
+        console.error(`Found ${foundStructured} structured log elements`);
         
         // Should have at least some structured elements if enhanced logging works
         expect(foundStructured).toBeGreaterThan(0);
@@ -81,13 +81,13 @@ test.describe('Enhanced Log Processing', () => {
         // Check for Enhanced Failed badge
         const enhancedFailedBadge = page.getByText('Enhanced Failed');
         if (await enhancedFailedBadge.isVisible()) {
-          console.log('⚠️ Enhanced logging failed - using fallback');
+          console.error('⚠️ Enhanced logging failed - using fallback');
         } else {
-          console.log('ℹ️ Enhanced logging not detected - may be using fallback mode');
+          console.error('ℹ️ Enhanced logging not detected - may be using fallback mode');
         }
       }
     } else {
-      console.log('No workers found - cannot test enhanced logging');
+      console.error('No workers found - cannot test enhanced logging');
     }
   });
 
@@ -121,7 +121,7 @@ test.describe('Enhanced Log Processing', () => {
           const icons = page.locator(selector);
           const count = await icons.count();
           if (count > 0) {
-            console.log(`✅ Found ${count} ${type} icons`);
+            console.error(`✅ Found ${count} ${type} icons`);
           }
         }
       }
@@ -150,7 +150,7 @@ test.describe('Enhanced Log Processing', () => {
         // Listen for WebSocket/SSE connections (if we can detect them)
         const enhancedBadge = page.getByText('Enhanced');
         if (await enhancedBadge.isVisible()) {
-          console.log('✅ Enhanced streaming should be active');
+          console.error('✅ Enhanced streaming should be active');
           
           // Wait for potential updates
           await page.waitForTimeout(2000);
@@ -158,7 +158,7 @@ test.describe('Enhanced Log Processing', () => {
           // Check that updates are being processed correctly
           const logEntries = page.locator('[data-testid="log-entry"]');
           const entryCount = await logEntries.count();
-          console.log(`Current log entries: ${entryCount}`);
+          console.error(`Current log entries: ${entryCount}`);
         }
       }
     }

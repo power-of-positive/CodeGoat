@@ -2,7 +2,7 @@
  * Error handling tests for script-linting.ts
  * Tests with strategic mocking to achieve high coverage
  */
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+
 
 // Import the function and its dependencies
 import { runScriptLinting } from './script-linting';
@@ -11,12 +11,12 @@ import * as fileFiltering from '../files/file-filtering';
 import { createTestSetup, createFileTestScenarios } from '../testing/test-mocks';
 
 // Mock the dependencies to control behavior
-vi.mock('../utils/command-utils', () => ({
-  execCommand: vi.fn(),
+jest.mock('../utils/command-utils', () => ({
+  execCommand: jest.fn(),
 }));
 
-vi.mock('../files/file-filtering', () => ({
-  filterValidFiles: vi.fn(),
+jest.mock('../files/file-filtering', () => ({
+  filterValidFiles: jest.fn(),
 }));
 
 describe('script-linting 123', () => {
@@ -26,8 +26,8 @@ describe('script-linting 123', () => {
   beforeEach(() => {
     testSetup.cleanup();
     // Set default mock behavior with fresh implementations
-    vi.mocked(fileFiltering.filterValidFiles).mockImplementation(() => []);
-    vi.mocked(commandUtils.execCommand).mockImplementation(() => ({
+    (fileFiltering.filterValidFiles as jest.Mock).mockImplementation(() => []);
+    (commandUtils.execCommand as jest.Mock).mockImplementation(() => ({
       success: true,
       output: '',
     }));
@@ -40,7 +40,7 @@ describe('script-linting 123', () => {
   describe('runScriptLinting', () => {
     it('should handle empty file lists gracefully', () => {
       // Test with empty array - should return early success
-      vi.mocked(fileFiltering.filterValidFiles).mockReturnValue([]);
+      (fileFiltering.filterValidFiles as jest.Mock).mockReturnValue([]);
 
       const result = runScriptLinting('/tmp', []);
 
@@ -117,8 +117,8 @@ describe('script-linting 123', () => {
   describe('command execution and error handling (covering uncovered lines)', () => {
     it('should handle successful ESLint execution - covers lines 48-50', () => {
       // Test the success path (lines 48-50)
-      vi.mocked(fileFiltering.filterValidFiles).mockReturnValue(['test.ts']);
-      vi.mocked(commandUtils.execCommand).mockReturnValue({
+      (fileFiltering.filterValidFiles as jest.Mock).mockReturnValue(['test.ts']);
+      (commandUtils.execCommand as jest.Mock).mockReturnValue({
         success: true,
         output: '',
       });
@@ -137,11 +137,11 @@ describe('script-linting 123', () => {
 
     it('should handle file escaping with quotes - covers line 45', () => {
       // Test file escaping logic (line 45)
-      vi.mocked(fileFiltering.filterValidFiles).mockReturnValue([
+      (fileFiltering.filterValidFiles as jest.Mock).mockReturnValue([
         "file'with'quotes.ts",
         'file with spaces.ts',
       ]);
-      vi.mocked(commandUtils.execCommand).mockReturnValue({
+      (commandUtils.execCommand as jest.Mock).mockReturnValue({
         success: true,
         output: '',
       });
@@ -160,8 +160,8 @@ describe('script-linting 123', () => {
 
     it('should handle execCommand error with stdout - covers lines 25-28, 51-54', () => {
       // Test error handling with output message
-      vi.mocked(fileFiltering.filterValidFiles).mockReturnValue(['test.ts']);
-      vi.mocked(commandUtils.execCommand).mockReturnValue({
+      (fileFiltering.filterValidFiles as jest.Mock).mockReturnValue(['test.ts']);
+      (commandUtils.execCommand as jest.Mock).mockReturnValue({
         success: false,
         output: 'ESLint stdout error message',
       });
@@ -174,8 +174,8 @@ describe('script-linting 123', () => {
 
     it('should handle execCommand error with stderr - covers lines 25-28, 51-54', () => {
       // Test error handling with stderr output
-      vi.mocked(fileFiltering.filterValidFiles).mockReturnValue(['test.ts']);
-      vi.mocked(commandUtils.execCommand).mockReturnValue({
+      (fileFiltering.filterValidFiles as jest.Mock).mockReturnValue(['test.ts']);
+      (commandUtils.execCommand as jest.Mock).mockReturnValue({
         success: false,
         output: 'ESLint stderr error message',
       });
@@ -188,8 +188,8 @@ describe('script-linting 123', () => {
 
     it('should handle execCommand error with message only - covers lines 25-28, 51-54', () => {
       // Test error handling with error message
-      vi.mocked(fileFiltering.filterValidFiles).mockReturnValue(['test.ts']);
-      vi.mocked(commandUtils.execCommand).mockReturnValue({
+      (fileFiltering.filterValidFiles as jest.Mock).mockReturnValue(['test.ts']);
+      (commandUtils.execCommand as jest.Mock).mockReturnValue({
         success: false,
         output: 'Command execution failed',
       });
@@ -202,8 +202,8 @@ describe('script-linting 123', () => {
 
     it('should handle non-object error - covers lines 25-28, 51-54', () => {
       // Test error handling with non-object error (covers isErrorObject function and catch block)
-      vi.mocked(fileFiltering.filterValidFiles).mockReturnValue(['test.ts']);
-      vi.mocked(commandUtils.execCommand).mockReturnValue({
+      (fileFiltering.filterValidFiles as jest.Mock).mockReturnValue(['test.ts']);
+      (commandUtils.execCommand as jest.Mock).mockReturnValue({
         success: false,
         output: 'String error',
       });
@@ -216,8 +216,8 @@ describe('script-linting 123', () => {
 
     it('should handle error with stdout and stderr - covers lines 25-28, 51-54', () => {
       // Test error handling with complex output message
-      vi.mocked(fileFiltering.filterValidFiles).mockReturnValue(['test.ts']);
-      vi.mocked(commandUtils.execCommand).mockReturnValue({
+      (fileFiltering.filterValidFiles as jest.Mock).mockReturnValue(['test.ts']);
+      (commandUtils.execCommand as jest.Mock).mockReturnValue({
         success: false,
         output: 'stdout message',
       });
@@ -230,13 +230,13 @@ describe('script-linting 123', () => {
 
     it('should handle multiple files with mixed escaping - covers line 45', () => {
       // Test multiple files with various characters requiring escaping
-      vi.mocked(fileFiltering.filterValidFiles).mockReturnValue([
+      (fileFiltering.filterValidFiles as jest.Mock).mockReturnValue([
         'normal.ts',
         "file'with'single'quotes.ts",
         'file with spaces.ts',
         'nested/path/file.ts',
       ]);
-      vi.mocked(commandUtils.execCommand).mockReturnValue({
+      (commandUtils.execCommand as jest.Mock).mockReturnValue({
         success: true,
         output: '',
       });

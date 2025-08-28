@@ -1,26 +1,25 @@
 /**
  * Simple tests for coverage-analysis.ts
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { runScriptCoverage } from './coverage-analysis';
 
 // Mock coverage-helpers
-const mockExecuteCoverage = vi.fn(() => ({
-  failed: false,
-  output: '✅ Coverage analysis completed successfully',
-}));
-
-vi.mock('./coverage-helpers', () => ({
-  buildCoverageCommand: vi.fn(() => ({
+jest.mock('./coverage-helpers', () => ({
+  buildCoverageCommand: jest.fn(() => ({
     command: 'npx vitest run --coverage',
     shouldSkip: false,
   })),
-  executeCoverage: mockExecuteCoverage,
+  executeCoverage: jest.fn(() => ({
+    failed: false,
+    output: '✅ Coverage analysis completed successfully',
+  })),
 }));
+
+const mockExecuteCoverage = jest.requireMock('./coverage-helpers').executeCoverage;
 
 describe('coverage-analysis', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
     mockExecuteCoverage.mockReturnValue({
       failed: false,
       output: '✅ Coverage analysis completed successfully',

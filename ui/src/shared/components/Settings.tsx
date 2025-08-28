@@ -110,7 +110,7 @@ export function Settings() {
               </div>
               <div className="flex justify-between">
                 <span>Node.js:</span>
-                <span className="font-mono">{process.version}</span>
+                <span className="font-mono">{typeof process !== 'undefined' ? process.version : 'N/A'}</span>
               </div>
             </div>
           </CardContent>

@@ -15,10 +15,10 @@ export function runBackendChecks(
   try {
     validateStagedFiles(stagedFiles);
     if (stagedFiles.backendFiles.length === 0) {
-      console.log('ℹ️ No backend files to check');
+      console.error('ℹ️ No backend files to check');
       return { failed: false, output: '' };
     }
-    console.log('🔍 Starting backend checks...');
+    console.error('🔍 Starting backend checks...');
     const backendChecks = [
       {
         runner: runRustFormatting,
@@ -33,18 +33,18 @@ export function runBackendChecks(
     ];
 
     for (const { runner, name, label } of backendChecks) {
-      console.log(`📋 Running ${label}...`);
+      console.error(`📋 Running ${label}...`);
       const result = runner(projectRoot);
       if (!result.success) {
-        console.log(`❌ ${label} failed`);
+        console.error(`❌ ${label} failed`);
         return { failed: true, output: `${name}:\n${result.output}` };
       }
-      console.log(`✅ ${label} passed`);
+      console.error(`✅ ${label} passed`);
     }
     return { failed: false, output: '' };
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
-    console.log(`❌ Backend check error: ${errorMsg}`);
+    console.error(`❌ Backend check error: ${errorMsg}`);
     return { failed: true, output: `Backend check error: ${errorMsg}` };
   }
 }

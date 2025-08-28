@@ -46,7 +46,7 @@ const parseJscpd = (): AnalysisResult['duplicates'] => {
 };
 
 const analyzeDuplicates = (): AnalysisResult['duplicates'] => {
-  console.log('🔍 Analyzing code duplication...');
+  console.error('🔍 Analyzing code duplication...');
   if (!fs.existsSync('./code-analysis')) {
     fs.mkdirSync('./code-analysis', { recursive: true });
   }
@@ -55,7 +55,7 @@ const analyzeDuplicates = (): AnalysisResult['duplicates'] => {
 };
 
 const analyzeDeadCode = (): AnalysisResult['deadCode'] => {
-  console.log('🧹 Analyzing dead code...');
+  console.error('🧹 Analyzing dead code...');
   const unusedImports = run('npx unimported')
     .split('\n')
     .filter(l => l.trim() && !l.includes('✓'))
@@ -151,19 +151,19 @@ function collectBlockingReasons(result: AnalysisResult): string[] {
 // Handle blocking issues
 function handleBlockingIssues(reasons: string[]): void {
   console.error('🚫 Blocking issues:', reasons.join(', '));
-  console.log(JSON.stringify({ blocked: true, reasons }));
+  console.error(JSON.stringify({ blocked: true, reasons }));
   process.exit(1);
 }
 
 // Print analysis summary
 function printAnalysisSummary(result: AnalysisResult): void {
-  console.log(
+  console.error(
     `\n📊 Summary: Duplicates: ${result.duplicates.count} (${result.duplicates.percentage.toFixed(1)}%), Unused: ${result.deadCode.unusedImports.length} imports, ${result.deadCode.unusedExports.length} exports`
   );
 }
 
 async function main(): Promise<void> {
-  console.log('🚀 Starting automated code analysis...');
+  console.error('🚀 Starting automated code analysis...');
 
   const result: AnalysisResult = {
     duplicates: analyzeDuplicates(),
@@ -182,8 +182,8 @@ async function main(): Promise<void> {
     handleBlockingIssues(reasons);
   }
 
-  console.log('✅ Code analysis passed');
-  console.log(JSON.stringify({ blocked: false, summary: result.summary }));
+  console.error('✅ Code analysis passed');
+  console.error(JSON.stringify({ blocked: false, summary: result.summary }));
 }
 
 main().catch(console.error);

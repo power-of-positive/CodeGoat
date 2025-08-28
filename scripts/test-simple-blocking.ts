@@ -9,31 +9,31 @@ function parseResult(err: { stdout: string }): void {
     const lines = err.stdout.split('\n');
     const lastLine = lines[lines.length - 2];
     const result = JSON.parse(lastLine);
-    console.log('\n📊 Structured result:');
-    console.log('- Blocked:', result.blocked);
-    console.log('- Reasons:', result.reasons);
+    console.error('\n📊 Structured result:');
+    console.error('- Blocked:', result.blocked);
+    console.error('- Reasons:', result.reasons);
     // Note: exports structure changed to simple results
     if (result.details?.exports) {
-      console.log('- Export check passed');
+      console.error('- Export check passed');
     }
   } catch {
-    console.log('Could not parse structured output');
+    console.error('Could not parse structured output');
   }
 }
 
 async function testCodeAnalysis(): Promise<void> {
   const { execSync } = await import('child_process');
-  console.log('🧪 Testing code analysis blocking...');
+  console.error('🧪 Testing code analysis blocking...');
 
   try {
     const output = execSync('npm run code-analysis', { encoding: 'utf-8' });
-    console.log('✅ Code analysis passed');
-    console.log(output);
+    console.error('✅ Code analysis passed');
+    console.error(output);
   } catch (error: unknown) {
-    console.log('🚫 Code analysis BLOCKED (this is correct behavior)');
+    console.error('🚫 Code analysis BLOCKED (this is correct behavior)');
     const err = error as { status: number; stdout: string };
-    console.log('Exit code:', err.status);
-    console.log('Output:', err.stdout);
+    console.error('Exit code:', err.status);
+    console.error('Output:', err.stdout);
     parseResult(err);
   }
 }

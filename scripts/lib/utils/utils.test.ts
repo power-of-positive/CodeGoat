@@ -2,25 +2,24 @@
  * Tests for utils.ts
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
 import { findProjectRoot, PrecommitResult } from './utils';
 
 // Mock external dependencies
-vi.mock('fs');
-vi.mock('path');
+jest.mock('fs');
+jest.mock('path');
 
 describe('utils', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   describe('findProjectRoot', () => {
     it('should find project root with package.json', () => {
-      vi.mocked(fs.existsSync).mockReturnValue(true);
-      vi.mocked(path.join).mockReturnValue('/mock/package.json');
-      vi.mocked(path.parse).mockReturnValue({
+      (fs.existsSync as jest.Mock).mockReturnValue(true);
+      (path.join as jest.Mock).mockReturnValue('/mock/package.json');
+      (path.parse as jest.Mock).mockReturnValue({
         root: '/',
         dir: '/mock',
         base: 'current',
@@ -35,15 +34,15 @@ describe('utils', () => {
     });
 
     it('should throw error when package.json not found', () => {
-      vi.mocked(fs.existsSync).mockReturnValue(false);
-      vi.mocked(path.parse).mockReturnValue({
+      (fs.existsSync as jest.Mock).mockReturnValue(false);
+      (path.parse as jest.Mock).mockReturnValue({
         root: '/',
         dir: '/',
         base: 'root',
         ext: '',
         name: 'root',
       });
-      vi.mocked(path.dirname).mockReturnValue('/');
+      (path.dirname as jest.Mock).mockReturnValue('/');
 
       expect(() => findProjectRoot()).toThrow('Could not find project root with package.json');
     });

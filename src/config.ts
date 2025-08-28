@@ -8,6 +8,17 @@ export class ConfigLoader {
   private defaultConfigPath: string;
   private userConfigPath: string;
 
+  // Constants for configuration
+  private static readonly DEFAULT_PORT = 3001;
+  private static readonly DECIMAL_BASE = 10;
+  private static readonly REQUEST_TIMEOUT_MS = 30000; // 30 seconds
+  private static readonly IDLE_TIMEOUT_MS = 120000; // 2 minutes  
+  private static readonly MAX_RETRY_ATTEMPTS = 3;
+  private static readonly DEFAULT_HOST = '0.0.0.0';
+  private static readonly DEFAULT_PROVIDER = 'openrouter';
+  private static readonly MODEL_PREFIX_FALLBACK = 'model-';
+  private static readonly MODEL_NAME_FALLBACK_PREFIX = 'Model ';
+
   constructor(configPath?: string) {
     const baseDir = process.cwd();
     this.defaultConfigPath = path.join(baseDir, 'config.default.yaml');
@@ -61,23 +72,34 @@ export class ConfigLoader {
     return this.normalizeModernConfig(config);
   }
 
+  /**
+   * Convert a single legacy model config to ModelConfigItem
+   */
+  private convertLegacyModel(model: Record<string, unknown>, index: number): [string, ModelConfigItem] {
+    const modelName = model.model_name as string | undefined;
+    const modelKey = modelName?.replace(/[^a-zA-Z0-9-_]/g, '-') ?? `${ConfigLoader.MODEL_PREFIX_FALLBACK}${index}`;
+    const litellmParams = (model.litellm_params as { model?: string; api_key?: string }) ?? {};
+    
+    const provider = this.extractProvider(litellmParams.model ?? '') ?? ConfigLoader.DEFAULT_PROVIDER;
+    
+    const modelConfigItem: ModelConfigItem = {
+      name: (model.model_name as string) ?? `${ConfigLoader.MODEL_NAME_FALLBACK_PREFIX}${index + 1}`,
+      model: litellmParams.model ?? '',
+      provider,
+      baseUrl: this.getProviderBaseUrl(provider),
+      apiKey: litellmParams.api_key ?? '',
+      enabled: true,
+    };
+    
+    return [modelKey, modelConfigItem];
+  }
+
   private normalizeLegacyConfig(config: Record<string, unknown>): ModelConfig {
     const models: Record<string, ModelConfigItem> = {};
     (config.model_list as Record<string, unknown>[]).forEach(
       (model: Record<string, unknown>, index: number) => {
-        const modelName = model.model_name as string | undefined;
-        const modelKey = modelName?.replace(/[^a-zA-Z0-9-_]/g, '-') ?? `model-${index}`;
-        const litellmParams = (model.litellm_params as { model?: string; api_key?: string }) ?? {};
-        models[modelKey] = {
-          name: (model.model_name as string) ?? `Model ${index + 1}`,
-          model: litellmParams.model ?? '',
-          provider: this.extractProvider(litellmParams.model ?? '') ?? 'openrouter',
-          baseUrl: this.getProviderBaseUrl(
-            this.extractProvider(litellmParams.model ?? '') ?? 'openrouter'
-          ),
-          apiKey: litellmParams.api_key ?? '',
-          enabled: true,
-        };
+        const [modelKey, modelConfigItem] = this.convertLegacyModel(model, index);
+        models[modelKey] = modelConfigItem;
       }
     );
 
@@ -125,7 +147,7 @@ export class ConfigLoader {
 
   private extractProvider(model: string): string {
     if (!model) {
-      return 'openrouter';
+      return ConfigLoader.DEFAULT_PROVIDER;
     }
     if (model.startsWith('openrouter/')) {
       return 'openrouter';
@@ -174,12 +196,12 @@ export class ConfigLoader {
 
   private convertToProxyConfig(modelConfig: ModelConfig): ProxyConfig {
     return {
-      proxy: { port: parseInt(process.env.PORT ?? '3001', 10), host: '0.0.0.0' },
+      proxy: { port: parseInt(process.env.PORT ?? ConfigLoader.DEFAULT_PORT.toString(), ConfigLoader.DECIMAL_BASE), host: ConfigLoader.DEFAULT_HOST },
       routes: this.createDefaultRoutes(),
       settings: {
         logging: { level: 'info', format: 'json' },
-        timeout: { request: 30000, idle: 120000 },
-        retries: { attempts: 3, backoff: 'exponential' },
+        timeout: { request: ConfigLoader.REQUEST_TIMEOUT_MS, idle: ConfigLoader.IDLE_TIMEOUT_MS },
+        retries: { attempts: ConfigLoader.MAX_RETRY_ATTEMPTS, backoff: 'exponential' },
       },
       modelConfig,
     };

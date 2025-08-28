@@ -2,7 +2,6 @@
  * Tests for review-utils.ts - Integration tests that don't rely heavily on mocking
  */
 
-import { describe, it, expect } from 'vitest';
 import { findProjectRoot, execCommand } from './review-utils';
 import * as fs from 'fs';
 

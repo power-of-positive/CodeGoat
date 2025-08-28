@@ -28,11 +28,10 @@
     ],
     "Stop": [
       {
-        "matcher": "",
         "hooks": [
           {
             "type": "command",
-            "command": "cd /Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat && npx tsx scripts/claude-stop-hook.ts"
+            "command": "echo 'Stop hook ran at: ' $(date) >> /tmp/claude-stop-hook.log && echo 'Stop hook triggered!'"
           }
         ]
       }

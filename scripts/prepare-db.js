@@ -4,7 +4,7 @@ const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 
-console.log('Preparing database for SQLx...');
+console.error('Preparing database for SQLx...');
 
 // Change to backend directory
 const backendDir = path.join(__dirname, '..', 'crates/db');
@@ -19,23 +19,23 @@ try {
   const dbPath = path.resolve(dbFile);
   const databaseUrl = `sqlite:${dbPath}`;
 
-  console.log(`Using database: ${databaseUrl}`);
+  console.error(`Using database: ${databaseUrl}`);
 
   // Run migrations
-  console.log('Running migrations...');
+  console.error('Running migrations...');
   execSync('cargo sqlx migrate run', {
     stdio: 'inherit',
     env: { ...process.env, DATABASE_URL: databaseUrl }
   });
 
   // Prepare queries
-  console.log('Preparing queries...');
+  console.error('Preparing queries...');
   execSync('cargo sqlx prepare', {
     stdio: 'inherit',
     env: { ...process.env, DATABASE_URL: databaseUrl }
   });
 
-  console.log('Database preparation complete!');
+  console.error('Database preparation complete!');
 
 } finally {
   // Clean up temporary file

@@ -32,7 +32,7 @@ class SupervisedTaskRunner {
       const content = await fs.readFile(this.todoFile, 'utf8');
       return JSON.parse(content);
     } catch {
-      console.log('📝 No todo file found, creating empty list');
+      console.error('📝 No todo file found, creating empty list');
       return [];
     }
   }
@@ -51,11 +51,11 @@ class SupervisedTaskRunner {
     }
     
     if (task.status === 'completed') {
-      console.log(`✅ Task ${taskId} already completed`);
+      console.error(`✅ Task ${taskId} already completed`);
       return true;
     }
 
-    console.log(`🎯 Starting supervised execution of task: ${task.content}`);
+    console.error(`🎯 Starting supervised execution of task: ${task.content}`);
     
     // Mark task as in progress
     task.status = 'in_progress';
@@ -69,10 +69,10 @@ class SupervisedTaskRunner {
       
       if (result.success) {
         task.status = 'completed';
-        console.log(`🎉 Task ${taskId} completed successfully!`);
+        console.error(`🎉 Task ${taskId} completed successfully!`);
       } else {
         task.status = 'pending';
-        console.log(`❌ Task ${taskId} failed after ${result.attempts} attempts`);
+        console.error(`❌ Task ${taskId} failed after ${result.attempts} attempts`);
       }
       
       await this.saveTodos(todos);
@@ -136,38 +136,38 @@ Begin working on the primary task now.`;
     const todos = await this.loadTodos();
     const pendingTasks = todos.filter(t => t.status === 'pending');
     
-    console.log(`🎯 Starting supervised execution of ${pendingTasks.length} pending tasks`);
+    console.error(`🎯 Starting supervised execution of ${pendingTasks.length} pending tasks`);
     
     let completed = 0;
     let failed = 0;
     
     for (const task of pendingTasks) {
-      console.log(`\n${'='.repeat(SEPARATOR_LINE_LENGTH)}`);
-      console.log(`📋 Task ${task.id}: ${task.content}`);
-      console.log(`${'='.repeat(SEPARATOR_LINE_LENGTH)}\n`);
+      console.error(`\n${'='.repeat(SEPARATOR_LINE_LENGTH)}`);
+      console.error(`📋 Task ${task.id}: ${task.content}`);
+      console.error(`${'='.repeat(SEPARATOR_LINE_LENGTH)}\n`);
       
       const success = await this.runTask(task.id);
       
       if (success) {
         completed++;
-        console.log(`✅ Task ${task.id} completed (${completed}/${pendingTasks.length})`);
+        console.error(`✅ Task ${task.id} completed (${completed}/${pendingTasks.length})`);
       } else {
         failed++;
-        console.log(`❌ Task ${task.id} failed (${failed} failures so far)`);
+        console.error(`❌ Task ${task.id} failed (${failed} failures so far)`);
         
         // Ask user if they want to continue
         const continueAnswer = await this.askUser(`Continue with remaining tasks? (y/n): `);
         if (continueAnswer.toLowerCase() !== 'y') {
-          console.log('🛑 Task execution stopped by user');
+          console.error('🛑 Task execution stopped by user');
           break;
         }
       }
     }
     
-    console.log(`\n📊 Task Execution Summary:`);
-    console.log(`  Completed: ${completed}`);
-    console.log(`  Failed: ${failed}`);
-    console.log(`  Success Rate: ${((completed / (completed + failed)) * 100).toFixed(1)}%`);
+    console.error(`\n📊 Task Execution Summary:`);
+    console.error(`  Completed: ${completed}`);
+    console.error(`  Failed: ${failed}`);
+    console.error(`  Success Rate: ${((completed / (completed + failed)) * 100).toFixed(1)}%`);
     
     return { completed, failed };
   }
@@ -198,7 +198,7 @@ async function main() {
   const command = args[0];
   
   if (!command) {
-    console.log(`
+    console.error(`
 🎯 Supervised Task Runner
 
 Usage:
@@ -241,11 +241,11 @@ Examples:
         
       case 'status': {
         const todos = await runner.loadTodos();
-        console.log(`📊 Task Status:`);
-        console.log(`  Total: ${todos.length}`);
-        console.log(`  Pending: ${todos.filter(t => t.status === 'pending').length}`);
-        console.log(`  In Progress: ${todos.filter(t => t.status === 'in_progress').length}`);
-        console.log(`  Completed: ${todos.filter(t => t.status === 'completed').length}`);
+        console.error(`📊 Task Status:`);
+        console.error(`  Total: ${todos.length}`);
+        console.error(`  Pending: ${todos.filter(t => t.status === 'pending').length}`);
+        console.error(`  In Progress: ${todos.filter(t => t.status === 'in_progress').length}`);
+        console.error(`  Completed: ${todos.filter(t => t.status === 'completed').length}`);
         break;
       }
         

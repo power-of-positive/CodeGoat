@@ -2,50 +2,49 @@
  * Tests for llm-check.ts
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { checkLlmReview } from './llm-check';
 import * as severityAnalyzer from '../severity/severity-analyzer';
 
-vi.mock('fs/promises');
-vi.mock('../severity/severity-analyzer');
+jest.mock('fs/promises');
+jest.mock('../severity/severity-analyzer');
 
 describe('llm-check', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   describe('checkLlmReview', () => {
     it('should return not blocked when review file does not exist', async () => {
-      vi.mocked(fs.access).mockRejectedValue(new Error('File not found'));
+      (fs.access as jest.Mock).mockRejectedValue(new Error('File not found'));
 
       const result = await checkLlmReview('/mock/project', 'review.tmp');
 
       expect(result.blocked).toBe(false);
       expect(result.output).toBe('');
-      expect(vi.mocked(severityAnalyzer.analyzeLlmReviewSeverity)).not.toHaveBeenCalled();
+      expect((severityAnalyzer.analyzeLlmReviewSeverity as jest.Mock)).not.toHaveBeenCalled();
     });
 
     it('should return not blocked when no severity issues found', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(severityAnalyzer.analyzeLlmReviewSeverity).mockReturnValue('');
-      vi.mocked(severityAnalyzer.shouldBlockClaude).mockReturnValue(false);
+      (fs.access as jest.Mock).mockResolvedValue(undefined);
+      (severityAnalyzer.analyzeLlmReviewSeverity as jest.Mock).mockReturnValue('');
+      (severityAnalyzer.shouldBlockClaude as jest.Mock).mockReturnValue(false);
 
       const result = await checkLlmReview('/mock/project', 'review.tmp');
 
       expect(result.blocked).toBe(false);
       expect(result.output).toBe('');
-      expect(vi.mocked(severityAnalyzer.analyzeLlmReviewSeverity)).toHaveBeenCalledWith(
+      expect((severityAnalyzer.analyzeLlmReviewSeverity as jest.Mock)).toHaveBeenCalledWith(
         path.join('/mock/project', 'review.tmp')
       );
     });
 
     it('should return blocked when severity issues require blocking', async () => {
       const mockIssues = 'CRITICAL: Security vulnerability detected';
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(severityAnalyzer.analyzeLlmReviewSeverity).mockReturnValue(mockIssues);
-      vi.mocked(severityAnalyzer.shouldBlockClaude).mockReturnValue(true);
+      (fs.access as jest.Mock).mockResolvedValue(undefined);
+      (severityAnalyzer.analyzeLlmReviewSeverity as jest.Mock).mockReturnValue(mockIssues);
+      (severityAnalyzer.shouldBlockClaude as jest.Mock).mockReturnValue(true);
 
       const result = await checkLlmReview('/mock/project', 'review.tmp');
 
@@ -54,12 +53,12 @@ describe('llm-check', () => {
     });
 
     it('should handle errors gracefully and return not blocked', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(severityAnalyzer.analyzeLlmReviewSeverity).mockImplementation(() => {
+      (fs.access as jest.Mock).mockResolvedValue(undefined);
+      (severityAnalyzer.analyzeLlmReviewSeverity as jest.Mock).mockImplementation(() => {
         throw new Error('Analysis failed');
       });
 
-      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
 
       const result = await checkLlmReview('/mock/project', 'review.tmp');
 
@@ -71,12 +70,12 @@ describe('llm-check', () => {
     });
 
     it('should handle non-Error exceptions', async () => {
-      vi.mocked(fs.access).mockResolvedValue(undefined);
-      vi.mocked(severityAnalyzer.analyzeLlmReviewSeverity).mockImplementation(() => {
+      (fs.access as jest.Mock).mockResolvedValue(undefined);
+      (severityAnalyzer.analyzeLlmReviewSeverity as jest.Mock).mockImplementation(() => {
         throw 'String error';
       });
 
-      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
 
       const result = await checkLlmReview('/mock/project', 'review.tmp');
 

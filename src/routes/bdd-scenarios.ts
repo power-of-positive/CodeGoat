@@ -2,6 +2,14 @@ import express from 'express';
 import { PrismaClient, BDDScenarioStatus } from '@prisma/client';
 import { BDDScenarioService } from '../services/bdd-scenario-service';
 
+// HTTP status code constants
+const HTTP_STATUS = {
+  OK: 200,
+  CREATED: 201,
+  BAD_REQUEST: 400,
+  INTERNAL_SERVER_ERROR: 500,
+} as const;
+
 const router = express.Router();
 const prisma = new PrismaClient();
 const bddService = new BDDScenarioService(prisma);
@@ -16,7 +24,7 @@ router.get('/', async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching BDD scenarios:', error);
-    res.status(500).json({
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: 'Failed to fetch BDD scenarios',
       error: (error as Error).message,
@@ -35,7 +43,7 @@ router.get('/task/:taskId', async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching task BDD scenarios:', error);
-    res.status(500).json({
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: 'Failed to fetch task BDD scenarios',
       error: (error as Error).message,
@@ -53,7 +61,7 @@ router.get('/stats', async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching BDD stats:', error);
-    res.status(500).json({
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: 'Failed to fetch BDD statistics',
       error: (error as Error).message,
@@ -75,7 +83,7 @@ router.post('/comprehensive', async (req, res) => {
     });
   } catch (error) {
     console.error('Error creating comprehensive BDD scenarios:', error);
-    res.status(500).json({
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: 'Failed to create comprehensive BDD scenarios',
       error: (error as Error).message,
@@ -90,20 +98,20 @@ router.post('/', async (req, res) => {
     
     // Validate required fields
     if (!scenarioData.todoTaskId || !scenarioData.title || !scenarioData.gherkinContent) {
-      return res.status(400).json({
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
         success: false,
         message: 'Missing required fields: todoTaskId, title, and gherkinContent are required',
       });
     }
 
     const scenario = await bddService.createScenario(scenarioData);
-    res.status(201).json({
+    res.status(HTTP_STATUS.CREATED).json({
       success: true,
       data: scenario,
     });
   } catch (error) {
     console.error('Error creating BDD scenario:', error);
-    res.status(500).json({
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: 'Failed to create BDD scenario',
       error: (error as Error).message,
@@ -119,7 +127,7 @@ router.put('/:scenarioId/status', async (req, res) => {
 
     // Validate status
     if (!Object.values(BDDScenarioStatus).includes(status)) {
-      return res.status(400).json({
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
         success: false,
         message: `Invalid status. Must be one of: ${Object.values(BDDScenarioStatus).join(', ')}`,
       });
@@ -132,7 +140,7 @@ router.put('/:scenarioId/status', async (req, res) => {
     });
   } catch (error) {
     console.error('Error updating scenario status:', error);
-    res.status(500).json({
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: 'Failed to update scenario status',
       error: (error as Error).message,
@@ -151,7 +159,7 @@ router.post('/:scenarioId/execute', async (req, res) => {
     });
   } catch (error) {
     console.error('Error executing BDD scenario:', error);
-    res.status(500).json({
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: 'Failed to execute BDD scenario',
       error: (error as Error).message,
@@ -170,7 +178,7 @@ router.get('/:scenarioId/history', async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching execution history:', error);
-    res.status(500).json({
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: 'Failed to fetch execution history',
       error: (error as Error).message,
@@ -185,7 +193,7 @@ router.put('/:scenarioId/link-test', async (req, res) => {
     const { testFile, testName } = req.body;
 
     if (!testFile || !testName) {
-      return res.status(400).json({
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
         success: false,
         message: 'testFile and testName are required',
       });
@@ -198,7 +206,7 @@ router.put('/:scenarioId/link-test', async (req, res) => {
     });
   } catch (error) {
     console.error('Error linking scenario to test:', error);
-    res.status(500).json({
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: 'Failed to link scenario to Playwright test',
       error: (error as Error).message,
@@ -240,7 +248,7 @@ router.post('/execute-all', async (req, res) => {
     });
   } catch (error) {
     console.error('Error executing all scenarios:', error);
-    res.status(500).json({
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
       message: 'Failed to execute all scenarios',
       error: (error as Error).message,

@@ -42,34 +42,34 @@ const getEntryIcon = (entryType: { type: string; tool_name?: string; action_type
     return <AlertCircle className="h-4 w-4 text-red-600" />;
   }
   if (entryType.type === 'tool_use') {
-    const { action_type, tool_name } = entryType;
+    const { action_type: actionType, tool_name: toolName } = entryType;
 
     // Special handling for TODO tools
     if (
-      action_type?.action === 'todo_management' ||
-      (tool_name &&
-        (tool_name.toLowerCase() === 'todowrite' ||
-          tool_name.toLowerCase() === 'todoread' ||
-          tool_name.toLowerCase() === 'todo_write' ||
-          tool_name.toLowerCase() === 'todo_read' ||
-          tool_name.toLowerCase() === 'todo'))
+      actionType?.action === 'todo_management' ||
+      (toolName &&
+        (toolName.toLowerCase() === 'todowrite' ||
+          toolName.toLowerCase() === 'todoread' ||
+          toolName.toLowerCase() === 'todo_write' ||
+          toolName.toLowerCase() === 'todo_read' ||
+          toolName.toLowerCase() === 'todo'))
     ) {
       return <CheckSquare className="h-4 w-4 text-purple-600" />;
     }
 
-    if (action_type?.action === 'file_read') {
+    if (actionType?.action === 'file_read') {
       return <Eye className="h-4 w-4 text-orange-600" />;
-    } else if (action_type?.action === 'file_edit') {
+    } else if (actionType?.action === 'file_edit') {
       return <Edit className="h-4 w-4 text-red-600" />;
-    } else if (action_type?.action === 'command_run') {
+    } else if (actionType?.action === 'command_run') {
       return <Terminal className="h-4 w-4 text-yellow-600" />;
-    } else if (action_type?.action === 'search') {
+    } else if (actionType?.action === 'search') {
       return <Search className="h-4 w-4 text-indigo-600" />;
-    } else if (action_type?.action === 'web_fetch') {
+    } else if (actionType?.action === 'web_fetch') {
       return <Globe className="h-4 w-4 text-cyan-600" />;
-    } else if (action_type?.action === 'task_create') {
+    } else if (actionType?.action === 'task_create') {
       return <Plus className="h-4 w-4 text-teal-600" />;
-    } else if (action_type?.action === 'plan_presentation') {
+    } else if (actionType?.action === 'plan_presentation') {
       return <CheckSquare className="h-4 w-4 text-blue-600" />;
     }
     return <Settings className="h-4 w-4 text-gray-600" />;

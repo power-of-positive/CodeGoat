@@ -19,7 +19,7 @@ export { runTypeScriptCheck, runPrettierFormat, runEslintFix } from '../formatti
  * Run API E2E tests with dynamic port
  */
 export async function runApiE2eTests(projectRoot: string): Promise<CheckResult> {
-  console.log('🧪 Running API E2E tests...');
+  console.error('🧪 Running API E2E tests...');
 
   try {
     // Validate path format first (catches empty strings)
@@ -31,17 +31,17 @@ export async function runApiE2eTests(projectRoot: string): Promise<CheckResult> 
     const absoluteProjectRoot = path.resolve(projectRoot);
     validateInput(absoluteProjectRoot, 'path');
     const availablePort = await findAvailablePort(DEFAULT_API_PORT);
-    console.log(`📡 Using port ${availablePort} for API E2E tests`);
+    console.error(`📡 Using port ${availablePort} for API E2E tests`);
 
     const result = execCommand('npm run test:e2e:api', projectRoot, API_E2E_TIMEOUT_MS, {
       BACKEND_PORT: availablePort.toString(),
     });
 
-    console.log(result.success ? '✅ API E2E tests passed' : '❌ API E2E tests failed');
+    console.error(result.success ? '✅ API E2E tests passed' : '❌ API E2E tests failed');
     return result;
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
-    console.log(`⚠️ Failed to run API E2E tests: ${errorMsg}`);
+    console.error(`⚠️ Failed to run API E2E tests: ${errorMsg}`);
     return {
       success: false,
       output: `API E2E test execution failed: ${errorMsg}`,

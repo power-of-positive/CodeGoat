@@ -2,7 +2,6 @@
  * Test utilities and mock helpers
  */
 
-import { vi } from 'vitest';
 import { StructuredReviewData, ReviewResult, ProjectMetrics } from '../utils/types';
 
 /**
@@ -59,7 +58,7 @@ export function createMockProjectMetrics(overrides: Partial<ProjectMetrics> = {}
  * Mock LLM Reviewer class for tests
  */
 export class MockLLMReviewer {
-  reviewChangedFiles = vi.fn().mockResolvedValue({
+  reviewChangedFiles = jest.fn().mockResolvedValue({
     structuredData: createMockStructuredReview(),
     textReport: 'Mock text report',
   });
@@ -69,14 +68,14 @@ export class MockLLMReviewer {
  * Common mock setup for execCommand
  */
 export function setupExecCommandMock(mockImplementation?: () => string) {
-  return vi.fn().mockImplementation(mockImplementation || (() => ''));
+  return jest.fn().mockImplementation(mockImplementation || (() => ''));
 }
 
 /**
  * Common mock setup for file filtering
  */
 export function setupFilterValidFilesMock(returnValue: string[] = []) {
-  return vi.fn().mockReturnValue(returnValue);
+  return jest.fn().mockReturnValue(returnValue);
 }
 
 /**
@@ -86,9 +85,9 @@ export function setupTestMocks() {
   const mocks = {
     execCommand: setupExecCommandMock(),
     filterValidFiles: setupFilterValidFilesMock(),
-    writeFileSync: vi.fn(),
-    readFileSync: vi.fn(),
-    existsSync: vi.fn().mockReturnValue(true),
+    writeFileSync: jest.fn(),
+    readFileSync: jest.fn(),
+    existsSync: jest.fn().mockReturnValue(true),
   };
 
   const cleanup = () => {

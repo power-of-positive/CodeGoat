@@ -2,28 +2,28 @@
  * Tests for rust-runners.ts
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+
 import { runRustFormatting, runRustLinting } from './rust-runners';
 import { execCommand } from '../utils/command-utils';
 import { validateDirectoryExists } from '../utils/validation-utils';
 
 // Mock external dependencies
-vi.mock('../utils/command-utils');
-vi.mock('../utils/validation-utils');
+jest.mock('../utils/command-utils');
+jest.mock('../utils/validation-utils');
 
 describe('rust-runners', () => {
   beforeEach(() => {
-    vi.resetAllMocks();
+    jest.resetAllMocks();
 
     // Mock validation-utils - by default, don't throw
-    vi.mocked(validateDirectoryExists).mockImplementation(() => {
+    (validateDirectoryExists as jest.Mock).mockImplementation(() => {
       // Default: do nothing (validation passes)
     });
   });
 
   describe('runRustFormatting', () => {
     it('should return CheckResult with correct structure', () => {
-      vi.mocked(execCommand).mockReturnValue({
+      (execCommand as jest.Mock).mockReturnValue({
         success: true,
         output: 'Rust formatting passed',
       });
@@ -37,7 +37,7 @@ describe('rust-runners', () => {
     });
 
     it('should handle invalid project root', () => {
-      vi.mocked(validateDirectoryExists).mockImplementation((dirPath: string) => {
+      (validateDirectoryExists as jest.Mock).mockImplementation((dirPath: string) => {
         if (
           !dirPath ||
           dirPath === '/backend' ||
@@ -53,7 +53,7 @@ describe('rust-runners', () => {
     });
 
     it('should call execCommand with correct parameters', () => {
-      vi.mocked(execCommand).mockReturnValue({
+      (execCommand as jest.Mock).mockReturnValue({
         success: true,
         output: 'formatting success',
       });
@@ -67,7 +67,7 @@ describe('rust-runners', () => {
     });
 
     it('should handle execCommand throwing error', () => {
-      vi.mocked(execCommand).mockReturnValue({
+      (execCommand as jest.Mock).mockReturnValue({
         success: false,
         output: 'Formatting failed',
       });
@@ -81,7 +81,7 @@ describe('rust-runners', () => {
 
   describe('runRustLinting', () => {
     it('should return CheckResult with correct structure', () => {
-      vi.mocked(execCommand).mockReturnValue({
+      (execCommand as jest.Mock).mockReturnValue({
         success: true,
         output: 'Rust linting passed',
       });
@@ -95,7 +95,7 @@ describe('rust-runners', () => {
     });
 
     it('should handle invalid project root', () => {
-      vi.mocked(validateDirectoryExists).mockImplementation((dirPath: string) => {
+      (validateDirectoryExists as jest.Mock).mockImplementation((dirPath: string) => {
         if (
           !dirPath ||
           dirPath === '/backend' ||
@@ -111,7 +111,7 @@ describe('rust-runners', () => {
     });
 
     it('should call execCommand with correct parameters', () => {
-      vi.mocked(execCommand).mockReturnValue({
+      (execCommand as jest.Mock).mockReturnValue({
         success: true,
         output: 'linting success',
       });
@@ -125,7 +125,7 @@ describe('rust-runners', () => {
     });
 
     it('should handle execCommand throwing error', () => {
-      vi.mocked(execCommand).mockReturnValue({
+      (execCommand as jest.Mock).mockReturnValue({
         success: false,
         output: 'Linting failed',
       });

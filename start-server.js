@@ -19,7 +19,7 @@ server.on('error', (err) => {
 });
 
 server.on('close', (code) => {
-  console.log(`Server process exited with code ${code}`);
+  console.error(`Server process exited with code ${code}`);
   process.exit(code);
 });
 

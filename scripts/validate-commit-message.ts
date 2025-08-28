@@ -219,7 +219,7 @@ async function handleNewTask(
   taskId: string,
   commitMessage: string
 ): Promise<void> {
-  console.log(`📝 Task ${taskId} not found, creating new task...`);
+  console.error(`📝 Task ${taskId} not found, creating new task...`);
 
   const content = extractTaskContent(taskId, commitMessage);
 
@@ -232,8 +232,8 @@ async function handleNewTask(
   });
 
   if (newTask) {
-    console.log(`✅ Created new task [${newTask.id}]: ${newTask.content}`);
-    console.log(`   Status: ${newTask.status}, Priority: ${newTask.priority}`);
+    console.error(`✅ Created new task [${newTask.id}]: ${newTask.content}`);
+    console.error(`   Status: ${newTask.status}, Priority: ${newTask.priority}`);
   } else {
     console.warn('⚠️  Failed to create task, but allowing commit to proceed');
   }
@@ -247,26 +247,26 @@ async function handleExistingTask(
   task: Task,
   commitMessage: string
 ): Promise<void> {
-  console.log(`✅ Found existing task [${task.id}]: ${task.content.substring(0, TASK_CONTENT_DISPLAY_LENGTH)}...`);
-  console.log(`   Current status: ${task.status}, Priority: ${task.priority}`);
+  console.error(`✅ Found existing task [${task.id}]: ${task.content.substring(0, TASK_CONTENT_DISPLAY_LENGTH)}...`);
+  console.error(`   Current status: ${task.status}, Priority: ${task.priority}`);
 
   // Check if this commit indicates task completion
   const isCompletionCommit = isTaskCompletionCommit(commitMessage);
 
   if (isCompletionCommit && task.status !== 'completed') {
-    console.log(`🎉 Commit indicates task completion, marking task [${task.id}] as completed...`);
+    console.error(`🎉 Commit indicates task completion, marking task [${task.id}] as completed...`);
     const updated = await updateTaskStatus(config.apiBaseUrl, task.id, 'completed');
     if (updated) {
-      console.log(`✅ Task [${task.id}] marked as completed`);
+      console.error(`✅ Task [${task.id}] marked as completed`);
     } else {
       console.warn('⚠️  Failed to update task status to completed, but allowing commit to proceed');
     }
   } else if (task.status === 'pending') {
     // If task is pending and not a completion commit, mark it as in_progress
-    console.log(`🔄 Marking task [${task.id}] as in_progress...`);
+    console.error(`🔄 Marking task [${task.id}] as in_progress...`);
     const updated = await updateTaskStatus(config.apiBaseUrl, task.id, 'in_progress');
     if (updated) {
-      console.log(`✅ Task [${task.id}] marked as in_progress`);
+      console.error(`✅ Task [${task.id}] marked as in_progress`);
     } else {
       console.warn('⚠️  Failed to update task status, but allowing commit to proceed');
     }
@@ -295,12 +295,12 @@ async function validateCommitMessage(): Promise<void> {
   const config = DEFAULT_CONFIG;
   const commitMessage = getCommitMessage();
 
-  console.log('🔍 Validating commit message...');
-  console.log(`📝 Message: ${commitMessage.split('\n')[0]}`); // First line only
+  console.error('🔍 Validating commit message...');
+  console.error(`📝 Message: ${commitMessage.split('\n')[0]}`); // First line only
 
   // Check if message is excluded
   if (isExcludedMessage(commitMessage, config.excludePatterns)) {
-    console.log('✅ Commit message is excluded from validation');
+    console.error('✅ Commit message is excluded from validation');
     process.exit(0);
   }
 
@@ -316,19 +316,19 @@ async function validateCommitMessage(): Promise<void> {
     process.exit(1);
   }
 
-  console.log(`📋 Found task reference: ${taskId}`);
+  console.error(`📋 Found task reference: ${taskId}`);
 
   // Load tasks from database
   const tasks = await loadTasksFromAPI(config.apiBaseUrl);
   if (tasks.length === 0) {
-    console.log('⚠️  Could not load tasks from database, skipping validation');
+    console.error('⚠️  Could not load tasks from database, skipping validation');
     process.exit(0);
   }
 
-  console.log(`📊 Loaded ${tasks.length} tasks from database`);
+  console.error(`📊 Loaded ${tasks.length} tasks from database`);
 
   await handleTaskOperations(config, taskId, commitMessage, tasks);
-  console.log('✅ Commit message validation passed');
+  console.error('✅ Commit message validation passed');
 }
 
 // Run validation

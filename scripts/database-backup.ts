@@ -66,7 +66,7 @@ function createBackup(type: 'manual' | 'auto' = 'manual', description?: string):
     description,
   };
 
-  console.log(`✅ Backup created: ${filename} (${(stats.size / BYTES_PER_KB).toFixed(DECIMAL_PLACES_FOR_SIZE)} KB)`);
+  console.error(`✅ Backup created: ${filename} (${(stats.size / BYTES_PER_KB).toFixed(DECIMAL_PLACES_FOR_SIZE)} KB)`);
   return metadata;
 }
 
@@ -112,15 +112,15 @@ function restoreBackup(filename: string): void {
   const preRestorePath = path.join(CONFIG.backupDir, preRestoreBackup);
   if (fs.existsSync(CONFIG.dbPath)) {
     fs.copyFileSync(CONFIG.dbPath, preRestorePath);
-    console.log(`📁 Current database backed up as: ${preRestoreBackup}`);
+    console.error(`📁 Current database backed up as: ${preRestoreBackup}`);
   }
 
   // Restore the backup
   fs.copyFileSync(backupPath, CONFIG.dbPath);
   
   const stats = fs.statSync(CONFIG.dbPath);
-  console.log(`✅ Database restored from: ${filename} (${(stats.size / BYTES_PER_KB).toFixed(DECIMAL_PLACES_FOR_SIZE)} KB)`);
-  console.log(`⚠️  Please restart the application to ensure proper database connection.`);
+  console.error(`✅ Database restored from: ${filename} (${(stats.size / BYTES_PER_KB).toFixed(DECIMAL_PLACES_FOR_SIZE)} KB)`);
+  console.error(`⚠️  Please restart the application to ensure proper database connection.`);
 }
 
 function cleanupOldBackups(): void {
@@ -133,7 +133,7 @@ function cleanupOldBackups(): void {
     const toDelete = manualBackups.slice(CONFIG.maxBackups);
     toDelete.forEach(backup => {
       fs.unlinkSync(path.join(CONFIG.backupDir, backup.filename));
-      console.log(`🗑️  Deleted old manual backup: ${backup.filename}`);
+      console.error(`🗑️  Deleted old manual backup: ${backup.filename}`);
     });
   }
 
@@ -142,7 +142,7 @@ function cleanupOldBackups(): void {
     const toDelete = autoBackups.slice(CONFIG.cronBackups);
     toDelete.forEach(backup => {
       fs.unlinkSync(path.join(CONFIG.backupDir, backup.filename));
-      console.log(`🗑️  Deleted old auto backup: ${backup.filename}`);
+      console.error(`🗑️  Deleted old auto backup: ${backup.filename}`);
     });
   }
 }
@@ -161,7 +161,7 @@ function verifyBackup(filename: string): boolean {
     const header = buffer.subarray(0, SQLITE_HEADER_LENGTH).toString('ascii');
     
     if (header.startsWith('SQLite format 3')) {
-      console.log(`✅ Backup verified: ${filename}`);
+      console.error(`✅ Backup verified: ${filename}`);
       return true;
     } else {
       console.error(`❌ Invalid SQLite file: ${filename}`);
@@ -175,13 +175,13 @@ function verifyBackup(filename: string): boolean {
 
 function formatBackupList(backups: BackupMetadata[]): void {
   if (backups.length === 0) {
-    console.log('No backups found.');
+    console.error('No backups found.');
     return;
   }
 
-  console.log('\n📦 Available Backups:\n');
-  console.log('Type'.padEnd(TABLE_PADDING.TYPE) + 'Filename'.padEnd(TABLE_PADDING.FILENAME) + 'Size'.padEnd(TABLE_PADDING.SIZE) + 'Date'.padEnd(TABLE_PADDING.DATE) + 'Description');
-  console.log('-'.repeat(SEPARATOR_LINE_LENGTH));
+  console.error('\n📦 Available Backups:\n');
+  console.error('Type'.padEnd(TABLE_PADDING.TYPE) + 'Filename'.padEnd(TABLE_PADDING.FILENAME) + 'Size'.padEnd(TABLE_PADDING.SIZE) + 'Date'.padEnd(TABLE_PADDING.DATE) + 'Description');
+  console.error('-'.repeat(SEPARATOR_LINE_LENGTH));
   
   backups.forEach(backup => {
     const type = backup.type.toUpperCase().padEnd(TABLE_PADDING.TYPE - 1);
@@ -190,9 +190,9 @@ function formatBackupList(backups: BackupMetadata[]): void {
     const date = new Date(backup.timestamp).toLocaleString().padEnd(TABLE_PADDING.DATE - 1);
     const description = backup.description || '';
     
-    console.log(`${type} ${filename} ${size} ${date} ${description}`);
+    console.error(`${type} ${filename} ${size} ${date} ${description}`);
   });
-  console.log();
+  console.error();
 }
 
 function handleBackupCommands(command: string, args: string[]): void {
@@ -231,7 +231,7 @@ function handleVerifyCommands(command: string, args: string[]): void {
         }
       });
       if (allValid && backups.length > 0) {
-        console.log(`✅ All ${backups.length} backups are valid.`);
+        console.error(`✅ All ${backups.length} backups are valid.`);
       }
       break;
     }
@@ -239,48 +239,48 @@ function handleVerifyCommands(command: string, args: string[]): void {
 }
 
 function handleStatusCommand(): void {
-  console.log('\n📊 Backup Status:\n');
-  console.log(`Database: ${CONFIG.dbPath}`);
-  console.log(`Backup Directory: ${CONFIG.backupDir}`);
-  console.log(`Max Manual Backups: ${CONFIG.maxBackups}`);
-  console.log(`Max Auto Backups: ${CONFIG.cronBackups}`);
+  console.error('\n📊 Backup Status:\n');
+  console.error(`Database: ${CONFIG.dbPath}`);
+  console.error(`Backup Directory: ${CONFIG.backupDir}`);
+  console.error(`Max Manual Backups: ${CONFIG.maxBackups}`);
+  console.error(`Max Auto Backups: ${CONFIG.cronBackups}`);
   
   if (fs.existsSync(CONFIG.dbPath)) {
     const dbStats = fs.statSync(CONFIG.dbPath);
-    console.log(`Database Size: ${(dbStats.size / BYTES_PER_KB).toFixed(DECIMAL_PLACES_FOR_SIZE)} KB`);
-    console.log(`Last Modified: ${dbStats.mtime.toLocaleString()}`);
+    console.error(`Database Size: ${(dbStats.size / BYTES_PER_KB).toFixed(DECIMAL_PLACES_FOR_SIZE)} KB`);
+    console.error(`Last Modified: ${dbStats.mtime.toLocaleString()}`);
   } else {
-    console.log('❌ Database file not found!');
+    console.error('❌ Database file not found!');
   }
 
   const backups = listBackups();
-  console.log(`Total Backups: ${backups.length}`);
-  console.log(`Manual Backups: ${backups.filter(b => b.type === 'manual').length}`);
-  console.log(`Auto Backups: ${backups.filter(b => b.type === 'auto').length}`);
+  console.error(`Total Backups: ${backups.length}`);
+  console.error(`Manual Backups: ${backups.filter(b => b.type === 'manual').length}`);
+  console.error(`Auto Backups: ${backups.filter(b => b.type === 'auto').length}`);
   
   if (backups.length > 0) {
     const totalSize = backups.reduce((sum, b) => sum + b.size, 0);
-    console.log(`Total Backup Size: ${(totalSize / BYTES_PER_KB).toFixed(DECIMAL_PLACES_FOR_SIZE)} KB`);
-    console.log(`Latest Backup: ${backups[0].filename} (${new Date(backups[0].timestamp).toLocaleString()})`);
+    console.error(`Total Backup Size: ${(totalSize / BYTES_PER_KB).toFixed(DECIMAL_PLACES_FOR_SIZE)} KB`);
+    console.error(`Latest Backup: ${backups[0].filename} (${new Date(backups[0].timestamp).toLocaleString()})`);
   }
-  console.log();
+  console.error();
 }
 
 function showHelp(): void {
-  console.log('\n📦 Database Backup Manager\n');
-  console.log('Usage:');
-  console.log('  npm run backup:create [description]  - Create a manual backup');
-  console.log('  npm run backup:auto [description]    - Create an automatic backup');
-  console.log('  npm run backup:list                  - List all backups');
-  console.log('  npm run backup:restore <filename>    - Restore from backup');
-  console.log('  npm run backup:verify <filename>     - Verify backup integrity');
-  console.log('  npm run backup:verify-all            - Verify all backups');
-  console.log('  npm run backup:cleanup               - Clean up old backups');
-  console.log('  npm run backup:status                - Show backup status');
-  console.log('\nExamples:');
-  console.log('  npm run backup:create "Before major update"');
-  console.log('  npm run backup:restore kanban-backup-manual-2025-08-22T10-30-00-000Z.db');
-  console.log();
+  console.error('\n📦 Database Backup Manager\n');
+  console.error('Usage:');
+  console.error('  npm run backup:create [description]  - Create a manual backup');
+  console.error('  npm run backup:auto [description]    - Create an automatic backup');
+  console.error('  npm run backup:list                  - List all backups');
+  console.error('  npm run backup:restore <filename>    - Restore from backup');
+  console.error('  npm run backup:verify <filename>     - Verify backup integrity');
+  console.error('  npm run backup:verify-all            - Verify all backups');
+  console.error('  npm run backup:cleanup               - Clean up old backups');
+  console.error('  npm run backup:status                - Show backup status');
+  console.error('\nExamples:');
+  console.error('  npm run backup:create "Before major update"');
+  console.error('  npm run backup:restore kanban-backup-manual-2025-08-22T10-30-00-000Z.db');
+  console.error();
 }
 
 // Handle list commands
@@ -308,7 +308,7 @@ function handleRestoreCommands(command: string, args: string[]): void {
 function handleCleanupCommands(command: string): void {
   if (command === 'cleanup') {
     cleanupOldBackups();
-    console.log('✅ Cleanup completed.');
+    console.error('✅ Cleanup completed.');
   }
 }
 

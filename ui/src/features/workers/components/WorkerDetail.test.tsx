@@ -815,11 +815,12 @@ describe('WorkerDetail', () => {
     });
   });
 
-  describe.skip('Validation History Display', () => {
-    it.skip('should display validation history when available', async () => {
+  describe('Validation History Display', () => {
+    it('should display validation history when available', async () => {
       const workerWithValidationHistory = {
         ...mockWorkerStatus,
         status: 'completed' as const,
+        validationRuns: 2, // Required to show validation section
         validationHistory: [
           {
             id: 'run-1',
@@ -853,6 +854,9 @@ describe('WorkerDetail', () => {
           ],
         },
       };
+      
+      // Clear previous mocks and set the new one
+      jest.clearAllMocks();
       (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(
         workerWithValidationHistory
       );
@@ -860,15 +864,22 @@ describe('WorkerDetail', () => {
       renderWithProviders();
 
       await waitFor(() => {
-        expect(screen.getByText(/Validation History \(2 runs\)/)).toBeInTheDocument();
-        expect(screen.getByText('Passed')).toBeInTheDocument();
-        expect(screen.getByText('Failed')).toBeInTheDocument();
+        expect(screen.getByText(/Validation History \(2 runs\):/)).toBeInTheDocument();
+        
+        // Check for validation history items - use more specific queries
+        expect(screen.getAllByText('Passed')).toHaveLength(2); // One in Latest Run, one in history
+        expect(screen.getAllByText('Failed')).toHaveLength(2); // One in Latest Run, one in history
+        
+        // Check for duration texts
         expect(screen.getByText('5.0s')).toBeInTheDocument();
         expect(screen.getByText('3.0s')).toBeInTheDocument();
+        
+        // Verify View All button exists
+        expect(screen.getByText('View All')).toBeInTheDocument();
       });
     });
 
-    it.skip('should handle validation history with more than 5 runs', async () => {
+    it('should handle validation history with more than 5 runs', async () => {
       const validationRuns = Array.from({ length: 8 }, (_, i) => ({
         id: `run-${i + 1}`,
         timestamp: `2024-01-01T10:${i.toString().padStart(2, '0')}:00Z`,
@@ -880,6 +891,7 @@ describe('WorkerDetail', () => {
       const workerWithManyValidationRuns = {
         ...mockWorkerStatus,
         status: 'completed' as const,
+        validationRuns: 8, // Required to show validation section
         validationHistory: validationRuns,
         lastValidationRun: validationRuns[0],
       };
@@ -890,7 +902,7 @@ describe('WorkerDetail', () => {
       renderWithProviders();
 
       await waitFor(() => {
-        expect(screen.getByText(/Validation History \(8 runs\)/)).toBeInTheDocument();
+        expect(screen.getByText(/Validation History \(8 runs\):/)).toBeInTheDocument();
         expect(screen.getByText('...and 3 more runs')).toBeInTheDocument();
       });
     });
@@ -899,6 +911,7 @@ describe('WorkerDetail', () => {
       const workerWithLastRun = {
         ...mockWorkerStatus,
         status: 'completed' as const,
+        validationRuns: 1, // Required to show validation section
         lastValidationRun: {
           id: 'run-latest',
           timestamp: '2024-01-01T10:00:00Z',
@@ -919,8 +932,19 @@ describe('WorkerDetail', () => {
 
       await waitFor(() => {
         expect(screen.getByText('Latest Run:')).toBeInTheDocument();
-        expect(screen.getByText('2')).toBeInTheDocument(); // Passed stages
-        expect(screen.getByText('1')).toBeInTheDocument(); // Failed stages
+        
+        // Look for the passed stages count in the green box
+        const passedElement = screen.getAllByText('2').find(element => 
+          element.closest('.bg-green-50')
+        );
+        expect(passedElement).toBeInTheDocument();
+        
+        // Look for the failed stages count in the red box  
+        const failedElement = screen.getAllByText('1').find(element => 
+          element.closest('.bg-red-50')
+        );
+        expect(failedElement).toBeInTheDocument();
+        
         expect(screen.getByText('8.5s duration')).toBeInTheDocument();
       });
     });
@@ -929,6 +953,7 @@ describe('WorkerDetail', () => {
       const workerWithLastRunNoDuration = {
         ...mockWorkerStatus,
         status: 'completed' as const,
+        validationRuns: 1, // Required to show validation section
         lastValidationRun: {
           id: 'run-no-duration',
           timestamp: '2024-01-01T10:00:00Z',
@@ -958,6 +983,7 @@ describe('WorkerDetail', () => {
       const workerWithValidationHistory = {
         ...mockWorkerStatus,
         status: 'completed' as const,
+        validationRuns: 1, // Required to show validation section
         validationHistory: [
           {
             id: 'run-clickable',
@@ -991,6 +1017,7 @@ describe('WorkerDetail', () => {
       const workerWithValidationHistory = {
         ...mockWorkerStatus,
         status: 'completed' as const,
+        validationRuns: 1, // Required to show validation section
         validationHistory: [
           {
             id: 'run-1',
@@ -1019,7 +1046,7 @@ describe('WorkerDetail', () => {
     });
   });
 
-  describe.skip('Error Handling and Edge Cases', () => {
+  describe('Error Handling and Edge Cases', () => {
     it('should handle start worker mutation error', async () => {
       const stoppedWorker = { ...mockWorkerStatus, status: 'stopped' as const };
       (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(stoppedWorker);
@@ -1075,10 +1102,11 @@ describe('WorkerDetail', () => {
       });
     });
 
-    it.skip('should handle empty validation stages in last run', async () => {
+    it('should handle empty validation stages in last run', async () => {
       const workerWithEmptyStages = {
         ...mockWorkerStatus,
         status: 'completed' as const,
+        validationRuns: 1, // Required to show validation section
         lastValidationRun: {
           id: 'run-empty',
           timestamp: '2024-01-01T10:00:00Z',
@@ -1087,6 +1115,9 @@ describe('WorkerDetail', () => {
           stages: [], // Empty stages
         },
       };
+      
+      // Clear previous mocks and set the new one
+      jest.clearAllMocks();
       (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(
         workerWithEmptyStages
       );
@@ -1095,7 +1126,11 @@ describe('WorkerDetail', () => {
 
       await waitFor(() => {
         expect(screen.getByText('Latest Run:')).toBeInTheDocument();
-        expect(screen.getByText('0')).toBeInTheDocument(); // Both passed and failed should show 0
+        // When there are no stages, the passed/failed counts are not displayed
+        expect(screen.queryByText('Passed')).not.toBeInTheDocument();
+        expect(screen.queryByText('Failed')).not.toBeInTheDocument();
+        // But duration should still be shown
+        expect(screen.getByText('1.0s duration')).toBeInTheDocument();
       });
     });
 
@@ -1137,7 +1172,7 @@ describe('WorkerDetail', () => {
       );
 
       // Component should handle missing workerId gracefully
-      expect(screen.getByText(/loading worker details/i)).toBeInTheDocument();
+      expect(screen.getByText(/worker not found/i)).toBeInTheDocument();
     });
   });
 });

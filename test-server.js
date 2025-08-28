@@ -56,22 +56,22 @@ app.get('*', (req, res) => {
 
 const PORT = process.env.PORT || 3001;
 const server = app.listen(PORT, () => {
-  console.log(`Test server running on http://localhost:${PORT}`);
+  console.error(`Test server running on http://localhost:${PORT}`);
 });
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
-  console.log('Shutting down test server...');
+  console.error('Shutting down test server...');
   server.close(() => {
-    console.log('Test server shut down.');
+    console.error('Test server shut down.');
     process.exit(0);
   });
 });
 
 process.on('SIGINT', () => {
-  console.log('Shutting down test server...');
+  console.error('Shutting down test server...');
   server.close(() => {
-    console.log('Test server shut down.');
+    console.error('Test server shut down.');
     process.exit(0);
   });
 });

@@ -1,31 +1,36 @@
 /**
  * Tests for file-filtering.ts
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+
 import * as fs from 'fs';
 import * as path from 'path';
 import { sanitizeFilePath, filterValidFiles, filterCoverageFiles } from '../files/file-filtering';
 
 // Mock external dependencies
-vi.mock('fs');
-vi.mock('path');
+jest.mock('fs');
+jest.mock('path', () => ({
+  resolve: jest.fn(),
+  normalize: jest.fn(),
+  relative: jest.fn(),
+  join: jest.fn(),
+  sep: '/'
+}));
 
 describe('file-filtering', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   describe('sanitizeFilePath', () => {
     it('should return relative path for valid file', () => {
       // Mock the calls in order they are made
-      vi.mocked(path.resolve)
+      (path.resolve as jest.Mock)
         .mockReturnValueOnce('/project/scripts/test.ts') // path.resolve(projectRoot, file)
         .mockReturnValueOnce('/project'); // path.resolve(projectRoot) for normalized root
-      vi.mocked(path.normalize)
+      (path.normalize as jest.Mock)
         .mockReturnValueOnce('/project/scripts/test.ts') // path.normalize(resolved)
         .mockReturnValueOnce('/project'); // path.normalize(path.resolve(projectRoot))
-      vi.mocked(path.relative).mockReturnValue('scripts/test.ts');
-      (path as { sep: string }).sep = '/';
+      (path.relative as jest.Mock).mockReturnValue('scripts/test.ts');
 
       const result = sanitizeFilePath('scripts/test.ts', '/project');
 
@@ -42,13 +47,12 @@ describe('file-filtering', () => {
     });
 
     it('should throw error for paths outside project root', () => {
-      vi.mocked(path.resolve)
+      (path.resolve as jest.Mock)
         .mockReturnValueOnce('/other/path') // path.resolve(projectRoot, file)
         .mockReturnValueOnce('/project'); // path.resolve(projectRoot) for normalized root
-      vi.mocked(path.normalize)
+      (path.normalize as jest.Mock)
         .mockReturnValueOnce('/other/path') // path.normalize(resolved)
         .mockReturnValueOnce('/project'); // path.normalize(path.resolve(projectRoot))
-      (path as { sep: string }).sep = '/';
 
       expect(() => sanitizeFilePath('../../../etc/passwd', '/project')).toThrow(
         'is outside project root'
@@ -63,17 +67,16 @@ describe('file-filtering', () => {
 
     it('should filter valid existing files', () => {
       // Mock all path and fs functions to return expected values
-      vi.mocked(path.resolve).mockImplementation((_root: string, file?: string) => {
+      (path.resolve as jest.Mock).mockImplementation((_root: string, file?: string) => {
         if (file) {
           return `/project/${file}`;
         } // path.resolve(projectRoot, file)
         return '/project'; // path.resolve(projectRoot)
       });
-      vi.mocked(path.normalize).mockImplementation((p: string) => p);
-      vi.mocked(path.relative).mockReturnValue('test.ts');
-      vi.mocked(path.join).mockReturnValue('/project/test.ts');
-      vi.mocked(fs.existsSync).mockReturnValue(true);
-      (path as { sep: string }).sep = '/';
+      (path.normalize as jest.Mock).mockImplementation((p: string) => p);
+      (path.relative as jest.Mock).mockReturnValue('test.ts');
+      (path.join as jest.Mock).mockReturnValue('/project/test.ts');
+      (fs.existsSync as jest.Mock).mockReturnValue(true);
 
       const result = filterValidFiles('/project', ['test.ts']);
 
@@ -81,7 +84,7 @@ describe('file-filtering', () => {
     });
 
     it('should skip invalid files with warning', () => {
-      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
 
       const result = filterValidFiles('/project', ['invalid`file']);
 
@@ -96,14 +99,13 @@ describe('file-filtering', () => {
     });
 
     it('should filter TypeScript files for coverage', () => {
-      vi.mocked(path.resolve)
+      (path.resolve as jest.Mock)
         .mockReturnValueOnce('/project/scripts/test.ts') // path.resolve(projectRoot, file)
         .mockReturnValueOnce('/project'); // path.resolve(projectRoot) for normalized root
-      vi.mocked(path.normalize)
+      (path.normalize as jest.Mock)
         .mockReturnValueOnce('/project/scripts/test.ts') // path.normalize(resolved)
         .mockReturnValueOnce('/project'); // path.normalize(path.resolve(projectRoot))
-      vi.mocked(path.relative).mockReturnValue('scripts/test.ts');
-      (path as { sep: string }).sep = '/';
+      (path.relative as jest.Mock).mockReturnValue('scripts/test.ts');
 
       const result = filterCoverageFiles('/project', ['scripts/test.ts']);
 
@@ -111,14 +113,13 @@ describe('file-filtering', () => {
     });
 
     it('should exclude test and spec files from coverage', () => {
-      vi.mocked(path.resolve)
+      (path.resolve as jest.Mock)
         .mockReturnValueOnce('/project/scripts/test.test.ts') // path.resolve(projectRoot, file)
         .mockReturnValueOnce('/project'); // path.resolve(projectRoot) for normalized root
-      vi.mocked(path.normalize)
+      (path.normalize as jest.Mock)
         .mockReturnValueOnce('/project/scripts/test.test.ts') // path.normalize(resolved)
         .mockReturnValueOnce('/project'); // path.normalize(path.resolve(projectRoot))
-      vi.mocked(path.relative).mockReturnValue('scripts/test.test.ts');
-      (path as { sep: string }).sep = '/';
+      (path.relative as jest.Mock).mockReturnValue('scripts/test.test.ts');
 
       const result = filterCoverageFiles('/project', ['scripts/test.test.ts']);
 
@@ -126,7 +127,7 @@ describe('file-filtering', () => {
     });
 
     it('should handle sanitization errors gracefully', () => {
-      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
 
       const result = filterCoverageFiles('/project', ['invalid`file']);
 

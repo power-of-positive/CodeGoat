@@ -34,13 +34,26 @@ const CODEGOAT_PATTERN = /^CODEGOAT-(\d+):/i;
 const API_BASE_URL = 'http://localhost:3001/api';
 const TASKS_ENDPOINT = `${API_BASE_URL}/tasks`;
 
+// Timeout constants (in milliseconds)
+const API_TIMEOUT_MS = 5000; // 5 second timeout for API requests
+const HEALTH_CHECK_TIMEOUT_MS = 2000; // 2 second timeout for health checks
+
+// Time constants
+const MILLISECONDS_PER_SECOND = 1000;
+const SECONDS_PER_MINUTE = 60;
+const MINUTES_PER_HOUR = 60;
+const HOURS_PER_DAY = 24;
+const DEFAULT_TASK_DURATION_HOURS = 1; // Default assumption for task duration when start time unknown
+const CONTENT_PREVIEW_LENGTH = 60; // Characters to show in task content preview
+const COMMIT_HASH_PREFIX_LENGTH = 7; // Length of commit hash to show in log
+
 /**
  * Load tasks from database via API
  */
 async function loadTasksFromDatabase(): Promise<TodoItem[]> {
   try {
     const response = await fetch(TASKS_ENDPOINT, {
-      signal: AbortSignal.timeout(5000), // 5 second timeout
+      signal: AbortSignal.timeout(API_TIMEOUT_MS),
     });
 
     if (!response.ok) {
@@ -72,7 +85,7 @@ function loadTodoList(todoListPath: string): TodoItem[] {
 function saveTodoList(todoListPath: string, todos: TodoItem[]): void {
   try {
     fs.writeFileSync(todoListPath, JSON.stringify(todos, null, 2) + '\n', 'utf-8');
-    console.log(`✅ Updated todo-list.json`);
+    console.error(`✅ Updated todo-list.json`);
   } catch (error) {
     console.error(`❌ Failed to save todo list: ${(error as Error).message}`);
     throw error;
@@ -109,17 +122,17 @@ function calculateDuration(startTime: string, endTime: string): string {
     return 'Invalid duration';
   }
 
-  const seconds = Math.floor(durationMs / 1000);
-  const minutes = Math.floor(seconds / 60);
-  const hours = Math.floor(minutes / 60);
-  const days = Math.floor(hours / 24);
+  const seconds = Math.floor(durationMs / MILLISECONDS_PER_SECOND);
+  const minutes = Math.floor(seconds / SECONDS_PER_MINUTE);
+  const hours = Math.floor(minutes / MINUTES_PER_HOUR);
+  const days = Math.floor(hours / HOURS_PER_DAY);
 
   if (days > 0) {
-    return `${days}d ${hours % 24}h ${minutes % 60}m`;
+    return `${days}d ${hours % HOURS_PER_DAY}h ${minutes % MINUTES_PER_HOUR}m`;
   } else if (hours > 0) {
-    return `${hours}h ${minutes % 60}m`;
+    return `${hours}h ${minutes % MINUTES_PER_HOUR}m`;
   } else if (minutes > 0) {
-    return `${minutes}m ${seconds % 60}s`;
+    return `${minutes}m ${seconds % SECONDS_PER_MINUTE}s`;
   } else {
     return `${seconds}s`;
   }
@@ -151,7 +164,7 @@ async function updateTaskInDatabase(taskId: string, updates: Partial<TodoItem>):
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(updates),
-      signal: AbortSignal.timeout(5000), // 5 second timeout
+      signal: AbortSignal.timeout(API_TIMEOUT_MS),
     });
 
     if (!response.ok) {
@@ -161,7 +174,7 @@ async function updateTaskInDatabase(taskId: string, updates: Partial<TodoItem>):
       return false;
     }
 
-    console.log(`✅ Updated task ${taskId} in database`);
+    console.error(`✅ Updated task ${taskId} in database`);
     return true;
   } catch (error) {
     console.warn(`⚠️ Error updating task ${taskId} in database:`, (error as Error).message);
@@ -175,7 +188,7 @@ async function updateTaskInDatabase(taskId: string, updates: Partial<TodoItem>):
 async function isApiServerAvailable(): Promise<boolean> {
   try {
     const response = await fetch(`${API_BASE_URL}/health`, {
-      signal: AbortSignal.timeout(2000), // 2 second timeout
+      signal: AbortSignal.timeout(HEALTH_CHECK_TIMEOUT_MS),
     });
     return response.ok;
   } catch {
@@ -212,7 +225,7 @@ async function processTaskCompletion(
     } else {
       // Use a reasonable default (1 hour before completion)
       const endDate = new Date(commit.timestamp);
-      endDate.setHours(endDate.getHours() - 1);
+      endDate.setHours(endDate.getHours() - DEFAULT_TASK_DURATION_HOURS);
       updates.startTime = endDate.toISOString();
     }
   }
@@ -222,17 +235,17 @@ async function processTaskCompletion(
     updates.duration = calculateDuration(updates.startTime, updates.endTime);
   }
 
-  console.log(`✅ Marking task ${taskId} as completed`);
-  console.log(`   Content: ${task.content.substring(0, 60)}...`);
-  console.log(`   Duration: ${updates.duration || 'Unknown'}`);
+  console.error(`✅ Marking task ${taskId} as completed`);
+  console.error(`   Content: ${task.content.substring(0, CONTENT_PREVIEW_LENGTH)}...`);
+  console.error(`   Duration: ${updates.duration || 'Unknown'}`);
 
   // Update via API if available, otherwise update local file
   if (apiAvailable) {
-    console.log(`🔄 Updating task ${taskId} in database...`);
+    console.error(`🔄 Updating task ${taskId} in database...`);
     const dbUpdateSuccess = await updateTaskInDatabase(taskId, updates);
 
     if (dbUpdateSuccess) {
-      console.log(`✅ Task ${taskId} completed successfully in database`);
+      console.error(`✅ Task ${taskId} completed successfully in database`);
     } else {
       console.warn(`⚠️  Failed to update task ${taskId} in database, falling back to local file`);
       // Fallback to local file update
@@ -241,7 +254,7 @@ async function processTaskCompletion(
       saveTodoList(todoListPath, todos);
     }
   } else {
-    console.log(`📝 Updating task ${taskId} in local todo-list.json...`);
+    console.error(`📝 Updating task ${taskId} in local todo-list.json...`);
     Object.assign(task, updates);
     const todoListPath = path.join(process.cwd(), 'todo-list.json');
     saveTodoList(todoListPath, todos);
@@ -254,9 +267,9 @@ async function updateTaskFromCommit(commitRef: string = 'HEAD'): Promise<void> {
   let todos: TodoItem[] = [];
 
   if (apiAvailable) {
-    console.log('🔄 Loading tasks from database...');
+    console.error('🔄 Loading tasks from database...');
     todos = await loadTasksFromDatabase();
-    console.log(`📋 Loaded ${todos.length} tasks from database`);
+    console.error(`📋 Loaded ${todos.length} tasks from database`);
   } else {
     console.warn('⚠️  API server not available, falling back to local todo-list.json');
     const todoListPath = path.join(process.cwd(), 'todo-list.json');
@@ -264,22 +277,22 @@ async function updateTaskFromCommit(commitRef: string = 'HEAD'): Promise<void> {
   }
 
   if (todos.length === 0) {
-    console.log('⚠️  No todos found');
+    console.error('⚠️  No todos found');
     return;
   }
 
   const commit = getCommitInfo(commitRef);
-  console.log(`🔍 Processing commit: ${commit.hash.substring(0, 7)}`);
-  console.log(`📝 Message: ${commit.message.split('\n')[0]}`);
+  console.error(`🔍 Processing commit: ${commit.hash.substring(0, COMMIT_HASH_PREFIX_LENGTH)}`);
+  console.error(`📝 Message: ${commit.message.split('\n')[0]}`);
 
   // Check if commit has CODEGOAT prefix
   const codegoatTaskId = extractTaskId(commit.message, CODEGOAT_PATTERN);
 
   if (codegoatTaskId) {
-    console.log(`🐐 Found CODEGOAT task reference: ${codegoatTaskId}`);
+    console.error(`🐐 Found CODEGOAT task reference: ${codegoatTaskId}`);
     await processTaskCompletion(todos, commit, codegoatTaskId, apiAvailable);
   } else {
-    console.log(`ℹ️  No CODEGOAT prefix found, task remains unchanged`);
+    console.error(`ℹ️  No CODEGOAT prefix found, task remains unchanged`);
   }
 }
 

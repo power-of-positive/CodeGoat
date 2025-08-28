@@ -41,11 +41,11 @@ config({ path: envPath });
 // Set environment variable to indicate we're in Claude stop hook context
 process.env.CLAUDE_STOP_HOOK = 'true';
 
-console.log('🔧 Loaded environment from:', envPath);
+console.error('🔧 Loaded environment from:', envPath);
 if (process.env.OPENAI_API_KEY) {
-  console.log('🔧 OPENAI_API_KEY is loaded');
+  console.error('🔧 OPENAI_API_KEY is loaded');
 } else {
-  console.log('🔧 OPENAI_API_KEY is NOT loaded');
+  console.error('🔧 OPENAI_API_KEY is NOT loaded');
 }
 
 /**
@@ -251,7 +251,7 @@ async function handleValidationChecks(): Promise<void> {
       decision: 'block',
       reason: error instanceof Error ? error.message : 'Validation checks failed',
     };
-    console.log(JSON.stringify(blockResult));
+    console.error(JSON.stringify(blockResult));
     process.exit(2);
   }
 }
@@ -270,7 +270,7 @@ async function handleLLMReview(allChanges: string): Promise<void> {
       decision: 'block',
       reason: result.reason || 'LLM review found medium or high severity issues',
     };
-    console.log(JSON.stringify(blockResult));
+    console.error(JSON.stringify(blockResult));
     process.exit(2);
   }
 
@@ -285,7 +285,7 @@ async function main(): Promise<void> {
   const GLOBAL_TIMEOUT = 1500000; // 25 minutes
   const globalTimeout = setTimeout(() => {
     console.error('⚠️ Stop hook timed out after 25 minutes');
-    console.log('{"decision": "block", "reason": "Stop hook execution timed out"}');
+    console.error('{"decision": "block", "reason": "Stop hook execution timed out"}');
     process.exit(2);
   }, GLOBAL_TIMEOUT);
 
@@ -299,7 +299,7 @@ async function main(): Promise<void> {
         decision: 'block',
         reason: todoValidation.reason || 'High priority tasks remain unfinished',
       };
-      console.log(JSON.stringify(blockResult));
+      console.error(JSON.stringify(blockResult));
       process.exit(2);
     }
 
@@ -314,7 +314,7 @@ async function main(): Promise<void> {
         decision: 'block',
         reason: 'Uncommitted files detected. Please commit or stash changes before completing.',
       };
-      console.log(JSON.stringify(blockResult));
+      console.error(JSON.stringify(blockResult));
       process.exit(2); // Exit with code 2 to indicate block decision
     }
 
@@ -331,12 +331,12 @@ async function main(): Promise<void> {
     } catch {
       // Ignore if say command fails
     }
-    console.log('{"decision": "approve"}');
+    console.error('{"decision": "approve"}');
     process.exit(0);
   } catch (error) {
     clearTimeout(globalTimeout);
     console.error('Stop hook error:', error);
-    console.log('{"decision": "block", "reason": "Stop hook execution failed"}');
+    console.error('{"decision": "block", "reason": "Stop hook execution failed"}');
     process.exit(2); // Exit with code 2 to indicate block decision
   }
 }

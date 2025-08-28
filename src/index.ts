@@ -18,6 +18,23 @@ import { createDatabaseService } from './services/database';
 const BYTES_PER_KB = 1024;
 const KB_PER_MB = 1024;
 
+// HTTP Status Codes
+const HTTP_OK = 200;
+const HTTP_BAD_REQUEST = 400;
+const HTTP_NOT_FOUND = 404;
+const HTTP_PAYLOAD_TOO_LARGE = 413;
+
+// Time Constants
+const MINUTES_PER_HOUR = 60;
+const SECONDS_PER_MINUTE = 60;
+const MS_PER_SECOND = 1000;
+const LOG_CLEANUP_INTERVAL_HOURS = 24;
+const MEMORY_CLEANUP_INTERVAL_MINUTES = 6;
+
+// Port Constants
+const DEFAULT_PORT = 3000;
+const SERVER_TIMEOUT_SECONDS = 30;
+
 const app = express();
 
 const logsDir = path.join(process.cwd(), 'logs');
@@ -48,11 +65,11 @@ const logCleaner = new LogCleaner(
 app.use((req: Request, res: Response, next: NextFunction) => {
   // Allow requests from localhost (development) and same origin
   const allowedOrigins = [
-    'http://localhost:3000',
+    `http://localhost:${DEFAULT_PORT}`,
     'http://localhost:3001',
     'http://localhost:5173', // Vite dev server (default)
     'http://localhost:5174', // Vite dev server (configured)
-    'http://127.0.0.1:3000',
+    `http://127.0.0.1:${DEFAULT_PORT}`,
     'http://127.0.0.1:3001',
     'http://127.0.0.1:5173',
     'http://127.0.0.1:5174',
@@ -69,7 +86,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 
   // Handle preflight requests
   if (req.method === 'OPTIONS') {
-    res.status(200).end();
+    res.status(HTTP_OK).end();
     return;
   }
 
@@ -98,7 +115,7 @@ app.use((error: Error & { type?: string }, req: Request, res: Response, next: Ne
       contentType: req.headers['content-type'],
       contentLength: req.headers['content-length'],
     });
-    return res.status(400).json({
+    return res.status(HTTP_BAD_REQUEST).json({
       error: 'Invalid JSON in request body',
     });
   }
@@ -110,7 +127,7 @@ app.use((error: Error & { type?: string }, req: Request, res: Response, next: Ne
       contentType: req.headers['content-type'],
       contentLength: req.headers['content-length'],
     });
-    return res.status(413).json({
+    return res.status(HTTP_PAYLOAD_TOO_LARGE).json({
       error: 'Request payload too large',
     });
   }
@@ -132,7 +149,7 @@ app.use((req, _res, next) => {
 app.use(logger.middleware());
 
 // Serve static files from UI build directory
-const uiDistPath = path.join(__dirname, '../../ui/dist');
+const uiDistPath = path.join(process.cwd(), 'ui/dist');
 app.use('/ui', express.static(uiDistPath));
 app.use(express.static(uiDistPath)); // Also serve UI at root
 
@@ -155,7 +172,7 @@ app.get('/health', (_req: Request, res: Response) => {
 app.use((req: Request, res: Response) => {
   // Don't serve index.html for API routes
   if (req.path.startsWith('/api/')) {
-    res.status(404).json({ error: 'Not found' });
+    res.status(HTTP_NOT_FOUND).json({ error: 'Not found' });
   } else {
     res.sendFile(path.join(uiDistPath, 'index.html'));
   }
@@ -164,10 +181,10 @@ app.use((req: Request, res: Response) => {
 // Create HTTP server
 const httpServer = createServer(app);
 
-const PORT = process.env.PORT ?? 3000;
+const PORT = process.env.PORT ?? DEFAULT_PORT;
 const HOST = process.env.HOST ?? 'localhost';
 
-// Only start server if not in test environment
+// Only start server if not in unit test environment (allow e2e-test environment)
 let server: Server | undefined;
 if (process.env.NODE_ENV !== 'test') {
   server = httpServer.listen(Number(PORT), HOST, () => {
@@ -176,27 +193,34 @@ if (process.env.NODE_ENV !== 'test') {
     // Run initial log cleanup
     void logCleaner.cleanLogs();
 
-    // Schedule log cleanup every 6 hours
-    const SIX_HOURS = 6 * 60 * 60 * 1000;
-    setInterval(() => {
-      void logCleaner.cleanLogs();
-    }, SIX_HOURS);
+    // Schedule log cleanup every 6 hours (skip in E2E tests to prevent memory issues)
+    if (process.env.NODE_ENV !== 'e2e-test') {
+      const SIX_HOURS = MEMORY_CLEANUP_INTERVAL_MINUTES * MINUTES_PER_HOUR * SECONDS_PER_MINUTE * MS_PER_SECOND;
+      setInterval(() => {
+        void logCleaner.cleanLogs();
+      }, SIX_HOURS);
+    }
   });
 
   // Set reasonable server timeout
-  server.timeout = 30000; // 30 seconds
+  server.timeout = SERVER_TIMEOUT_SECONDS * MS_PER_SECOND; // 30 seconds
 }
 
 // Initialize log management
 import { logManager } from './utils/log-manager';
 
-// Schedule daily log cleanup
-const logCleanupInterval = logManager.scheduleCleanup(24);
-console.error('🧹 Log cleanup scheduled to run every 24 hours');
+// Schedule daily log cleanup (skip in E2E tests to prevent memory issues)
+let logCleanupInterval: ReturnType<typeof setTimeout> | undefined;
+if (process.env.NODE_ENV !== 'e2e-test') {
+  logCleanupInterval = logManager.scheduleCleanup(LOG_CLEANUP_INTERVAL_HOURS);
+  console.error('🧹 Log cleanup scheduled to run every 24 hours');
+}
 
 // Export cleanup function for tests
 export const cleanupIntervals = () => {
-  clearInterval(logCleanupInterval);
+  if (logCleanupInterval) {
+    clearInterval(logCleanupInterval);
+  }
 };
 
 // Global error handlers to prevent server crashes

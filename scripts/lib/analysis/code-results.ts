@@ -14,7 +14,7 @@ export async function collectCodeResults(
   stagedFiles: StagedFiles
 ): Promise<{ failed: boolean; output: string }> {
   try {
-    console.log('\n🚀 Starting code quality checks...');
+    console.error('\n🚀 Starting code quality checks...');
     const checks = [
       {
         name: 'Frontend',
@@ -24,22 +24,22 @@ export async function collectCodeResults(
       { name: 'Scripts', fn: () => runScriptChecks(projectRoot, stagedFiles) },
     ];
     for (const check of checks) {
-      console.log(`\n📂 === ${check.name.toUpperCase()} CHECKS ===`);
+      console.error(`\n📂 === ${check.name.toUpperCase()} CHECKS ===`);
       const result = await check.fn();
       if (result.failed) {
-        console.log(`\n💥 ${check.name} checks FAILED - stopping further checks`);
+        console.error(`\n💥 ${check.name} checks FAILED - stopping further checks`);
         return {
           failed: true,
           output: `${check.name} checks failed:\n${result.output}`,
         };
       }
-      console.log(`\n✅ ${check.name} checks PASSED`);
+      console.error(`\n✅ ${check.name} checks PASSED`);
     }
-    console.log('\n🎉 All code quality checks passed!');
+    console.error('\n🎉 All code quality checks passed!');
     return { failed: false, output: '' };
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
-    console.log(`\n❌ Code check collection error: ${errorMsg}`);
+    console.error(`\n❌ Code check collection error: ${errorMsg}`);
     return { failed: true, output: `Code check collection error: ${errorMsg}` };
   }
 }

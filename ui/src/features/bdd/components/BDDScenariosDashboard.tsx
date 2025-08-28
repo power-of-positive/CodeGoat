@@ -216,7 +216,7 @@ export function BDDScenariosDashboard() {
           </Button>
           <Button
             onClick={() => executeAllMutation.mutate()}
-            disabled={executeAllMutation.isPending || scenarios.length === 0}
+            disabled={executeAllMutation.isPending || !scenarios || scenarios.length === 0}
           >
             {executeAllMutation.isPending ? (
               <RotateCcw className="h-4 w-4 mr-2 animate-spin" />

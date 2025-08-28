@@ -36,13 +36,13 @@ function runSyncFrontendChecks(projectRoot: string): {
   ];
 
   for (const { runner, name, label } of syncChecks) {
-    console.log(`📋 Running ${label}...`);
+    console.error(`📋 Running ${label}...`);
     const result = runner(projectRoot);
     if (!result.success) {
-      console.log(`❌ ${label} failed`);
+      console.error(`❌ ${label} failed`);
       return { failed: true, output: `${name}:\n${result.output}` };
     }
-    console.log(`✅ ${label} passed`);
+    console.error(`✅ ${label} passed`);
   }
   return { failed: false, output: '' };
 }
@@ -51,13 +51,13 @@ function runSyncFrontendChecks(projectRoot: string): {
  * Run API E2E tests
  */
 async function runApiE2eTests(projectRoot: string): Promise<{ failed: boolean; output: string }> {
-  console.log('📋 Running API E2E Tests...');
+  console.error('📋 Running API E2E Tests...');
   const result = await runApiE2eTestsFromRunner(projectRoot);
   if (!result.success) {
-    console.log('❌ API E2E Tests failed');
+    console.error('❌ API E2E Tests failed');
     return { failed: true, output: `API E2E TEST FAILURES:\n${result.output}` };
   }
-  console.log('✅ API E2E Tests passed');
+  console.error('✅ API E2E Tests passed');
   return { failed: false, output: '' };
 }
 
@@ -68,7 +68,7 @@ async function runApiE2eTests(projectRoot: string): Promise<{ failed: boolean; o
 /* async function runUnitTestCoverage(
   projectRoot: string,
 ): Promise<{ failed: boolean; output: string }> {
-  console.log("📊 Running unit test coverage...");
+  console.error("📊 Running unit test coverage...");
 
   try {
     const { execCommand } = await import("../utils/command-utils");
@@ -81,17 +81,17 @@ async function runApiE2eTests(projectRoot: string): Promise<{ failed: boolean; o
     );
 
     if (!result.success) {
-      console.log("❌ Unit test coverage failed");
+      console.error("❌ Unit test coverage failed");
       return {
         failed: true,
         output: `UNIT TEST COVERAGE FAILURES:\n${result.output}`,
       };
     }
-    console.log("✅ Unit test coverage passed");
+    console.error("✅ Unit test coverage passed");
     return { failed: false, output: "" };
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
-    console.log(`⚠️ Failed to run unit test coverage: ${errorMsg}`);
+    console.error(`⚠️ Failed to run unit test coverage: ${errorMsg}`);
     return {
       failed: true,
       output: `Unit test coverage execution failed: ${errorMsg}`,
@@ -121,16 +121,16 @@ export async function runFrontendChecks(
         return apiE2eResult;
       }
     } else {
-      console.log('⏭️ API E2E tests skipped (SKIP_API_E2E_TESTS=true)');
+      console.error('⏭️ API E2E tests skipped (SKIP_API_E2E_TESTS=true)');
     }
 
     // Skip other frontend checks if no frontend files are staged
     if (stagedFiles.frontendFiles.length === 0) {
-      console.log('ℹ️ No frontend files to check (linting/unit tests)');
+      console.error('ℹ️ No frontend files to check (linting/unit tests)');
       return { failed: false, output: '' };
     }
 
-    console.log('🔍 Starting frontend checks...');
+    console.error('🔍 Starting frontend checks...');
     const syncResult = runSyncFrontendChecks(projectRoot);
     if (syncResult.failed) {
       return syncResult;
@@ -139,7 +139,7 @@ export async function runFrontendChecks(
     return { failed: false, output: '' };
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
-    console.log(`❌ Frontend check error: ${errorMsg}`);
+    console.error(`❌ Frontend check error: ${errorMsg}`);
     return { failed: true, output: `Frontend check error: ${errorMsg}` };
   }
 }

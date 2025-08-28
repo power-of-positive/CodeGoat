@@ -25,14 +25,14 @@ const mockExecSync = execSync as jest.MockedFunction<typeof execSync>;
 const mockFs = fs as jest.Mocked<typeof fs>;
 const mockPath = path as jest.Mocked<typeof path>;
 
-// Mock console.log to prevent output during tests
-const originalConsoleLog = console.log;
+// Mock console.error to prevent output during tests
+const originalConsoleError = console.error;
 beforeAll(() => {
-  console.log = jest.fn();
+  console.error = jest.fn();
 });
 
 afterAll(() => {
-  console.log = originalConsoleLog;
+  console.error = originalConsoleError;
 });
 
 describe('AI Code Reviewer', () => {
@@ -493,19 +493,19 @@ describe('AI Code Reviewer', () => {
   });
 
   describe('outputResults', () => {
-    const originalConsoleLog = console.log;
+    const originalConsoleError = console.error;
     let consoleOutput: string[] = [];
 
     beforeEach(() => {
       jest.clearAllMocks();
       consoleOutput = [];
-      console.log = jest.fn().mockImplementation(msg => consoleOutput.push(msg));
+      console.error = jest.fn().mockImplementation(msg => consoleOutput.push(msg));
       mockPath.join.mockImplementation((...args) => args.join('/'));
       mockFs.writeFileSync.mockImplementation(() => {});
     });
 
     afterEach(() => {
-      console.log = originalConsoleLog;
+      console.error = originalConsoleError;
     });
 
     it('should output results with no issues', () => {

@@ -68,11 +68,25 @@ interface ComparisonMetric {
   isPositive: boolean;
 }
 
+// Time calculation constants
+const DEFAULT_RECENT_PERIOD_DAYS = 30;
+const DEFAULT_PREVIOUS_PERIOD_DAYS = 60;
+const HOURS_PER_DAY = 24;
+const MINUTES_PER_HOUR = 60;
+const SECONDS_PER_MINUTE = 60;
+const MILLISECONDS_PER_SECOND = 1000;
+const STAGE_NAME_TRUNCATE_LENGTH = 15;
+const RADAR_CHART_HEIGHT = 500;
+const BAR_CHART_HEIGHT = 300;
+const OVERVIEW_CHART_SLICE_LIMIT = 10;
+const RADAR_STAGE_LIMIT = 8;
+const QUERY_STALE_TIME_MINUTES = 5;
+
 const QUICK_PERIOD_OPTIONS = [
   { label: 'Last 7 vs Previous 7 days', days: 7 },
   { label: 'Last 14 vs Previous 14 days', days: 14 },
-  { label: 'Last 30 vs Previous 30 days', days: 30 },
-  { label: 'Last 60 vs Previous 60 days', days: 60 },
+  { label: 'Last 30 vs Previous 30 days', days: DEFAULT_RECENT_PERIOD_DAYS },
+  { label: 'Last 60 vs Previous 60 days', days: DEFAULT_PREVIOUS_PERIOD_DAYS },
 ];
 
 function TrendIndicator({ trend, value, percentage, suffix = '', isPositive = true }: TrendIndicatorProps) {
@@ -127,8 +141,8 @@ export function PerformanceComparison({
 }: PerformanceComparisonProps) {
   // Calculate default periods if not provided
   const now = new Date();
-  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-  const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+  const thirtyDaysAgo = new Date(now.getTime() - DEFAULT_RECENT_PERIOD_DAYS * HOURS_PER_DAY * MINUTES_PER_HOUR * SECONDS_PER_MINUTE * MILLISECONDS_PER_SECOND);
+  const sixtyDaysAgo = new Date(now.getTime() - DEFAULT_PREVIOUS_PERIOD_DAYS * HOURS_PER_DAY * MINUTES_PER_HOUR * SECONDS_PER_MINUTE * MILLISECONDS_PER_SECOND);
 
   const [period1Start, setPeriod1Start] = useState(
     defaultPeriod1?.start || thirtyDaysAgo.toISOString().split('T')[0]
@@ -161,14 +175,14 @@ export function PerformanceComparison({
         environment: environment || undefined,
       }),
     enabled: !!(period1Start && period1End && period2Start && period2End),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: QUERY_STALE_TIME_MINUTES * MINUTES_PER_HOUR * MILLISECONDS_PER_SECOND,
   });
 
   const handleQuickPeriodSelect = (days: number) => {
     const end1 = new Date();
-    const start1 = new Date(end1.getTime() - days * 24 * 60 * 60 * 1000);
-    const end2 = new Date(start1.getTime() - 24 * 60 * 60 * 1000); // 1 day gap
-    const start2 = new Date(end2.getTime() - days * 24 * 60 * 60 * 1000);
+    const start1 = new Date(end1.getTime() - days * HOURS_PER_DAY * MINUTES_PER_HOUR * SECONDS_PER_MINUTE * MILLISECONDS_PER_SECOND);
+    const end2 = new Date(start1.getTime() - HOURS_PER_DAY * MINUTES_PER_HOUR * SECONDS_PER_MINUTE * MILLISECONDS_PER_SECOND); // 1 day gap
+    const start2 = new Date(end2.getTime() - days * HOURS_PER_DAY * MINUTES_PER_HOUR * SECONDS_PER_MINUTE * MILLISECONDS_PER_SECOND);
 
     setPeriod1Start(start1.toISOString().split('T')[0]);
     setPeriod1End(end1.toISOString().split('T')[0]);
@@ -228,13 +242,13 @@ export function PerformanceComparison({
     // Radar chart data
     const radarData = comparison.stages
       .filter(stage => stage.status === 'compared')
-      .slice(0, 8) // Limit to 8 stages for readability
+      .slice(0, RADAR_STAGE_LIMIT) // Limit stages for readability
       .map(stage => {
         const p1Stage = periods.period1.stages.find(s => s.stageId === stage.stageId);
         const p2Stage = periods.period2.stages.find(s => s.stageId === stage.stageId);
         
         return {
-          stage: stage.stageName.length > 15 ? stage.stageName.slice(0, 15) + '...' : stage.stageName,
+          stage: stage.stageName.length > STAGE_NAME_TRUNCATE_LENGTH ? stage.stageName.slice(0, STAGE_NAME_TRUNCATE_LENGTH) + '...' : stage.stageName,
           period1: p1Stage?.successRate || 0,
           period2: p2Stage?.successRate || 0,
         };
@@ -539,8 +553,8 @@ export function PerformanceComparison({
               <p className="text-sm text-gray-600">Success rate comparison across periods</p>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={stageComparisonData.slice(0, 10)}>
+              <ResponsiveContainer width="100%" height={BAR_CHART_HEIGHT}>
+                <BarChart data={stageComparisonData.slice(0, OVERVIEW_CHART_SLICE_LIMIT)}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis 
                     dataKey="stageName" 
@@ -577,8 +591,8 @@ export function PerformanceComparison({
               <p className="text-sm text-gray-600">Average duration comparison across periods</p>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={stageComparisonData.slice(0, 10)}>
+              <ResponsiveContainer width="100%" height={BAR_CHART_HEIGHT}>
+                <BarChart data={stageComparisonData.slice(0, OVERVIEW_CHART_SLICE_LIMIT)}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis 
                     dataKey="stageName" 
@@ -717,7 +731,7 @@ export function PerformanceComparison({
             </p>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={500}>
+            <ResponsiveContainer width="100%" height={RADAR_CHART_HEIGHT}>
               <RadarChart data={radarData} margin={{ top: 20, right: 80, bottom: 20, left: 80 }}>
                 <PolarGrid />
                 <PolarAngleAxis dataKey="stage" tick={{ fontSize: 12 }} />

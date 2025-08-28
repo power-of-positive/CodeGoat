@@ -2,29 +2,28 @@
  * Tests for TypeScript checking functionality in format-runners.ts
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
 import { runTypeScriptCheck } from './format-runners';
 import * as commandUtils from '../utils/command-utils';
 import * as validationUtils from '../utils/validation-utils';
 
-vi.mock('fs');
-vi.mock('path');
-vi.mock('../utils/command-utils');
-vi.mock('../utils/validation-utils');
+jest.mock('fs');
+jest.mock('path');
+jest.mock('../utils/command-utils');
+jest.mock('../utils/validation-utils');
 
 describe('format-runners TypeScript check', () => {
   const mockProjectRoot = '/test/project';
 
   beforeEach(() => {
-    vi.clearAllMocks();
-    vi.mocked(validationUtils.validateDirectoryExists).mockImplementation(() => {});
-    vi.mocked(path.join).mockImplementation((...args) => args.join('/'));
-    vi.mocked(path.resolve).mockImplementation((...args) => args.join('/'));
-    vi.mocked(fs.writeFileSync).mockImplementation(() => {});
-    vi.mocked(fs.unlinkSync).mockImplementation(() => {});
-    vi.mocked(fs.existsSync).mockReturnValue(true);
+    jest.clearAllMocks();
+    (validationUtils.validateDirectoryExists as jest.Mock).mockImplementation(() => {});
+    (path.join as jest.Mock).mockImplementation((...args) => args.join('/'));
+    (path.resolve as jest.Mock).mockImplementation((...args) => args.join('/'));
+    (fs.writeFileSync as jest.Mock).mockImplementation(() => {});
+    (fs.unlinkSync as jest.Mock).mockImplementation(() => {});
+    (fs.existsSync as jest.Mock).mockReturnValue(true);
   });
 
   describe('runTypeScriptCheck', () => {
@@ -37,7 +36,7 @@ describe('format-runners TypeScript check', () => {
 
     it('should run TypeScript check on staged files', () => {
       const stagedFiles = ['src/test.ts', 'src/test.tsx', 'src/test.js'];
-      vi.mocked(commandUtils.execCommand).mockReturnValue({
+      (commandUtils.execCommand as jest.Mock).mockReturnValue({
         success: true,
         output: 'No TypeScript errors found',
       });
@@ -54,7 +53,7 @@ describe('format-runners TypeScript check', () => {
 
     it('should handle TypeScript check failure', () => {
       const stagedFiles = ['src/test.ts'];
-      vi.mocked(commandUtils.execCommand).mockReturnValue({
+      (commandUtils.execCommand as jest.Mock).mockReturnValue({
         success: false,
         output: 'TypeScript compilation errors',
       });
@@ -67,7 +66,7 @@ describe('format-runners TypeScript check', () => {
 
     it('should clean up temp config on error', () => {
       const stagedFiles = ['src/test.ts'];
-      vi.mocked(commandUtils.execCommand).mockReturnValue({
+      (commandUtils.execCommand as jest.Mock).mockReturnValue({
         success: false,
         output: 'Command failed',
       });
@@ -88,7 +87,7 @@ describe('format-runners TypeScript check', () => {
         'styles.css',
       ];
 
-      vi.mocked(commandUtils.execCommand).mockReturnValue({
+      (commandUtils.execCommand as jest.Mock).mockReturnValue({
         success: true,
         output: 'TypeScript check passed',
       });
@@ -105,11 +104,11 @@ describe('format-runners TypeScript check', () => {
 
     it('should handle cleanup errors gracefully', () => {
       const stagedFiles = ['src/test.ts'];
-      vi.mocked(commandUtils.execCommand).mockReturnValue({
+      (commandUtils.execCommand as jest.Mock).mockReturnValue({
         success: false,
         output: 'Command failed',
       });
-      vi.mocked(fs.unlinkSync).mockImplementation(() => {
+      (fs.unlinkSync as jest.Mock).mockImplementation(() => {
         throw new Error('Cleanup failed');
       });
 

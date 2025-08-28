@@ -58,7 +58,7 @@ function executeTypeScriptCheck(projectRoot: string, tempConfigPath: string): Ch
  * Run TypeScript type checking for staged files only
  */
 export function runTypeScriptCheck(projectRoot: string, stagedFiles: string[]): CheckResult {
-  console.log('📐 Running TypeScript type checking on staged files...');
+  console.error('📐 Running TypeScript type checking on staged files...');
   validateDirectoryExists(projectRoot);
 
   const tsFiles = filterTsFiles(stagedFiles);

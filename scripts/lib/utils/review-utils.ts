@@ -5,7 +5,6 @@
 import { execSync } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
-import * as process from 'process';
 
 export interface ReviewResult {
   decision: 'block' | 'approve';

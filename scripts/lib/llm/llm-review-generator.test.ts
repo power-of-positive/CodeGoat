@@ -1,4 +1,3 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as fs from 'fs';
 import { generateLlmReviewComments } from './llm-review-generator';
 import { createMockStructuredReview, setupTestMocks } from '../testing/test-utils';
@@ -6,11 +5,11 @@ import { StructuredReviewData } from '../utils/types';
 import * as commandUtils from '../utils/command-utils';
 import * as projectMetrics from '../utils/project-metrics';
 
-vi.mock('fs', () => ({ writeFileSync: vi.fn() }));
-vi.mock('../utils/command-utils', () => ({
-  execCommand: vi.fn(),
+jest.mock('fs', () => ({ writeFileSync: jest.fn() }));
+jest.mock('../utils/command-utils', () => ({
+  execCommand: jest.fn(),
 }));
-vi.mock('../utils/project-metrics', () => ({ getProjectMetrics: vi.fn() }));
+jest.mock('../utils/project-metrics', () => ({ getProjectMetrics: jest.fn() }));
 
 interface LLMReviewOutput {
   structuredData: StructuredReviewData;
@@ -24,9 +23,9 @@ const createMockReviewOutput = (
   textReport,
 });
 
-const mockReviewChangedFiles = vi.fn().mockResolvedValue(createMockReviewOutput());
-vi.mock('./llm-reviewer', () => ({
-  LLMReviewer: vi.fn().mockImplementation(() => ({ reviewChangedFiles: mockReviewChangedFiles })),
+const mockReviewChangedFiles = jest.fn().mockResolvedValue(createMockReviewOutput());
+jest.mock('./llm-reviewer', () => ({
+  LLMReviewer: jest.fn().mockImplementation(() => ({ reviewChangedFiles: mockReviewChangedFiles })),
 }));
 
 import { getProjectMetrics } from '../utils/project-metrics';
@@ -35,12 +34,12 @@ describe('llm-review-generator', () => {
   const { cleanup } = setupTestMocks();
 
   beforeEach(() => {
-    vi.clearAllMocks();
-    vi.mocked(commandUtils.execCommand).mockReturnValue({
+    jest.clearAllMocks();
+    (commandUtils.execCommand as jest.Mock).mockReturnValue({
       success: true,
       output: '',
     });
-    vi.mocked(projectMetrics.getProjectMetrics).mockReturnValue(
+    (projectMetrics.getProjectMetrics as jest.Mock).mockReturnValue(
       'Lines of Code: 1000\nTest Files: 50\nTotal Files: 100'
     );
   });
@@ -60,7 +59,7 @@ describe('llm-review-generator', () => {
   };
 
   const getWrittenContent = (callIndex = 0): string => {
-    const [, content] = vi.mocked(fs.writeFileSync).mock.calls[callIndex];
+    const [, content] = (fs.writeFileSync as jest.Mock).mock.calls[callIndex];
     return content as string;
   };
 
@@ -72,7 +71,7 @@ describe('llm-review-generator', () => {
 
     it('should include staged files and git status when available', async () => {
       // Test with staged files
-      vi.mocked(commandUtils.execCommand)
+      (commandUtils.execCommand as jest.Mock)
         .mockReturnValueOnce({
           success: true,
           output: 'src/file1.ts\nsrc/file2.ts',
@@ -89,7 +88,7 @@ describe('llm-review-generator', () => {
     });
 
     it('should include git status when no staged files', async () => {
-      vi.mocked(commandUtils.execCommand)
+      (commandUtils.execCommand as jest.Mock)
         .mockReturnValueOnce({ success: true, output: '' })
         .mockReturnValueOnce({
           success: true,
@@ -103,7 +102,7 @@ describe('llm-review-generator', () => {
     });
 
     it('should include project metrics and handle successful LLM review', async () => {
-      vi.mocked(getProjectMetrics).mockReturnValue('Lines of Code: 5000\nTest Files: 100');
+      (getProjectMetrics as jest.Mock).mockReturnValue('Lines of Code: 5000\nTest Files: 100');
       mockReviewChangedFiles.mockResolvedValue(
         createMockReviewOutput('## AI Review Results\nNo issues found.')
       );
@@ -155,7 +154,7 @@ describe('llm-review-generator', () => {
     });
 
     it('should handle empty git status and staged files', async () => {
-      vi.mocked(commandUtils.execCommand)
+      (commandUtils.execCommand as jest.Mock)
         .mockReturnValueOnce({ success: true, output: 'src/file.ts' })
         .mockReturnValueOnce({ success: true, output: '' });
       await generateLlmReviewComments('/test/project');

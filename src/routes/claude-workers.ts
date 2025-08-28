@@ -13,6 +13,26 @@ import { ClaudeLogProcessor } from '../utils/claude-log-processor';
 
 const router = express.Router();
 
+// HTTP Status Codes
+const HTTP_BAD_REQUEST = 400;
+const HTTP_NOT_FOUND = 404;
+const HTTP_INTERNAL_SERVER_ERROR = 500;
+const HTTP_OK = 200;
+
+// Magic Numbers
+const RANDOM_STRING_LENGTH = 9;
+const SUBSTR_START_INDEX = 2;
+const STRING_TRUNCATE_LENGTH = 100;
+const DATE_COMPONENT_PADDING = 2;
+const PAD_CHAR = '0';
+const VALIDATION_DEFAULT_MAX_ATTEMPTS = 3;
+const POLLING_INTERVAL_MS = 500;
+const COMPLETION_CHECK_INTERVAL_MS = 1000;
+const VSCODE_TIMEOUT_MS = 10000;
+const TASK_CONTENT_SUBSTRING_LENGTH = 50;
+const MONTH_OFFSET = 1;
+const BASE36_RADIX = 36;
+
 interface ValidationRun {
   id: string;
   timestamp: Date;
@@ -131,7 +151,7 @@ async function runValidationChecks(
 
     // Create new validation run
     const validationRun: ValidationRun = {
-      id: `validation-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id: `validation-${Date.now()}-${Math.random().toString(BASE36_RADIX).substr(SUBSTR_START_INDEX, RANDOM_STRING_LENGTH)}`,
       timestamp: new Date(),
       stages: [],
       overallStatus: 'running',
@@ -317,10 +337,10 @@ async function getMaxValidationAttempts(): Promise<number> {
     const settingsPath = path.join(process.cwd(), 'settings.json');
     const settingsContent = await fs.promises.readFile(settingsPath, 'utf-8');
     const settings = JSON.parse(settingsContent);
-    return settings.validation?.maxAttempts ?? 3;
+    return settings.validation?.maxAttempts ?? VALIDATION_DEFAULT_MAX_ATTEMPTS;
   } catch (error) {
     console.error('Failed to load validation settings, using default maxAttempts=3:', error);
-    return 3;
+    return VALIDATION_DEFAULT_MAX_ATTEMPTS;
   }
 }
 
@@ -437,7 +457,7 @@ function isNonCommand(str: string): boolean {
  * Generate unique worker ID
  */
 function generateWorkerId(): string {
-  return `claude-worker-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  return `claude-worker-${Date.now()}-${Math.random().toString(BASE36_RADIX).substr(SUBSTR_START_INDEX, RANDOM_STRING_LENGTH)}`;
 }
 
 
@@ -446,7 +466,7 @@ function generateWorkerId(): string {
  */
 function ensureLogDirectory(): string {
   const today = new Date();
-  const dateFolder = `${today.getFullYear()}-${(today.getMonth() + 1).toString().padStart(2, '0')}-${today.getDate().toString().padStart(2, '0')}`;
+  const dateFolder = `${today.getFullYear()}-${(today.getMonth() + MONTH_OFFSET).toString().padStart(DATE_COMPONENT_PADDING, PAD_CHAR)}-${today.getDate().toString().padStart(DATE_COMPONENT_PADDING, PAD_CHAR)}`;
   const logDir = path.join(process.cwd(), 'logs', 'workers', dateFolder);
 
   if (!fs.existsSync(logDir)) {
@@ -463,7 +483,7 @@ router.post('/start', async (req, res) => {
     const { taskId, taskContent, workingDirectory } = req.body;
 
     if (!taskId || !taskContent) {
-      return res.status(400).json({
+      return res.status(HTTP_BAD_REQUEST).json({
         success: false,
         error: 'taskId and taskContent are required',
       });
@@ -489,7 +509,7 @@ router.post('/start', async (req, res) => {
       }
     } catch (error) {
       console.error(`Failed to create worktree for worker ${workerId}:`, error);
-      return res.status(500).json({
+      return res.status(HTTP_INTERNAL_SERVER_ERROR).json({
         success: false,
         error: `Failed to create worktree: ${(error as Error).message}`,
       });
@@ -525,7 +545,7 @@ router.post('/start', async (req, res) => {
       structuredEntries: [],
       validationRuns: [],
       validationAttempts: 0,
-      maxValidationAttempts: 3, // Will be updated from settings
+      maxValidationAttempts: VALIDATION_DEFAULT_MAX_ATTEMPTS, // Will be updated from settings
     };
 
     // Load max validation attempts from settings
@@ -640,7 +660,7 @@ router.post('/start', async (req, res) => {
 
     // Send prompt via stdin like the example-ts-backend does
     if (claudeProcess.stdin) {
-      console.error(`[${workerId}] Sending prompt via stdin: ${taskContent.substring(0, 100)}...`);
+      console.error(`[${workerId}] Sending prompt via stdin: ${taskContent.substring(0, STRING_TRUNCATE_LENGTH)}...`);
       logStream.write(`Sending prompt via stdin: ${taskContent}\n`);
       claudeProcess.stdin.write(taskContent);
       claudeProcess.stdin.end();
@@ -801,7 +821,7 @@ router.post('/start', async (req, res) => {
     });
   } catch (error) {
     console.error('Error starting Claude Code worker:', error);
-    res.status(500).json({
+    res.status(HTTP_INTERNAL_SERVER_ERROR).json({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
     });
@@ -815,7 +835,7 @@ router.get('/status', (req, res) => {
   const workers = Array.from(activeWorkers.values()).map(worker => ({
     id: worker.id,
     taskId: worker.taskId,
-    taskContent: worker.taskContent.substring(0, 100) + '...',
+    taskContent: worker.taskContent.substring(0, STRING_TRUNCATE_LENGTH) + '...',
     status: worker.status,
     startTime: worker.startTime,
     endTime: worker.endTime,
@@ -846,7 +866,7 @@ router.get('/:workerId', (req, res) => {
   const worker = activeWorkers.get(workerId);
 
   if (!worker) {
-    return res.status(404).json({
+    return res.status(HTTP_NOT_FOUND).json({
       success: false,
       error: 'Worker not found',
     });
@@ -929,7 +949,7 @@ router.post('/:workerId/stop', (req, res) => {
   const worker = activeWorkers.get(workerId);
 
   if (!worker) {
-    return res.status(404).json({
+    return res.status(HTTP_NOT_FOUND).json({
       success: false,
       error: 'Worker not found',
     });
@@ -974,7 +994,7 @@ router.get('/:workerId/logs', (req, res) => {
   const worker = activeWorkers.get(workerId);
 
   if (!worker) {
-    return res.status(404).json({
+    return res.status(HTTP_NOT_FOUND).json({
       success: false,
       error: 'Worker not found',
     });
@@ -991,7 +1011,7 @@ router.get('/:workerId/logs', (req, res) => {
       },
     });
   } catch {
-    res.status(500).json({
+    res.status(HTTP_INTERNAL_SERVER_ERROR).json({
       success: false,
       error: 'Failed to read log file',
     });
@@ -1006,7 +1026,7 @@ router.post('/:workerId/message', (req, res) => {
   const { message } = req.body;
 
   if (!message) {
-    return res.status(400).json({
+    return res.status(HTTP_BAD_REQUEST).json({
       success: false,
       error: 'Message content is required',
     });
@@ -1015,21 +1035,21 @@ router.post('/:workerId/message', (req, res) => {
   const worker = activeWorkers.get(workerId);
 
   if (!worker) {
-    return res.status(404).json({
+    return res.status(HTTP_NOT_FOUND).json({
       success: false,
       error: 'Worker not found',
     });
   }
 
   if (worker.status !== 'running') {
-    return res.status(400).json({
+    return res.status(HTTP_BAD_REQUEST).json({
       success: false,
       error: `Cannot send message to worker with status: ${worker.status}`,
     });
   }
 
   if (!worker.process?.stdin) {
-    return res.status(400).json({
+    return res.status(HTTP_BAD_REQUEST).json({
       success: false,
       error: 'Worker process is not available for input',
     });
@@ -1064,7 +1084,7 @@ router.post('/:workerId/message', (req, res) => {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
-    res.status(500).json({
+    res.status(HTTP_INTERNAL_SERVER_ERROR).json({
       success: false,
       error: `Failed to send message: ${errorMessage}`,
     });
@@ -1079,7 +1099,7 @@ router.get('/:workerId/entries', (req, res) => {
   const worker = activeWorkers.get(workerId);
 
   if (!worker) {
-    return res.status(404).json({
+    return res.status(HTTP_NOT_FOUND).json({
       success: false,
       error: 'Worker not found',
     });
@@ -1136,7 +1156,7 @@ router.post('/cleanup-worktrees', async (req, res) => {
     });
   } catch (error) {
     console.error('Error cleaning up worktrees:', error);
-    res.status(500).json({
+    res.status(HTTP_INTERNAL_SERVER_ERROR).json({
       success: false,
       error: 'Failed to cleanup worktrees',
     });
@@ -1151,14 +1171,14 @@ router.post('/:workerId/merge-worktree', async (req, res) => {
   const worker = activeWorkers.get(workerId);
 
   if (!worker) {
-    return res.status(404).json({
+    return res.status(HTTP_NOT_FOUND).json({
       success: false,
       error: 'Worker not found',
     });
   }
 
   if (!worker.worktreePath) {
-    return res.status(400).json({
+    return res.status(HTTP_BAD_REQUEST).json({
       success: false,
       error: 'No worktree associated with this worker',
     });
@@ -1227,7 +1247,7 @@ router.post('/:workerId/merge-worktree', async (req, res) => {
     });
   } catch (error) {
     console.error(`Error merging worktree for worker ${workerId}:`, error);
-    res.status(500).json({
+    res.status(HTTP_INTERNAL_SERVER_ERROR).json({
       success: false,
       error: `Failed to merge worktree: ${(error as Error).message}`,
     });
@@ -1242,14 +1262,14 @@ router.post('/:workerId/open-vscode', async (req, res) => {
   const worker = activeWorkers.get(workerId);
 
   if (!worker) {
-    return res.status(404).json({
+    return res.status(HTTP_NOT_FOUND).json({
       success: false,
       error: 'Worker not found',
     });
   }
 
   if (!worker.worktreePath) {
-    return res.status(400).json({
+    return res.status(HTTP_BAD_REQUEST).json({
       success: false,
       error: 'No worktree associated with this worker',
     });
@@ -1262,7 +1282,7 @@ router.post('/:workerId/open-vscode', async (req, res) => {
 
     // Check if the worktree directory exists
     if (!fs.existsSync(worker.worktreePath)) {
-      return res.status(404).json({
+      return res.status(HTTP_NOT_FOUND).json({
         success: false,
         error: 'Worktree directory not found',
       });
@@ -1270,7 +1290,7 @@ router.post('/:workerId/open-vscode', async (req, res) => {
 
     // Try to open in VSCode - using 'code' command
     await execAsync(`code "${worker.worktreePath}"`, {
-      timeout: 10000, // 10 second timeout
+      timeout: VSCODE_TIMEOUT_MS, // 10 second timeout
     });
 
     res.json({
@@ -1287,14 +1307,14 @@ router.post('/:workerId/open-vscode', async (req, res) => {
     // Provide helpful error message if 'code' command not found
     const errorMessage = (error as Error).message;
     if (errorMessage.includes('command not found') || errorMessage.includes('not recognized')) {
-      return res.status(500).json({
+      return res.status(HTTP_INTERNAL_SERVER_ERROR).json({
         success: false,
         error:
           'VSCode command line tools not installed. Install VSCode and enable shell command integration.',
       });
     }
 
-    res.status(500).json({
+    res.status(HTTP_INTERNAL_SERVER_ERROR).json({
       success: false,
       error: `Failed to open VSCode: ${errorMessage}`,
     });
@@ -1309,7 +1329,7 @@ router.get('/:workerId/blocked-commands', (req, res) => {
   const worker = activeWorkers.get(workerId);
 
   if (!worker) {
-    return res.status(404).json({
+    return res.status(HTTP_NOT_FOUND).json({
       success: false,
       error: 'Worker not found',
     });
@@ -1334,7 +1354,7 @@ router.get('/:workerId/validation-runs', (req, res) => {
   const worker = activeWorkers.get(workerId);
 
   if (!worker) {
-    return res.status(404).json({
+    return res.status(HTTP_NOT_FOUND).json({
       success: false,
       error: 'Worker not found',
     });
@@ -1362,7 +1382,7 @@ router.get('/:workerId/validation-runs/:runId', (req, res) => {
   const worker = activeWorkers.get(workerId);
 
   if (!worker) {
-    return res.status(404).json({
+    return res.status(HTTP_NOT_FOUND).json({
       success: false,
       error: 'Worker not found',
     });
@@ -1371,7 +1391,7 @@ router.get('/:workerId/validation-runs/:runId', (req, res) => {
   const validationRun = worker.validationRuns?.find(run => run.id === runId);
 
   if (!validationRun) {
-    return res.status(404).json({
+    return res.status(HTTP_NOT_FOUND).json({
       success: false,
       error: 'Validation run not found',
     });
@@ -1411,7 +1431,7 @@ router.get('/logs/stats', async (req, res) => {
     });
   } catch (error) {
     console.error('Error getting log stats:', error);
-    res.status(500).json({
+    res.status(HTTP_INTERNAL_SERVER_ERROR).json({
       success: false,
       error: 'Failed to get log statistics',
     });
@@ -1436,7 +1456,7 @@ router.post('/logs/cleanup', async (req, res) => {
     });
   } catch (error) {
     console.error('Error cleaning up logs:', error);
-    res.status(500).json({
+    res.status(HTTP_INTERNAL_SERVER_ERROR).json({
       success: false,
       error: 'Failed to cleanup logs',
     });
@@ -1451,14 +1471,14 @@ router.get('/:workerId/enhanced-logs', (req, res) => {
   const worker = activeWorkers.get(workerId);
 
   if (!worker) {
-    return res.status(404).json({
+    return res.status(HTTP_NOT_FOUND).json({
       success: false,
       error: 'Worker not found',
     });
   }
 
   // Set up Server-Sent Events
-  res.writeHead(200, {
+  res.writeHead(HTTP_OK, {
     'Content-Type': 'text/event-stream',
     'Cache-Control': 'no-cache',
     'Connection': 'keep-alive',
@@ -1536,7 +1556,7 @@ router.get('/:workerId/enhanced-logs', (req, res) => {
   sendUpdate();
 
   // Set up polling for updates
-  const intervalId = setInterval(sendUpdate, 500);
+  const intervalId = setInterval(sendUpdate, POLLING_INTERVAL_MS);
 
   // Handle client disconnect
   req.on('close', () => {
@@ -1554,7 +1574,7 @@ router.get('/:workerId/enhanced-logs', (req, res) => {
     }
   };
 
-  const completionCheckId = setInterval(checkCompletion, 1000);
+  const completionCheckId = setInterval(checkCompletion, COMPLETION_CHECK_INTERVAL_MS);
 });
 
 /**
@@ -1565,7 +1585,7 @@ router.post('/:workerId/follow-up', (req, res) => {
   const { prompt } = req.body;
 
   if (!prompt || typeof prompt !== 'string') {
-    return res.status(400).json({
+    return res.status(HTTP_BAD_REQUEST).json({
       success: false,
       error: 'Prompt is required',
     });
@@ -1574,21 +1594,21 @@ router.post('/:workerId/follow-up', (req, res) => {
   const worker = activeWorkers.get(workerId);
 
   if (!worker) {
-    return res.status(404).json({
+    return res.status(HTTP_NOT_FOUND).json({
       success: false,
       error: 'Worker not found',
     });
   }
 
   if (worker.status !== 'running') {
-    return res.status(400).json({
+    return res.status(HTTP_BAD_REQUEST).json({
       success: false,
       error: 'Worker is not running',
     });
   }
 
   if (!worker.process?.stdin) {
-    return res.status(400).json({
+    return res.status(HTTP_BAD_REQUEST).json({
       success: false,
       error: 'Worker process is not available for input',
     });
@@ -1599,7 +1619,7 @@ router.post('/:workerId/follow-up', (req, res) => {
     worker.process.stdin.write(prompt + '\n');
     
     // Log the follow-up action
-    const logEntry = `[FOLLOW-UP] User sent prompt: ${prompt.substring(0, 100)}${prompt.length > 100 ? '...' : ''}`;
+    const logEntry = `[FOLLOW-UP] User sent prompt: ${prompt.substring(0, STRING_TRUNCATE_LENGTH)}${prompt.length > STRING_TRUNCATE_LENGTH ? '...' : ''}`;
     fs.appendFileSync(worker.logFile, `\n${new Date().toISOString()} ${logEntry}\n`);
 
     // Add to structured entries
@@ -1623,7 +1643,7 @@ router.post('/:workerId/follow-up', (req, res) => {
     });
   } catch (error) {
     console.error('Failed to send follow-up:', error);
-    res.status(500).json({
+    res.status(HTTP_INTERNAL_SERVER_ERROR).json({
       success: false,
       error: 'Failed to send follow-up prompt',
     });
@@ -1640,14 +1660,14 @@ router.post('/:workerId/merge', async (req, res) => {
   const worker = activeWorkers.get(workerId);
 
   if (!worker) {
-    return res.status(404).json({
+    return res.status(HTTP_NOT_FOUND).json({
       success: false,
       error: 'Worker not found',
     });
   }
 
   if (!worker.worktreeManager || !worker.worktreePath) {
-    return res.status(400).json({
+    return res.status(HTTP_BAD_REQUEST).json({
       success: false,
       error: 'Worker does not have a worktree',
     });
@@ -1665,7 +1685,7 @@ router.post('/:workerId/merge', async (req, res) => {
     });
 
     if (!status.trim()) {
-      return res.status(400).json({
+      return res.status(HTTP_BAD_REQUEST).json({
         success: false,
         error: 'No changes to commit',
       });
@@ -1675,7 +1695,7 @@ router.post('/:workerId/merge', async (req, res) => {
     execSync('git add -A', { cwd: worktreePath });
 
     // Create commit message
-    const defaultMessage = `Task ${worker.taskId}: ${worker.taskContent.substring(0, 50)}...`;
+    const defaultMessage = `Task ${worker.taskId}: ${worker.taskContent.substring(0, TASK_CONTENT_SUBSTRING_LENGTH)}...`;
     const finalMessage = commitMessage ?? defaultMessage;
 
     // Commit changes
@@ -1727,7 +1747,7 @@ router.post('/:workerId/merge', async (req, res) => {
   } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     console.error('Failed to merge changes:', error);
-    res.status(500).json({
+    res.status(HTTP_INTERNAL_SERVER_ERROR).json({
       success: false,
       error: `Failed to merge changes: ${errorMessage}`,
     });

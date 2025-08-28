@@ -2,7 +2,6 @@
  * Error handling tests for playwright-coverage.ts
  * Simple, mock-free tests that focus on error handling logic
  */
-import { describe, it, expect } from 'vitest';
 
 // Import the functions directly without mocking
 import {

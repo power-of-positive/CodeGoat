@@ -22,7 +22,7 @@ export async function runLlmReviewProcess(
 
   switch (reviewResult.status) {
     case 'skipped':
-      console.log(`ℹ️ LLM review skipped: ${reviewResult.reason}`);
+      console.error(`ℹ️ LLM review skipped: ${reviewResult.reason}`);
       return null;
     case 'success':
       return null;
@@ -43,7 +43,7 @@ async function runLlmReviewProcessInternal(
 ): Promise<LlmReviewResult> {
   // Check if LLM review is disabled
   if (process.env.SKIP_LLM_REVIEW === 'true') {
-    console.log('⚡ LLM review disabled via SKIP_LLM_REVIEW environment variable');
+    console.error('⚡ LLM review disabled via SKIP_LLM_REVIEW environment variable');
     return {
       status: 'skipped',
       reason: 'LLM review disabled via SKIP_LLM_REVIEW environment variable',

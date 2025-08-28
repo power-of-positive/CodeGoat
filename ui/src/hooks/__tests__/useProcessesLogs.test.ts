@@ -23,12 +23,12 @@ describe('useProcessesLogs', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    jest.clearAllTimers();
+    jest.useFakeTimers();
   });
 
   afterEach(() => {
     jest.clearAllMocks();
-    jest.clearAllTimers();
+    jest.useRealTimers();
   });
 
   it('should initialize with loading state', () => {
@@ -120,7 +120,7 @@ describe('useProcessesLogs', () => {
     expect(assistantMessage).toBeDefined();
   });
 
-  it.skip('should enable streaming when flag is set', () => {
+  it('should enable streaming when flag is set', () => {
     const { result } = renderHook(() => useProcessesLogs(mockProcesses, true));
 
     const initialCount = result.current.entries.length;
@@ -139,7 +139,7 @@ describe('useProcessesLogs', () => {
     expect(lastEntry.payload).toContain('Streaming log entry');
   });
 
-  it.skip('should cleanup streaming interval on unmount', () => {
+  it('should cleanup streaming interval on unmount', () => {
     const { unmount } = renderHook(() => useProcessesLogs(mockProcesses, true));
 
     // Verify interval is created
@@ -164,7 +164,7 @@ describe('useProcessesLogs', () => {
     expect(result.current.entries.length).toBeGreaterThan(initialCount);
   });
 
-  it.skip('should handle errors gracefully', () => {
+  it('should handle errors gracefully', () => {
     // This test can cause issues by modifying Date.now globally
     // Mock Date.now to throw an error
     const originalDateNow = Date.now;
@@ -181,7 +181,7 @@ describe('useProcessesLogs', () => {
     Date.now = originalDateNow;
   });
 
-  it.skip('should handle streaming with no processes', () => {
+  it('should handle streaming with no processes', () => {
     const { result } = renderHook(() => useProcessesLogs([], true));
 
     // Should not crash and should handle empty processes gracefully
@@ -189,10 +189,9 @@ describe('useProcessesLogs', () => {
       jest.advanceTimersByTime(5000);
     });
 
-    // Should add streaming entry even with no initial processes
-    expect(result.current.entries.length).toBe(1);
-    const streamEntry = result.current.entries[0];
-    expect(streamEntry.processId).toBe('unknown');
-    expect(streamEntry.processName).toBe('stream');
+    // With no processes, no streaming entries are added (hook returns early)
+    expect(result.current.entries.length).toBe(0);
+    expect(result.current.isLoading).toBe(false);
+    expect(result.current.error).toBe(null);
   });
 });

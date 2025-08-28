@@ -28,7 +28,7 @@ test.describe('Tasks UI', () => {
         await expect(heading).toBeVisible();
       }
       
-      const description = page.locator('text=Manage your tasks with a kanban-style board');
+      const description = page.locator('text=Comprehensive task management with advanced filtering and CRUD operations');
       if (await description.count() > 0) {
         await expect(description).toBeVisible();
       }
@@ -49,7 +49,7 @@ test.describe('Tasks UI', () => {
       await expect(heading).toBeVisible();
     }
     
-    const description = page.locator('text=Manage your tasks with a kanban-style board');
+    const description = page.locator('text=Comprehensive task management with advanced filtering and CRUD operations');
     if (await description.count() > 0) {
       await expect(description).toBeVisible();
     }
@@ -60,41 +60,16 @@ test.describe('Tasks UI', () => {
       await expect(addTaskButton).toBeVisible();
     }
 
-    // Check summary cards section if they exist
-    const totalTasks = page.locator('text=Total Tasks');
-    if (await totalTasks.count() > 0) {
-      await expect(totalTasks).toBeVisible();
+    // Check for Refresh button
+    const refreshButton = page.locator('button:has-text("Refresh")');
+    if (await refreshButton.count() > 0) {
+      await expect(refreshButton).toBeVisible();
     }
     
-    const pendingText = page.locator('text=Pending');
-    if (await pendingText.count() > 0) {
-      await expect(pendingText).toBeVisible();
-    }
-    
-    const inProgressText = page.locator('text=In Progress');
-    if (await inProgressText.count() > 0) {
-      await expect(inProgressText).toBeVisible();
-    }
-    
-    const completedText = page.locator('text=Completed');
-    if (await completedText.count() > 0) {
-      await expect(completedText).toBeVisible();
-    }
-
-    // Check kanban columns if they exist
-    const pendingColumn = page.locator('.bg-gray-50:has-text("Pending")');
-    if (await pendingColumn.count() > 0) {
-      await expect(pendingColumn).toBeVisible();
-    }
-    
-    const inProgressColumn = page.locator('.bg-blue-50:has-text("In Progress")');
-    if (await inProgressColumn.count() > 0) {
-      await expect(inProgressColumn).toBeVisible();
-    }
-    
-    const completedColumn = page.locator('.bg-green-50:has-text("Completed")');
-    if (await completedColumn.count() > 0) {
-      await expect(completedColumn).toBeVisible();
+    // Look for task-related content - could be table headers, task rows, or empty state
+    const taskContent = page.locator('table, [data-testid*="task"], .task-item, text=/no tasks|empty/i');
+    if (await taskContent.count() > 0) {
+      await expect(taskContent.first()).toBeVisible();
     }
     
     // At minimum, verify we're on the right route

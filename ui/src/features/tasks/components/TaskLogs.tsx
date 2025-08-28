@@ -8,6 +8,9 @@ import EnhancedLogEntryRow from '../../logs/components/EnhancedLogEntryRow';
 import { useEnhancedLogStream } from '../../../hooks/useEnhancedLogStream';
 import type { UnifiedLogEntry } from '../../../shared/types/logs';
 
+// Constants for ID parsing
+const ID_DISPLAY_PARTS_COUNT = 2; // Number of parts to show from the end of hyphen-separated IDs
+
 interface TaskLogsProps {
   executorId: string | null;
 }
@@ -104,7 +107,7 @@ function TaskLogsHeader({ executorId, autoScroll, autoRefresh, isConnected, onTo
           <Terminal className="h-5 w-5" />
           Task Logs
           <Badge variant="secondary" className="text-xs">
-            {executorId.split('-').slice(-2).join('-')}
+            {executorId.split('-').slice(-ID_DISPLAY_PARTS_COUNT).join('-')}
           </Badge>
         </CardTitle>
         <LogControls

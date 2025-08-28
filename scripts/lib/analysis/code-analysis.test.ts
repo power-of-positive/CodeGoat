@@ -3,13 +3,12 @@
  * Tests with strategic mocking to achieve high coverage
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { runCodeAnalysis } from './code-analysis';
 import * as codeAnalysisStaged from '../../code-analysis-staged';
 
 // Mock the code-analysis-staged module
-vi.mock('../../code-analysis-staged', () => ({
-  runAnalysis: vi.fn().mockResolvedValue({
+jest.mock('../../code-analysis-staged', () => ({
+  runAnalysis: jest.fn().mockResolvedValue({
     blocked: false,
     reasons: [],
     details: {
@@ -21,10 +20,10 @@ vi.mock('../../code-analysis-staged', () => ({
 
 describe('code-analysis', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-    vi.resetAllMocks();
+    jest.clearAllMocks();
+    jest.resetAllMocks();
     // Ensure fresh mock implementation for each test
-    vi.mocked(codeAnalysisStaged.runAnalysis).mockResolvedValue({
+    (codeAnalysisStaged.runAnalysis as jest.Mock).mockResolvedValue({
       blocked: false,
       reasons: [],
       details: {
@@ -35,13 +34,13 @@ describe('code-analysis', () => {
   });
 
   afterEach(() => {
-    vi.clearAllMocks();
-    vi.resetAllMocks();
+    jest.clearAllMocks();
+    jest.resetAllMocks();
   });
 
   describe('runCodeAnalysis', () => {
     it('should return a valid result structure', async () => {
-      vi.mocked(codeAnalysisStaged.runAnalysis).mockResolvedValue({
+      (codeAnalysisStaged.runAnalysis as jest.Mock).mockResolvedValue({
         blocked: false,
         reasons: [],
         details: {
@@ -68,7 +67,7 @@ describe('code-analysis', () => {
     });
 
     it('should handle empty path input', async () => {
-      vi.mocked(codeAnalysisStaged.runAnalysis).mockResolvedValue({
+      (codeAnalysisStaged.runAnalysis as jest.Mock).mockResolvedValue({
         blocked: false,
         reasons: [],
         details: {
@@ -84,7 +83,7 @@ describe('code-analysis', () => {
     });
 
     it('should not crash on execution', async () => {
-      vi.mocked(codeAnalysisStaged.runAnalysis).mockResolvedValue({
+      (codeAnalysisStaged.runAnalysis as jest.Mock).mockResolvedValue({
         blocked: false,
         reasons: [],
         details: {
@@ -97,7 +96,7 @@ describe('code-analysis', () => {
     });
 
     it('should return consistent structure across calls', async () => {
-      vi.mocked(codeAnalysisStaged.runAnalysis).mockResolvedValue({
+      (codeAnalysisStaged.runAnalysis as jest.Mock).mockResolvedValue({
         blocked: false,
         reasons: [],
         details: {
@@ -114,7 +113,7 @@ describe('code-analysis', () => {
     });
 
     it('should handle current directory', async () => {
-      vi.mocked(codeAnalysisStaged.runAnalysis).mockResolvedValue({
+      (codeAnalysisStaged.runAnalysis as jest.Mock).mockResolvedValue({
         blocked: false,
         reasons: [],
         details: {
@@ -130,7 +129,7 @@ describe('code-analysis', () => {
     });
 
     it('should handle various project roots', async () => {
-      vi.mocked(codeAnalysisStaged.runAnalysis).mockResolvedValue({
+      (codeAnalysisStaged.runAnalysis as jest.Mock).mockResolvedValue({
         blocked: false,
         reasons: [],
         details: {
@@ -145,7 +144,7 @@ describe('code-analysis', () => {
     });
 
     it('should maintain type safety', async () => {
-      vi.mocked(codeAnalysisStaged.runAnalysis).mockResolvedValue({
+      (codeAnalysisStaged.runAnalysis as jest.Mock).mockResolvedValue({
         blocked: false,
         reasons: [],
         details: {
@@ -163,7 +162,7 @@ describe('code-analysis', () => {
 
     it('should parse JSON analysis results correctly when blocked', async () => {
       // Test the JSON parsing logic for blocked results
-      vi.mocked(codeAnalysisStaged.runAnalysis).mockResolvedValue({
+      (codeAnalysisStaged.runAnalysis as jest.Mock).mockResolvedValue({
         blocked: true,
         reasons: ['Issue 1', 'Issue 2'],
         details: {
@@ -182,7 +181,7 @@ describe('code-analysis', () => {
 
     it('should parse JSON analysis results when not blocked', async () => {
       // Test JSON parsing when blocked is false
-      vi.mocked(codeAnalysisStaged.runAnalysis).mockResolvedValue({
+      (codeAnalysisStaged.runAnalysis as jest.Mock).mockResolvedValue({
         blocked: false,
         reasons: [],
         details: {
@@ -199,7 +198,7 @@ describe('code-analysis', () => {
 
     it('should handle invalid JSON gracefully', async () => {
       // Test catch block when JSON parsing fails
-      vi.mocked(codeAnalysisStaged.runAnalysis).mockResolvedValue({
+      (codeAnalysisStaged.runAnalysis as jest.Mock).mockResolvedValue({
         blocked: false,
         reasons: [],
         details: {
@@ -217,7 +216,7 @@ describe('code-analysis', () => {
     it('should handle execCommand errors with stdout', async () => {
       // Test error handling when runAnalysis throws
       const error = new Error('Command failed');
-      vi.mocked(codeAnalysisStaged.runAnalysis).mockRejectedValue(error);
+      (codeAnalysisStaged.runAnalysis as jest.Mock).mockRejectedValue(error);
 
       const result = await runCodeAnalysis();
 
@@ -229,7 +228,7 @@ describe('code-analysis', () => {
     it('should handle execCommand errors with message only', async () => {
       // Test error handling when runAnalysis throws with just message
       const error = new Error('Command execution failed');
-      vi.mocked(codeAnalysisStaged.runAnalysis).mockRejectedValue(error);
+      (codeAnalysisStaged.runAnalysis as jest.Mock).mockRejectedValue(error);
 
       const result = await runCodeAnalysis();
 
@@ -240,7 +239,7 @@ describe('code-analysis', () => {
 
     it('should handle empty or null output', async () => {
       // Test parseAnalysisResult with empty input
-      vi.mocked(codeAnalysisStaged.runAnalysis).mockResolvedValue({
+      (codeAnalysisStaged.runAnalysis as jest.Mock).mockResolvedValue({
         blocked: false,
         reasons: [],
         details: {
@@ -257,7 +256,7 @@ describe('code-analysis', () => {
 
     it('should handle malformed JSON at end of output', async () => {
       // Test when last line is not valid JSON
-      vi.mocked(codeAnalysisStaged.runAnalysis).mockResolvedValue({
+      (codeAnalysisStaged.runAnalysis as jest.Mock).mockResolvedValue({
         blocked: false,
         reasons: [],
         details: {

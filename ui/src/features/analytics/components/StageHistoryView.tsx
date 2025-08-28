@@ -19,6 +19,16 @@ import {
 } from 'lucide-react';
 import { analyticsApi } from '../../../shared/lib/api';
 
+// Display configuration constants
+const RECENT_RUNS_DISPLAY_LIMIT = 20;
+const SESSION_ID_DISPLAY_LENGTH = -8;
+const DEFAULT_TIME_RANGE_DAYS = 30;
+const STALE_TIME_MINUTES = 5;
+const MINUTES_PER_HOUR = 60;
+const MILLISECONDS_PER_SECOND = 1000;
+const TOP_FAILURE_REASONS_LIMIT = 5;
+const LOADING_SKELETON_CARDS = 4;
+
 interface StageHistoryViewProps {
   stageId: string;
   stageName: string;
@@ -239,7 +249,7 @@ function PerformanceMetrics({ statistics }: { statistics: StageStatistics }) {
         <CardContent>
           <div className="space-y-2">
             {failureEntries.length > 0 ? (
-              failureEntries.slice(0, 5).map(([reason, count]) => (
+              failureEntries.slice(0, TOP_FAILURE_REASONS_LIMIT).map(([reason, count]) => (
                 <div key={reason} className="flex justify-between items-center">
                   <span className="text-sm text-gray-700">{reason}</span>
                   <Badge variant="outline">{count}</Badge>
@@ -265,12 +275,12 @@ function RecentRuns({ statistics }: { statistics: StageStatistics }) {
       <CardHeader>
         <CardTitle className="text-lg flex items-center gap-2">
           <Activity className="h-5 w-5" />
-          Recent Runs (Last 20)
+          Recent Runs (Last {RECENT_RUNS_DISPLAY_LIMIT})
         </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-2 max-h-96 overflow-y-auto">
-          {recentRuns.slice(0, 20).map((run, index: number) => (
+          {recentRuns.slice(0, RECENT_RUNS_DISPLAY_LIMIT).map((run, index: number) => (
             <div
               key={index}
               className="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50"
@@ -287,7 +297,7 @@ function RecentRuns({ statistics }: { statistics: StageStatistics }) {
                   </div>
                   {run.sessionId && (
                     <div className="text-xs text-gray-500">
-                      Session: {run.sessionId.slice(-8)}
+                      Session: {run.sessionId.slice(SESSION_ID_DISPLAY_LENGTH)}
                     </div>
                   )}
                 </div>
@@ -366,18 +376,18 @@ export function StageHistoryView({
   stageName,
   onBack,
 }: StageHistoryViewProps) {
-  const [timeRange, setTimeRange] = useState(30);
+  const [timeRange, setTimeRange] = useState(DEFAULT_TIME_RANGE_DAYS);
 
   const { data: historyData, isLoading: historyLoading } = useQuery({
     queryKey: ['stage-history', stageId, timeRange],
     queryFn: () => analyticsApi.getStageHistory(stageId, timeRange),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: STALE_TIME_MINUTES * MINUTES_PER_HOUR * MILLISECONDS_PER_SECOND, // 5 minutes
   });
 
   const { data: statisticsData, isLoading: statisticsLoading } = useQuery({
     queryKey: ['stage-statistics', stageId],
     queryFn: () => analyticsApi.getStageStatistics(stageId),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: STALE_TIME_MINUTES * MINUTES_PER_HOUR * MILLISECONDS_PER_SECOND, // 5 minutes
   });
 
   const isLoading = historyLoading || statisticsLoading;
@@ -388,7 +398,7 @@ export function StageHistoryView({
         <div className="animate-pulse space-y-4">
           <div className="h-8 bg-gray-200 rounded w-1/3"></div>
           <div className="grid grid-cols-4 gap-4">
-            {[1, 2, 3, 4].map((i) => (
+            {Array.from({ length: LOADING_SKELETON_CARDS }, (_, i) => (
               <div key={i} className="h-24 bg-gray-200 rounded"></div>
             ))}
           </div>
@@ -423,7 +433,7 @@ export function StageHistoryView({
             className="border border-gray-300 rounded px-3 py-1 text-sm"
           >
             <option value={7}>Last 7 days</option>
-            <option value={30}>Last 30 days</option>
+            <option value={DEFAULT_TIME_RANGE_DAYS}>Last {DEFAULT_TIME_RANGE_DAYS} days</option>
             <option value={90}>Last 90 days</option>
           </select>
         </div>

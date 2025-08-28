@@ -49,10 +49,10 @@ const testTodos = [
   },
 ];
 
-console.log('🧪 Testing todo list validation...');
+console.error('🧪 Testing todo list validation...');
 
 // Test 1: With high priority unfinished tasks (should block)
-console.log('\n📋 Test 1: High priority unfinished tasks (should block)');
+console.error('\n📋 Test 1: High priority unfinished tasks (should block)');
 const todosWithHighPriority = JSON.stringify(testTodos);
 process.env.CLAUDE_TOOL_INPUT = todosWithHighPriority;
 
@@ -61,20 +61,20 @@ try {
     encoding: 'utf-8',
     stdio: ['pipe', 'pipe', 'pipe'],
   });
-  console.log("❌ Hook should have blocked but didn't");
-  console.log('Result:', result);
+  console.error("❌ Hook should have blocked but didn't");
+  console.error('Result:', result);
 } catch (error: unknown) {
   const execError = error as ExecError;
   if (execError.status === 2) {
-    console.log('✅ Hook correctly blocked due to high priority tasks');
-    console.log('Error output:', execError.stderr);
+    console.error('✅ Hook correctly blocked due to high priority tasks');
+    console.error('Error output:', execError.stderr);
   } else {
-    console.log('❌ Unexpected error:', execError);
+    console.error('❌ Unexpected error:', execError);
   }
 }
 
 // Test 2: Only completed and medium priority tasks (should allow)
-console.log('\n📋 Test 2: Only completed and medium priority tasks (should allow)');
+console.error('\n📋 Test 2: Only completed and medium priority tasks (should allow)');
 const completedTodos = testTodos.filter(
   todo => todo.status === 'completed' || todo.priority === 'medium'
 );
@@ -85,15 +85,15 @@ try {
     encoding: 'utf-8',
     stdio: ['pipe', 'pipe', 'pipe'],
   });
-  console.log('✅ Hook correctly allowed completion');
-  console.log('Result:', JSON.parse(result.trim()));
+  console.error('✅ Hook correctly allowed completion');
+  console.error('Result:', JSON.parse(result.trim()));
 } catch (error: unknown) {
   const execError = error as ExecError;
-  console.log('❌ Hook should have allowed but blocked:', execError.stderr);
+  console.error('❌ Hook should have allowed but blocked:', execError.stderr);
 }
 
 // Test 3: No todo list (should allow)
-console.log('\n📋 Test 3: No todo list provided (should allow)');
+console.error('\n📋 Test 3: No todo list provided (should allow)');
 delete process.env.CLAUDE_TOOL_INPUT;
 
 try {
@@ -101,11 +101,11 @@ try {
     encoding: 'utf-8',
     stdio: ['pipe', 'pipe', 'pipe'],
   });
-  console.log('✅ Hook correctly allowed completion when no todos provided');
-  console.log('Result:', JSON.parse(result.trim()));
+  console.error('✅ Hook correctly allowed completion when no todos provided');
+  console.error('Result:', JSON.parse(result.trim()));
 } catch (error: unknown) {
   const execError = error as ExecError;
-  console.log('❌ Hook should have allowed but blocked:', execError.stderr);
+  console.error('❌ Hook should have allowed but blocked:', execError.stderr);
 }
 
-console.log('\n🎉 Todo validation testing completed!');
+console.error('\n🎉 Todo validation testing completed!');

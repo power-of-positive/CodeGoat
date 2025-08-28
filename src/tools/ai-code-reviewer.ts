@@ -310,7 +310,7 @@ function getSeverityEmoji(severity: string): string {
 
 function outputBasicSummary(results: FormattedResults): void {
   const isTest = process.env.NODE_ENV === 'test';
-  const log = isTest ? console.log : logger.info.bind(logger);
+  const log = isTest ? console.error : logger.info.bind(logger);
 
   log('\n🤖 AI Code Review Results');
   log('='.repeat(40));
@@ -324,7 +324,7 @@ function outputSeverityBreakdown(results: FormattedResults): void {
   }
 
   const isTest = process.env.NODE_ENV === 'test';
-  const log = isTest ? console.log : logger.info.bind(logger);
+  const log = isTest ? console.error : logger.info.bind(logger);
 
   log('\nIssues by severity:');
   Object.entries(results.summary.bySeverity).forEach(([severity, count]) => {
@@ -355,7 +355,7 @@ function outputNotableIssues(results: FormattedResults): void {
 
 function outputBlockingIssues(results: FormattedResults, config: Config): void {
   const isTest = process.env.NODE_ENV === 'test';
-  const log = isTest ? console.log : logger.info.bind(logger);
+  const log = isTest ? console.error : logger.info.bind(logger);
 
   if (!results.blocked) {
     log('\n✅ No blocking issues found. Commit can proceed.');
@@ -368,7 +368,7 @@ function outputBlockingIssues(results: FormattedResults, config: Config): void {
     review => SEVERITY_LEVELS[review.severity] >= blockingSeverity
   );
 
-  const errorLog = isTest ? console.log : logger.error.bind(logger);
+  const errorLog = isTest ? console.error : logger.error.bind(logger);
 
   errorLog('\n❌ Commit blocked due to severity issues!');
   errorLog(

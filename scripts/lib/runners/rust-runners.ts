@@ -11,7 +11,7 @@ import { CheckResult } from '../utils/types';
  * Run Rust code formatting checks
  */
 export function runRustFormatting(projectRoot: string): CheckResult {
-  console.log('🦀 Running Rust formatting...');
+  console.error('🦀 Running Rust formatting...');
   const backendDir = path.join(projectRoot, 'backend');
   validateDirectoryExists(backendDir);
   return execCommand('cargo fmt --check --manifest-path backend/Cargo.toml', projectRoot);
@@ -21,7 +21,7 @@ export function runRustFormatting(projectRoot: string): CheckResult {
  * Run Rust linting checks (clippy)
  */
 export function runRustLinting(projectRoot: string): CheckResult {
-  console.log('🔍 Running Rust linting (clippy)...');
+  console.error('🔍 Running Rust linting (clippy)...');
   const backendDir = path.join(projectRoot, 'backend');
   validateDirectoryExists(backendDir);
   return execCommand(

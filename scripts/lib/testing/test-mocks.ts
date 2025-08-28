@@ -1,7 +1,6 @@
 /**
  * Common mock utilities and base mocks for test files
  */
-import { vi } from 'vitest';
 import type { MockResult } from './test-types';
 
 /**
@@ -17,27 +16,27 @@ export const createMockResult = (overrides: Partial<MockResult> = {}): MockResul
  * Common mock setup for file filtering
  */
 export const createFileFilteringMock = () => ({
-  filterValidFiles: vi.fn().mockReturnValue([]),
-  filterCoverageFiles: vi.fn().mockReturnValue([]),
-  filterTestFiles: vi.fn().mockReturnValue([]),
+  filterValidFiles: jest.fn().mockReturnValue([]),
+  filterCoverageFiles: jest.fn().mockReturnValue([]),
+  filterTestFiles: jest.fn().mockReturnValue([]),
 });
 
 /**
  * Common mock setup for review utils
  */
 export const createReviewUtilsMock = () => ({
-  execCommand: vi.fn().mockReturnValue(''),
-  runCommand: vi.fn().mockReturnValue(createMockResult()),
+  execCommand: jest.fn().mockReturnValue(''),
+  runCommand: jest.fn().mockReturnValue(createMockResult()),
 });
 
 /**
  * Common mock setup for fs operations
  */
 export const createFsMock = () => ({
-  existsSync: vi.fn().mockReturnValue(false),
-  readFileSync: vi.fn().mockReturnValue(''),
-  writeFileSync: vi.fn(),
-  mkdirSync: vi.fn(),
+  existsSync: jest.fn().mockReturnValue(false),
+  readFileSync: jest.fn().mockReturnValue(''),
+  writeFileSync: jest.fn(),
+  mkdirSync: jest.fn(),
 });
 
 /**
@@ -51,8 +50,8 @@ export const createTestSetup = () => {
     fileFiltering: fileFilteringMock,
     reviewUtils: reviewUtilsMock,
     cleanup: () => {
-      vi.clearAllMocks();
-      vi.resetAllMocks();
+      jest.clearAllMocks();
+      jest.resetAllMocks();
     },
   };
 };

@@ -9,9 +9,9 @@ test.describe('Task Management Basic Tests', () => {
     await page.waitForLoadState('domcontentloaded');
 
     // Check if we can see the tasks heading
-    const taskHeading = page.locator('text=Tasks');
+    const taskHeading = page.locator('h1:has-text("Tasks")');
     if (await taskHeading.count() > 0) {
-      await expect(taskHeading).toBeVisible();
+      await expect(taskHeading.first()).toBeVisible();
     } else {
       // At minimum, verify we're on the right route
       expect(page.url()).toContain('/tasks');
@@ -23,31 +23,31 @@ test.describe('Task Management Basic Tests', () => {
     await page.waitForLoadState('domcontentloaded');
 
     // Check if main heading is available
-    const mainHeading = page.locator('text=Tasks');
+    const mainHeading = page.locator('h1:has-text("Tasks")');
     if (await mainHeading.count() > 0) {
-      await expect(mainHeading).toBeVisible();
+      await expect(mainHeading.first()).toBeVisible();
     }
 
     // Check for Add Task button
-    const addTaskButton = page.locator('text=Add Task');
+    const addTaskButton = page.getByRole('button', { name: /add task/i });
     if (await addTaskButton.count() > 0) {
-      await expect(addTaskButton).toBeVisible();
+      await expect(addTaskButton.first()).toBeVisible();
     }
 
     // Check for kanban column headers with flexible selectors
     const pendingColumn = page.locator('text=Pending');
     if (await pendingColumn.count() > 0) {
-      await expect(pendingColumn).toBeVisible();
+      await expect(pendingColumn.first()).toBeVisible();
     }
     
     const inProgressColumn = page.locator('text=In Progress');
     if (await inProgressColumn.count() > 0) {
-      await expect(inProgressColumn).toBeVisible();
+      await expect(inProgressColumn.first()).toBeVisible();
     }
     
     const completedColumn = page.locator('text=Completed');
     if (await completedColumn.count() > 0) {
-      await expect(completedColumn).toBeVisible();
+      await expect(completedColumn.first()).toBeVisible();
     }
     
     // At minimum, verify we're on the right route
@@ -59,9 +59,9 @@ test.describe('Task Management Basic Tests', () => {
     await page.waitForLoadState('domcontentloaded');
 
     // Try to click Add Task button if available
-    const addTaskButton = page.locator('text=Add Task');
+    const addTaskButton = page.getByRole('button', { name: /add task/i });
     if (await addTaskButton.count() > 0) {
-      await addTaskButton.click();
+      await addTaskButton.first().click();
 
       // Check if form appears
       const formTitle = page.locator('text=Create New Task');

@@ -111,6 +111,20 @@ describe('timestamp utilities', () => {
       
       expect(first).toBe(second); // Should still format the same way
     });
+
+    test('automatically clears cache when size exceeds 1000', () => {
+      // Fill cache with over 1000 entries to trigger automatic clearing
+      for (let i = 0; i <= 1001; i++) {
+        formatStableTimestamp(`2024-01-01T12:00:${i.toString().padStart(2, '0')}.${i}Z`);
+      }
+      
+      // Call clearTimestampCache to check the size and clear if needed
+      clearTimestampCache();
+      
+      // Function should still work after auto-clearing
+      const result = formatStableTimestamp('2024-01-01T14:00:00Z');
+      expect(typeof result).toBe('string');
+    });
   });
 
   describe('performance and memory management', () => {

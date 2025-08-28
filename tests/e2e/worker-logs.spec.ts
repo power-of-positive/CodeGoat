@@ -31,7 +31,7 @@ test.describe('Worker Log Streaming', () => {
       const hasFailed = await enhancedFailedBadge.isVisible();
       
       if (hasEnhanced) {
-        console.log('✅ Enhanced logging is active');
+        console.error('✅ Enhanced logging is active');
         
         // Check for structured log entries with icons
         await page.waitForSelector('[data-testid="log-entry"]', { timeout: 5000 });
@@ -54,7 +54,7 @@ test.describe('Worker Log Streaming', () => {
                                   await thinking.count();
           
           expect(structuredEntries).toBeGreaterThan(0);
-          console.log(`Found ${structuredEntries} structured log entries`);
+          console.error(`Found ${structuredEntries} structured log entries`);
         }
         
         // Verify that raw JSON is NOT visible in enhanced mode
@@ -66,11 +66,11 @@ test.describe('Worker Log Streaming', () => {
           console.error('❌ Raw JSON detected in enhanced logging mode');
           // This indicates the enhanced logging is not working properly
         } else {
-          console.log('✅ No raw JSON detected - enhanced logging working correctly');
+          console.error('✅ No raw JSON detected - enhanced logging working correctly');
         }
         
       } else if (hasFailed) {
-        console.log('⚠️ Enhanced logging failed - using fallback mode');
+        console.error('⚠️ Enhanced logging failed - using fallback mode');
         
         // In fallback mode, we might see raw JSON
         const logEntries = page.locator('[data-testid="log-entry"]');
@@ -102,7 +102,7 @@ test.describe('Worker Log Streaming', () => {
         }
       }
     } else {
-      console.log('No workers found - skipping worker-specific tests');
+      console.error('No workers found - skipping worker-specific tests');
       await expect(page.getByText('No active workers')).toBeVisible();
     }
   });
@@ -181,7 +181,7 @@ test.describe('Worker Log Streaming', () => {
           }
         }
         
-        console.log(`Found ${foundIcons} different log entry icons`);
+        console.error(`Found ${foundIcons} different log entry icons`);
         
         // Should have at least some icons if enhanced logging is working
         if (foundIcons === 0) {
@@ -218,9 +218,9 @@ test.describe('Worker Log Streaming', () => {
         const newCount = await logEntries.count();
         
         if (newCount > initialCount) {
-          console.log(`✅ Log streaming working - entries increased from ${initialCount} to ${newCount}`);
+          console.error(`✅ Log streaming working - entries increased from ${initialCount} to ${newCount}`);
         } else {
-          console.log(`ℹ️ No new log entries - worker may be inactive`);
+          console.error(`ℹ️ No new log entries - worker may be inactive`);
         }
       }
     }
@@ -248,7 +248,7 @@ test.describe('Worker Log Streaming', () => {
       for (const statusElement of statusElements) {
         if (await statusElement.isVisible()) {
           statusFound = true;
-          console.log(`Worker status: ${await statusElement.textContent()}`);
+          console.error(`Worker status: ${await statusElement.textContent()}`);
           break;
         }
       }

@@ -59,35 +59,35 @@ class SupervisorMonitor {
   }
 
   async showStatus(): Promise<void> {
-    console.log('🎯 Claude Supervisor Monitor\n');
+    console.error('🎯 Claude Supervisor Monitor\n');
     
     const sessions = await this.getActiveSessions();
     
     if (sessions.length === 0) {
-      console.log('📭 No sessions found');
+      console.error('📭 No sessions found');
       return;
     }
 
-    console.log(`📊 Found ${sessions.length} session(s):\n`);
+    console.error(`📊 Found ${sessions.length} session(s):\n`);
     
     for (const session of sessions.slice(0, 10)) { // Show last 10 sessions
       const statusIcon = session.status === 'completed' ? '✅' : 
                         session.status === 'failed' ? '❌' : '🔄';
       
-      console.log(`${statusIcon} ${session.sessionId}`);
-      console.log(`   Status: ${session.status}`);
-      console.log(`   Started: ${session.startTime}`);
-      console.log(`   Attempts: ${session.attempts}`);
+      console.error(`${statusIcon} ${session.sessionId}`);
+      console.error(`   Status: ${session.status}`);
+      console.error(`   Started: ${session.startTime}`);
+      console.error(`   Attempts: ${session.attempts}`);
       if (session.endTime) {
-        console.log(`   Ended: ${session.endTime}`);
+        console.error(`   Ended: ${session.endTime}`);
       }
-      console.log(`   Last Activity: ${session.lastActivity}`);
-      console.log('');
+      console.error(`   Last Activity: ${session.lastActivity}`);
+      console.error('');
     }
   }
 
   async watchLogs(sessionId?: string): Promise<void> {
-    console.log(`👀 Watching logs${sessionId ? ` for ${sessionId}` : ' (latest)'}...\n`);
+    console.error(`👀 Watching logs${sessionId ? ` for ${sessionId}` : ' (latest)'}...\n`);
     
     // Find the latest log file
     let logFile: string;
@@ -122,7 +122,7 @@ class SupervisorMonitor {
     });
     
     tail.on('close', (code) => {
-      console.log(`\nLog watching ended with code ${code}`);
+      console.error(`\nLog watching ended with code ${code}`);
     });
 
     // Handle Ctrl+C
@@ -152,12 +152,12 @@ class SupervisorMonitor {
             const parts = line.split(/\s+/);
             const pid = parts[1];
             if (pid && !isNaN(parseInt(pid))) {
-              console.log(`🛑 Killing process ${pid} for session ${sessionId}`);
+              console.error(`🛑 Killing process ${pid} for session ${sessionId}`);
               spawn('kill', ['-TERM', pid]);
             }
           }
         } else {
-          console.log(`ℹ️ No running processes found for session ${sessionId}`);
+          console.error(`ℹ️ No running processes found for session ${sessionId}`);
         }
       });
       
@@ -167,7 +167,7 @@ class SupervisorMonitor {
   }
 
   async cleanup(): Promise<void> {
-    console.log('🧹 Cleaning up old logs...');
+    console.error('🧹 Cleaning up old logs...');
     
     try {
       const files = await fs.readdir(this.logDir);
@@ -186,7 +186,7 @@ class SupervisorMonitor {
         }
       }
       
-      console.log(`✅ Cleaned up ${cleanedCount} old files`);
+      console.error(`✅ Cleaned up ${cleanedCount} old files`);
       
     } catch (error) {
       console.error('Error during cleanup:', error);
@@ -227,7 +227,7 @@ async function main() {
       break;
       
     default:
-      console.log(`
+      console.error(`
 🎯 Claude Supervisor Monitor
 
 Usage:

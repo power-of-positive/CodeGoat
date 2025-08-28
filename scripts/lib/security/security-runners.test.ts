@@ -2,7 +2,7 @@
  * Tests for security-runners.ts
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+
 import { execSync } from 'child_process';
 import {
   runDuplicateCodeDetection,
@@ -11,23 +11,23 @@ import {
 } from './security-runners';
 import * as validationUtils from '../utils/validation-utils';
 
-vi.mock('child_process');
-vi.mock('../utils/validation-utils', () => ({
-  validateCommand: vi.fn(),
-  validateDirectoryExists: vi.fn(),
+jest.mock('child_process');
+jest.mock('../utils/validation-utils', () => ({
+  validateCommand: jest.fn(),
+  validateDirectoryExists: jest.fn(),
 }));
 
 describe('security-runners', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
     // Mock validation functions to prevent directory existence checks
-    vi.mocked(validationUtils.validateDirectoryExists).mockImplementation(() => {});
-    vi.mocked(validationUtils.validateCommand).mockImplementation(() => {});
+    (validationUtils.validateDirectoryExists as jest.Mock).mockImplementation(() => {});
+    (validationUtils.validateCommand as jest.Mock).mockImplementation(() => {});
   });
 
   describe('runDuplicateCodeDetection', () => {
     it('should return success when no duplicates found', () => {
-      vi.mocked(execSync).mockReturnValueOnce('No duplicates found');
+      (execSync as jest.Mock).mockReturnValueOnce('No duplicates found');
 
       const result = runDuplicateCodeDetection('/test/project');
 
@@ -36,7 +36,7 @@ describe('security-runners', () => {
     });
 
     it('should return success when duplicates detected (informational only)', () => {
-      vi.mocked(execSync).mockImplementationOnce(() => {
+      (execSync as jest.Mock).mockImplementationOnce(() => {
         const error = new Error('Command failed') as Error & {
           stdout: string;
         };
@@ -53,7 +53,7 @@ describe('security-runners', () => {
     });
 
     it('should handle command not found errors', () => {
-      vi.mocked(execSync).mockImplementationOnce(() => {
+      (execSync as jest.Mock).mockImplementationOnce(() => {
         const error = new Error('Command not found') as Error & {
           stdout: string;
         };
@@ -70,7 +70,7 @@ describe('security-runners', () => {
 
   describe('runDeadCodeDetection', () => {
     it('should return success when no dead code found', () => {
-      vi.mocked(execSync).mockReturnValueOnce('');
+      (execSync as jest.Mock).mockReturnValueOnce('');
 
       const result = runDeadCodeDetection('/test/project');
 
@@ -79,7 +79,7 @@ describe('security-runners', () => {
     });
 
     it('should return failure when dead code detected', () => {
-      vi.mocked(execSync).mockImplementationOnce(() => {
+      (execSync as jest.Mock).mockImplementationOnce(() => {
         const error = new Error('Command failed') as Error & {
           stdout: string;
         };
@@ -94,7 +94,7 @@ describe('security-runners', () => {
     });
 
     it('should handle command not found errors', () => {
-      vi.mocked(execSync).mockImplementationOnce(() => {
+      (execSync as jest.Mock).mockImplementationOnce(() => {
         const error = new Error('Command not found') as Error & {
           stdout: string;
         };
@@ -111,7 +111,7 @@ describe('security-runners', () => {
 
   describe('runDependencyVulnerabilityCheck', () => {
     it('should return success when no vulnerabilities found', () => {
-      vi.mocked(execSync).mockReturnValueOnce('audit complete, found 0 vulnerabilities');
+      (execSync as jest.Mock).mockReturnValueOnce('audit complete, found 0 vulnerabilities');
 
       const result = runDependencyVulnerabilityCheck('/test/project');
 
@@ -120,7 +120,7 @@ describe('security-runners', () => {
     });
 
     it('should return failure when vulnerabilities found', () => {
-      vi.mocked(execSync).mockImplementationOnce(() => {
+      (execSync as jest.Mock).mockImplementationOnce(() => {
         const error = new Error('Command failed') as Error & {
           stdout: string;
         };

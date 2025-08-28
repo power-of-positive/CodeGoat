@@ -16,10 +16,15 @@ import { WorkerDetail } from './features/workers/components/WorkerDetail';
 import StageManagement from './pages/StageManagement';
 import { Layout } from './shared/components/Layout';
 
+// Query client configuration constants
+const MILLISECONDS_PER_SECOND = 1000;
+const SECONDS_PER_MINUTE = 60;
+const QUERY_STALE_TIME_MINUTES = 5;
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
+      staleTime: MILLISECONDS_PER_SECOND * SECONDS_PER_MINUTE * QUERY_STALE_TIME_MINUTES, // 5 minutes
       refetchOnWindowFocus: false,
     },
   },

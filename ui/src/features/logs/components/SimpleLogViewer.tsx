@@ -3,6 +3,9 @@ import { Virtuoso, VirtuosoHandle } from 'react-virtuoso';
 import RawLogText from './RawLogText';
 import type { UnifiedLogEntry } from '../../../shared/types/logs';
 
+// Display configuration constants
+const TOOL_USE_ID_DISPLAY_LENGTH = -8;
+
 interface SimpleLogViewerProps {
   entries: UnifiedLogEntry[];
   className?: string;
@@ -54,7 +57,7 @@ export default function SimpleLogViewer({
               
               // Add tool result header
               lines.push({
-                content: `[Tool Result ${typeof item.tool_use_id === 'string' ? item.tool_use_id.slice(-8) : index}]`,
+                content: `[Tool Result ${typeof item.tool_use_id === 'string' ? item.tool_use_id.slice(TOOL_USE_ID_DISPLAY_LENGTH) : index}]`,
                 channel: 'stdout'
               });
               

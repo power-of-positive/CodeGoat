@@ -104,14 +104,14 @@ class ClaudeSupervisor {
             const message = input.substring(FOLLOWUP_PREFIX_LENGTH);
             await this.addFollowup(message);
           } else {
-            console.log('🤔 Unknown command. Type "help" for available commands.');
+            console.error('🤔 Unknown command. Type "help" for available commands.');
           }
       }
     });
   }
 
   private showHelp(): void {
-    console.log(`
+    console.error(`
 📚 Claude Supervisor Commands:
   status       - Show current session status
   logs         - Show recent logs
@@ -124,7 +124,7 @@ class ClaudeSupervisor {
   }
 
   private showStatus(): void {
-    console.log(`
+    console.error(`
 📊 Claude Supervisor Status:
   Running: ${this.isRunning}
   Session: ${this.sessionCounter}
@@ -134,15 +134,15 @@ class ClaudeSupervisor {
   }
 
   private showLogs(): void {
-    console.log('\n📜 Recent Logs:');
-    this.logs.slice(-MAX_LOG_ENTRIES).forEach(log => console.log(log));
+    console.error('\n📜 Recent Logs:');
+    this.logs.slice(-MAX_LOG_ENTRIES).forEach(log => console.error(log));
   }
 
   private log(message: string): void {
     const timestamp = new Date().toISOString();
     const logEntry = `[${timestamp}] ${message}`;
     this.logs.push(logEntry);
-    console.log(logEntry);
+    console.error(logEntry);
   }
 
   async runSession(initialPrompt: string): Promise<SessionResult> {
@@ -447,7 +447,7 @@ async function main() {
   const args = process.argv.slice(2);
   
   if (args.length === 0) {
-    console.log(`
+    console.error(`
 🎯 Claude Supervisor - Automated Claude Code with Validation
 
 Usage:
@@ -489,22 +489,22 @@ Examples:
   supervisor.start();
 
   if (interactive) {
-    console.log('🎮 Interactive mode - waiting for commands...');
+    console.error('🎮 Interactive mode - waiting for commands...');
     // Keep process alive for interactive commands
     process.stdin.resume();
   } else if (prompt) {
     try {
       const result = await supervisor.runSession(prompt);
       
-      console.log('\n📊 Final Results:');
-      console.log(`  Success: ${result.success}`);
-      console.log(`  Attempts: ${result.attempts}`);
-      console.log(`  Session ID: ${result.sessionId}`);
+      console.error('\n📊 Final Results:');
+      console.error(`  Success: ${result.success}`);
+      console.error(`  Attempts: ${result.attempts}`);
+      console.error(`  Session ID: ${result.sessionId}`);
       
       if (result.validationResults) {
-        console.log(`  Validation Results:`);
+        console.error(`  Validation Results:`);
         for (const vr of result.validationResults) {
-          console.log(`    ${vr.success ? '✅' : '❌'} ${vr.stage}`);
+          console.error(`    ${vr.success ? '✅' : '❌'} ${vr.stage}`);
         }
       }
       

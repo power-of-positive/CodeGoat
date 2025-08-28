@@ -148,7 +148,7 @@ function formatExportsList(exports: UnusedExport[], maxDisplay: number = 15): st
 
 function executeDeadCodeCheck(config: DeadCodeConfig): string {
   const command = `npx ts-prune ${config.tsPruneOptions.join(' ')}`;
-  console.log(`📋 Running: ${command}`);
+  console.error(`📋 Running: ${command}`);
 
   return execSync(command, {
     encoding: 'utf-8',
@@ -158,24 +158,24 @@ function executeDeadCodeCheck(config: DeadCodeConfig): string {
 
 function processUnusedExports(output: string, config: DeadCodeConfig): void {
   if (!output.trim()) {
-    console.log('✅ No unused exports detected - excellent code hygiene!');
+    console.error('✅ No unused exports detected - excellent code hygiene!');
     return;
   }
 
   const allExports = parseUnusedExports(output);
-  console.log(`📊 Found ${allExports.length} potentially unused exports`);
+  console.error(`📊 Found ${allExports.length} potentially unused exports`);
 
   const filteredExports = allExports.filter(
     exp => !shouldIgnoreFile(exp.file, config.ignorePatterns)
   );
 
   const unusedCount = filteredExports.length;
-  console.log(
+  console.error(
     `📊 Unused exports after filtering: ${unusedCount} (max: ${config.maxUnusedExports})`
   );
 
   if (unusedCount === 0) {
-    console.log('✅ All unused exports are in ignored files - good job!');
+    console.error('✅ All unused exports are in ignored files - good job!');
     return;
   }
 
@@ -183,17 +183,17 @@ function processUnusedExports(output: string, config: DeadCodeConfig): void {
 }
 
 function showDeadCodeGuidance(): void {
-  console.log('\n💡 Consider removing unused exports to maintain clean codebase:');
-  console.log('   • Remove unused functions, classes, and variables');
-  console.log('   • Use private/internal exports for implementation details');
-  console.log('   • Add ignore patterns for legitimate public API exports');
-  console.log('   • Consider if exports are needed for future use or external consumption');
+  console.error('\n💡 Consider removing unused exports to maintain clean codebase:');
+  console.error('   • Remove unused functions, classes, and variables');
+  console.error('   • Use private/internal exports for implementation details');
+  console.error('   • Add ignore patterns for legitimate public API exports');
+  console.error('   • Consider if exports are needed for future use or external consumption');
 
-  console.log('\n📈 Benefits of removing dead code:');
-  console.log('   • Smaller bundle sizes and faster builds');
-  console.log('   • Easier code navigation and maintenance');
-  console.log('   • Reduced cognitive load for developers');
-  console.log('   • Better tree-shaking optimization');
+  console.error('\n📈 Benefits of removing dead code:');
+  console.error('   • Smaller bundle sizes and faster builds');
+  console.error('   • Easier code navigation and maintenance');
+  console.error('   • Reduced cognitive load for developers');
+  console.error('   • Better tree-shaking optimization');
 }
 
 function handleUnusedExportsResults(filteredExports: UnusedExport[], config: DeadCodeConfig): void {
@@ -201,11 +201,11 @@ function handleUnusedExportsResults(filteredExports: UnusedExport[], config: Dea
   let shouldFail = false;
 
   if (unusedCount > config.maxUnusedExports) {
-    console.log(
+    console.error(
       `\n⚠️  Warning: Too many unused exports (${unusedCount} > ${config.maxUnusedExports})`
     );
-    console.log('Unused exports by file:');
-    console.log(formatExportsList(filteredExports));
+    console.error('Unused exports by file:');
+    console.error(formatExportsList(filteredExports));
 
     if (config.failOnExcess) {
       shouldFail = true;
@@ -213,22 +213,22 @@ function handleUnusedExportsResults(filteredExports: UnusedExport[], config: Dea
 
     showDeadCodeGuidance();
   } else {
-    console.log(
+    console.error(
       `\n✅ Unused exports within acceptable limits (${unusedCount}/${config.maxUnusedExports})`
     );
     if (unusedCount > 0) {
-      console.log('Consider reviewing these exports:');
-      console.log(formatExportsList(filteredExports, 10));
+      console.error('Consider reviewing these exports:');
+      console.error(formatExportsList(filteredExports, 10));
     }
   }
 
   if (shouldFail) {
-    console.log('\n❌ Dead code detection failed due to configuration settings');
+    console.error('\n❌ Dead code detection failed due to configuration settings');
     process.exit(1);
   } else if (unusedCount > config.maxUnusedExports) {
-    console.log('\n✅ Dead code detection completed with warnings');
+    console.error('\n✅ Dead code detection completed with warnings');
   } else {
-    console.log('\n✅ Dead code detection passed');
+    console.error('\n✅ Dead code detection passed');
   }
 }
 
@@ -246,7 +246,7 @@ function handleDeadCodeError(error: unknown, config: DeadCodeConfig): void {
       );
 
       if (filteredExports.length > config.maxUnusedExports && config.failOnExcess) {
-        console.log('\n❌ Dead code detection failed - too many unused exports found');
+        console.error('\n❌ Dead code detection failed - too many unused exports found');
         process.exit(1);
       }
     }
@@ -254,7 +254,7 @@ function handleDeadCodeError(error: unknown, config: DeadCodeConfig): void {
 }
 
 function runDeadCodeDetection(): void {
-  console.log('🔍 Running dead code detection...');
+  console.error('🔍 Running dead code detection...');
 
   const config = loadConfig();
 

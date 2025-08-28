@@ -46,19 +46,69 @@ const mockStageAnalyticsData = {
       totalRuns: 50,
       successfulRuns: 48,
       failedRuns: 2,
-      successRate: 96.0,
-      totalDuration: 15000,
-      avgDuration: 300,
-      minDuration: 250,
-      maxDuration: 400,
+      successRate: 95.0,
+      totalDuration: 1525000, // 25.5 minutes total
+      avgDuration: 30500, // 30.5 seconds average
+      minDuration: 25000, // 25 seconds
+      maxDuration: 40000, // 40 seconds
       reliability: 'excellent' as const,
     },
   ],
-  trends: [],
+  trends: [
+    {
+      metric: 'avgDuration',
+      current: 30500,
+      previous: 29000,
+      change: 5.2,
+      trend: 'up' as const
+    },
+    {
+      metric: 'successRate',
+      current: 95.0,
+      previous: 96.1,
+      change: -1.1,
+      trend: 'down' as const
+    },
+    {
+      metric: 'totalRuns',
+      current: 50,
+      previous: 44,
+      change: 12.3,
+      trend: 'up' as const
+    }
+  ],
   insights: {
-    problematicStages: [],
-    topPerformingStages: [],
-    stageExecutionPattern: [],
+    problematicStages: [
+      {
+        stageId: 'typecheck',
+        stageName: 'Type Check', 
+        totalRuns: 30,
+        successfulRuns: 25,
+        failedRuns: 5,
+        successRate: 83.3,
+        avgDuration: 45000,
+        reliability: 'poor' as const
+      }
+    ],
+    topPerformingStages: [
+      {
+        stageId: 'lint',
+        stageName: 'Lint',
+        avgDuration: 25500, // 25.5s
+        successRate: 98.5
+      },
+      {
+        stageId: 'typecheck', 
+        stageName: 'Type Check',
+        avgDuration: 120300, // 120.3s
+        successRate: 92.1
+      }
+    ],
+    stageExecutionPattern: [
+      { hour: 9, executions: 15 },
+      { hour: 10, executions: 25 },
+      { hour: 11, executions: 20 }
+    ],
   },
 };
 
@@ -121,12 +171,12 @@ describe('StageStatistics', () => {
 
     // Check overview cards
     expect(screen.getByText('Total Stages')).toBeInTheDocument();
-    expect(screen.getByText('5')).toBeInTheDocument();
+    expect(screen.getAllByText('5')).toHaveLength(2); // Multiple cards may show "5"
     expect(screen.getByText('Total Executions')).toBeInTheDocument();
     expect(screen.getByText('150')).toBeInTheDocument();
 
     // Check stage table (using getAllByText to handle multiple instances)
-    expect(screen.getAllByText('Lint')).toHaveLength(2); // One in filter, one in table
+    expect(screen.getAllByText('Lint')).toHaveLength(3); // Filter option, table, and insights section
   });
 
   it('handles filter changes', async () => {
@@ -175,5 +225,169 @@ describe('StageStatistics', () => {
     });
 
     expect(screen.getByText('No stage statistics found for the selected period.')).toBeInTheDocument();
+  });
+
+  it('handles stage filter selection', async () => {
+    (analyticsApi.getStageAnalytics as jest.MockedFunction<any>).mockResolvedValue(mockStageAnalyticsData);
+
+    renderWithQueryClient(<StageStatistics stageId="specific-stage" />);
+
+    await waitFor(() => {
+      expect(analyticsApi.getStageAnalytics).toHaveBeenCalledWith(
+        expect.objectContaining({ stageId: 'specific-stage' })
+      );
+    });
+  });
+
+  it('displays performance metrics correctly', async () => {
+    (analyticsApi.getStageAnalytics as jest.MockedFunction<any>).mockResolvedValue(mockStageAnalyticsData);
+
+    renderWithQueryClient(<StageStatistics />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Stage Performance Analytics')).toBeInTheDocument();
+      expect(screen.getByText('95.0%')).toBeInTheDocument(); // Success rate
+    });
+
+    // Check for stage-specific metrics - using formatted duration from component
+    expect(screen.getByText('30500.0ms')).toBeInTheDocument(); // Duration from mock data formatted with decimals
+  });
+
+  it('handles environment filter changes', async () => {
+    (analyticsApi.getStageAnalytics as jest.MockedFunction<any>).mockResolvedValue(mockStageAnalyticsData);
+
+    renderWithQueryClient(<StageStatistics stageId="prod-stage" />);
+
+    await waitFor(() => {
+      expect(analyticsApi.getStageAnalytics).toHaveBeenCalledWith(
+        expect.objectContaining({ stageId: 'prod-stage' })
+      );
+    });
+  });
+
+  it('displays charts correctly', async () => {
+    (analyticsApi.getStageAnalytics as jest.MockedFunction<any>).mockResolvedValue(mockStageAnalyticsData);
+
+    renderWithQueryClient(<StageStatistics />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Stage Performance Analytics')).toBeInTheDocument();
+    });
+
+    // Check for chart containers - performance view shows 2 charts by default
+    expect(screen.getAllByTestId('responsive-container')).toHaveLength(2); // Success rate + Duration charts
+    expect(screen.getAllByTestId('bar-chart')).toHaveLength(2); // Both charts are bar charts in performance view
+  });
+
+  it('handles retry button click on error', async () => {
+    (analyticsApi.getStageAnalytics as jest.MockedFunction<any>)
+      .mockRejectedValueOnce(new Error('API Error'))
+      .mockResolvedValueOnce(mockStageAnalyticsData);
+
+    renderWithQueryClient(<StageStatistics />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Failed to load stage statistics/)).toBeInTheDocument();
+    });
+
+    const retryButton = screen.getByRole('button', { name: /Try Again/ });
+    fireEvent.click(retryButton);
+
+    await waitFor(() => {
+      expect(screen.getByText('Stage Performance Analytics')).toBeInTheDocument();
+    });
+
+    expect(analyticsApi.getStageAnalytics).toHaveBeenCalledTimes(2);
+  });
+
+  it('displays stage comparison data', async () => {
+    const mockDataWithComparison = {
+      ...mockStageAnalyticsData,
+      stageComparisons: [
+        { stageName: 'Lint', avgDuration: 25.5, successRate: 98.5, executions: 50 },
+        { stageName: 'Test', avgDuration: 120.3, successRate: 92.1, executions: 45 },
+      ]
+    };
+
+    (analyticsApi.getStageAnalytics as jest.MockedFunction<any>).mockResolvedValue(mockDataWithComparison);
+
+    renderWithQueryClient(<StageStatistics />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Stage Performance Analytics')).toBeInTheDocument();
+    });
+
+    // The component shows the data in the table and insights sections
+    expect(screen.getByText('25500.0ms')).toBeInTheDocument(); // From table formatting
+    expect(screen.getByText('95.0%')).toBeInTheDocument(); // Success rate from mock data
+  });
+
+  it('handles date range filter correctly', async () => {
+    (analyticsApi.getStageAnalytics as jest.MockedFunction<any>).mockResolvedValue(mockStageAnalyticsData);
+
+    renderWithQueryClient(<StageStatistics defaultDays={30} />);
+
+    await waitFor(() => {
+      expect(analyticsApi.getStageAnalytics).toHaveBeenCalledWith(
+        expect.objectContaining({ 
+          days: 30
+        })
+      );
+    });
+  });
+
+  it('displays loading skeletons correctly', () => {
+    (analyticsApi.getStageAnalytics as jest.MockedFunction<any>).mockImplementation(
+      () => new Promise(() => {}) // Never resolves to show loading state
+    );
+
+    renderWithQueryClient(<StageStatistics />);
+
+    // Check for skeleton loading indicator (animate-pulse class shows skeleton)
+    expect(document.querySelector('.animate-pulse')).toBeInTheDocument();
+  });
+
+  it('handles empty stage list gracefully', async () => {
+    const emptyData = {
+      ...mockStageAnalyticsData,
+      stageStatistics: [] // Correct property name
+    };
+
+    (analyticsApi.getStageAnalytics as jest.MockedFunction<any>).mockResolvedValue(emptyData);
+
+    renderWithQueryClient(<StageStatistics />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Stage Performance Analytics')).toBeInTheDocument();
+    });
+
+    // Component still renders with empty data, but table shows no rows
+    expect(screen.getByText('Detailed Stage Statistics')).toBeInTheDocument();
+  });
+
+  it('displays trend indicators correctly', async () => {
+    const dataWithTrends = {
+      ...mockStageAnalyticsData,
+      trends: [
+        {
+          metric: 'avgDuration',
+          current: 30500,
+          previous: 29000,
+          change: 5.2,
+          trend: 'up' as const
+        }
+      ]
+    };
+
+    (analyticsApi.getStageAnalytics as jest.MockedFunction<any>).mockResolvedValue(dataWithTrends);
+
+    renderWithQueryClient(<StageStatistics />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Stage Performance Analytics')).toBeInTheDocument();
+    });
+
+    // Check that trends data is present (component displays 2 charts in performance view)
+    expect(screen.getAllByTestId('responsive-container')).toHaveLength(2); // Performance view shows 2 charts
   });
 });

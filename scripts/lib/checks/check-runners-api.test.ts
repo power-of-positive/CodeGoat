@@ -2,37 +2,37 @@
  * API E2E tests for check-runners.ts
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+
 import { runApiE2eTests } from './check-runners';
 import { execSync } from 'child_process';
 import { createServer } from 'net';
 
 // Mock external dependencies
-vi.mock('child_process');
-vi.mock('net');
+jest.mock('child_process');
+jest.mock('net');
 
 describe('check-runners API E2E', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
     // Mock process.cwd and process.env
-    vi.stubGlobal('process', {
-      ...process,
-      cwd: vi.fn().mockReturnValue('/mock/cwd'),
-      env: { ...process.env },
+    const mockCwd = jest.fn().mockReturnValue('/mock/cwd');
+    Object.defineProperty(process, 'cwd', {
+      value: mockCwd,
+      configurable: true,
     });
   });
 
   describe('runApiE2eTests', () => {
     it('should run API E2E tests successfully', async () => {
       const mockServer = {
-        listen: vi.fn((_port: number, callback: () => void) => callback()),
-        close: vi.fn((callback: () => void) => callback()),
-        on: vi.fn(),
+        listen: jest.fn((_port: number, callback: () => void) => callback()),
+        close: jest.fn((callback: () => void) => callback()),
+        on: jest.fn(),
       };
-      vi.mocked(createServer).mockReturnValue(
+      (createServer as jest.Mock).mockReturnValue(
         mockServer as unknown as ReturnType<typeof createServer>
       );
-      vi.mocked(execSync).mockReturnValue('API E2E tests passed');
+      (execSync as jest.Mock).mockReturnValue('API E2E tests passed');
 
       const result = await runApiE2eTests('/mock/project');
 
@@ -51,20 +51,20 @@ describe('check-runners API E2E', () => {
 
     it('should handle port finding error', async () => {
       const mockServer = {
-        listen: vi.fn(),
-        close: vi.fn((callback?: () => void) => {
+        listen: jest.fn(),
+        close: jest.fn((callback?: () => void) => {
           if (callback) {
             callback();
           }
         }),
 
-        on: vi.fn((event: string, callback: (err?: Error) => void) => {
+        on: jest.fn((event: string, callback: (err?: Error) => void) => {
           if (event === 'error') {
             setTimeout(() => callback(new Error('Port error')), 0);
           }
         }),
       };
-      vi.mocked(createServer).mockReturnValue(
+      (createServer as jest.Mock).mockReturnValue(
         mockServer as unknown as ReturnType<typeof createServer>
       );
 
@@ -78,18 +78,18 @@ describe('check-runners API E2E', () => {
 
     it('should handle execCommand throwing error', async () => {
       const mockServer = {
-        listen: vi.fn((_port: number, callback: () => void) => callback()),
-        close: vi.fn((callback?: () => void) => {
+        listen: jest.fn((_port: number, callback: () => void) => callback()),
+        close: jest.fn((callback?: () => void) => {
           if (callback) {
             callback();
           }
         }),
-        on: vi.fn(),
+        on: jest.fn(),
       };
-      vi.mocked(createServer).mockReturnValue(
+      (createServer as jest.Mock).mockReturnValue(
         mockServer as unknown as ReturnType<typeof createServer>
       );
-      vi.mocked(execSync).mockImplementation(() => {
+      (execSync as jest.Mock).mockImplementation(() => {
         throw new Error('Command execution failed');
       });
 

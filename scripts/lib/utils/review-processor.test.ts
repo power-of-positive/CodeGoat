@@ -2,7 +2,7 @@
  * Tests for review-processor.ts
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+
 import { performCodeReview, shouldBlockClaude, processReviewResults } from './review-processor';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -14,32 +14,32 @@ import { checkPlaywrightCoverage } from '../playwright-coverage';
 import { analyzeLlmReviewSeverity } from '../severity/severity-analyzer';
 
 // Mock external dependencies
-vi.mock('fs');
-vi.mock('path');
-vi.mock('./review-utils');
-vi.mock('../llm/llm-review-generator');
-vi.mock('../playwright-coverage');
-vi.mock('../severity/severity-analyzer');
+jest.mock('fs');
+jest.mock('path');
+jest.mock('./review-utils');
+jest.mock('../llm/llm-review-generator');
+jest.mock('../playwright-coverage');
+jest.mock('../severity/severity-analyzer');
 
 // Mock dotenv to prevent .env loading errors in tests
-vi.mock('dotenv', () => ({
-  config: vi.fn(() => ({ parsed: {}, error: null })),
+jest.mock('dotenv', () => ({
+  config: jest.fn(() => ({ parsed: {}, error: null })),
 }));
 
 describe('review-processor', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   describe('performCodeReview', () => {
     it('should perform comprehensive code review', async () => {
       // Mock dependencies with static imports
-      vi.mocked(findProjectRoot).mockReturnValue('/mock/project');
-      vi.mocked(generateLlmReviewComments).mockResolvedValue(undefined);
-      vi.mocked(checkPlaywrightCoverage).mockReturnValue('Coverage check passed\n');
-      vi.mocked(analyzeLlmReviewSeverity).mockReturnValue('MEDIUM: Some issues found\n');
-      vi.mocked(path.join).mockReturnValue('/mock/project/code-review-comments.tmp');
-      vi.mocked(fs.existsSync).mockReturnValue(true);
+      (findProjectRoot as jest.Mock).mockReturnValue('/mock/project');
+      (generateLlmReviewComments as jest.Mock).mockResolvedValue(undefined);
+      (checkPlaywrightCoverage as jest.Mock).mockReturnValue('Coverage check passed\n');
+      (analyzeLlmReviewSeverity as jest.Mock).mockReturnValue('MEDIUM: Some issues found\n');
+      (path.join as jest.Mock).mockReturnValue('/mock/project/code-review-comments.tmp');
+      (fs.existsSync as jest.Mock).mockReturnValue(true);
 
       const result = await performCodeReview('test-files.txt');
 
@@ -52,11 +52,11 @@ describe('review-processor', () => {
 
     it('should handle missing LLM review file', async () => {
       // Mock dependencies with static imports
-      vi.mocked(findProjectRoot).mockReturnValue('/mock/project');
-      vi.mocked(generateLlmReviewComments).mockResolvedValue(undefined);
-      vi.mocked(checkPlaywrightCoverage).mockReturnValue('Coverage OK\n');
-      vi.mocked(path.join).mockReturnValue('/mock/project/code-review-comments.tmp');
-      vi.mocked(fs.existsSync).mockReturnValue(false);
+      (findProjectRoot as jest.Mock).mockReturnValue('/mock/project');
+      (generateLlmReviewComments as jest.Mock).mockResolvedValue(undefined);
+      (checkPlaywrightCoverage as jest.Mock).mockReturnValue('Coverage OK\n');
+      (path.join as jest.Mock).mockReturnValue('/mock/project/code-review-comments.tmp');
+      (fs.existsSync as jest.Mock).mockReturnValue(false);
 
       const result = await performCodeReview('files.txt');
 
@@ -66,10 +66,10 @@ describe('review-processor', () => {
 
     it('should handle empty coverage check results', async () => {
       // Mock dependencies with static imports
-      vi.mocked(findProjectRoot).mockReturnValue('/mock/project');
-      vi.mocked(generateLlmReviewComments).mockResolvedValue(undefined);
-      vi.mocked(checkPlaywrightCoverage).mockReturnValue('');
-      vi.mocked(fs.existsSync).mockReturnValue(false);
+      (findProjectRoot as jest.Mock).mockReturnValue('/mock/project');
+      (generateLlmReviewComments as jest.Mock).mockResolvedValue(undefined);
+      (checkPlaywrightCoverage as jest.Mock).mockReturnValue('');
+      (fs.existsSync as jest.Mock).mockReturnValue(false);
 
       const result = await performCodeReview('files.txt');
 

@@ -15,6 +15,9 @@ import { Button } from '../../../shared/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../shared/ui/card';
 import { Badge } from '../../../shared/ui/badge';
 
+// Constants for ID parsing
+const ID_DISPLAY_PARTS_COUNT = 2; // Number of parts to show from the end of hyphen-separated IDs
+
 interface WorkerInfoProps {
   executorId: string;
 }
@@ -140,7 +143,7 @@ function WorkerDetails({ worker }: { worker: WorkerData }) {
           to={`/workers#${worker.id}`}
           className="font-mono text-sm text-blue-600 hover:underline"
         >
-          {worker.id.split('-').slice(-2).join('-')}
+          {worker.id.split('-').slice(-ID_DISPLAY_PARTS_COUNT).join('-')}
         </Link>
       </div>
 

@@ -4,6 +4,15 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { execSync } from 'child_process';
 
+// HTTP Status Constants
+const HTTP_STATUS = {
+  OK: 200,
+  CREATED: 201,
+  BAD_REQUEST: 400,
+  NOT_FOUND: 404,
+  INTERNAL_SERVER_ERROR: 500,
+} as const;
+
 // Configuration
 const BACKUP_CONFIG = {
   backupDir: path.join(process.cwd(), 'backups'),
@@ -67,14 +76,14 @@ function createBackupHandler(logger: ILogger) {
       const backups = listBackups();
       const latestBackup = backups[0];
       
-      res.status(201).json({
+      res.status(HTTP_STATUS.CREATED).json({
         message: 'Backup created successfully',
         backup: latestBackup,
         backups: backups.slice(0, 10), // Return latest 10 backups
       });
     } catch (error) {
       logger.error('Failed to create backup', error as Error);
-      res.status(500).json({ 
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ 
         error: 'Failed to create backup',
         details: error instanceof Error ? error.message : 'Unknown error'
       });
@@ -104,7 +113,7 @@ function getBackupsHandler(logger: ILogger) {
       });
     } catch (error) {
       logger.error('Failed to get backups', error as Error);
-      res.status(500).json({ error: 'Failed to get backup list' });
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ error: 'Failed to get backup list' });
     }
   };
 }
@@ -115,7 +124,7 @@ function restoreBackupHandler(logger: ILogger) {
       const { filename } = req.params;
       
       if (!filename) {
-        res.status(400).json({ error: 'Backup filename is required' });
+        res.status(HTTP_STATUS.BAD_REQUEST).json({ error: 'Backup filename is required' });
         return;
       }
       
@@ -131,7 +140,7 @@ function restoreBackupHandler(logger: ILogger) {
       });
     } catch (error) {
       logger.error('Failed to restore backup', error as Error);
-      res.status(500).json({ 
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ 
         error: 'Failed to restore backup',
         details: error instanceof Error ? error.message : 'Unknown error'
       });
@@ -145,14 +154,14 @@ function deleteBackupHandler(logger: ILogger) {
       const { filename } = req.params;
       
       if (!filename) {
-        res.status(400).json({ error: 'Backup filename is required' });
+        res.status(HTTP_STATUS.BAD_REQUEST).json({ error: 'Backup filename is required' });
         return;
       }
       
       const backupPath = path.join(BACKUP_CONFIG.backupDir, filename);
       
       if (!fs.existsSync(backupPath)) {
-        res.status(404).json({ error: 'Backup file not found' });
+        res.status(HTTP_STATUS.NOT_FOUND).json({ error: 'Backup file not found' });
         return;
       }
       
@@ -166,7 +175,7 @@ function deleteBackupHandler(logger: ILogger) {
       });
     } catch (error) {
       logger.error('Failed to delete backup', error as Error);
-      res.status(500).json({ 
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ 
         error: 'Failed to delete backup',
         details: error instanceof Error ? error.message : 'Unknown error'
       });
@@ -200,7 +209,7 @@ function getBackupStatusHandler(logger: ILogger) {
       });
     } catch (error) {
       logger.error('Failed to get backup status', error as Error);
-      res.status(500).json({ error: 'Failed to get backup status' });
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ error: 'Failed to get backup status' });
     }
   };
 }

@@ -74,6 +74,15 @@ const GRANULARITY_OPTIONS = {
   weekly: { label: 'Weekly', value: 'weekly' },
 } as const;
 
+// Time and refresh constants
+const DEFAULT_REFRESH_INTERVAL_MS = 60000; // 60 seconds = 1 minute
+const QUERY_STALE_TIME_MINUTES = 2;
+const WEEK_OFFSET_DAYS = 6;
+const CHART_HEIGHT = 80;
+const SECONDS_PER_MINUTE = 60;
+const MILLISECONDS_PER_SECOND = 1000;
+const SUCCESS_RATE_THRESHOLD_PERCENT = 80;
+
 const CHART_COLORS = [
   '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6',
   '#06b6d4', '#84cc16', '#f97316', '#ec4899', '#6366f1'
@@ -82,7 +91,7 @@ const CHART_COLORS = [
 export function HistoricalTimeline({ 
   defaultDays = 30,
   autoRefresh = false,
-  refreshInterval = 60000 // 1 minute
+  refreshInterval = DEFAULT_REFRESH_INTERVAL_MS
 }: HistoricalTimelineProps) {
   const [days, setDays] = useState(defaultDays);
   const [granularity, setGranularity] = useState<'hourly' | 'daily' | 'weekly'>('daily');
@@ -108,7 +117,7 @@ export function HistoricalTimeline({
         environment: environment || undefined,
         includeStages,
       }),
-    staleTime: 2 * 60 * 1000, // 2 minutes
+    staleTime: QUERY_STALE_TIME_MINUTES * SECONDS_PER_MINUTE * MILLISECONDS_PER_SECOND,
     refetchInterval: autoRefresh ? refreshInterval : false,
   });
 
@@ -183,7 +192,7 @@ export function HistoricalTimeline({
         });
       case 'weekly': {
         const endOfWeek = new Date(date);
-        endOfWeek.setDate(date.getDate() + 6);
+        endOfWeek.setDate(date.getDate() + WEEK_OFFSET_DAYS);
         return `${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${endOfWeek.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
       }
       default:
@@ -515,7 +524,7 @@ export function HistoricalTimeline({
                   fontSize={12}
                   angle={-45}
                   textAnchor="end"
-                  height={80}
+                  height={CHART_HEIGHT}
                 />
                 <YAxis
                   yAxisId="left"
@@ -605,7 +614,7 @@ export function HistoricalTimeline({
                   fontSize={12}
                   angle={-45}
                   textAnchor="end"
-                  height={80}
+                  height={CHART_HEIGHT}
                 />
                 <YAxis
                   stroke="#6b7280"
@@ -671,7 +680,7 @@ export function HistoricalTimeline({
                   fontSize={12}
                   angle={-45}
                   textAnchor="end"
-                  height={80}
+                  height={CHART_HEIGHT}
                 />
                 <YAxis
                   stroke="#6b7280"
@@ -736,7 +745,7 @@ export function HistoricalTimeline({
                   fontSize={12}
                   angle={-45}
                   textAnchor="end"
-                  height={80}
+                  height={CHART_HEIGHT}
                 />
                 <YAxis
                   stroke="#6b7280"
@@ -784,7 +793,7 @@ export function HistoricalTimeline({
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">Success Rate:</span>
-                        <span className={`font-medium ${currentPeriod.successRate >= 80 ? 'text-green-600' : 'text-red-600'}`}>
+                        <span className={`font-medium ${currentPeriod.successRate >= SUCCESS_RATE_THRESHOLD_PERCENT ? 'text-green-600' : 'text-red-600'}`}>
                           {currentPeriod.successRate.toFixed(1)}%
                         </span>
                       </div>
@@ -806,7 +815,7 @@ export function HistoricalTimeline({
                             <div className="space-y-1 text-xs">
                               <div className="flex justify-between">
                                 <span className="text-gray-600">Success Rate:</span>
-                                <span className={`font-medium ${perf.successRate >= 80 ? 'text-green-600' : 'text-red-600'}`}>
+                                <span className={`font-medium ${perf.successRate >= SUCCESS_RATE_THRESHOLD_PERCENT ? 'text-green-600' : 'text-red-600'}`}>
                                   {perf.successRate.toFixed(1)}%
                                 </span>
                               </div>

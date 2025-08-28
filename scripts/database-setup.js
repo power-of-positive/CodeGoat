@@ -13,7 +13,7 @@ const TEST_DB = path.join(__dirname, '../prisma/kanban-test.db');
 
 function runCommand(command, options = {}) {
   try {
-    console.log(`Running: ${command}`);
+    console.error(`Running: ${command}`);
     const output = execSync(command, { 
       stdio: 'inherit',
       cwd: path.join(__dirname, '..'),
@@ -28,7 +28,7 @@ function runCommand(command, options = {}) {
 }
 
 function setupDatabases() {
-  console.log('🗄️  Setting up CodeGoat databases...');
+  console.error('🗄️  Setting up CodeGoat databases...');
   
   // Ensure prisma directory exists
   const prismaDir = path.join(__dirname, '../prisma');
@@ -37,35 +37,35 @@ function setupDatabases() {
   }
 
   // Generate Prisma client
-  console.log('\n📦 Generating Prisma client...');
+  console.error('\n📦 Generating Prisma client...');
   runCommand('npm run db:generate');
 
   // Setup development database
-  console.log('\n🚀 Setting up development database...');
+  console.error('\n🚀 Setting up development database...');
   if (!fs.existsSync(DEV_DB)) {
-    console.log('Development database not found, creating...');
+    console.error('Development database not found, creating...');
     runCommand('npm run db:push');
   } else {
-    console.log('Development database exists');
+    console.error('Development database exists');
   }
 
   // Setup test database
-  console.log('\n🧪 Setting up test database...');
+  console.error('\n🧪 Setting up test database...');
   runCommand('npm run db:test:reset');
 
-  console.log('\n✅ Database setup complete!');
-  console.log('\nDatabase files:');
-  console.log(`  Development: ${DEV_DB}`);
-  console.log(`  Test: ${TEST_DB}`);
+  console.error('\n✅ Database setup complete!');
+  console.error('\nDatabase files:');
+  console.error(`  Development: ${DEV_DB}`);
+  console.error(`  Test: ${TEST_DB}`);
   
-  console.log('\nUseful commands:');
-  console.log('  npm run db:studio - Open dev database in Prisma Studio');
-  console.log('  npm run db:test:studio - Open test database in Prisma Studio');
-  console.log('  npm run db:test:reset - Reset test database');
+  console.error('\nUseful commands:');
+  console.error('  npm run db:studio - Open dev database in Prisma Studio');
+  console.error('  npm run db:test:studio - Open test database in Prisma Studio');
+  console.error('  npm run db:test:reset - Reset test database');
 }
 
 function cleanTestData() {
-  console.log('🧹 Cleaning test data from development database...');
+  console.error('🧹 Cleaning test data from development database...');
   
   const { PrismaClient } = require('@prisma/client');
   const prisma = new PrismaClient({
@@ -92,9 +92,9 @@ function cleanTestData() {
       }
     });
 
-    console.log(`Found ${testProjects.length} test projects to clean up:`);
+    console.error(`Found ${testProjects.length} test projects to clean up:`);
     testProjects.forEach(project => {
-      console.log(`  - ${project.name} (${project.id})`);
+      console.error(`  - ${project.name} (${project.id})`);
     });
 
     // Delete test projects (this will cascade to tasks and attempts)
@@ -104,7 +104,7 @@ function cleanTestData() {
       });
     }
 
-    console.log(`✅ Cleaned ${testProjects.length} test projects from development database`);
+    console.error(`✅ Cleaned ${testProjects.length} test projects from development database`);
   }).finally(() => {
     return prisma.$disconnect();
   });
@@ -118,8 +118,8 @@ if (action === 'clean') {
 } else if (action === 'setup') {
   setupDatabases();
 } else {
-  console.log('Database Setup Script');
-  console.log('Usage:');
-  console.log('  node scripts/database-setup.js setup - Setup dev and test databases');
-  console.log('  node scripts/database-setup.js clean - Clean test data from dev database');
+  console.error('Database Setup Script');
+  console.error('Usage:');
+  console.error('  node scripts/database-setup.js setup - Setup dev and test databases');
+  console.error('  node scripts/database-setup.js clean - Clean test data from dev database');
 }

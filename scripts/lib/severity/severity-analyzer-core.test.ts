@@ -2,7 +2,7 @@
  * Tests for severity-analyzer core functionality
  * Focused on main analysis logic and structured data processing
  */
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+
 import * as fs from 'fs';
 import * as path from 'path';
 import { analyzeLlmReviewSeverity } from './severity-analyzer';
@@ -14,7 +14,7 @@ import {
 } from '../testing/test-mocks';
 
 // Mock external dependencies
-vi.mock('fs');
+jest.mock('fs');
 
 describe('severity-analyzer core functionality', () => {
   const testSetup = createExtendedTestSetup();
@@ -22,13 +22,14 @@ describe('severity-analyzer core functionality', () => {
   beforeEach(() => {
     testSetup.cleanup();
     // Reset all mocks to default behavior with fresh implementations
-    vi.mocked(fs.existsSync).mockImplementation(() => false);
-    vi.mocked(fs.readFileSync).mockImplementation(() => '');
+    (fs.existsSync as jest.Mock).mockImplementation(() => false);
+    (fs.readFileSync as jest.Mock).mockImplementation(() => '');
 
     // Mock process.cwd to return a valid path
-    vi.stubGlobal('process', {
-      ...process,
-      cwd: vi.fn().mockReturnValue('/test/project'),
+    const mockCwd = jest.fn().mockReturnValue('/test/project');
+    Object.defineProperty(process, 'cwd', {
+      value: mockCwd,
+      configurable: true,
     });
   });
 
@@ -38,7 +39,7 @@ describe('severity-analyzer core functionality', () => {
 
   it('should return empty string when structured data is not available', () => {
     // Test when structured file doesn't exist
-    vi.mocked(fs.existsSync).mockImplementation(filePath => {
+    (fs.existsSync as jest.Mock).mockImplementation(filePath => {
       // Structured file doesn't exist
       return typeof filePath === 'string' && !filePath.includes('structured');
     });
@@ -50,10 +51,10 @@ describe('severity-analyzer core functionality', () => {
   it('should process clean structured data correctly', () => {
     const structuredMock = createStructuredReviewMock();
 
-    vi.mocked(fs.existsSync).mockImplementation(filePath => {
+    (fs.existsSync as jest.Mock).mockImplementation(filePath => {
       return typeof filePath === 'string' && filePath.includes('structured');
     });
-    vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify(structuredMock));
+    (fs.readFileSync as jest.Mock).mockReturnValue(JSON.stringify(structuredMock));
 
     const result = analyzeLlmReviewSeverity(process.cwd());
     expect(typeof result).toBe('string');
@@ -62,10 +63,10 @@ describe('severity-analyzer core functionality', () => {
   it('should handle high severity structured data correctly', () => {
     const highSeverityMock = createHighSeverityReviewMock();
 
-    vi.mocked(fs.existsSync).mockImplementation(filePath => {
+    (fs.existsSync as jest.Mock).mockImplementation(filePath => {
       return typeof filePath === 'string' && filePath.includes('structured');
     });
-    vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify(highSeverityMock));
+    (fs.readFileSync as jest.Mock).mockReturnValue(JSON.stringify(highSeverityMock));
 
     const result = analyzeLlmReviewSeverity(process.cwd());
     expect(result).toContain('HIGH:');
@@ -97,14 +98,14 @@ describe('severity-analyzer core functionality', () => {
 
     const testPath = path.join(process.cwd(), 'review-with-high.txt');
 
-    vi.mocked(fs.existsSync).mockImplementation(filePath => {
+    (fs.existsSync as jest.Mock).mockImplementation(filePath => {
       return (
         typeof filePath === 'string' &&
         (filePath.includes('review-with-high.txt') ||
           filePath.includes('code-review-structured.json'))
       );
     });
-    vi.mocked(fs.readFileSync).mockImplementation(filePath => {
+    (fs.readFileSync as jest.Mock).mockImplementation(filePath => {
       if (typeof filePath === 'string' && filePath.includes('code-review-structured.json')) {
         return JSON.stringify(structuredReview);
       }
@@ -142,14 +143,14 @@ describe('severity-analyzer core functionality', () => {
       },
     };
 
-    vi.mocked(fs.existsSync).mockImplementation(filePath => {
+    (fs.existsSync as jest.Mock).mockImplementation(filePath => {
       return (
         typeof filePath === 'string' &&
         (filePath.includes('review-with-medium.txt') ||
           filePath.includes('code-review-structured.json'))
       );
     });
-    vi.mocked(fs.readFileSync).mockImplementation(filePath => {
+    (fs.readFileSync as jest.Mock).mockImplementation(filePath => {
       if (typeof filePath === 'string' && filePath.includes('code-review-structured.json')) {
         return JSON.stringify(structuredReview);
       }
@@ -198,14 +199,14 @@ describe('severity-analyzer core functionality', () => {
       },
     };
 
-    vi.mocked(fs.existsSync).mockImplementation(filePath => {
+    (fs.existsSync as jest.Mock).mockImplementation(filePath => {
       return (
         typeof filePath === 'string' &&
         (filePath.includes('review-with-both.txt') ||
           filePath.includes('code-review-structured.json'))
       );
     });
-    vi.mocked(fs.readFileSync).mockImplementation(filePath => {
+    (fs.readFileSync as jest.Mock).mockImplementation(filePath => {
       if (typeof filePath === 'string' && filePath.includes('code-review-structured.json')) {
         return JSON.stringify(structuredReview);
       }

@@ -33,6 +33,18 @@ import { Badge } from '../../../shared/ui/badge';
 import { taskApi } from '../../../shared/lib/api';
 import { Task } from '../../../shared/types/index';
 
+// Constants
+const DEFAULT_DAYS_PERIOD = 30;
+const CHART_HEIGHT = 300;
+const DOT_RADIUS = 4;
+const LINE_STROKE_WIDTH = 2;
+const MAX_SCROLL_HEIGHT_REM = 20; // 20rem = 80 in Tailwind units
+const STALE_TIME_MINUTES = 5;
+const MINUTES_PER_HOUR = 60;
+const MILLISECONDS_PER_SECOND = 1000;
+const MINUTES_TO_MILLISECONDS = MINUTES_PER_HOUR * MILLISECONDS_PER_SECOND;
+const LOADING_SKELETON_COUNT = 4;
+
 // Priority colors for charts
 const PRIORITY_COLORS = {
   high: '#EF4444',
@@ -150,7 +162,7 @@ export function TaskAnalytics() {
   } = useQuery({
     queryKey: ['task-analytics'],
     queryFn: taskApi.getTaskAnalytics,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: STALE_TIME_MINUTES * MINUTES_TO_MILLISECONDS,
   });
 
   const chartData = useMemo(() => {
@@ -222,7 +234,7 @@ export function TaskAnalytics() {
         <div className="animate-pulse">
           <div className="h-8 bg-gray-200 rounded w-1/3 mb-6"></div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-            {[1, 2, 3, 4].map((i) => (
+            {Array.from({ length: LOADING_SKELETON_COUNT }, (_, i) => i + 1).map((i) => (
               <div key={i} className="h-32 bg-gray-200 rounded"></div>
             ))}
           </div>
@@ -316,7 +328,7 @@ export function TaskAnalytics() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
               <BarChart data={chartData.priorityData}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="name" />
@@ -352,7 +364,7 @@ export function TaskAnalytics() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
               <PieChart>
                 <Pie
                   data={chartData.completionData}
@@ -380,7 +392,7 @@ export function TaskAnalytics() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5" />
-            Daily Task Completions (Last 30 Days)
+            {`Daily Task Completions (Last ${DEFAULT_DAYS_PERIOD} Days)`}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -394,8 +406,8 @@ export function TaskAnalytics() {
                 type="monotone"
                 dataKey="completed"
                 stroke="#10B981"
-                strokeWidth={2}
-                dot={{ fill: '#10B981', strokeWidth: 2, r: 4 }}
+                strokeWidth={LINE_STROKE_WIDTH}
+                dot={{ fill: '#10B981', strokeWidth: LINE_STROKE_WIDTH, r: DOT_RADIUS }}
               />
             </LineChart>
           </ResponsiveContainer>
@@ -416,7 +428,10 @@ export function TaskAnalytics() {
               No completed tasks found
             </div>
           ) : (
-            <div className="max-h-80 overflow-y-auto">
+            <div 
+              className="overflow-y-auto" 
+              style={{ maxHeight: `${MAX_SCROLL_HEIGHT_REM}rem` }}
+            >
               {analytics.recentCompletions.map((task) => (
                 <TaskRow key={task.id} task={task} />
               ))}

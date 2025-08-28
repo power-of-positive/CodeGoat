@@ -71,7 +71,7 @@ async function verifyPorts(ports) {
   const backendAvailable = await isPortAvailable(ports.backend);
 
   if (process.argv[2] === "get" && (!frontendAvailable || !backendAvailable)) {
-    console.log(
+    console.error(
       `Port availability check failed: frontend:${ports.frontend}=${frontendAvailable}, backend:${ports.backend}=${backendAvailable}`
     );
   }
@@ -90,14 +90,14 @@ async function allocatePorts() {
     // Verify existing ports are still available
     if (await verifyPorts(existingPorts)) {
       if (process.argv[2] === "get") {
-        console.log("Reusing existing dev ports:");
-        console.log(`Frontend: ${existingPorts.frontend}`);
-        console.log(`Backend: ${existingPorts.backend}`);
+        console.error("Reusing existing dev ports:");
+        console.error(`Frontend: ${existingPorts.frontend}`);
+        console.error(`Backend: ${existingPorts.backend}`);
       }
       return existingPorts;
     } else {
       if (process.argv[2] === "get") {
-        console.log(
+        console.error(
           "Existing ports are no longer available, finding new ones..."
         );
       }
@@ -117,9 +117,9 @@ async function allocatePorts() {
   savePorts(ports);
 
   if (process.argv[2] === "get") {
-    console.log("Allocated new dev ports:");
-    console.log(`Frontend: ${ports.frontend}`);
-    console.log(`Backend: ${ports.backend}`);
+    console.error("Allocated new dev ports:");
+    console.error(`Frontend: ${ports.frontend}`);
+    console.error(`Backend: ${ports.backend}`);
   }
 
   return ports;
@@ -144,7 +144,7 @@ function copyDevAssets() {
       fs.cpSync(DEV_ASSETS_SEED, DEV_ASSETS, { recursive: true });
 
       if (process.argv[2] === "get") {
-        console.log("Copied dev_assets_seed to dev_assets");
+        console.error("Copied dev_assets_seed to dev_assets");
       }
     }
   } catch (error) {
@@ -159,9 +159,9 @@ function clearPorts() {
   try {
     if (fs.existsSync(PORTS_FILE)) {
       fs.unlinkSync(PORTS_FILE);
-      console.log("Cleared saved dev ports");
+      console.error("Cleared saved dev ports");
     } else {
-      console.log("No saved ports to clear");
+      console.error("No saved ports to clear");
     }
   } catch (error) {
     console.error("Failed to clear ports:", error.message);
@@ -176,7 +176,7 @@ if (require.main === module) {
     case "get":
       getPorts()
         .then((ports) => {
-          console.log(JSON.stringify(ports));
+          console.error(JSON.stringify(ports));
         })
         .catch(console.error);
       break;
@@ -188,7 +188,7 @@ if (require.main === module) {
     case "frontend":
       getPorts()
         .then((ports) => {
-          console.log(JSON.stringify(ports.frontend, null, 2));
+          console.error(JSON.stringify(ports.frontend, null, 2));
         })
         .catch(console.error);
       break;
@@ -196,23 +196,23 @@ if (require.main === module) {
     case "backend":
       getPorts()
         .then((ports) => {
-          console.log(JSON.stringify(ports.backend, null, 2));
+          console.error(JSON.stringify(ports.backend, null, 2));
         })
         .catch(console.error);
       break;
 
     default:
-      console.log("Usage:");
-      console.log(
+      console.error("Usage:");
+      console.error(
         "  node setup-dev-environment.js get     - Setup dev environment (ports + assets)"
       );
-      console.log(
+      console.error(
         "  node setup-dev-environment.js frontend - Get frontend port only"
       );
-      console.log(
+      console.error(
         "  node setup-dev-environment.js backend  - Get backend port only"
       );
-      console.log(
+      console.error(
         "  node setup-dev-environment.js clear    - Clear saved ports"
       );
       break;

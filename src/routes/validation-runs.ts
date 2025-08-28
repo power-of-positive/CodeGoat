@@ -3,6 +3,23 @@ import express, { Request, Response } from 'express';
 import { WinstonLogger } from '../logger-winston';
 import { getDatabaseService } from '../services/database';
 
+// HTTP Status Codes
+const HTTP_STATUS = {
+  OK: 200,
+  CREATED: 201,
+  BAD_REQUEST: 400,
+  NOT_FOUND: 404,
+  INTERNAL_SERVER_ERROR: 500,
+} as const;
+
+// Performance threshold constants
+const PERFORMANCE_CONSTANTS = {
+  EXCELLENT_THRESHOLD: 95,
+  GOOD_THRESHOLD: 85,
+  FAIR_THRESHOLD: 70,
+  COMPLEXITY_LIMIT: 13,
+} as const;
+
 // Interface for API responses
 interface ValidationRunResponse {
   id: string;
@@ -163,7 +180,7 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
       });
     } catch (error) {
       logger.error('Error fetching validation runs:', error as Error);
-      res.status(500).json({ success: false, message: 'Failed to fetch validation runs' });
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Failed to fetch validation runs' });
     }
   });
 
@@ -191,7 +208,7 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
       });
 
       if (!dbRun) {
-        return res.status(404).json({ success: false, message: 'Validation run not found' });
+        return res.status(HTTP_STATUS.NOT_FOUND).json({ success: false, message: 'Validation run not found' });
       }
 
       const run: ValidationRunResponse & { logs: ValidationLogResponse[] } = {
@@ -236,7 +253,7 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
       res.json({ success: true, data: run });
     } catch (error) {
       logger.error('Error fetching validation run:', error as Error);
-      res.status(500).json({ success: false, message: 'Failed to fetch validation run' });
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Failed to fetch validation run' });
     }
   });
 
@@ -368,7 +385,7 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
       });
     } catch (error) {
       logger.error('Error fetching validation analytics:', error as Error);
-      res.status(500).json({ success: false, message: 'Failed to fetch validation analytics' });
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Failed to fetch validation analytics' });
     }
   });
 
@@ -388,7 +405,7 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
       } = req.body;
 
       if (!stages || !Array.isArray(stages)) {
-        return res.status(400).json({ 
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({ 
           success: false, 
           message: 'Stages array is required' 
         });
@@ -449,7 +466,7 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
         success 
       });
       
-      res.status(201).json({ 
+      res.status(HTTP_STATUS.CREATED).json({ 
         success: true, 
         data: {
           id: validationRun.id,
@@ -461,7 +478,7 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
       });
     } catch (error) {
       logger.error('Error creating validation run:', error as Error);
-      res.status(500).json({ success: false, message: 'Failed to create validation run' });
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Failed to create validation run' });
     }
   });
 
@@ -575,9 +592,9 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
           avgDuration: Math.round((Number(stage._avg.duration) || 0) * 100) / 100,
           minDuration: Number(stage._min.duration) || 0,
           maxDuration: Number(stage._max.duration) || 0,
-          reliability: successRate >= 95 ? 'excellent' : 
-                      successRate >= 85 ? 'good' : 
-                      successRate >= 70 ? 'fair' : 'poor'
+          reliability: successRate >= PERFORMANCE_CONSTANTS.EXCELLENT_THRESHOLD ? 'excellent' : 
+                      successRate >= PERFORMANCE_CONSTANTS.GOOD_THRESHOLD ? 'good' : 
+                      successRate >= PERFORMANCE_CONSTANTS.FAIR_THRESHOLD ? 'fair' : 'poor'
         };
       });
 
@@ -689,7 +706,7 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
       });
     } catch (error) {
       logger.error('Error fetching stage analytics:', error as Error);
-      res.status(500).json({ success: false, message: 'Failed to fetch stage analytics' });
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Failed to fetch stage analytics' });
     }
   });
 
@@ -755,7 +772,7 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
       const groupByGranularity = (timestamp: Date): string => {
         switch (granularity) {
           case 'hourly':
-            return `${timestamp.toISOString().slice(0, 13)}:00:00`;
+            return `${timestamp.toISOString().slice(0, PERFORMANCE_CONSTANTS.COMPLEXITY_LIMIT)}:00:00`;
           case 'daily':
             return timestamp.toISOString().split('T')[0];
           case 'weekly': {
@@ -858,7 +875,7 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
       });
     } catch (error) {
       logger.error('Error fetching historical data:', error as Error);
-      res.status(500).json({ success: false, message: 'Failed to fetch historical data' });
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Failed to fetch historical data' });
     }
   });
 
@@ -875,7 +892,7 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
       } = req.query;
 
       if (!period1Start || !period1End || !period2Start || !period2End) {
-        return res.status(400).json({ 
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({ 
           success: false, 
           message: 'All period dates are required: period1Start, period1End, period2Start, period2End' 
         });
@@ -1061,7 +1078,7 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
       });
     } catch (error) {
       logger.error('Error fetching comparison data:', error as Error);
-      res.status(500).json({ success: false, message: 'Failed to fetch comparison data' });
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Failed to fetch comparison data' });
     }
   });
 

@@ -140,7 +140,7 @@ function formatFileList(files: string[], maxDisplay: number = 10): string {
 }
 
 function checkUncommittedFiles(): void {
-  console.log('🔍 Checking for uncommitted files...');
+  console.error('🔍 Checking for uncommitted files...');
 
   const config = loadConfig();
   const { modified, untracked } = getGitStatus();
@@ -155,21 +155,21 @@ function checkUncommittedFiles(): void {
   const untrackedCount = filteredUntracked.length;
   const totalCount = modifiedCount + untrackedCount;
 
-  console.log(`📊 Git status summary:`);
-  console.log(`  Modified files: ${modifiedCount} (max: ${config.maxModifiedFiles})`);
-  console.log(`  Untracked files: ${untrackedCount} (max: ${config.maxUntrackedFiles})`);
-  console.log(`  Total uncommitted: ${totalCount}`);
+  console.error(`📊 Git status summary:`);
+  console.error(`  Modified files: ${modifiedCount} (max: ${config.maxModifiedFiles})`);
+  console.error(`  Untracked files: ${untrackedCount} (max: ${config.maxUntrackedFiles})`);
+  console.error(`  Total uncommitted: ${totalCount}`);
 
   let hasWarnings = false;
   let shouldFail = false;
 
   // Check modified files
   if (modifiedCount > config.maxModifiedFiles) {
-    console.log(
+    console.error(
       `\n⚠️  Warning: Too many modified files (${modifiedCount} > ${config.maxModifiedFiles})`
     );
-    console.log('Modified files:');
-    console.log(formatFileList(filteredModified));
+    console.error('Modified files:');
+    console.error(formatFileList(filteredModified));
     hasWarnings = true;
     if (config.failOnExcess) {
       shouldFail = true;
@@ -178,11 +178,11 @@ function checkUncommittedFiles(): void {
 
   // Check untracked files
   if (untrackedCount > config.maxUntrackedFiles) {
-    console.log(
+    console.error(
       `\n⚠️  Warning: Too many untracked files (${untrackedCount} > ${config.maxUntrackedFiles})`
     );
-    console.log('Untracked files:');
-    console.log(formatFileList(filteredUntracked));
+    console.error('Untracked files:');
+    console.error(formatFileList(filteredUntracked));
     hasWarnings = true;
     if (config.failOnExcess) {
       shouldFail = true;
@@ -191,29 +191,29 @@ function checkUncommittedFiles(): void {
 
   // Provide guidance
   if (hasWarnings) {
-    console.log('\n💡 Consider committing your changes to maintain clean development workflow:');
+    console.error('\n💡 Consider committing your changes to maintain clean development workflow:');
     if (modifiedCount > 0) {
-      console.log('   git add <files>');
-      console.log('   git commit -m "your commit message"');
+      console.error('   git add <files>');
+      console.error('   git commit -m "your commit message"');
     }
     if (untrackedCount > 0) {
-      console.log('   git add <new-files>  # for files you want to track');
-      console.log('   # or add to .gitignore if they should not be tracked');
+      console.error('   git add <new-files>  # for files you want to track');
+      console.error('   # or add to .gitignore if they should not be tracked');
     }
-    console.log('\n📈 Regular commits help with:');
-    console.log('   • Better change tracking and rollback capabilities');
-    console.log('   • Easier code review process');
-    console.log('   • Reduced risk of losing work');
-    console.log('   • Better collaboration with team members');
+    console.error('\n📈 Regular commits help with:');
+    console.error('   • Better change tracking and rollback capabilities');
+    console.error('   • Easier code review process');
+    console.error('   • Reduced risk of losing work');
+    console.error('   • Better collaboration with team members');
   }
 
   if (shouldFail) {
-    console.log('\n❌ Uncommitted files check failed due to configuration settings');
+    console.error('\n❌ Uncommitted files check failed due to configuration settings');
     process.exit(1);
   } else if (hasWarnings) {
-    console.log('\n✅ Uncommitted files check completed with warnings');
+    console.error('\n✅ Uncommitted files check completed with warnings');
   } else {
-    console.log('\n✅ Uncommitted files check passed - good job keeping things clean!');
+    console.error('\n✅ Uncommitted files check passed - good job keeping things clean!');
   }
 }
 

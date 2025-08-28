@@ -2,29 +2,28 @@
  * Tests for Prettier formatting functionality in format-runners.ts
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
 import { runPrettierFormat } from './format-runners';
 import * as commandUtils from '../utils/command-utils';
 import * as validationUtils from '../utils/validation-utils';
 
-vi.mock('fs');
-vi.mock('path');
-vi.mock('../utils/command-utils');
-vi.mock('../utils/validation-utils');
+jest.mock('fs');
+jest.mock('path');
+jest.mock('../utils/command-utils');
+jest.mock('../utils/validation-utils');
 
 describe('format-runners Prettier format', () => {
   const mockProjectRoot = '/test/project';
 
   beforeEach(() => {
-    vi.clearAllMocks();
-    vi.mocked(validationUtils.validateDirectoryExists).mockImplementation(() => {});
-    vi.mocked(path.join).mockImplementation((...args) => args.join('/'));
-    vi.mocked(path.resolve).mockImplementation((...args) => args.join('/'));
-    vi.mocked(fs.writeFileSync).mockImplementation(() => {});
-    vi.mocked(fs.unlinkSync).mockImplementation(() => {});
-    vi.mocked(fs.existsSync).mockReturnValue(true);
+    jest.clearAllMocks();
+    (validationUtils.validateDirectoryExists as jest.Mock).mockImplementation(() => {});
+    (path.join as jest.Mock).mockImplementation((...args) => args.join('/'));
+    (path.resolve as jest.Mock).mockImplementation((...args) => args.join('/'));
+    (fs.writeFileSync as jest.Mock).mockImplementation(() => {});
+    (fs.unlinkSync as jest.Mock).mockImplementation(() => {});
+    (fs.existsSync as jest.Mock).mockReturnValue(true);
   });
 
   describe('runPrettierFormat', () => {
@@ -37,7 +36,7 @@ describe('format-runners Prettier format', () => {
 
     it('should format prettier-compatible files and re-stage them', () => {
       const stagedFiles = ['src/test.ts', 'config.json', 'styles.css'];
-      vi.mocked(commandUtils.execCommand)
+      (commandUtils.execCommand as jest.Mock)
         .mockReturnValueOnce({
           success: true,
           output: 'Prettier formatting done',
@@ -63,7 +62,7 @@ describe('format-runners Prettier format', () => {
 
     it('should handle prettier formatting failure', () => {
       const stagedFiles = ['src/test.ts'];
-      vi.mocked(commandUtils.execCommand).mockReturnValue({
+      (commandUtils.execCommand as jest.Mock).mockReturnValue({
         success: false,
         output: 'Prettier failed',
       });
@@ -76,7 +75,7 @@ describe('format-runners Prettier format', () => {
 
     it('should handle re-staging failure', () => {
       const stagedFiles = ['src/test.ts'];
-      vi.mocked(commandUtils.execCommand)
+      (commandUtils.execCommand as jest.Mock)
         .mockReturnValueOnce({
           success: true,
           output: 'Prettier done',
@@ -110,7 +109,7 @@ describe('format-runners Prettier format', () => {
         'binary.exe', // Should be filtered out
       ];
 
-      vi.mocked(commandUtils.execCommand)
+      (commandUtils.execCommand as jest.Mock)
         .mockReturnValueOnce({
           success: true,
           output: 'Prettier done',
@@ -137,7 +136,7 @@ describe('format-runners Prettier format', () => {
 
     it('should handle empty files array for re-staging', () => {
       const stagedFiles: string[] = [];
-      vi.mocked(commandUtils.execCommand).mockReturnValue({
+      (commandUtils.execCommand as jest.Mock).mockReturnValue({
         success: true,
         output: 'Nothing to format',
       });

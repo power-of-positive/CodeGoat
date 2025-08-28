@@ -6,7 +6,7 @@ async function testTaskAssociation() {
   const db = new PrismaClient();
 
   try {
-    console.log('Creating test task...');
+    console.error('Creating test task...');
 
     // Create a test task in progress
     const testTask = await db.todoTask.create({
@@ -19,11 +19,11 @@ async function testTaskAssociation() {
       },
     });
 
-    console.log('Test task created:', testTask.id);
+    console.error('Test task created:', testTask.id);
 
     // Check validation runs before
     const runsBefore = await db.validationRun.count();
-    console.log('Validation runs before:', runsBefore);
+    console.error('Validation runs before:', runsBefore);
 
     return testTask.id;
   } catch (error) {

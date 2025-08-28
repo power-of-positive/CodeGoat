@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../shared/ui/card';
 import { Button } from '../../../shared/ui/button';
@@ -6,6 +5,10 @@ import { BarChart3 } from 'lucide-react';
 import { ValidationMetrics, ValidationStage } from '../../../shared/types';
 import { settingsApi } from '../../../shared/lib/api';
 import { StageHistoryView } from './StageHistoryView';
+
+// Success rate threshold constants
+const HIGH_SUCCESS_RATE_THRESHOLD = 0.8;
+const MEDIUM_SUCCESS_RATE_THRESHOLD = 0.5;
 
 interface StageMetrics {
   enabled: boolean;
@@ -76,9 +79,9 @@ function StageStats({ stageMetrics }: { stageMetrics: StageMetrics }) {
     <div className="flex items-center gap-4 text-sm">
       <span
         className={`font-medium ${
-          stageMetrics.successRate > 0.8
+          stageMetrics.successRate > HIGH_SUCCESS_RATE_THRESHOLD
             ? 'text-green-600'
-            : stageMetrics.successRate > 0.5
+            : stageMetrics.successRate > MEDIUM_SUCCESS_RATE_THRESHOLD
               ? 'text-yellow-600'
               : 'text-red-600'
         }`}
@@ -98,9 +101,9 @@ function StageProgressBar({ stageMetrics }: { stageMetrics: StageMetrics }) {
       <div className="w-full bg-gray-200 rounded-full h-2">
         <div
           className={`h-2 rounded-full ${
-            stageMetrics.successRate > 0.8
+            stageMetrics.successRate > HIGH_SUCCESS_RATE_THRESHOLD
               ? 'bg-green-500'
-              : stageMetrics.successRate > 0.5
+              : stageMetrics.successRate > MEDIUM_SUCCESS_RATE_THRESHOLD
                 ? 'bg-yellow-500'
                 : 'bg-red-500'
           }`}

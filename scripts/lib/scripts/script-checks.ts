@@ -21,7 +21,7 @@ function runScriptUnitTests(projectRoot: string): {
   output: string;
 } {
   try {
-    console.log('🧪 Running scripts unit tests...');
+    console.error('🧪 Running scripts unit tests...');
     const result = execCommand('npm run test:scripts', projectRoot, SCRIPT_UNIT_TEST_TIMEOUT_MS);
 
     if (!result.success) {

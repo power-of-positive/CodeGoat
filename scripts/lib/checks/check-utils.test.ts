@@ -2,16 +2,16 @@
  * Tests for check-utils.ts
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+
 import { validateStagedFiles, runChecks } from './check-utils';
 import { StagedFiles } from '../files/staged-files';
 import * as checkRunners from './check-runners';
 
-vi.mock('./check-runners');
+jest.mock('./check-runners');
 
 describe('check-utils', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   describe('validateStagedFiles', () => {
@@ -66,27 +66,27 @@ describe('check-utils', () => {
     };
 
     beforeEach(() => {
-      vi.mocked(checkRunners.runFrontendLinting).mockReturnValue({
+      (checkRunners.runFrontendLinting as jest.Mock).mockReturnValue({
         success: true,
         output: 'Frontend linting passed',
       });
-      vi.mocked(checkRunners.runFrontendTests).mockReturnValue({
+      (checkRunners.runFrontendTests as jest.Mock).mockReturnValue({
         success: true,
         output: 'Frontend tests passed',
       });
-      vi.mocked(checkRunners.runPlaywrightTests).mockReturnValue({
+      (checkRunners.runPlaywrightTests as jest.Mock).mockReturnValue({
         success: true,
         output: 'Playwright tests passed',
       });
-      vi.mocked(checkRunners.runRustFormatting).mockReturnValue({
+      (checkRunners.runRustFormatting as jest.Mock).mockReturnValue({
         success: true,
         output: 'Rust formatting passed',
       });
-      vi.mocked(checkRunners.runRustLinting).mockReturnValue({
+      (checkRunners.runRustLinting as jest.Mock).mockReturnValue({
         success: true,
         output: 'Rust linting passed',
       });
-      vi.mocked(checkRunners.runApiE2eTests).mockResolvedValue({
+      (checkRunners.runApiE2eTests as jest.Mock).mockResolvedValue({
         success: true,
         output: 'API E2E tests passed',
       });

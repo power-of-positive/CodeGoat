@@ -17,7 +17,7 @@ export interface SecurityCheckResult {
  * Run all security checks and collect results
  */
 export function runSecurityChecks(projectRoot: string): SecurityCheckResult {
-  console.log('🔒 Running security checks...');
+  console.error('🔒 Running security checks...');
   const results: string[] = [];
   let hasFailure = false;
 
@@ -38,9 +38,9 @@ export function runSecurityChecks(projectRoot: string): SecurityCheckResult {
 
       if (!result.success) {
         hasFailure = true;
-        console.log(`❌ ${name} failed`);
+        console.error(`❌ ${name} failed`);
       } else {
-        console.log(`✅ ${name} passed`);
+        console.error(`✅ ${name} passed`);
       }
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);

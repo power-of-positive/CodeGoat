@@ -1,17 +1,17 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+
 import { getProjectMetrics } from './project-metrics';
 import * as reviewUtils from './review-utils';
 
 // Mock the review-utils module
-vi.mock('./review-utils', () => ({
-  execCommand: vi.fn(),
+jest.mock('./review-utils', () => ({
+  execCommand: jest.fn(),
 }));
 
 describe('project-metrics', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
     // Set default mock behavior
-    vi.mocked(reviewUtils.execCommand).mockImplementation(() => '0');
+    (reviewUtils.execCommand as jest.Mock).mockImplementation(() => '0');
   });
 
   describe('getProjectMetrics', () => {
@@ -26,7 +26,7 @@ describe('project-metrics', () => {
     });
 
     it('should handle empty command output by defaulting to 0', () => {
-      vi.mocked(reviewUtils.execCommand)
+      (reviewUtils.execCommand as jest.Mock)
         .mockReturnValueOnce('') // empty lines of code
         .mockReturnValueOnce('') // empty test files
         .mockReturnValueOnce(''); // empty total files
@@ -37,7 +37,7 @@ describe('project-metrics', () => {
     });
 
     it('should handle null/undefined command output by defaulting to 0', () => {
-      vi.mocked(reviewUtils.execCommand)
+      (reviewUtils.execCommand as jest.Mock)
         .mockReturnValueOnce(null as unknown as string)
         .mockReturnValueOnce(undefined as unknown as string)
         .mockReturnValueOnce('');
@@ -48,7 +48,7 @@ describe('project-metrics', () => {
     });
 
     it('should handle command execution errors gracefully', () => {
-      vi.mocked(reviewUtils.execCommand).mockImplementationOnce(() => {
+      (reviewUtils.execCommand as jest.Mock).mockImplementationOnce(() => {
         throw new Error('Command failed');
       });
 
@@ -86,8 +86,8 @@ describe('project-metrics', () => {
     });
 
     it('should handle zero values correctly', () => {
-      vi.mocked(reviewUtils.execCommand).mockClear();
-      vi.mocked(reviewUtils.execCommand)
+      (reviewUtils.execCommand as jest.Mock).mockClear();
+      (reviewUtils.execCommand as jest.Mock)
         .mockReturnValueOnce('0')
         .mockReturnValueOnce('0')
         .mockReturnValueOnce('0');

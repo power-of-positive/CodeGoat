@@ -20,13 +20,13 @@ import * as path from 'path';
 } */
 
 function log(message: string) {
-  console.log(`[${new Date().toISOString()}] ${message}`);
+  console.error(`[${new Date().toISOString()}] ${message}`);
 }
 
 function runCommand(command: string, description: string): void {
   try {
     log(`Running: ${description}`);
-    console.log(`Command: ${command}`);
+    console.error(`Command: ${command}`);
     execSync(command, { stdio: 'inherit', cwd: process.cwd() });
   } catch (error) {
     console.error(`Failed to run ${description}:`, error);
@@ -81,7 +81,7 @@ function runCommand(command: string, description: string): void {
 
     log(`Found ${testProjects.length} test projects in ${dbName}:`);
     testProjects.forEach((project: any) => {
-      console.log(`  - ${project.name} (${project.git_repo_path})`);
+      console.error(`  - ${project.name} (${project.git_repo_path})`);
     });
 
     // Delete test projects and their related data (cascaded)

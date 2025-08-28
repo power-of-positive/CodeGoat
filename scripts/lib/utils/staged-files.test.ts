@@ -1,17 +1,16 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { getStagedFiles } from '../files/staged-files';
 import { execCommand } from './command-utils';
 
-vi.mock('./command-utils', () => ({ execCommand: vi.fn() }));
+jest.mock('./command-utils', () => ({ execCommand: jest.fn() }));
 
 describe('staged-files', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   describe('getStagedFiles', () => {
     it('should return empty arrays when no staged files', () => {
-      vi.mocked(execCommand).mockReturnValue({
+      (execCommand as jest.Mock).mockReturnValue({
         success: true,
         output: '',
       });
@@ -28,7 +27,7 @@ describe('staged-files', () => {
 
     it('should categorize files correctly', () => {
       const gitOutput = `frontend/src/App.tsx\nfrontend/components/Button.ts\nfrontend/utils/helper.js\nfrontend/styles/main.css\nbackend/src/main.rs\nbackend/tests/integration.rs\nbackend/Cargo.toml\nscripts/build.ts\nscripts/deploy.js\nscripts/config.json`;
-      vi.mocked(execCommand).mockReturnValue({
+      (execCommand as jest.Mock).mockReturnValue({
         success: true,
         output: gitOutput,
       });
@@ -52,7 +51,7 @@ describe('staged-files', () => {
 backend/main.rs
 scripts/build.ts
 README.md`;
-      vi.mocked(execCommand).mockReturnValue({
+      (execCommand as jest.Mock).mockReturnValue({
         success: true,
         output: gitOutput,
       });
@@ -72,7 +71,7 @@ README.md`;
 backend/src/main.rs
 scripts/lib/utils.ts
 docs/README.md`;
-      vi.mocked(execCommand).mockReturnValue({
+      (execCommand as jest.Mock).mockReturnValue({
         success: true,
         output: gitOutput,
       });
@@ -92,7 +91,7 @@ docs/README.md`;
 
     it('should handle edge cases and errors', () => {
       // Test empty lines filtering
-      vi.mocked(execCommand).mockReturnValue({
+      (execCommand as jest.Mock).mockReturnValue({
         success: true,
         output: `frontend/App.tsx\n\nbackend/main.rs\n\nscripts/build.ts`,
       });
@@ -100,7 +99,7 @@ docs/README.md`;
       expect(result.allFiles).toEqual(['frontend/App.tsx', 'backend/main.rs', 'scripts/build.ts']);
 
       // Test error handling - command returns failure
-      vi.mocked(execCommand).mockReturnValue({
+      (execCommand as jest.Mock).mockReturnValue({
         success: false,
         output: 'Git not found',
       });
@@ -113,7 +112,7 @@ docs/README.md`;
       });
 
       // Test empty output
-      vi.mocked(execCommand).mockReturnValue({
+      (execCommand as jest.Mock).mockReturnValue({
         success: true,
         output: '',
       });

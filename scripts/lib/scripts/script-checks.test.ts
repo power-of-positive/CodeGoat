@@ -3,7 +3,6 @@
  * Simple, mock-free tests that focus on error handling logic
  */
 
-import { describe, it, expect } from 'vitest';
 import { runScriptChecks } from './script-checks';
 
 describe('script-checks', () => {

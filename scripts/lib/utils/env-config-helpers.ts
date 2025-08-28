@@ -78,7 +78,7 @@ export function applyVariablesToEnv(mergedVariables: Record<string, string>): vo
  */
 export function logSuccess(totalVariablesLoaded: number): void {
   if (process.env.NODE_ENV !== 'test' && totalVariablesLoaded > 0) {
-    console.log(`✅ Loaded ${totalVariablesLoaded} environment variables`);
+    console.error(`✅ Loaded ${totalVariablesLoaded} environment variables`);
   }
 }
 
@@ -87,7 +87,7 @@ export function logSuccess(totalVariablesLoaded: number): void {
  */
 export function logNoFileFound(projectRoot: string, envPaths: string[]): void {
   if (process.env.NODE_ENV !== 'test') {
-    console.log(
+    console.error(
       `ℹ️ No .env file found in ${projectRoot} (checked: ${envPaths.map(p => path.basename(p)).join(', ')})`
     );
   }

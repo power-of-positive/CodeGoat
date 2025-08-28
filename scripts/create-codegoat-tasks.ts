@@ -91,7 +91,7 @@ const tasks: TaskData[] = [
 
 async function createCodegoatTasks() {
   try {
-    console.log('🔍 Creating CODEGOAT tasks in the database...');
+    console.error('🔍 Creating CODEGOAT tasks in the database...');
     
     let createdCount = 0;
     let skippedCount = 0;
@@ -104,7 +104,7 @@ async function createCodegoatTasks() {
         });
 
         if (existingTask) {
-          console.log(`⚠️  Task already exists: ${taskData.id}`);
+          console.error(`⚠️  Task already exists: ${taskData.id}`);
           skippedCount++;
           continue;
         }
@@ -121,7 +121,7 @@ async function createCodegoatTasks() {
           }
         });
 
-        console.log(`✅ Created task: ${taskData.id}`);
+        console.error(`✅ Created task: ${taskData.id}`);
         createdCount++;
 
       } catch (error) {
@@ -129,10 +129,10 @@ async function createCodegoatTasks() {
       }
     }
 
-    console.log(`\n📊 Summary:`);
-    console.log(`   ✅ Created: ${createdCount} tasks`);
-    console.log(`   ⚠️  Skipped: ${skippedCount} tasks`);
-    console.log(`   📈 Total processed: ${tasks.length} tasks`);
+    console.error(`\n📊 Summary:`);
+    console.error(`   ✅ Created: ${createdCount} tasks`);
+    console.error(`   ⚠️  Skipped: ${skippedCount} tasks`);
+    console.error(`   📈 Total processed: ${tasks.length} tasks`);
 
   } catch (error) {
     console.error('💥 Script failed:', error);
@@ -146,7 +146,7 @@ async function createCodegoatTasks() {
 if (require.main === module) {
   createCodegoatTasks()
     .then(() => {
-      console.log('\n🎉 CODEGOAT task creation completed successfully!');
+      console.error('\n🎉 CODEGOAT task creation completed successfully!');
       process.exit(0);
     })
     .catch((error) => {

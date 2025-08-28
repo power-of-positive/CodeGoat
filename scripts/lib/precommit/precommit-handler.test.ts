@@ -2,10 +2,9 @@
  * Tests for precommit-handler.ts
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+
 import * as fs from 'fs';
 import * as path from 'path';
-import * as process from 'process';
 import { runPrecommitChecks, PrecommitResult } from './precommit-handler';
 import { findProjectRoot } from '../utils/review-utils';
 import { runAllChecks } from './precommit-checks';
@@ -15,49 +14,48 @@ import { runFormattingSteps } from './precommit-formatting';
 import { runLlmReviewProcess } from './precommit-llm';
 
 // Mock all dependencies
-vi.mock('fs/promises');
-vi.mock('fs');
-vi.mock('path');
-vi.mock('process');
-vi.mock('../utils/review-utils');
-vi.mock('./precommit-checks');
-vi.mock('../files/staged-files');
-vi.mock('../formatting/format-runners');
-vi.mock('./precommit-formatting');
-vi.mock('./precommit-llm');
+jest.mock('fs/promises');
+jest.mock('fs');
+jest.mock('path');
+jest.mock('../utils/review-utils');
+jest.mock('./precommit-checks');
+jest.mock('../files/staged-files');
+jest.mock('../formatting/format-runners');
+jest.mock('./precommit-formatting');
+jest.mock('./precommit-llm');
 
 describe('precommit-handler', () => {
   const mockProjectRoot = '/test/project';
 
   beforeEach(() => {
-    // Mock process.cwd to return our test directory
-    vi.spyOn(process, 'cwd').mockReturnValue(mockProjectRoot);
-    vi.clearAllMocks();
-    vi.mocked(findProjectRoot).mockReturnValue(mockProjectRoot);
-    vi.mocked(process.chdir).mockImplementation(() => {});
-    vi.mocked(getStagedFiles).mockReturnValue({
+    // Mock process.cwd and process.chdir
+    jest.spyOn(process, 'cwd').mockReturnValue(mockProjectRoot);
+    jest.spyOn(process, 'chdir').mockImplementation(() => {});
+    jest.clearAllMocks();
+    (findProjectRoot as jest.Mock).mockReturnValue(mockProjectRoot);
+    (getStagedFiles as jest.Mock).mockReturnValue({
       frontendFiles: ['frontend/test.ts'],
       backendFiles: ['backend/test.rs'],
       scriptFiles: ['scripts/test.ts'],
       allFiles: ['frontend/test.ts', 'backend/test.rs', 'scripts/test.ts'],
     });
-    vi.mocked(path.join).mockImplementation((...args) => args.join('/'));
-    vi.mocked(path.normalize).mockImplementation(p => p);
-    vi.mocked(path.resolve).mockImplementation(p =>
+    (path.join as jest.Mock).mockImplementation((...args) => args.join('/'));
+    (path.normalize as jest.Mock).mockImplementation(p => p);
+    (path.resolve as jest.Mock).mockImplementation(p =>
       p.startsWith('/') ? p : `${mockProjectRoot}/${p}`
     );
-    vi.mocked(fs.existsSync).mockReturnValue(true);
-    vi.mocked(runTypeScriptCheck).mockReturnValue({
+    (fs.existsSync as jest.Mock).mockReturnValue(true);
+    (runTypeScriptCheck as jest.Mock).mockReturnValue({
       success: true,
       output: 'TypeScript check passed',
     });
-    vi.mocked(runFormattingSteps).mockImplementation(() => {});
-    vi.mocked(runLlmReviewProcess).mockResolvedValue(null);
+    (runFormattingSteps as jest.Mock).mockImplementation(() => {});
+    (runLlmReviewProcess as jest.Mock).mockResolvedValue(null);
   });
 
   afterEach(() => {
     // Restore all mocks
-    vi.restoreAllMocks();
+    jest.restoreAllMocks();
   });
 
   describe('PrecommitResult interface', () => {
@@ -84,7 +82,7 @@ describe('precommit-handler', () => {
 
   describe('runPrecommitChecks', () => {
     const mockAllChecks = (criticalFailure = false, blocked = false, output = '') => {
-      vi.mocked(runAllChecks).mockResolvedValue({
+      (runAllChecks as jest.Mock).mockResolvedValue({
         criticalFailure,
         allOutput: output,
         analysisResult: { blocked, details: output },
@@ -101,7 +99,7 @@ describe('precommit-handler', () => {
     });
 
     it('should block when TypeScript check fails', async () => {
-      vi.mocked(runTypeScriptCheck).mockReturnValue({
+      (runTypeScriptCheck as jest.Mock).mockReturnValue({
         success: false,
         output: 'TypeScript errors found',
       });
@@ -125,7 +123,7 @@ describe('precommit-handler', () => {
 
     it('should block when LLM review blocks', async () => {
       mockAllChecks(false, false, '');
-      vi.mocked(runLlmReviewProcess).mockResolvedValue({
+      (runLlmReviewProcess as jest.Mock).mockResolvedValue({
         decision: 'block',
         reason: 'LLM REVIEW BLOCKING ISSUES: Critical issues found',
       });
@@ -137,7 +135,7 @@ describe('precommit-handler', () => {
     });
 
     it('should handle execution errors gracefully', async () => {
-      vi.mocked(runAllChecks).mockRejectedValue(new Error('System error'));
+      (runAllChecks as jest.Mock).mockRejectedValue(new Error('System error'));
 
       const result = await runPrecommitChecks();
 
@@ -149,11 +147,11 @@ describe('precommit-handler', () => {
 
     it('should handle directory restoration errors', async () => {
       mockAllChecks(false, false, '');
-      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
 
       // Mock process.chdir to fail only on second call (restoration)
       let chdirCallCount = 0;
-      vi.mocked(process.chdir).mockImplementation(() => {
+      (process.chdir as jest.Mock).mockImplementation(() => {
         chdirCallCount++;
         if (chdirCallCount === 2) {
           // Second call is restoration

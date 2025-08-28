@@ -8,7 +8,7 @@
     "dev:no-typecheck": "TSC_CHECK=false vite",
     "dev:watch": "nodemon",
     "build": "tsc -b && vite build",
-    "lint": "eslint .",
+    "lint": "eslint . --max-warnings=200",
     "preview": "vite preview",
     "test:e2e": "node ../scripts/run-e2e.js",
     "test:e2e:robust": "./scripts/run-e2e-with-servers.sh",

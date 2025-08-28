@@ -31,13 +31,13 @@ async function createTestSettings() {
   const settingsPath = path.join(process.cwd(), 'test-settings.json');
   await fs.writeFile(settingsPath, JSON.stringify(testSettings, null, 2), 'utf-8');
   
-  console.log('✅ Created test-settings.json for validation testing');
+  console.error('✅ Created test-settings.json for validation testing');
   return settingsPath;
 }
 
 async function main() {
   try {
-    console.log('🧪 Testing Claude Code Validation Pipeline\n');
+    console.error('🧪 Testing Claude Code Validation Pipeline\n');
     
     // Create test settings
     const settingsPath = await createTestSettings();
@@ -50,26 +50,26 @@ async function main() {
       }
     }
     
-    console.log('🚀 Running validation with lint-only configuration...\n');
+    console.error('🚀 Running validation with lint-only configuration...\n');
     
     const runner = new TestValidationRunner();
     const results = await runner.run();
     
-    console.log('\n📊 Test Results:');
-    console.log(`- Total time: ${results.totalTime}ms`);
-    console.log(`- Success: ${results.success}`);
-    console.log(`- Stages: ${results.passed} passed, ${results.failed} failed`);
+    console.error('\n📊 Test Results:');
+    console.error(`- Total time: ${results.totalTime}ms`);
+    console.error(`- Success: ${results.success}`);
+    console.error(`- Stages: ${results.passed} passed, ${results.failed} failed`);
     
     // Clean up test settings
     await fs.unlink(settingsPath);
-    console.log('\n🧹 Cleaned up test-settings.json');
+    console.error('\n🧹 Cleaned up test-settings.json');
     
     if (results.success) {
-      console.log('\n🎉 Validation pipeline test completed successfully!');
-      console.log('💡 Hook is ready for Claude Code integration');
+      console.error('\n🎉 Validation pipeline test completed successfully!');
+      console.error('💡 Hook is ready for Claude Code integration');
     } else {
-      console.log('\n❌ Validation pipeline test failed');
-      console.log('🔍 Check the output above for details');
+      console.error('\n❌ Validation pipeline test failed');
+      console.error('🔍 Check the output above for details');
     }
     
     process.exit(results.success ? 0 : 1);

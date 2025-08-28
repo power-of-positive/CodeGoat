@@ -89,18 +89,20 @@ function TaskDescriptionField({ content, onChange }: {
 }
 
 // Select field component
-function SelectField({ label, value, onChange, options }: {
+function SelectField({ label, value, onChange, options, id }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   options: { value: string; label: string }[];
+  id?: string;
 }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">
+      <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-2">
         {label}
       </label>
       <select
+        id={id}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className="w-full p-2 border border-gray-300 rounded-md text-sm"
@@ -116,18 +118,20 @@ function SelectField({ label, value, onChange, options }: {
 }
 
 // Input field component
-function InputField({ label, value, onChange, placeholder }: {
+function InputField({ label, value, onChange, placeholder, id }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
+  id?: string;
 }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">
+      <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-2">
         {label}
       </label>
       <input
+        id={id}
         type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -147,6 +151,7 @@ function TaskFormFields({ formState }: {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       <SelectField
+        id="task-priority"
         label="Priority"
         value={priority}
         onChange={setPriority}
@@ -157,6 +162,7 @@ function TaskFormFields({ formState }: {
         ]}
       />
       <SelectField
+        id="task-status"
         label="Status"
         value={status}
         onChange={setStatus}
@@ -167,6 +173,7 @@ function TaskFormFields({ formState }: {
         ]}
       />
       <SelectField
+        id="task-type"
         label="Type"
         value={taskType}
         onChange={setTaskType}
@@ -176,6 +183,7 @@ function TaskFormFields({ formState }: {
         ]}
       />
       <InputField
+        id="task-executor"
         label="Executor"
         value={executorId}
         onChange={setExecutorId}

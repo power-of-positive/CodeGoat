@@ -8,7 +8,7 @@ import { runPrettierFormat, runEslintFix } from '../formatting/format-runners';
  * Run formatting and linting steps
  */
 export function runFormattingSteps(projectRoot: string, stagedFiles: string[]): void {
-  console.log('🎨 Auto-formatting staged files...');
+  console.error('🎨 Auto-formatting staged files...');
   const prettierResult = runPrettierFormat(projectRoot, stagedFiles);
   if (!prettierResult.success) {
     console.warn(`Prettier formatting failed: ${prettierResult.output}`);

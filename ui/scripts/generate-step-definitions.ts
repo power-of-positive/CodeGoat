@@ -14,7 +14,7 @@ const STEP_DEFINITIONS_DIR = path.join(__dirname, '../features/step_definitions'
 const E2E_TESTS_DIR = path.join(__dirname, '../e2e');
 
 async function generateStepDefinitions() {
-  console.log('🔍 Generating step definitions from Gherkin features...');
+  console.error('🔍 Generating step definitions from Gherkin features...');
 
   const scenarioLinker = new ScenarioLinker(E2E_TESTS_DIR);
   const featureFiles = fs.readdirSync(FEATURES_DIR)
@@ -24,7 +24,7 @@ async function generateStepDefinitions() {
   const allStepDefinitions = new Set<string>();
 
   for (const featureFile of featureFiles) {
-    console.log(`\n📄 Processing ${path.basename(featureFile)}...`);
+    console.error(`\n📄 Processing ${path.basename(featureFile)}...`);
     
     try {
       const gherkinContent = fs.readFileSync(featureFile, 'utf-8');
@@ -41,7 +41,7 @@ async function generateStepDefinitions() {
       const stepDefinitions = scenarioLinker.generateStepDefinitions(gherkinContent);
       stepDefinitions.forEach(stepDef => allStepDefinitions.add(stepDef));
       
-      console.log(`   ✅ Generated ${stepDefinitions.length} step definitions`);
+      console.error(`   ✅ Generated ${stepDefinitions.length} step definitions`);
 
     } catch (error) {
       console.error(`❌ Error processing ${featureFile}:`, error);
@@ -61,25 +61,25 @@ ${Array.from(allStepDefinitions).join('\n\n')}
 `;
 
   fs.writeFileSync(generatedStepsFile, stepDefsContent);
-  console.log(`\n📝 Generated step definitions written to ${generatedStepsFile}`);
-  console.log(`📊 Total unique step definitions: ${allStepDefinitions.size}`);
+  console.error(`\n📝 Generated step definitions written to ${generatedStepsFile}`);
+  console.error(`📊 Total unique step definitions: ${allStepDefinitions.size}`);
 
   // Analyze test coverage potential
   await analyzeTestCoverage(scenarioLinker);
 }
 
 async function analyzeTestCoverage(scenarioLinker: ScenarioLinker) {
-  console.log('\n🔗 Analyzing potential test coverage...');
+  console.error('\n🔗 Analyzing potential test coverage...');
 
   const availableTests = scenarioLinker.getAvailableTests();
-  console.log(`📋 Found ${availableTests.length} Playwright tests:`);
+  console.error(`📋 Found ${availableTests.length} Playwright tests:`);
   
   availableTests.slice(0, 10).forEach(test => {
-    console.log(`   - ${path.basename(test.file)}: "${test.testName}"`);
+    console.error(`   - ${path.basename(test.file)}: "${test.testName}"`);
   });
   
   if (availableTests.length > 10) {
-    console.log(`   ... and ${availableTests.length - 10} more tests`);
+    console.error(`   ... and ${availableTests.length - 10} more tests`);
   }
 
   // Mock some scenarios for demonstration
@@ -115,28 +115,28 @@ Feature: Agent Analytics Data Filtering
   const suggestions = scenarioLinker.suggestLinks(mockScenarios);
   
   if (suggestions.length > 0) {
-    console.log('\n💡 Suggested scenario-to-test mappings:');
+    console.error('\n💡 Suggested scenario-to-test mappings:');
     suggestions.forEach(suggestion => {
-      console.log(`\n📋 Scenario: "${suggestion.scenario.title}"`);
-      console.log(`   🎯 Confidence: ${(suggestion.confidence * 100).toFixed(1)}%`);
+      console.error(`\n📋 Scenario: "${suggestion.scenario.title}"`);
+      console.error(`   🎯 Confidence: ${(suggestion.confidence * 100).toFixed(1)}%`);
       suggestion.suggestedTests.slice(0, 3).forEach(test => {
-        console.log(`   🔗 → ${path.basename(test.file)}: "${test.testName}"`);
+        console.error(`   🔗 → ${path.basename(test.file)}: "${test.testName}"`);
       });
     });
   } else {
-    console.log('   ℹ️  No automatic mappings found - manual linking required');
+    console.error('   ℹ️  No automatic mappings found - manual linking required');
   }
 }
 
 async function linkExistingScenarios() {
-  console.log('\n🔗 Linking existing BDD scenarios to tests...');
+  console.error('\n🔗 Linking existing BDD scenarios to tests...');
   
   // This would typically read from the database
   // For now, we'll demonstrate the linking functionality
   
-  console.log('   ℹ️  Database scenarios would be linked here');
-  console.log('   📝 Use the BDD Tests Dashboard to manually link scenarios');
-  console.log('   🌐 Available at: http://localhost:5173/bdd-tests');
+  console.error('   ℹ️  Database scenarios would be linked here');
+  console.error('   📝 Use the BDD Tests Dashboard to manually link scenarios');
+  console.error('   🌐 Available at: http://localhost:5173/bdd-tests');
 }
 
 // Main execution
@@ -144,12 +144,12 @@ if (require.main === module) {
   generateStepDefinitions()
     .then(() => linkExistingScenarios())
     .then(() => {
-      console.log('\n🎉 Step definition generation completed!');
-      console.log('\n📋 Next steps:');
-      console.log('   1. Review generated step definitions in features/step_definitions/');
-      console.log('   2. Implement missing step logic in the generated files');
-      console.log('   3. Run cucumber tests: npm run test:cucumber');
-      console.log('   4. Link scenarios to tests via: http://localhost:5173/bdd-tests');
+      console.error('\n🎉 Step definition generation completed!');
+      console.error('\n📋 Next steps:');
+      console.error('   1. Review generated step definitions in features/step_definitions/');
+      console.error('   2. Implement missing step logic in the generated files');
+      console.error('   3. Run cucumber tests: npm run test:cucumber');
+      console.error('   4. Link scenarios to tests via: http://localhost:5173/bdd-tests');
       process.exit(0);
     })
     .catch(error => {

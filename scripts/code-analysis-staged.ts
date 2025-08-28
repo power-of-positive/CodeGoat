@@ -129,22 +129,22 @@ export function outputResults(
     reasons.push(exportCheck.details);
   }
 
-  console.log('📊 Quick Analysis Results:');
-  console.log(`   ${duplicateCheck.details}`);
-  console.log(`   ${exportCheck.details}`);
+  console.error('📊 Quick Analysis Results:');
+  console.error(`   ${duplicateCheck.details}`);
+  console.error(`   ${exportCheck.details}`);
 
   const result = {
     blocked,
     reasons,
     details: { duplicates: duplicateCheck, exports: exportCheck },
   };
-  console.log(JSON.stringify(result));
+  console.error(JSON.stringify(result));
 
   if (blocked) {
     console.error('🚫 Code analysis blocked - see reasons above');
     process.exit(1);
   } else {
-    console.log('✅ Fast code analysis passed');
+    console.error('✅ Fast code analysis passed');
     process.exit(0);
   }
 }
@@ -178,7 +178,7 @@ export async function runAnalysis(): Promise<{
 }
 
 async function main(): Promise<void> {
-  console.log('🚀 Running fast code analysis on staged files...');
+  console.error('🚀 Running fast code analysis on staged files...');
   const result = await runAnalysis();
   outputResults(result.details.duplicates, result.details.exports);
 }

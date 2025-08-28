@@ -3,6 +3,30 @@ import { WinstonLogger } from '../logger-winston';
 import { getDatabaseService } from '../services/database';
 import { TaskStatus, Priority, Task, BDDScenarioStatus, TaskType } from '@prisma/client';
 
+// HTTP Status Codes
+const HTTP_STATUS = {
+  OK: 200,
+  CREATED: 201,
+  BAD_REQUEST: 400,
+  NOT_FOUND: 404,
+  CONFLICT: 409,
+  INTERNAL_SERVER_ERROR: 500,
+} as const;
+
+// Time calculation constants
+const TIME_BASE = {
+  MINUTES_PER_HOUR: 60,
+  SECONDS_PER_MINUTE: 60,
+  MS_PER_SECOND: 1000,
+  DAYS_IN_MONTH: 30,
+} as const;
+
+const TIME_CALC_CONSTANTS = {
+  ...TIME_BASE,
+  MS_PER_MINUTE: TIME_BASE.SECONDS_PER_MINUTE * TIME_BASE.MS_PER_SECOND,
+  MS_PER_HOUR: TIME_BASE.MINUTES_PER_HOUR * TIME_BASE.SECONDS_PER_MINUTE * TIME_BASE.MS_PER_SECOND,
+} as const;
+
 interface ApiTask {
   id: string; // CODEGOAT-001, CODEGOAT-055, etc.
   content: string;
@@ -126,8 +150,8 @@ function calculateDuration(startTime?: string, endTime?: string): string | undef
   const end = new Date(endTime);
   const diffMs = end.getTime() - start.getTime();
 
-  const hours = Math.floor(diffMs / (1000 * 60 * 60));
-  const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+  const hours = Math.floor(diffMs / TIME_CALC_CONSTANTS.MS_PER_HOUR);
+  const minutes = Math.floor((diffMs % TIME_CALC_CONSTANTS.MS_PER_HOUR) / TIME_CALC_CONSTANTS.MS_PER_MINUTE);
 
   if (hours > 0) {
     return `${hours}h ${minutes}m`;
@@ -158,7 +182,7 @@ export function createTaskRoutes(logger: WinstonLogger) {
       res.json({ success: true, data: tasks });
     } catch (error) {
       logger.error('Error fetching tasks:', error as Error);
-      res.status(500).json({ success: false, message: 'Failed to fetch tasks' });
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Failed to fetch tasks' });
     }
   });
 
@@ -214,7 +238,7 @@ export function createTaskRoutes(logger: WinstonLogger) {
         .map(task => {
           const start = task.startTime!.getTime();
           const end = task.endTime!.getTime();
-          return (end - start) / (1000 * 60); // Convert to minutes
+          return (end - start) / (TIME_CALC_CONSTANTS.MS_PER_SECOND * TIME_CALC_CONSTANTS.SECONDS_PER_MINUTE); // Convert to minutes
         });
 
       const averageCompletionTime =
@@ -224,7 +248,7 @@ export function createTaskRoutes(logger: WinstonLogger) {
 
       // Get recent completions (last 30 days)
       const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - TIME_CALC_CONSTANTS.DAYS_IN_MONTH);
 
       const recentCompletions = await db.task.findMany({
         where: {
@@ -306,7 +330,7 @@ export function createTaskRoutes(logger: WinstonLogger) {
       });
     } catch (error) {
       logger.error('Error fetching task analytics:', error as Error);
-      res.status(500).json({ success: false, message: 'Failed to fetch task analytics' });
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Failed to fetch task analytics' });
     }
   });
 
@@ -328,7 +352,7 @@ export function createTaskRoutes(logger: WinstonLogger) {
       });
 
       if (!dbTask) {
-        return res.status(404).json({ success: false, message: 'Task not found' });
+        return res.status(HTTP_STATUS.NOT_FOUND).json({ success: false, message: 'Task not found' });
       }
 
       const task = dbTaskToApiTask(dbTask);
@@ -356,7 +380,7 @@ export function createTaskRoutes(logger: WinstonLogger) {
       });
     } catch (error) {
       logger.error('Error fetching task:', error as Error);
-      res.status(500).json({ success: false, message: 'Failed to fetch task' });
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Failed to fetch task' });
     }
   });
 
@@ -372,7 +396,7 @@ export function createTaskRoutes(logger: WinstonLogger) {
       } = req.body;
 
       if (!content?.trim()) {
-        return res.status(400).json({ success: false, message: 'Task content is required' });
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({ success: false, message: 'Task content is required' });
       }
 
       const db = getDatabaseService();
@@ -419,10 +443,10 @@ export function createTaskRoutes(logger: WinstonLogger) {
       const newTask = dbTaskToApiTask(dbTask);
 
       logger.info('Task created:', { taskId: newTask.id, content: newTask.content });
-      res.status(201).json({ success: true, data: newTask });
+      res.status(HTTP_STATUS.CREATED).json({ success: true, data: newTask });
     } catch (error) {
       logger.error('Error creating task:', error as Error);
-      res.status(500).json({ success: false, message: 'Failed to create task' });
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Failed to create task' });
     }
   });
 
@@ -435,7 +459,7 @@ export function createTaskRoutes(logger: WinstonLogger) {
       });
 
       if (!existingTask) {
-        return res.status(404).json({ success: false, message: 'Task not found' });
+        return res.status(HTTP_STATUS.NOT_FOUND).json({ success: false, message: 'Task not found' });
       }
 
       const updates = req.body;
@@ -482,7 +506,7 @@ export function createTaskRoutes(logger: WinstonLogger) {
           });
 
           if (bddScenarios.length === 0) {
-            return res.status(400).json({
+            return res.status(HTTP_STATUS.BAD_REQUEST).json({
               success: false,
               message:
                 'Story cannot be completed without at least one BDD scenario. Please add BDD scenarios first.',
@@ -496,7 +520,7 @@ export function createTaskRoutes(logger: WinstonLogger) {
           );
 
           if (scenariosWithoutTests.length > 0) {
-            return res.status(400).json({
+            return res.status(HTTP_STATUS.BAD_REQUEST).json({
               success: false,
               message: `Story cannot be completed with ${scenariosWithoutTests.length} BDD scenario(s) that are not linked to E2E tests. Please link all scenarios to Playwright tests.`,
               code: 'STORY_SCENARIOS_NOT_LINKED',
@@ -512,7 +536,7 @@ export function createTaskRoutes(logger: WinstonLogger) {
           );
 
           if (failedOrPendingScenarios.length > 0) {
-            return res.status(400).json({
+            return res.status(HTTP_STATUS.BAD_REQUEST).json({
               success: false,
               message: `Story cannot be completed with ${failedOrPendingScenarios.length} BDD scenario(s) that have not passed. All scenarios must pass their tests.`,
               code: 'STORY_SCENARIOS_NOT_PASSED',
@@ -562,7 +586,7 @@ export function createTaskRoutes(logger: WinstonLogger) {
       res.json({ success: true, data: updatedTask });
     } catch (error) {
       logger.error('Error updating task:', error as Error);
-      res.status(500).json({ success: false, message: 'Failed to update task' });
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Failed to update task' });
     }
   });
 
@@ -575,7 +599,7 @@ export function createTaskRoutes(logger: WinstonLogger) {
       });
 
       if (!existingTask) {
-        return res.status(404).json({ success: false, message: 'Task not found' });
+        return res.status(HTTP_STATUS.NOT_FOUND).json({ success: false, message: 'Task not found' });
       }
 
       await db.task.delete({
@@ -586,7 +610,7 @@ export function createTaskRoutes(logger: WinstonLogger) {
       res.json({ success: true, message: 'Task deleted successfully' });
     } catch (error) {
       logger.error('Error deleting task:', error as Error);
-      res.status(500).json({ success: false, message: 'Failed to delete task' });
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Failed to delete task' });
     }
   });
 
@@ -602,7 +626,7 @@ export function createTaskRoutes(logger: WinstonLogger) {
         !feature?.trim() ||
         !gherkinContent?.trim()
       ) {
-        return res.status(400).json({
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
           success: false,
           message: 'Title, feature, and gherkin content are required',
         });
@@ -616,7 +640,7 @@ export function createTaskRoutes(logger: WinstonLogger) {
       });
 
       if (!existingTask) {
-        return res.status(404).json({ success: false, message: 'Task not found' });
+        return res.status(HTTP_STATUS.NOT_FOUND).json({ success: false, message: 'Task not found' });
       }
 
       const dbStatus = bddStatusMapping[status] || BDDScenarioStatus.PENDING;
@@ -634,7 +658,7 @@ export function createTaskRoutes(logger: WinstonLogger) {
 
       logger.info('BDD scenario created:', { taskId: req.params.id, scenarioId: scenario.id });
 
-      res.status(201).json({
+      res.status(HTTP_STATUS.CREATED).json({
         success: true,
         data: {
           id: scenario.id,
@@ -650,7 +674,7 @@ export function createTaskRoutes(logger: WinstonLogger) {
       });
     } catch (error) {
       logger.error('Error creating BDD scenario:', error as Error);
-      res.status(500).json({ success: false, message: 'Failed to create BDD scenario' });
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Failed to create BDD scenario' });
     }
   });
 
@@ -665,7 +689,7 @@ export function createTaskRoutes(logger: WinstonLogger) {
       });
 
       if (!existingTask) {
-        return res.status(404).json({ success: false, message: 'Task not found' });
+        return res.status(HTTP_STATUS.NOT_FOUND).json({ success: false, message: 'Task not found' });
       }
 
       // Verify scenario exists and belongs to task
@@ -677,7 +701,7 @@ export function createTaskRoutes(logger: WinstonLogger) {
       });
 
       if (!existingScenario) {
-        return res.status(404).json({ success: false, message: 'Scenario not found' });
+        return res.status(HTTP_STATUS.NOT_FOUND).json({ success: false, message: 'Scenario not found' });
       }
 
       const updates = req.body;
@@ -754,7 +778,7 @@ export function createTaskRoutes(logger: WinstonLogger) {
       });
     } catch (error) {
       logger.error('Error updating BDD scenario:', error as Error);
-      res.status(500).json({ success: false, message: 'Failed to update BDD scenario' });
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Failed to update BDD scenario' });
     }
   });
 
@@ -772,7 +796,7 @@ export function createTaskRoutes(logger: WinstonLogger) {
       });
 
       if (!existingScenario) {
-        return res.status(404).json({ success: false, message: 'Scenario not found' });
+        return res.status(HTTP_STATUS.NOT_FOUND).json({ success: false, message: 'Scenario not found' });
       }
 
       await db.bDDScenario.delete({
@@ -786,7 +810,7 @@ export function createTaskRoutes(logger: WinstonLogger) {
       res.json({ success: true, message: 'BDD scenario deleted successfully' });
     } catch (error) {
       logger.error('Error deleting BDD scenario:', error as Error);
-      res.status(500).json({ success: false, message: 'Failed to delete BDD scenario' });
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Failed to delete BDD scenario' });
     }
   });
 
@@ -807,7 +831,7 @@ export function createTaskRoutes(logger: WinstonLogger) {
       });
 
       if (!existingScenario) {
-        return res.status(404).json({ success: false, message: 'Scenario not found' });
+        return res.status(HTTP_STATUS.NOT_FOUND).json({ success: false, message: 'Scenario not found' });
       }
 
       const executions = await db.bDDScenarioExecution.findMany({
@@ -833,7 +857,7 @@ export function createTaskRoutes(logger: WinstonLogger) {
       res.json({ success: true, data: executionsResponse });
     } catch (error) {
       logger.error('Error fetching execution history:', error as Error);
-      res.status(500).json({ success: false, message: 'Failed to fetch execution history' });
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Failed to fetch execution history' });
     }
   });
 
@@ -850,7 +874,7 @@ export function createTaskRoutes(logger: WinstonLogger) {
       } = req.body;
 
       if (!status) {
-        return res.status(400).json({
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
           success: false,
           message: 'Status is required',
         });
@@ -867,7 +891,7 @@ export function createTaskRoutes(logger: WinstonLogger) {
       });
 
       if (!existingScenario) {
-        return res.status(404).json({ success: false, message: 'Scenario not found' });
+        return res.status(HTTP_STATUS.NOT_FOUND).json({ success: false, message: 'Scenario not found' });
       }
 
       const dbStatus = bddStatusMapping[status] || BDDScenarioStatus.PENDING;
@@ -903,7 +927,7 @@ export function createTaskRoutes(logger: WinstonLogger) {
         status: status,
       });
 
-      res.status(201).json({
+      res.status(HTTP_STATUS.CREATED).json({
         success: true,
         data: {
           id: execution.id,
@@ -920,7 +944,7 @@ export function createTaskRoutes(logger: WinstonLogger) {
       });
     } catch (error) {
       logger.error('Error creating execution record:', error as Error);
-      res.status(500).json({ success: false, message: 'Failed to create execution record' });
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Failed to create execution record' });
     }
   });
 
@@ -939,7 +963,7 @@ export function createTaskRoutes(logger: WinstonLogger) {
       });
 
       if (!existingScenario) {
-        return res.status(404).json({ success: false, message: 'Scenario not found' });
+        return res.status(HTTP_STATUS.NOT_FOUND).json({ success: false, message: 'Scenario not found' });
       }
 
       const daysAgo = new Date();
@@ -1024,7 +1048,7 @@ export function createTaskRoutes(logger: WinstonLogger) {
       });
     } catch (error) {
       logger.error('Error fetching execution analytics:', error as Error);
-      res.status(500).json({ success: false, message: 'Failed to fetch execution analytics' });
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Failed to fetch execution analytics' });
     }
   });
 

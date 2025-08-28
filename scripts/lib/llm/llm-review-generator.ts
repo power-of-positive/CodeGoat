@@ -123,12 +123,12 @@ function saveReviewFiles(
   structuredReviewData: unknown
 ): void {
   fs.writeFileSync(reviewFile, reviewContent);
-  console.log(`📝 Code review comments saved to: ${reviewFile}`);
+  console.error(`📝 Code review comments saved to: ${reviewFile}`);
 
   if (structuredReviewData) {
     const structuredReviewFile = path.join(projectRoot, 'code-review-structured.json');
     fs.writeFileSync(structuredReviewFile, JSON.stringify(structuredReviewData, null, 2));
-    console.log(`🔍 Structured review data saved to: ${structuredReviewFile}`);
+    console.error(`🔍 Structured review data saved to: ${structuredReviewFile}`);
   }
 }
 
@@ -139,7 +139,7 @@ function saveReviewFiles(
  */
 export async function generateLlmReviewComments(projectRoot: string): Promise<void> {
   const reviewFile = path.join(projectRoot, 'code-review-comments.tmp');
-  console.log('🤖 Generating LLM code review comments for staged files...');
+  console.error('🤖 Generating LLM code review comments for staged files...');
 
   const { stagedFilesList, gitStatus } = getGitInfo(projectRoot);
   const timestamp = new Date().toLocaleString();

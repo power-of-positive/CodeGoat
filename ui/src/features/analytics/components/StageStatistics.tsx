@@ -35,6 +35,22 @@ import { SimpleSelect as Select, Option } from '../../../shared/ui/select';
 import { PageLoading } from '../../../shared/ui/loading';
 import { analyticsApi } from '../../../shared/lib/api';
 
+// Constants
+const RELIABILITY_THRESHOLD_EXCELLENT = 0.95; // 95%
+const RELIABILITY_THRESHOLD_GOOD = 0.85; // 85%
+const RELIABILITY_THRESHOLD_FAIR = 0.70; // 70%
+const RELIABILITY_OPACITY_LIGHT = 0.15; // For background colors
+const DEFAULT_DAYS_PERIOD = 30;
+const HEX_MAX_VALUE = 255;
+const HEX_BASE = 16;
+const STALE_TIME_MINUTES = 5;
+const MINUTES_PER_HOUR = 60;
+const SECONDS_PER_MINUTE = 60;
+const MILLISECONDS_PER_SECOND = 1000;
+const MINUTES_TO_MILLISECONDS = MINUTES_PER_HOUR * MILLISECONDS_PER_SECOND;
+const HOURS_PER_DAY = 24;
+const CHART_BORDER_RADIUS = 4;
+
 interface StageStatisticsProps {
   defaultDays?: number;
   stageId?: string;
@@ -59,10 +75,10 @@ const RELIABILITY_COLORS = {
 } as const;
 
 const RELIABILITY_LABELS = {
-  excellent: 'Excellent (≥95%)',
-  good: 'Good (≥85%)',
-  fair: 'Fair (≥70%)',
-  poor: 'Poor (<70%)',
+  excellent: `Excellent (≥${(RELIABILITY_THRESHOLD_EXCELLENT * 100)}%)`,
+  good: `Good (≥${(RELIABILITY_THRESHOLD_GOOD * 100)}%)`,
+  fair: `Fair (≥${(RELIABILITY_THRESHOLD_FAIR * 100)}%)`,
+  poor: `Poor (<${(RELIABILITY_THRESHOLD_FAIR * 100)}%)`,
 } as const;
 
 function ReliabilityBadge({ reliability }: ReliabilityBadgeProps) {
@@ -73,7 +89,7 @@ function ReliabilityBadge({ reliability }: ReliabilityBadgeProps) {
     <span
       className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
       style={{
-        backgroundColor: `${color}15`,
+        backgroundColor: `${color}${Math.round(RELIABILITY_OPACITY_LIGHT * HEX_MAX_VALUE).toString(HEX_BASE).padStart(2, '0')}`,
         color: color,
       }}
     >
@@ -108,7 +124,7 @@ function DateRangePicker({
   );
 }
 
-export function StageStatistics({ defaultDays = 30, stageId }: StageStatisticsProps) {
+export function StageStatistics({ defaultDays = DEFAULT_DAYS_PERIOD, stageId }: StageStatisticsProps) {
   const [days, setDays] = useState(defaultDays);
   const [environment, setEnvironment] = useState('');
   const [selectedStage, setSelectedStage] = useState(stageId || '');
@@ -138,7 +154,7 @@ export function StageStatistics({ defaultDays = 30, stageId }: StageStatisticsPr
         environment: environment || undefined,
         stageId: selectedStage || undefined,
       }),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: STALE_TIME_MINUTES * MINUTES_TO_MILLISECONDS,
   });
 
   const availableStages = useMemo(() => {
@@ -262,7 +278,7 @@ export function StageStatistics({ defaultDays = 30, stageId }: StageStatisticsPr
                     if (value === 'custom') {
                       setUseCustomDateRange(true);
                       const today = new Date();
-                      const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+                      const thirtyDaysAgo = new Date(today.getTime() - DEFAULT_DAYS_PERIOD * HOURS_PER_DAY * MINUTES_PER_HOUR * SECONDS_PER_MINUTE * MILLISECONDS_PER_SECOND);
                       setStartDate(thirtyDaysAgo.toISOString().split('T')[0]);
                       setEndDate(today.toISOString().split('T')[0]);
                     } else {
@@ -451,7 +467,7 @@ export function StageStatistics({ defaultDays = 30, stageId }: StageStatisticsPr
                   <Bar
                     dataKey="successRate"
                     fill="#3b82f6"
-                    radius={[4, 4, 0, 0]}
+                    radius={[CHART_BORDER_RADIUS, CHART_BORDER_RADIUS, 0, 0]}
                   />
                 </BarChart>
               </ResponsiveContainer>
@@ -502,7 +518,7 @@ export function StageStatistics({ defaultDays = 30, stageId }: StageStatisticsPr
                   <Bar
                     dataKey="avgDuration"
                     fill="#3b82f6"
-                    radius={[4, 4, 0, 0]}
+                    radius={[CHART_BORDER_RADIUS, CHART_BORDER_RADIUS, 0, 0]}
                   />
                 </BarChart>
               </ResponsiveContainer>

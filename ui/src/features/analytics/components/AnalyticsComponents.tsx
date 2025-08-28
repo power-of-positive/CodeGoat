@@ -12,6 +12,9 @@ import { Button } from '../../../shared/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../shared/ui/card';
 import { ValidationMetrics, ValidationStageResult } from '../../../shared/types';
 
+// Constants
+const SUCCESS_NOTIFICATION_TIMEOUT_MS = 2000;
+
 export function AnalyticsHeader({ refetch }: { refetch: () => void }) {
   const [isLoading, setIsLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -43,7 +46,7 @@ export function AnalyticsHeader({ refetch }: { refetch: () => void }) {
       timeoutRef.current = setTimeout(() => {
         setShowSuccess(false);
         timeoutRef.current = null;
-      }, 2000);
+      }, SUCCESS_NOTIFICATION_TIMEOUT_MS);
     } catch (error) {
       console.error('Refresh failed:', error);
     } finally {

@@ -3,6 +3,16 @@ import { ILogger } from '../logger-interface';
 import { z } from 'zod';
 import { SettingsService } from '../services/settings.service';
 
+// HTTP Status Codes
+const HTTP_STATUS = {
+  OK: 200,
+  CREATED: 201,
+  BAD_REQUEST: 400,
+  NOT_FOUND: 404,
+  CONFLICT: 409,
+  INTERNAL_SERVER_ERROR: 500,
+} as const;
+
 interface SettingsContext {
   settingsService: SettingsService;
   logger: ILogger;
@@ -16,7 +26,7 @@ function createSettingsHandler(settingsService: SettingsService, logger: ILogger
       res.json(settings);
     } catch (error) {
       logger.error('Failed to load settings', error as Error);
-      res.status(500).json({ error: 'Failed to load settings' });
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ error: 'Failed to load settings' });
     }
   };
 }
@@ -31,13 +41,13 @@ function updateSettingsHandler(settingsService: SettingsService, logger: ILogger
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
-        res.status(400).json({
+        res.status(HTTP_STATUS.BAD_REQUEST).json({
           error: 'Invalid settings format',
           details: error.issues,
         });
       } else {
         logger.error('Failed to update settings', error as Error);
-        res.status(500).json({ error: 'Failed to update settings' });
+        res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ error: 'Failed to update settings' });
       }
     }
   };
@@ -53,7 +63,7 @@ async function handleGetFallback(
     res.json(fallbackSettings);
   } catch (error) {
     context.logger.error('Failed to load fallback settings', error as Error);
-    res.status(500).json({ error: 'Failed to load fallback settings' });
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ error: 'Failed to load fallback settings' });
   }
 }
 
@@ -70,13 +80,13 @@ async function handleUpdateFallback(
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
-      res.status(400).json({
+      res.status(HTTP_STATUS.BAD_REQUEST).json({
         error: 'Invalid fallback settings',
         details: error.issues,
       });
     } else {
       context.logger.error('Failed to update fallback settings', error as Error);
-      res.status(500).json({ error: 'Failed to update fallback settings' });
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ error: 'Failed to update fallback settings' });
     }
   }
 }
@@ -108,7 +118,7 @@ function createValidationHandlers(
       res.json(validationSettings);
     } catch (error) {
       logger.error('Failed to load validation settings', error as Error);
-      res.status(500).json({ error: 'Failed to load validation settings' });
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ error: 'Failed to load validation settings' });
     }
   };
 
@@ -121,13 +131,13 @@ function createValidationHandlers(
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
-        res.status(400).json({
+        res.status(HTTP_STATUS.BAD_REQUEST).json({
           error: 'Invalid validation settings',
           details: error.issues,
         });
       } else {
         logger.error('Failed to update validation settings', error as Error);
-        res.status(500).json({ error: 'Failed to update validation settings' });
+        res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ error: 'Failed to update validation settings' });
       }
     }
   };
@@ -158,21 +168,21 @@ function createAddStageHandler(settingsService: SettingsService, logger: ILogger
   return async (req: Request, res: Response): Promise<void> => {
     try {
       const stage = await settingsService.addValidationStage(req.body);
-      res.status(201).json({
+      res.status(HTTP_STATUS.CREATED).json({
         message: 'Validation stage added successfully',
         stage,
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
-        res.status(400).json({
+        res.status(HTTP_STATUS.BAD_REQUEST).json({
           error: 'Invalid stage configuration',
           details: error.issues,
         });
       } else if ((error as Error).message === 'Stage with this ID already exists') {
-        res.status(409).json({ error: 'Stage with this ID already exists' });
+        res.status(HTTP_STATUS.CONFLICT).json({ error: 'Stage with this ID already exists' });
       } else {
         logger.error('Failed to add validation stage', error as Error);
-        res.status(500).json({ error: 'Failed to add validation stage' });
+        res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ error: 'Failed to add validation stage' });
       }
     }
   };
@@ -189,15 +199,15 @@ function createUpdateStageHandler(settingsService: SettingsService, logger: ILog
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
-        res.status(400).json({
+        res.status(HTTP_STATUS.BAD_REQUEST).json({
           error: 'Invalid stage configuration',
           details: error.issues,
         });
       } else if ((error as Error).message === 'Validation stage not found') {
-        res.status(404).json({ error: 'Validation stage not found' });
+        res.status(HTTP_STATUS.NOT_FOUND).json({ error: 'Validation stage not found' });
       } else {
         logger.error('Failed to update validation stage', error as Error);
-        res.status(500).json({ error: 'Failed to update validation stage' });
+        res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ error: 'Failed to update validation stage' });
       }
     }
   };
@@ -211,12 +221,12 @@ function createRemoveStageHandler(settingsService: SettingsService, logger: ILog
       res.json({ message: 'Validation stage removed successfully' });
     } catch (error) {
       if ((error as Error).message === 'Validation stage not found') {
-        res.status(404).json({ error: 'Validation stage not found' });
+        res.status(HTTP_STATUS.NOT_FOUND).json({ error: 'Validation stage not found' });
       } else if ((error as Error).message === 'No validation stages found') {
-        res.status(404).json({ error: 'No validation stages found' });
+        res.status(HTTP_STATUS.NOT_FOUND).json({ error: 'No validation stages found' });
       } else {
         logger.error('Failed to remove validation stage', error as Error);
-        res.status(500).json({ error: 'Failed to remove validation stage' });
+        res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ error: 'Failed to remove validation stage' });
       }
     }
   };
@@ -229,14 +239,14 @@ function createGetStageHandler(settingsService: SettingsService, logger: ILogger
       const stage = await settingsService.getValidationStage(id);
 
       if (!stage) {
-        res.status(404).json({ error: 'Validation stage not found' });
+        res.status(HTTP_STATUS.NOT_FOUND).json({ error: 'Validation stage not found' });
         return;
       }
 
       res.json(stage);
     } catch (error) {
       logger.error('Failed to get validation stage', error as Error);
-      res.status(500).json({ error: 'Failed to get validation stage' });
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ error: 'Failed to get validation stage' });
     }
   };
 }
@@ -248,7 +258,7 @@ function createGetStagesHandler(settingsService: SettingsService, logger: ILogge
       res.json({ stages });
     } catch (error) {
       logger.error('Failed to get validation stages', error as Error);
-      res.status(500).json({ error: 'Failed to get validation stages' });
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ error: 'Failed to get validation stages' });
     }
   };
 }

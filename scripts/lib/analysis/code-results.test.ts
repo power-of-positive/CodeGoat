@@ -2,16 +2,15 @@
  * Tests for code-results.ts
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { collectCodeResults } from './code-results';
 import { StagedFiles } from '../files/staged-files';
 import * as frontendChecks from './frontend-checks';
 import * as backendChecks from './backend-checks';
 import * as scriptChecks from './script-checks';
 
-vi.mock('./frontend-checks');
-vi.mock('./backend-checks');
-vi.mock('./script-checks');
+jest.mock('./frontend-checks');
+jest.mock('./backend-checks');
+jest.mock('./script-checks');
 
 describe('code-results', () => {
   const mockProjectRoot = '/test/project';
@@ -23,21 +22,21 @@ describe('code-results', () => {
   };
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   describe('collectCodeResults', () => {
     it('should return success when no files to check', async () => {
       // Mock all check modules to return success
-      vi.mocked(frontendChecks.runFrontendChecks).mockResolvedValue({
+      (frontendChecks.runFrontendChecks as jest.Mock).mockResolvedValue({
         failed: false,
         output: '',
       });
-      vi.mocked(backendChecks.runBackendChecks).mockReturnValue({
+      (backendChecks.runBackendChecks as jest.Mock).mockReturnValue({
         failed: false,
         output: '',
       });
-      vi.mocked(scriptChecks.runScriptChecks).mockResolvedValue({
+      (scriptChecks.runScriptChecks as jest.Mock).mockResolvedValue({
         failed: false,
         output: '',
       });
@@ -57,15 +56,15 @@ describe('code-results', () => {
       };
 
       // Mock frontend checks to fail
-      vi.mocked(frontendChecks.runFrontendChecks).mockResolvedValue({
+      (frontendChecks.runFrontendChecks as jest.Mock).mockResolvedValue({
         failed: true,
         output: 'Frontend linting failed',
       });
-      vi.mocked(backendChecks.runBackendChecks).mockReturnValue({
+      (backendChecks.runBackendChecks as jest.Mock).mockReturnValue({
         failed: false,
         output: '',
       });
-      vi.mocked(scriptChecks.runScriptChecks).mockResolvedValue({
+      (scriptChecks.runScriptChecks as jest.Mock).mockResolvedValue({
         failed: false,
         output: '',
       });
@@ -86,12 +85,12 @@ describe('code-results', () => {
       };
 
       // Mock frontend checks to throw an error
-      vi.mocked(frontendChecks.runFrontendChecks).mockRejectedValue(new Error('Mock error'));
-      vi.mocked(backendChecks.runBackendChecks).mockReturnValue({
+      (frontendChecks.runFrontendChecks as jest.Mock).mockRejectedValue(new Error('Mock error'));
+      (backendChecks.runBackendChecks as jest.Mock).mockReturnValue({
         failed: false,
         output: '',
       });
-      vi.mocked(scriptChecks.runScriptChecks).mockResolvedValue({
+      (scriptChecks.runScriptChecks as jest.Mock).mockResolvedValue({
         failed: false,
         output: '',
       });
@@ -111,15 +110,15 @@ describe('code-results', () => {
       };
 
       // Mock all check modules to succeed
-      vi.mocked(frontendChecks.runFrontendChecks).mockResolvedValue({
+      (frontendChecks.runFrontendChecks as jest.Mock).mockResolvedValue({
         failed: false,
         output: '',
       });
-      vi.mocked(backendChecks.runBackendChecks).mockReturnValue({
+      (backendChecks.runBackendChecks as jest.Mock).mockReturnValue({
         failed: false,
         output: '',
       });
-      vi.mocked(scriptChecks.runScriptChecks).mockResolvedValue({
+      (scriptChecks.runScriptChecks as jest.Mock).mockResolvedValue({
         failed: false,
         output: '',
       });

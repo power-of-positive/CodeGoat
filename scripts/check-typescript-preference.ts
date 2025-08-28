@@ -72,16 +72,16 @@ class TypeScriptPreferenceChecker {
       const jsFiles = await this.findJavaScriptFiles();
 
       if (jsFiles.length === 0) {
-        console.log(
+        console.error(
           `${colors.green}✅ No JavaScript files found in source directories${colors.reset}`
         );
-        console.log(
+        console.error(
           `${colors.cyan}💡 Project already follows TypeScript-first approach${colors.reset}`
         );
         return;
       }
 
-      console.log(`${colors.cyan}🔍 Found ${jsFiles.length} JavaScript files${colors.reset}\n`);
+      console.error(`${colors.cyan}🔍 Found ${jsFiles.length} JavaScript files${colors.reset}\n`);
 
       for (const file of jsFiles) {
         await this.analyzeFile(file);
@@ -132,18 +132,18 @@ class TypeScriptPreferenceChecker {
 
       if (validation.hasTypeScriptFeatures) {
         this.errors.push(filePath);
-        console.log(`${colors.red}❌ ${filePath}${colors.reset}`);
-        console.log(`   ${colors.red}Contains TypeScript features:${colors.reset}`);
+        console.error(`${colors.red}❌ ${filePath}${colors.reset}`);
+        console.error(`   ${colors.red}Contains TypeScript features:${colors.reset}`);
 
         validation.features.forEach((f: TypeScriptFeature) => {
-          console.log(`   - ${f.feature} (line ${f.line})`);
+          console.error(`   - ${f.feature} (line ${f.line})`);
         });
-        console.log(`   ${colors.yellow}💡 Recommendation: Rename to .ts/.tsx${colors.reset}\n`);
+        console.error(`   ${colors.yellow}💡 Recommendation: Rename to .ts/.tsx${colors.reset}\n`);
       } else {
         this.warnings.push(filePath);
-        console.log(`${colors.yellow}⚠️  ${filePath}${colors.reset}`);
-        console.log(`   ${colors.yellow}Pure JavaScript file in TypeScript project${colors.reset}`);
-        console.log(
+        console.error(`${colors.yellow}⚠️  ${filePath}${colors.reset}`);
+        console.error(`   ${colors.yellow}Pure JavaScript file in TypeScript project${colors.reset}`);
+        console.error(
           `   ${colors.cyan}💡 Consider migrating to TypeScript for better type safety${colors.reset}\n`
         );
       }
@@ -192,73 +192,73 @@ class TypeScriptPreferenceChecker {
   }
 
   private generateReport(): void {
-    console.log(`${colors.bright}${colors.blue}📋 TypeScript Preference Report${colors.reset}`);
-    console.log(
+    console.error(`${colors.bright}${colors.blue}📋 TypeScript Preference Report${colors.reset}`);
+    console.error(
       `${colors.blue}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${colors.reset}\n`
     );
 
-    console.log(`${colors.bright}Summary:${colors.reset}`);
-    console.log(
+    console.error(`${colors.bright}Summary:${colors.reset}`);
+    console.error(
       `• Files with TypeScript features in .js files: ${colors.red}${this.errors.length}${colors.reset}`
     );
-    console.log(
+    console.error(
       `• Pure JavaScript files: ${colors.yellow}${this.warnings.length}${colors.reset}\n`
     );
 
     if (this.errors.length > 0) {
-      console.log(
+      console.error(
         `${colors.red}${colors.bright}❌ TypeScript features found in JavaScript files${colors.reset}`
       );
-      console.log(`${colors.red}These files should be renamed to .ts/.tsx:${colors.reset}`);
-      this.errors.forEach(file => console.log(`  • ${file}`));
-      console.log();
+      console.error(`${colors.red}These files should be renamed to .ts/.tsx:${colors.reset}`);
+      this.errors.forEach(file => console.error(`  • ${file}`));
+      console.error();
     }
 
     if (this.warnings.length > 0) {
-      console.log(
+      console.error(
         `${colors.yellow}${colors.bright}⚠️  JavaScript files in TypeScript project${colors.reset}`
       );
-      console.log(`${colors.yellow}Consider migrating these to TypeScript:${colors.reset}`);
-      this.warnings.forEach(file => console.log(`  • ${file}`));
-      console.log();
+      console.error(`${colors.yellow}Consider migrating these to TypeScript:${colors.reset}`);
+      this.warnings.forEach(file => console.error(`  • ${file}`));
+      console.error();
     }
 
     // Recommendations
-    console.log(`${colors.bright}${colors.cyan}💡 Recommendations:${colors.reset}`);
+    console.error(`${colors.bright}${colors.cyan}💡 Recommendations:${colors.reset}`);
 
     if (this.errors.length > 0) {
-      console.log(
+      console.error(
         `${colors.cyan}1. Rename .js/.jsx files with TypeScript features to .ts/.tsx${colors.reset}`
       );
-      console.log(
+      console.error(
         `${colors.cyan}2. Update any imports/references to use new file extensions${colors.reset}`
       );
     }
 
     if (this.warnings.length > 0) {
-      console.log(
+      console.error(
         `${colors.cyan}3. Gradually migrate JavaScript files to TypeScript${colors.reset}`
       );
-      console.log(
+      console.error(
         `${colors.cyan}4. Add type annotations and interfaces for better type safety${colors.reset}`
       );
     }
 
-    console.log(
+    console.error(
       `${colors.cyan}5. Consider updating build scripts to use TypeScript files${colors.reset}\n`
     );
 
     // Exit with appropriate code
     if (this.errors.length > 0) {
-      console.log(
+      console.error(
         `${colors.red}❌ Check failed: Found TypeScript features in JavaScript files${colors.reset}`
       );
       process.exit(1);
     } else if (this.warnings.length > 0) {
-      console.log(`${colors.yellow}⚠️  Check passed with warnings${colors.reset}`);
+      console.error(`${colors.yellow}⚠️  Check passed with warnings${colors.reset}`);
       process.exit(0);
     } else {
-      console.log(`${colors.green}✅ All checks passed${colors.reset}`);
+      console.error(`${colors.green}✅ All checks passed${colors.reset}`);
       process.exit(0);
     }
   }
