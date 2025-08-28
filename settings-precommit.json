@@ -15,7 +15,7 @@
         "command": "npm run lint",
         "timeout": 60000,
         "enabled": true,
-        "continueOnFailure": true,
+        "continueOnFailure": false,
         "order": 1
       },
       {
@@ -39,10 +39,10 @@
       {
         "id": "unit-tests-frontend",
         "name": "Frontend Unit Tests",
-        "command": "cd ui && npm test -- --watchAll=false --testTimeout=30000",
-        "timeout": 60000,
-        "enabled": false,
-        "continueOnFailure": true,
+        "command": "cd ui && npm test -- --watchAll=false --testTimeout=15000 --maxWorkers=2",
+        "timeout": 90000,
+        "enabled": true,
+        "continueOnFailure": false,
         "order": 4
       },
       {
@@ -69,7 +69,7 @@
         "command": "cd ui && npm run test:coverage -- --maxWorkers=1",
         "timeout": 180000,
         "enabled": false,
-        "continueOnFailure": true,
+        "continueOnFailure": false,
         "order": 7
       },
       {
@@ -78,7 +78,7 @@
         "command": "npm run test:unit:scripts",
         "timeout": 30000,
         "enabled": false,
-        "continueOnFailure": true,
+        "continueOnFailure": false,
         "order": 8
       },
       {
@@ -87,7 +87,7 @@
         "command": "npm run test:coverage:scripts",
         "timeout": 30000,
         "enabled": false,
-        "continueOnFailure": true,
+        "continueOnFailure": false,
         "order": 9
       },
       {
@@ -114,7 +114,7 @@
         "command": "npx ts-node src/tools/ai-code-reviewer.ts",
         "timeout": 30000,
         "enabled": false,
-        "continueOnFailure": true,
+        "continueOnFailure": false,
         "order": 12
       },
       {
@@ -147,10 +147,10 @@
       {
         "id": "e2e-tests",
         "name": "Playwright E2E Tests",
-        "command": "cd ui && SKIP_WEB_SERVER=true npm run test:e2e",
+        "command": "npm run test:e2e",
         "timeout": 180000,
         "enabled": false,
-        "continueOnFailure": true,
+        "continueOnFailure": false,
         "order": 16
       },
       {
@@ -159,7 +159,7 @@
         "command": "npx ts-node scripts/check-uncommitted-files.ts",
         "timeout": 10000,
         "enabled": true,
-        "continueOnFailure": true,
+        "continueOnFailure": false,
         "order": 17
       },
       {
@@ -168,7 +168,7 @@
         "command": "npx ts-node scripts/validate-todo-list.ts",
         "timeout": 10000,
         "enabled": true,
-        "continueOnFailure": true,
+        "continueOnFailure": false,
         "order": 18
       }
     ],

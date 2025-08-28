@@ -14,7 +14,12 @@ import path from 'path';
 // Use test environment for pre-commit hooks and testing contexts
 const isPreCommitContext = process.env.CLAUDE_STOP_HOOK === 'true' || process.argv.includes('--test') || process.argv.some(arg => arg.includes('precommit'));
 const envPath = isPreCommitContext ? '.env.e2e' : '.env';
-dotenv.config({ path: envPath });
+dotenv.config({ path: envPath, override: true });
+
+// Ensure DATABASE_URL is set for Prisma when in test context
+if (isPreCommitContext && process.env.KANBAN_DATABASE_URL) {
+  process.env.DATABASE_URL = process.env.KANBAN_DATABASE_URL;
+}
 
 import fs from 'fs/promises';
 import { exec } from 'child_process';
@@ -216,29 +221,103 @@ class ValidationRunner {
       console.error('');
 
       if (!stage.continueOnFailure) {
+        const fixGuidance = this.getStageFixGuidance(stage, stageResult);
         console.error(
-          `${colors.red}🛑 Stage failed and continueOnFailure is false. Stopping pipeline.${colors.reset}\n`
+          `${colors.red}Stage failed and continueOnFailure is false. Stopping pipeline.${colors.reset}`
         );
+        console.error(`${colors.yellow}Fix guidance: ${fixGuidance}${colors.reset}\n`);
         return false;
       } else {
         console.error(
-          `${colors.yellow}⚠️  Stage failed but continuing due to continueOnFailure setting${colors.reset}\n`
+          `${colors.yellow}Stage failed but continuing due to continueOnFailure setting${colors.reset}\n`
         );
         return true;
       }
     }
   }
 
+  private getStageFixGuidance(stage: ValidationStage, _stageResult: ValidationStageResult): string {
+    const stageName = stage.name.toLowerCase();
+    const command = stage.command.toLowerCase();
+
+    // Provide stage-specific guidance
+    if (stageName.includes('lint') || command.includes('lint')) {
+      return 'Fix the linting errors by running "npm run lint:fix" or manually address the style/quality issues. DO NOT disable the lint stage - proper code quality is essential.';
+    }
+    
+    if (stageName.includes('type') || command.includes('type')) {
+      return 'Fix the TypeScript type errors by reviewing and correcting type annotations, imports, or configurations. DO NOT disable type checking - type safety is critical.';
+    }
+    
+    if (stageName.includes('test') || command.includes('test')) {
+      return 'Fix the failing tests by debugging the test logic, updating test expectations, or fixing the underlying code. DO NOT disable or delete tests - they ensure code quality and prevent regressions.';
+    }
+    
+    if (stageName.includes('coverage') || command.includes('coverage')) {
+      return 'Improve test coverage by writing additional tests for uncovered code paths. DO NOT disable coverage checks - comprehensive testing is vital.';
+    }
+    
+    if (stageName.includes('e2e') || stageName.includes('playwright') || command.includes('playwright')) {
+      return 'Fix E2E test failures by debugging browser automation issues, updating selectors, or fixing application logic. DO NOT disable E2E tests - they validate the complete user experience.';
+    }
+    
+    if (stageName.includes('audit') || command.includes('audit')) {
+      return 'Fix security vulnerabilities by running "npm audit fix" or updating vulnerable dependencies. DO NOT disable security audits - they protect against known vulnerabilities.';
+    }
+    
+    if (stageName.includes('duplication') || command.includes('duplication')) {
+      return 'Reduce code duplication by refactoring common logic into shared functions or modules. DO NOT disable duplication checks - they improve code maintainability.';
+    }
+    
+    if (stageName.includes('typescript preference') || command.includes('typescript-preference')) {
+      return 'Convert JavaScript files to TypeScript or ensure TypeScript is properly configured. DO NOT disable TypeScript preference - it improves code quality and developer experience.';
+    }
+    
+    if (stageName.includes('uncommitted') || command.includes('uncommitted')) {
+      return 'Commit your changes using "git add . && git commit -m \'your message\'" or stash them if they are work-in-progress. DO NOT disable uncommitted file checks - they ensure clean deployments.';
+    }
+    
+    if (stageName.includes('todo') || command.includes('todo')) {
+      return 'Complete all high-priority todo items or mark them as completed in your todo list. DO NOT disable todo validation - it ensures tasks are properly finished.';
+    }
+
+    // Generic guidance for unknown stages
+    return `Review and fix the specific errors shown above for the "${stage.name}" stage. DO NOT disable this validation stage - each stage serves an important purpose in maintaining code quality and reliability. Focus on addressing the root cause of the failure.`;
+  }
+
   async runValidation(): Promise<boolean> {
     this.printValidationHeader();
 
     try {
-      // Load validation stages from database instead of settings.json
-      const enabledStages = await getEnabledValidationStages();
+      // Load validation stages from database first
+      let enabledStages = await getEnabledValidationStages();
+
+      // Fallback to settings file if no stages in database
+      if (enabledStages.length === 0) {
+        console.error(
+          `${colors.yellow}⚠️  No validation stages configured in database, falling back to settings file${colors.reset}`
+        );
+        
+        try {
+          const settings = await this.loadSettings();
+          const fileStages = settings.validation?.stages?.filter(stage => stage.enabled) || [];
+          enabledStages = fileStages;
+          
+          if (enabledStages.length > 0) {
+            console.error(
+              `${colors.cyan}📄 Loaded ${enabledStages.length} validation stages from settings file${colors.reset}`
+            );
+          }
+        } catch (error) {
+          console.error(
+            `${colors.red}❌ Failed to load validation stages from settings file: ${(error as Error).message}${colors.reset}`
+          );
+        }
+      }
 
       if (enabledStages.length === 0) {
         console.error(
-          `${colors.yellow}⚠️  No validation stages configured or enabled in database${colors.reset}`
+          `${colors.yellow}⚠️  No validation stages configured or enabled${colors.reset}`
         );
         this.results.success = true;
         this.saveMetrics();

@@ -37,14 +37,14 @@ const mockScenario = {
   gherkinContent: `Given I am on the login page
 When I enter valid credentials
 Then I should be logged in successfully`,
-  status: 'pending' as const,
+  status: 'PENDING' as const,
   createdAt: '2023-01-01T10:00:00Z',
   updatedAt: '2023-01-01T10:00:00Z',
 };
 
 const mockScenarioWithExecution = {
   ...mockScenario,
-  status: 'passed' as const,
+  status: 'PASSED' as const,
   executedAt: '2023-01-01T10:30:00Z',
   executionDuration: 2500,
   playwrightTestFile: 'login.spec.ts',
@@ -57,13 +57,13 @@ const mockScenarioWithExecution = {
 
 const mockScenarioWithError = {
   ...mockScenario,
-  status: 'failed' as const,
+  status: 'FAILED' as const,
   errorMessage: 'Test failed: Element not found',
   executedAt: '2023-01-01T10:30:00Z',
   executionDuration: 1200,
 };
 
-describe.skip('ScenarioCard', () => {
+describe('ScenarioCard', () => {
   const mockOnExecute = jest.fn();
 
   beforeEach(() => {
@@ -98,7 +98,7 @@ describe.skip('ScenarioCard', () => {
 
   describe('Status Variations', () => {
     it('should render passed scenario correctly', () => {
-      const passedScenario = { ...mockScenario, status: 'passed' as const };
+      const passedScenario = { ...mockScenario, status: 'PASSED' as const };
       render(<ScenarioCard scenario={passedScenario} onExecute={mockOnExecute} />);
 
       const statusBadge = screen.getByTestId('scenario-status');
@@ -108,7 +108,7 @@ describe.skip('ScenarioCard', () => {
     });
 
     it('should render failed scenario correctly', () => {
-      const failedScenario = { ...mockScenario, status: 'failed' as const };
+      const failedScenario = { ...mockScenario, status: 'FAILED' as const };
       render(<ScenarioCard scenario={failedScenario} onExecute={mockOnExecute} />);
 
       const statusBadge = screen.getByTestId('scenario-status');
@@ -118,7 +118,7 @@ describe.skip('ScenarioCard', () => {
     });
 
     it('should render skipped scenario correctly', () => {
-      const skippedScenario = { ...mockScenario, status: 'skipped' as const };
+      const skippedScenario = { ...mockScenario, status: 'SKIPPED' as const };
       render(<ScenarioCard scenario={skippedScenario} onExecute={mockOnExecute} />);
 
       const statusBadge = screen.getByTestId('scenario-status');
@@ -132,7 +132,7 @@ describe.skip('ScenarioCard', () => {
     it('should format duration in milliseconds for values less than 1000ms', () => {
       const scenarioWithShortDuration = {
         ...mockScenario,
-        status: 'passed' as const,
+        status: 'PASSED' as const,
         executionDuration: 750,
       };
       render(<ScenarioCard scenario={scenarioWithShortDuration} onExecute={mockOnExecute} />);
@@ -143,7 +143,7 @@ describe.skip('ScenarioCard', () => {
     it('should format duration in seconds for values 1000ms or greater', () => {
       const scenarioWithLongDuration = {
         ...mockScenario,
-        status: 'passed' as const,
+        status: 'PASSED' as const,
         executionDuration: 2500,
       };
       render(<ScenarioCard scenario={scenarioWithLongDuration} onExecute={mockOnExecute} />);
@@ -186,7 +186,7 @@ describe.skip('ScenarioCard', () => {
     });
 
     it('should not show execute button for non-pending scenarios', () => {
-      const passedScenario = { ...mockScenario, status: 'passed' as const };
+      const passedScenario = { ...mockScenario, status: 'PASSED' as const };
       render(<ScenarioCard scenario={passedScenario} onExecute={mockOnExecute} />);
 
       expect(screen.queryByRole('button', { name: /execute scenario/i })).not.toBeInTheDocument();
@@ -383,7 +383,7 @@ describe.skip('ScenarioCard', () => {
     it('should handle scenario with very long duration values', () => {
       const scenarioWithLongDuration = {
         ...mockScenario,
-        status: 'passed' as const,
+        status: 'PASSED' as const,
         executionDuration: 123456789, // Very long duration
       };
 

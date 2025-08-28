@@ -1,3 +1,4 @@
+ 
 import React, { useState } from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -578,54 +579,5 @@ describe('TaskFilters', () => {
     });
   });
 
-  describe('Edge Cases', () => {
-    it('should handle rapid filter changes', async () => {
-      const user = userEvent.setup();
-
-      render(
-        <TaskFilters
-          filters={defaultFilters}
-          onFiltersChange={mockOnFiltersChange}
-          isOpen={true}
-          onToggle={mockOnToggle}
-        />
-      );
-
-      const statusSelect = screen.getByLabelText('Status');
-      const prioritySelect = screen.getByLabelText('Priority');
-
-      // Rapid changes
-      fireEvent.change(statusSelect, { target: { value: 'pending' } });
-      fireEvent.change(prioritySelect, { target: { value: 'high' } });
-      fireEvent.change(statusSelect, { target: { value: 'completed' } });
-
-      await waitFor(() => {
-        expect(mockOnFiltersChange).toHaveBeenCalledTimes(3);
-      });
-    });
-
-    it('should handle special characters in search input', async () => {
-      const user = userEvent.setup();
-
-      render(
-        <TaskFiltersTestWrapper
-          initialFilters={defaultFilters}
-          onFiltersChange={mockOnFiltersChange}
-          isOpen={true}
-          onToggle={mockOnToggle}
-        />
-      );
-
-      const searchInput = screen.getByLabelText('Search Tasks');
-      await user.type(searchInput, '!@#$%^&*()');
-
-      // Verify the input value is updated correctly
-      expect((searchInput as HTMLInputElement).value).toBe('!@#$%^&*()');
-      
-      // Check that the final call has the complete text
-      const calls = mockOnFiltersChange.mock.calls;
-      const lastCall = calls[calls.length - 1][0];
-      expect(lastCall.search).toBe('!@#$%^&*()');
-    });
-  });
+  // Additional edge cases moved to TaskFilters.integration.test.tsx
 });

@@ -8,6 +8,20 @@
  * All logic is now in TypeScript with proper validation and error handling.
  */
 
+// Disable dotenv debug messages at the process level
+process.env.DOTENV_CONFIG_DEBUG = 'false';
+
+// Intercept stderr write to completely block dotenv messages
+const originalStderrWrite = process.stderr.write;
+process.stderr.write = function(string: string | Uint8Array, encoding?: string | ((err?: Error) => void), fd?: ((err?: Error) => void)): boolean {
+  const str = string.toString();
+  if (str.includes('[dotenv@') || str.includes('injecting env') || str.includes('tip:')) {
+    return true; // Pretend write succeeded but do nothing
+  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return originalStderrWrite.call(process.stderr, string, encoding as any, fd as any);
+};
+
 // Completely suppress dotenv debug output by overriding console methods before any imports
 const originalConsoleError = console.error;
 const originalConsoleLog = console.log;
@@ -16,7 +30,7 @@ const originalConsoleWarn = console.warn;
 // Override console methods to filter dotenv messages
 console.error = (...args) => {
   const message = args.join(' ');
-  if (message.includes('[dotenv@') || message.includes('injecting env')) {
+  if (message.includes('[dotenv@') || message.includes('injecting env') || message.includes('tip:')) {
     return; // Silently ignore dotenv messages
   }
   originalConsoleError.apply(console, args);
@@ -24,7 +38,7 @@ console.error = (...args) => {
 
 console.log = (...args) => {
   const message = args.join(' ');
-  if (message.includes('[dotenv@') || message.includes('injecting env')) {
+  if (message.includes('[dotenv@') || message.includes('injecting env') || message.includes('tip:')) {
     return; // Silently ignore dotenv messages
   }
   originalConsoleLog.apply(console, args);
@@ -32,19 +46,18 @@ console.log = (...args) => {
 
 console.warn = (...args) => {
   const message = args.join(' ');
-  if (message.includes('[dotenv@') || message.includes('injecting env')) {
+  if (message.includes('[dotenv@') || message.includes('injecting env') || message.includes('tip:')) {
     return; // Silently ignore dotenv messages
   }
   originalConsoleWarn.apply(console, args);
 };
 
-// Also override process.stderr.write for any direct stderr writes
-const originalStderrWrite = process.stderr.write;
-process.stderr.write = function(chunk: any, encoding?: any, callback?: any) {
+// Also override process.stderr.write for any direct stderr writes (reusing earlier declaration)
+process.stderr.write = function(chunk: string | Buffer, encoding?: string | ((error?: Error | null) => void), callback?: (error?: Error | null) => void) {
   const str = chunk.toString();
   
   // Filter out dotenv debug messages
-  if (str.includes('[dotenv@') || str.includes('injecting env')) {
+  if (str.includes('[dotenv@') || str.includes('injecting env') || str.includes('tip:')) {
     // Silently ignore dotenv messages
     if (typeof encoding === 'function') {
       encoding(); // Call callback if encoding is actually the callback
@@ -55,37 +68,70 @@ process.stderr.write = function(chunk: any, encoding?: any, callback?: any) {
   }
   
   // Pass through other stderr content
-  return originalStderrWrite.call(process.stderr, chunk, encoding, callback);
+  if (typeof encoding === 'function') {
+    return originalStderrWrite.call(process.stderr, chunk, undefined, encoding);
+  } else {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return originalStderrWrite.call(process.stderr, chunk, encoding as any, callback);
+  }
 };
 
 import { execSync } from 'child_process';
 import * as process from 'process';
 import * as path from 'path';
 
-// Load environment variables silently BEFORE any other operations
-import { config } from 'dotenv';
+// Load environment variables manually to avoid dotenv debug output
 const projectRoot = path.resolve(__dirname, '..');
 
 // Use test environment for pre-commit hooks and testing contexts
 // Set environment variable early to indicate we're in Claude stop hook context
 process.env.CLAUDE_STOP_HOOK = 'true';
 
-const isPreCommitContext = true; // Claude stop hook should always use test database
+// Manually load .env.e2e file without any debug output and override existing values
 const envPath = path.join(projectRoot, '.env.e2e');
-config({ path: envPath, debug: false, override: false });
-import { WinstonLogger } from '../src/logger-winston';
-import {
-  performCodeReview,
-  shouldBlockClaude,
-  processReviewResults,
-} from './lib/utils/review-processor';
+try {
+  const envFile = require('fs').readFileSync(envPath, 'utf8');
+  envFile.split('\n').forEach((line: string) => {
+    const match = line.match(/^([^=]+)=(.*)$/);
+    if (match) {
+      // Remove quotes if present
+      const value = match[2].replace(/^"(.*)"$/, '$1');
+      process.env[match[1]] = value; // Always override, don't check existing
+    }
+  });
+  
+  // Ensure DATABASE_URL is properly set for Prisma
+  if (process.env.KANBAN_DATABASE_URL && !process.env.DATABASE_URL) {
+    process.env.DATABASE_URL = process.env.KANBAN_DATABASE_URL;
+  }
+  
+} catch {
+  // Silently ignore if .env.e2e doesn't exist
+}
+// Skip Winston logger import to avoid dotenv loading from src/
+// import { WinstonLogger } from '../src/logger-winston';
+// Delay imports that might load dotenv
 
-// Initialize logger for claude-stop-hook 
-const logger = new WinstonLogger({
+// Create Winston logger directly without importing from src/ (which loads dotenv)
+import winston from 'winston';
+
+const logger = winston.createLogger({
   level: 'info',
-  logsDir: path.join(process.cwd(), 'logs'),
-  enableConsole: false, // Disable console output - only file logging
-  enableFile: true
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.errors({ stack: true }),
+    winston.format.json()
+  ),
+  transports: [
+    new winston.transports.File({
+      filename: path.join(process.cwd(), 'logs', 'claude-stop-hook.log'),
+      level: 'info'
+    }),
+    new winston.transports.File({
+      filename: path.join(process.cwd(), 'logs', 'claude-stop-hook-error.log'),
+      level: 'error'
+    })
+  ]
 });
 
 // Log that the hook is being called
@@ -211,8 +257,9 @@ function validateTodoList(): { shouldBlock: boolean; reason?: string } {
  * Strip ANSI color codes and clean up output
  */
 function stripAnsiCodes(text: string): string {
-  // Remove ANSI escape sequences
-  return text.replace(/\u001b\[[0-9;]*m/g, '');
+  // Remove ANSI escape sequences using character code
+  // eslint-disable-next-line no-control-regex
+  return text.replace(/\x1b\[[0-9;]*m/g, '');
 }
 
 /**
@@ -347,6 +394,14 @@ async function handleValidationChecks(): Promise<void> {
  */
 async function handleLLMReview(allChanges: string): Promise<void> {
   logger.info('🤖 Running LLM code review (secondary quality check)...');
+  
+  // Dynamic import to avoid loading dotenv at startup
+  const {
+    performCodeReview,
+    shouldBlockClaude,
+    processReviewResults,
+  } = await import('./lib/utils/review-processor');
+  
   const reviewComments = await performCodeReview(allChanges);
 
   if (shouldBlockClaude(reviewComments)) {

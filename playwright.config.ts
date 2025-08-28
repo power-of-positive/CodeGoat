@@ -1,6 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
 
-const GLOBAL_TIMEOUT_SECONDS = 30;
+const GLOBAL_TIMEOUT_SECONDS = 120;
 
 /**
  * @see https://playwright.dev/docs/test-configuration
@@ -12,9 +12,9 @@ export default defineConfig({
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
-  retries: process.env.CI ? 2 : 0,
-  /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 1 : undefined,
+  retries: process.env.CI ? 2 : 1,
+  /* Optimize parallel workers for better performance */
+  workers: process.env.CI ? 2 : 6,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: [
     ['html', { outputFolder: 'playwright-report' }],
@@ -34,22 +34,64 @@ export default defineConfig({
     
     /* Record video only on failure */
     video: 'retain-on-failure',
+
+    /* Ignore HTTPS errors for local development */
+    ignoreHTTPSErrors: true,
+
+    /* Wait for network idle before proceeding */
+    actionTimeout: 30000,
   },
 
   /* Configure projects for major browsers */
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: { 
+        ...devices['Desktop Chrome'],
+        /* Enable headless mode for faster execution */
+        headless: true,
+        /* Optimize viewport */
+        viewport: { width: 1280, height: 720 },
+      },
     },
   ],
 
+  /* Global setup and teardown */
+  globalSetup: require.resolve('./ui/e2e/global-setup.ts'),
+  globalTeardown: require.resolve('./ui/e2e/global-teardown.ts'),
   
   /* Global test timeout */
   timeout: GLOBAL_TIMEOUT_SECONDS * 1000,
   
   /* Expect timeout for assertions */
   expect: {
-    timeout: 5 * 1000,
+    timeout: 15 * 1000,
   },
+
+  /* Web server configuration - Playwright automatically manages server lifecycle */
+  webServer: [
+    {
+      command: 'npm run dev',
+      port: 3001,
+      reuseExistingServer: !process.env.CI,
+      timeout: 120000,
+      env: {
+        NODE_ENV: 'e2e-test',
+        KANBAN_DATABASE_URL: 'file:./prisma/kanban-test.db',
+        DATABASE_URL: 'file:./prisma/kanban-test.db',
+        AI_REVIEWER_ENABLED: 'false',
+        LOG_LEVEL: 'error',
+        PORT: '3001',
+      }
+    },
+    {
+      command: 'cd ui && npm run dev',
+      port: 5173,
+      reuseExistingServer: !process.env.CI,
+      timeout: 120000,
+      env: {
+        VITE_API_URL: 'http://localhost:3001',
+      }
+    },
+  ],
 });

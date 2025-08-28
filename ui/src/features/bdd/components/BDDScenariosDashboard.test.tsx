@@ -21,18 +21,18 @@ jest.mock('./BDDStatsCard', () => ({ StatsCard: ({ title, count, testId }: any) 
   <div data-testid={testId}><span>{title}: {count}</span></div>
 )}));
 
-// Test data
+// Test data - using uppercase status values to match API response
 const mockScenarios = [
   { id: '1', todoTaskId: 'task-1', title: 'User Login Scenario', feature: 'Authentication', 
     description: 'Test user login flow', gherkinContent: 'Given user is on login page...', 
-    status: 'pending' as const, createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-01T00:00:00Z' },
+    status: 'PENDING' as const, createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-01T00:00:00Z' },
   { id: '2', todoTaskId: 'task-2', title: 'Password Reset', feature: 'Authentication',
     description: 'Test password reset', gherkinContent: 'Given user forgot password...',
-    status: 'passed' as const, executedAt: '2024-01-02T00:00:00Z', executionDuration: 1500,
+    status: 'PASSED' as const, executedAt: '2024-01-02T00:00:00Z', executionDuration: 1500,
     createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-02T00:00:00Z' },
   { id: '3', todoTaskId: 'task-3', title: 'Failed Scenario', feature: 'Orders',
     description: 'Test order creation', gherkinContent: 'Given user has items in cart...',
-    status: 'failed' as const, errorMessage: 'Test failed due to network error',
+    status: 'FAILED' as const, errorMessage: 'Test failed due to network error',
     createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-01T00:00:00Z' }
 ];
 
@@ -123,7 +123,7 @@ describe('BDDScenariosDashboard', () => {
       });
 
       const statusFilter = screen.getByTestId('status-filter');
-      fireEvent.change(statusFilter, { target: { value: 'pending' } });
+      fireEvent.change(statusFilter, { target: { value: 'PENDING' } });
 
       await waitFor(() => {
         expect(screen.getAllByTestId('scenario-card')).toHaveLength(1);

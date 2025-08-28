@@ -496,5 +496,40 @@ describe('Settings Routes', () => {
         fallbackOnServerError: false,
       });
     });
+
+    it('should handle JSON parsing errors in fallback settings', async () => {
+      // Mock fs.readFile to return invalid JSON for fallback settings fetch
+      (fs.readFile as jest.Mock).mockRejectedValue(new SyntaxError('Unexpected token'));
+
+      // The service now returns default fallback settings instead of throwing
+      const response = await request(app).get('/settings/fallback').expect(200);
+
+      // Should return default fallback settings directly (not wrapped in fallback property)
+      expect(response.body.maxRetries).toBeDefined();
+      expect(response.body.retryDelay).toBeDefined();
+      expect(response.body.enableFallbacks).toBeDefined();
+      // The service handles errors gracefully by returning defaults, so error is logged in loadSettings
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'Failed to load settings',
+        expect.any(Error)
+      );
+    });
+
+    it('should handle service errors in main settings retrieval', async () => {
+      // Create a mock that will cause the settings service to throw an error
+      (fs.readFile as jest.Mock).mockRejectedValue(new Error('Service error'));
+
+      // The service now returns default settings instead of throwing
+      const response = await request(app).get('/settings').expect(200);
+
+      // Should return default settings structure
+      expect(response.body.fallback).toBeDefined();
+      expect(response.body.validation).toBeDefined();
+      expect(response.body.logging).toBeDefined();
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'Failed to load settings',
+        expect.any(Error)
+      );
+    });
   });
 });

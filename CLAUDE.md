@@ -44,13 +44,8 @@ cd ui && npm test -- --watchAll=false     # Frontend unit tests (non-interactive
 npm run test:coverage:backend             # Backend coverage
 cd ui && npm run test:coverage            # Frontend coverage
 
-# E2E tests
+# E2E tests (Playwright automatically manages servers)
 npm run test:e2e                         # Standard E2E tests
-npm run test:e2e:unified                 # Recommended - resolved CommonJS/ESM conflicts
-npm run test:e2e:optimized               # Performance-focused E2E
-cd ui && npm run test:e2e:robust         # UI E2E with automatic server management
-
-# Playwright tests
 npm run test:playwright                   # Headless Playwright tests
 npm run test:playwright:ui               # Interactive Playwright UI
 npm run test:playwright:debug            # Debug mode
@@ -64,6 +59,9 @@ npm run test:api-e2e                     # API end-to-end tests
 # Development servers
 npm run dev                               # Backend dev server (port 3001)
 cd ui && npm run dev                      # Frontend dev server (port 5173)
+
+# Process management
+npm run cleanup:processes                 # Kill hanging Node processes from E2E tests
 
 # Log management
 npm run logs:clean:optimized             # Clean old logs (optimized)

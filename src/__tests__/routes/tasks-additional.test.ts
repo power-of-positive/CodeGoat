@@ -529,10 +529,18 @@ describe('Tasks Route - Additional Coverage', () => {
 
     it('should calculate correct analytics with tasks', async () => {
       mockDb.task.count.mockImplementation((query: any) => {
-        if (!query?.where?.status) return 10; // total
-        if (query.where.status === TaskStatus.COMPLETED) return 5;
-        if (query.where.status === TaskStatus.IN_PROGRESS) return 3;
-        if (query.where.status === TaskStatus.PENDING) return 2;
+        if (!query?.where?.status) {
+          return 10;
+        } // total
+        if (query.where.status === TaskStatus.COMPLETED) {
+          return 5;
+        }
+        if (query.where.status === TaskStatus.IN_PROGRESS) {
+          return 3;
+        }
+        if (query.where.status === TaskStatus.PENDING) {
+          return 2;
+        }
         if (query.where.priority) {
           if (query.where.priority === Priority.HIGH) {
             return query.where.status === TaskStatus.COMPLETED ? 2 : 3;
@@ -723,4 +731,343 @@ describe('Tasks Route - Additional Coverage', () => {
       expect(response.body.message).toBe('Failed to fetch tasks');
     });
   });
+
+  describe('POST /api/tasks/:id/scenarios - BDD Scenario Creation', () => {
+    const mockTask = {
+      id: 'CODEGOAT-100',
+      title: 'Test Task',
+      content: 'Test task content',
+      status: TaskStatus.PENDING,
+      priority: Priority.MEDIUM,
+      taskType: TaskType.STORY,
+    };
+
+    it('should create a BDD scenario successfully', async () => {
+      mockDb.task.findUnique.mockResolvedValue(mockTask);
+      const mockScenario = {
+        id: 'scenario-1',
+        taskId: 'CODEGOAT-100',
+        title: 'Test Scenario',
+        feature: 'User Authentication',
+        description: 'Test description',
+        gherkinContent: 'Given a user\nWhen they log in\nThen they see dashboard',
+        status: BDDScenarioStatus.PENDING,
+        executedAt: null,
+        executionDuration: null,
+        errorMessage: null,
+      };
+      mockDb.bDDScenario.create.mockResolvedValue(mockScenario);
+
+      const response = await request(app)
+        .post('/api/tasks/CODEGOAT-100/scenarios')
+        .send({
+          title: 'Test Scenario',
+          feature: 'User Authentication',
+          description: 'Test description',
+          gherkinContent: 'Given a user\nWhen they log in\nThen they see dashboard',
+          status: 'pending'
+        });
+
+      expect(response.status).toBe(201);
+      expect(response.body.success).toBe(true);
+      expect(response.body.data).toMatchObject({
+        id: 'scenario-1',
+        title: 'Test Scenario',
+        feature: 'User Authentication',
+        description: 'Test description',
+        gherkinContent: 'Given a user\nWhen they log in\nThen they see dashboard',
+        status: 'pending'
+      });
+    });
+
+    it('should return 400 if required fields are missing', async () => {
+      const response = await request(app)
+        .post('/api/tasks/CODEGOAT-100/scenarios')
+        .send({
+          title: '',
+          feature: 'User Authentication',
+          gherkinContent: 'Given a user\nWhen they log in\nThen they see dashboard',
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toBe('Title, feature, and gherkin content are required');
+    });
+
+    it('should return 404 if task does not exist', async () => {
+      mockDb.task.findUnique.mockResolvedValue(null);
+
+      const response = await request(app)
+        .post('/api/tasks/NONEXISTENT/scenarios')
+        .send({
+          title: 'Test Scenario',
+          feature: 'User Authentication',
+          gherkinContent: 'Given a user\nWhen they log in\nThen they see dashboard',
+        });
+
+      expect(response.status).toBe(404);
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toBe('Task not found');
+    });
+
+    it('should handle database errors during scenario creation', async () => {
+      mockDb.task.findUnique.mockResolvedValue(mockTask);
+      mockDb.bDDScenario.create.mockRejectedValue(new Error('Database error'));
+
+      const response = await request(app)
+        .post('/api/tasks/CODEGOAT-100/scenarios')
+        .send({
+          title: 'Test Scenario',
+          feature: 'User Authentication',
+          gherkinContent: 'Given a user\nWhen they log in\nThen they see dashboard',
+        });
+
+      expect(response.status).toBe(500);
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toBe('Failed to create BDD scenario');
+    });
+
+    it('should create scenario with default pending status when status not provided', async () => {
+      mockDb.task.findUnique.mockResolvedValue(mockTask);
+      const mockScenario = {
+        id: 'scenario-1',
+        taskId: 'CODEGOAT-100',
+        title: 'Test Scenario',
+        feature: 'User Authentication',
+        description: '',
+        gherkinContent: 'Given a user\nWhen they log in\nThen they see dashboard',
+        status: BDDScenarioStatus.PENDING,
+        executedAt: null,
+        executionDuration: null,
+        errorMessage: null,
+      };
+      mockDb.bDDScenario.create.mockResolvedValue(mockScenario);
+
+      const response = await request(app)
+        .post('/api/tasks/CODEGOAT-100/scenarios')
+        .send({
+          title: 'Test Scenario',
+          feature: 'User Authentication',
+          gherkinContent: 'Given a user\nWhen they log in\nThen they see dashboard',
+        });
+
+      expect(response.status).toBe(201);
+      expect(response.body.success).toBe(true);
+      expect(mockDb.bDDScenario.create).toHaveBeenCalledWith({
+        data: {
+          taskId: 'CODEGOAT-100',
+          title: 'Test Scenario',
+          feature: 'User Authentication',
+          description: '',
+          gherkinContent: 'Given a user\nWhen they log in\nThen they see dashboard',
+          status: BDDScenarioStatus.PENDING,
+        },
+      });
+    });
+  });
+
+  describe('PUT /api/tasks/:id/scenarios/:scenarioId - BDD Scenario Updates', () => {
+    const mockTask = {
+      id: 'CODEGOAT-100',
+      title: 'Test Task',
+      content: 'Test task content',
+      status: TaskStatus.PENDING,
+      priority: Priority.MEDIUM,
+      taskType: TaskType.STORY,
+    };
+
+    const mockScenario = {
+      id: 'scenario-1',
+      taskId: 'CODEGOAT-100',
+      title: 'Test Scenario',
+      feature: 'User Authentication',
+      description: 'Test description',
+      gherkinContent: 'Given a user\nWhen they log in\nThen they see dashboard',
+      status: BDDScenarioStatus.PENDING,
+      executedAt: null,
+      executionDuration: null,
+      errorMessage: null,
+    };
+
+    it('should update scenario status successfully', async () => {
+      mockDb.task.findUnique.mockResolvedValue(mockTask);
+      mockDb.bDDScenario.findFirst.mockResolvedValue(mockScenario);
+      const updatedScenario = { ...mockScenario, status: BDDScenarioStatus.PASSED };
+      mockDb.bDDScenario.update.mockResolvedValue(updatedScenario);
+
+      const response = await request(app)
+        .put('/api/tasks/CODEGOAT-100/scenarios/scenario-1')
+        .send({ status: 'passed' });
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.status).toBe('passed');
+    });
+
+    it('should return 404 if task does not exist', async () => {
+      mockDb.task.findUnique.mockResolvedValue(null);
+
+      const response = await request(app)
+        .put('/api/tasks/NONEXISTENT/scenarios/scenario-1')
+        .send({ status: 'passed' });
+
+      expect(response.status).toBe(404);
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toBe('Task not found');
+    });
+
+    it('should return 404 if scenario does not exist', async () => {
+      mockDb.task.findUnique.mockResolvedValue(mockTask);
+      mockDb.bDDScenario.findFirst.mockResolvedValue(null);
+
+      const response = await request(app)
+        .put('/api/tasks/CODEGOAT-100/scenarios/nonexistent')
+        .send({ status: 'passed' });
+
+      expect(response.status).toBe(404);
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toBe('Scenario not found');
+    });
+
+    it('should update multiple scenario fields', async () => {
+      mockDb.task.findUnique.mockResolvedValue(mockTask);
+      mockDb.bDDScenario.findFirst.mockResolvedValue(mockScenario);
+      const updatedScenario = {
+        ...mockScenario,
+        title: 'Updated Title',
+        status: BDDScenarioStatus.PASSED,
+        executionDuration: 5000,
+        errorMessage: null
+      };
+      mockDb.bDDScenario.update.mockResolvedValue(updatedScenario);
+
+      const response = await request(app)
+        .put('/api/tasks/CODEGOAT-100/scenarios/scenario-1')
+        .send({
+          title: 'Updated Title',
+          status: 'passed',
+          executionDuration: 5000
+        });
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.title).toBe('Updated Title');
+      expect(response.body.data.status).toBe('passed');
+    });
+
+    it('should handle database errors during scenario update', async () => {
+      mockDb.task.findUnique.mockResolvedValue(mockTask);
+      mockDb.bDDScenario.findFirst.mockResolvedValue(mockScenario);
+      mockDb.bDDScenario.update.mockRejectedValue(new Error('Database error'));
+
+      const response = await request(app)
+        .put('/api/tasks/CODEGOAT-100/scenarios/scenario-1')
+        .send({ status: 'passed' });
+
+      expect(response.status).toBe(500);
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toBe('Failed to update BDD scenario');
+    });
+
+    it('should set executedAt timestamp when status changes to passed or failed', async () => {
+      mockDb.task.findUnique.mockResolvedValue(mockTask);
+      mockDb.bDDScenario.findFirst.mockResolvedValue(mockScenario);
+      const updatedScenario = {
+        ...mockScenario,
+        status: BDDScenarioStatus.PASSED,
+        executedAt: new Date(),
+      };
+      mockDb.bDDScenario.update.mockResolvedValue(updatedScenario);
+
+      const response = await request(app)
+        .put('/api/tasks/CODEGOAT-100/scenarios/scenario-1')
+        .send({
+          status: 'passed',
+          executedAt: new Date().toISOString()
+        });
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(mockDb.bDDScenario.update).toHaveBeenCalledWith({
+        where: { id: 'scenario-1' },
+        data: expect.objectContaining({
+          status: BDDScenarioStatus.PASSED,
+          executedAt: expect.any(Date)
+        })
+      });
+    });
+  });
+
+  describe('DELETE /api/tasks/:id/scenarios/:scenarioId - BDD Scenario Deletion', () => {
+    const mockTask = {
+      id: 'CODEGOAT-100',
+      title: 'Test Task',
+      content: 'Test task content',
+      status: TaskStatus.PENDING,
+      priority: Priority.MEDIUM,
+      taskType: TaskType.STORY,
+    };
+
+    const mockScenario = {
+      id: 'scenario-1',
+      taskId: 'CODEGOAT-100',
+      title: 'Test Scenario',
+      feature: 'User Authentication',
+      description: 'Test description',
+      gherkinContent: 'Given a user\nWhen they log in\nThen they see dashboard',
+      status: BDDScenarioStatus.PENDING,
+      executedAt: null,
+      executionDuration: null,
+      errorMessage: null,
+    };
+
+    it('should delete scenario successfully', async () => {
+      mockDb.task.findUnique.mockResolvedValue(mockTask);
+      mockDb.bDDScenario.findFirst.mockResolvedValue(mockScenario);
+      mockDb.bDDScenario.delete.mockResolvedValue(mockScenario);
+
+      const response = await request(app)
+        .delete('/api/tasks/CODEGOAT-100/scenarios/scenario-1');
+
+      expect(response.status).toBe(200);
+      expect(response.body.success).toBe(true);
+      expect(response.body.message).toBe('BDD scenario deleted successfully');
+    });
+
+    it('should return 404 if scenario does not exist for nonexistent task', async () => {
+      mockDb.bDDScenario.findFirst.mockResolvedValue(null);
+
+      const response = await request(app)
+        .delete('/api/tasks/NONEXISTENT/scenarios/scenario-1');
+
+      expect(response.status).toBe(404);
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toBe('Scenario not found');
+    });
+
+    it('should return 404 if scenario does not exist', async () => {
+      mockDb.task.findUnique.mockResolvedValue(mockTask);
+      mockDb.bDDScenario.findFirst.mockResolvedValue(null);
+
+      const response = await request(app)
+        .delete('/api/tasks/CODEGOAT-100/scenarios/nonexistent');
+
+      expect(response.status).toBe(404);
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toBe('Scenario not found');
+    });
+
+    it('should handle database errors during scenario deletion', async () => {
+      mockDb.bDDScenario.findFirst.mockResolvedValue(mockScenario);
+      mockDb.bDDScenario.delete.mockRejectedValue(new Error('Database error'));
+
+      const response = await request(app)
+        .delete('/api/tasks/CODEGOAT-100/scenarios/scenario-1');
+
+      expect(response.status).toBe(500);
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toBe('Failed to delete BDD scenario');
+    });
+  });
+
 });
