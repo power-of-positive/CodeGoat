@@ -7,12 +7,16 @@
  * It executes user-configured validation stages sequentially and tracks timing and success metrics.
  */
 
-// Load environment variables
+// Load environment variables - use test database for pre-commit hooks
 import dotenv from 'dotenv';
-dotenv.config();
+import path from 'path';
+
+// Use test environment for pre-commit hooks and testing contexts
+const isPreCommitContext = process.env.CLAUDE_STOP_HOOK === 'true' || process.argv.includes('--test') || process.argv.some(arg => arg.includes('precommit'));
+const envPath = isPreCommitContext ? '.env.e2e' : '.env';
+dotenv.config({ path: envPath });
 
 import fs from 'fs/promises';
-import path from 'path';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { Settings, ValidationStage } from '../src/types/settings.types';

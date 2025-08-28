@@ -72,7 +72,7 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
       const db = getDatabaseService();
       const { 
         page = '1', 
-        limit = '50', 
+        limit = '10', 
         success, 
         environment,
         taskId,
@@ -154,10 +154,12 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
           stageName: stage.stageName,
           success: stage.success,
           duration: Number(stage.duration),
-          command: stage.command ?? undefined,
+          // Exclude large fields from list view to reduce payload size
+          // Full output is available via GET /api/validation-runs/:id
+          // command: stage.command ?? undefined,
           exitCode: stage.exitCode ?? undefined,
-          output: stage.output ?? undefined,
-          errorMessage: stage.errorMessage ?? undefined,
+          // output: stage.output ?? undefined,
+          errorMessage: stage.errorMessage ? stage.errorMessage.substring(0, 200) : undefined, // Truncate error messages
           enabled: stage.enabled,
           continueOnFailure: stage.continueOnFailure,
           order: stage.order,

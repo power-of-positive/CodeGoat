@@ -9,7 +9,7 @@ import reactRefresh from 'eslint-plugin-react-refresh';
 export default [
   // Base recommended configuration
   eslint.configs.recommended,
-  
+
   // Base TypeScript configuration for ALL TypeScript files
   {
     files: ['**/*.ts', '**/*.tsx'],
@@ -68,13 +68,20 @@ export default [
       'no-console': ['warn', { allow: ['warn', 'error'] }],
       'prefer-const': 'error',
       'no-var': 'error',
-      'eqeqeq': ['error', 'always'],
-      'curly': ['warn', 'all'],
+      eqeqeq: ['error', 'always'],
+      curly: ['warn', 'all'],
       'no-duplicate-imports': 'error',
       'no-unreachable': 'error',
       'no-unused-expressions': 'error',
-      'no-magic-numbers': ['warn', { ignore: [0, 1, -1, 2, 3, 5, 10, 100, 1000], ignoreArrayIndexes: true, ignoreDefaultValues: true }],
-      'complexity': ['warn', { max: 10 }],
+      'no-magic-numbers': [
+        'warn',
+        {
+          ignore: [0, 1, -1, 2, 3, 5, 10, 100, 1000],
+          ignoreArrayIndexes: true,
+          ignoreDefaultValues: true,
+        },
+      ],
+      complexity: ['warn', { max: 10 }],
       'max-depth': ['warn', { max: 4 }],
       'max-params': ['warn', { max: 4 }],
       'max-statements-per-line': ['error', { max: 1 }],
@@ -180,7 +187,7 @@ export default [
       'max-lines': 'off',
       'max-lines-per-function': 'off',
       'max-statements': 'off',
-      'complexity': 'off',
+      complexity: 'off',
       'max-params': 'off',
       '@typescript-eslint/naming-convention': 'off',
       'no-magic-numbers': 'off',
@@ -189,7 +196,12 @@ export default [
 
   // E2E tests and step definitions - relaxed rules
   {
-    files: ['**/e2e/**/*.{ts,tsx}', '**/step_definitions/**/*.ts', '**/support/**/*.ts', 'tests/**/*.ts'],
+    files: [
+      '**/e2e/**/*.{ts,tsx}',
+      '**/step_definitions/**/*.ts',
+      '**/support/**/*.ts',
+      'tests/**/*.ts',
+    ],
     languageOptions: {
       globals: {
         describe: 'readonly',
@@ -214,11 +226,11 @@ export default [
       'no-console': 'off',
       'max-lines-per-function': 'off',
       'max-depth': 'off',
-      'complexity': 'off',
+      complexity: 'off',
       'max-statements': 'off',
       'max-params': 'off',
       'no-magic-numbers': 'off',
-      'curly': 'off',
+      curly: 'off',
     },
   },
 
@@ -251,7 +263,7 @@ export default [
       '@typescript-eslint/require-await': 'off',
       'no-console': 'off',
       'max-lines-per-function': 'off',
-      'complexity': 'off',
+      complexity: 'off',
       'max-statements': 'off',
       'max-params': 'off',
       'no-magic-numbers': 'off',
@@ -303,7 +315,7 @@ export default [
     },
     rules: {
       'no-magic-numbers': 'off',
-      'curly': 'off',
+      curly: 'off',
     },
   },
 

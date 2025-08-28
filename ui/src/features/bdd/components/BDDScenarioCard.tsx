@@ -7,7 +7,7 @@ interface BDDScenario {
   feature: string;
   description: string;
   gherkinContent: string;
-  status: 'pending' | 'passed' | 'failed' | 'skipped';
+  status: 'PENDING' | 'PASSED' | 'FAILED' | 'SKIPPED';
   executedAt?: string;
   executionDuration?: number;
   errorMessage?: string;
@@ -26,6 +26,9 @@ export function ScenarioCard({ scenario, onExecute }: {
   scenario: BDDScenario; 
   onExecute: (id: string) => void;
 }) {
+  // Normalize status for data attributes and conditions (uppercase to lowercase)
+  const normalizedStatus = scenario.status.toLowerCase();
+  
   return (
     <div className="p-4 border rounded" data-testid="scenario-card">
       <h3 data-testid="scenario-title">{scenario.title}</h3>
@@ -34,12 +37,12 @@ export function ScenarioCard({ scenario, onExecute }: {
         <span 
           className="inline-block px-2 py-1 text-xs rounded bg-yellow-100 text-yellow-800" 
           data-testid="scenario-status" 
-          data-status={scenario.status}
+          data-status={normalizedStatus}
         >
-          {scenario.status}
+          {normalizedStatus}
         </span>
       </div>
-      {scenario.status === 'pending' && (
+      {scenario.status === 'PENDING' && (
         <button 
           onClick={() => onExecute(scenario.id)}
           className="mt-2 px-3 py-1 text-xs bg-blue-500 text-white rounded"

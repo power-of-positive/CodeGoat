@@ -104,7 +104,14 @@ router.post('/', async (req, res) => {
       });
     }
 
-    const scenario = await bddService.createScenario(scenarioData);
+    // Map todoTaskId to taskId for the service
+    const mappedScenarioData = {
+      ...scenarioData,
+      taskId: scenarioData.todoTaskId,
+    };
+    delete mappedScenarioData.todoTaskId;
+
+    const scenario = await bddService.createScenario(mappedScenarioData);
     res.status(HTTP_STATUS.CREATED).json({
       success: true,
       data: scenario,

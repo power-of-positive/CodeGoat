@@ -11,7 +11,7 @@ const HTTP_STATUS_INTERNAL_SERVER_ERROR = 500;
 const DEFAULT_SESSIONS_LIMIT = 10;
 const DEFAULT_CLEANUP_KEEP_LAST = 100;
 const DEFAULT_HISTORY_DAYS = 30;
-const DEFAULT_VALIDATION_RUNS_LIMIT = 50;
+const DEFAULT_VALIDATION_RUNS_LIMIT = 10;
 
 // Handler functions for analytics routes
 function getAnalytics(analyticsService: AnalyticsService, logger: ILogger) {

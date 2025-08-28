@@ -784,6 +784,8 @@ export class AnalyticsService {
     }>;
   }>> {
     try {
+      this.logger.info(`getValidationRuns called with limit=${limit}, todoTaskId=${todoTaskId}`);
+      
       const validationRuns = await this.db.validationRun.findMany({
         where: todoTaskId ? { taskId: todoTaskId } : undefined,
         orderBy: { timestamp: 'desc' },
@@ -795,6 +797,8 @@ export class AnalyticsService {
           }
         },
       });
+
+      this.logger.info(`Found ${validationRuns.length} validation runs in database`);
 
       return validationRuns.map(run => ({
         id: run.id,

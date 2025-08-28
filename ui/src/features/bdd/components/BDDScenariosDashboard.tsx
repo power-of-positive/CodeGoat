@@ -24,7 +24,7 @@ interface BDDScenario {
   feature: string;
   description: string;
   gherkinContent: string;
-  status: 'pending' | 'passed' | 'failed' | 'skipped';
+  status: 'PENDING' | 'PASSED' | 'FAILED' | 'SKIPPED';
   executedAt?: string;
   executionDuration?: number;
   errorMessage?: string;
@@ -49,7 +49,7 @@ interface BDDStats {
 
 interface ExecutionResult {
   scenarioId: string;
-  status: 'passed' | 'failed';
+  status: 'PASSED' | 'FAILED';
   executionDuration?: number;
   errorMessage?: string;
   environment?: string;
@@ -111,6 +111,7 @@ const bddApi = {
 export function BDDScenariosDashboard() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [lastExecutionResult, setLastExecutionResult] = useState<ExecutionResult | null>(null);
   const queryClient = useQueryClient();
 
   const { 
@@ -143,7 +144,8 @@ export function BDDScenariosDashboard() {
 
   const executeScenarioMutation = useMutation({
     mutationFn: bddApi.executeScenario,
-    onSuccess: () => {
+    onSuccess: (result) => {
+      setLastExecutionResult(result);
       queryClient.invalidateQueries({ queryKey: ['bdd-scenarios'] });
       queryClient.invalidateQueries({ queryKey: ['bdd-stats'] });
     },
@@ -290,10 +292,10 @@ export function BDDScenariosDashboard() {
             data-testid="status-filter"
           >
             <option value="all">All Status</option>
-            <option value="pending">Pending</option>
-            <option value="passed">Passed</option>
-            <option value="failed">Failed</option>
-            <option value="skipped">Skipped</option>
+            <option value="PENDING">Pending</option>
+            <option value="PASSED">Passed</option>
+            <option value="FAILED">Failed</option>
+            <option value="SKIPPED">Skipped</option>
           </select>
         </div>
       </div>
@@ -335,6 +337,43 @@ export function BDDScenariosDashboard() {
           </div>
         )}
       </div>
+
+      {/* Execution Result */}
+      {lastExecutionResult && (
+        <Card className="execution-result">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              {lastExecutionResult.status === 'PASSED' ? (
+                <CheckCircle className="h-6 w-6 text-green-600" />
+              ) : (
+                <XCircle className="h-6 w-6 text-red-600" />
+              )}
+              <div className="flex-1">
+                <h3 className="font-medium">
+                  Scenario execution {lastExecutionResult.status.toLowerCase()}
+                </h3>
+                {lastExecutionResult.executionDuration && (
+                  <p className="text-sm text-gray-600" data-testid="execution-duration">
+                    Duration: {lastExecutionResult.executionDuration}ms
+                  </p>
+                )}
+                {lastExecutionResult.errorMessage && (
+                  <p className="text-sm text-red-600" data-testid="error-indicator">
+                    {lastExecutionResult.errorMessage}
+                  </p>
+                )}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setLastExecutionResult(null)}
+              >
+                Dismiss
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Execution Status */}
       {(createScenariosMutation.isPending || executeScenarioMutation.isPending || executeAllMutation.isPending) && (

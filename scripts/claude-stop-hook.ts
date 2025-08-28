@@ -8,44 +8,112 @@
  * All logic is now in TypeScript with proper validation and error handling.
  */
 
+// Completely suppress dotenv debug output by overriding console methods before any imports
+const originalConsoleError = console.error;
+const originalConsoleLog = console.log;
+const originalConsoleWarn = console.warn;
+
+// Override console methods to filter dotenv messages
+console.error = (...args) => {
+  const message = args.join(' ');
+  if (message.includes('[dotenv@') || message.includes('injecting env')) {
+    return; // Silently ignore dotenv messages
+  }
+  originalConsoleError.apply(console, args);
+};
+
+console.log = (...args) => {
+  const message = args.join(' ');
+  if (message.includes('[dotenv@') || message.includes('injecting env')) {
+    return; // Silently ignore dotenv messages
+  }
+  originalConsoleLog.apply(console, args);
+};
+
+console.warn = (...args) => {
+  const message = args.join(' ');
+  if (message.includes('[dotenv@') || message.includes('injecting env')) {
+    return; // Silently ignore dotenv messages
+  }
+  originalConsoleWarn.apply(console, args);
+};
+
+// Also override process.stderr.write for any direct stderr writes
+const originalStderrWrite = process.stderr.write;
+process.stderr.write = function(chunk: any, encoding?: any, callback?: any) {
+  const str = chunk.toString();
+  
+  // Filter out dotenv debug messages
+  if (str.includes('[dotenv@') || str.includes('injecting env')) {
+    // Silently ignore dotenv messages
+    if (typeof encoding === 'function') {
+      encoding(); // Call callback if encoding is actually the callback
+    } else if (typeof callback === 'function') {
+      callback();
+    }
+    return true;
+  }
+  
+  // Pass through other stderr content
+  return originalStderrWrite.call(process.stderr, chunk, encoding, callback);
+};
+
 import { execSync } from 'child_process';
 import * as process from 'process';
-import { config } from 'dotenv';
 import * as path from 'path';
+
+// Load environment variables silently BEFORE any other operations
+import { config } from 'dotenv';
+const projectRoot = path.resolve(__dirname, '..');
+
+// Use test environment for pre-commit hooks and testing contexts
+// Set environment variable early to indicate we're in Claude stop hook context
+process.env.CLAUDE_STOP_HOOK = 'true';
+
+const isPreCommitContext = true; // Claude stop hook should always use test database
+const envPath = path.join(projectRoot, '.env.e2e');
+config({ path: envPath, debug: false, override: false });
+import { WinstonLogger } from '../src/logger-winston';
 import {
   performCodeReview,
   shouldBlockClaude,
   processReviewResults,
 } from './lib/utils/review-processor';
 
-// Log that the hook is being called (stderr to match shell version)
-console.error(`🔥 CLAUDE STOP HOOK EXECUTING - ${new Date()}`);
-console.error(`🔥 Hook arguments: ${process.argv.slice(2).join(' ')}`);
-console.error(`🔥 Environment vars: CLAUDE_TOOL_INPUT=${process.env.CLAUDE_TOOL_INPUT || ''}`);
+// Initialize logger for claude-stop-hook 
+const logger = new WinstonLogger({
+  level: 'info',
+  logsDir: path.join(process.cwd(), 'logs'),
+  enableConsole: false, // Disable console output - only file logging
+  enableFile: true
+});
+
+// Log that the hook is being called
+logger.info('🔥 CLAUDE STOP HOOK EXECUTING', {
+  timestamp: new Date().toISOString(),
+  arguments: process.argv.slice(2),
+  claudeToolInput: process.env.CLAUDE_TOOL_INPUT || ''
+});
 
 // Safety check: ensure we're running from the correct directory
 const currentDir = process.cwd();
 const expectedDir = '/Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat';
 if (currentDir !== expectedDir) {
-  console.error(`⚠️ Hook running from wrong directory: ${currentDir}`);
-  console.error(`⚠️ Expected directory: ${expectedDir}`);
-  console.error(`⚠️ Exiting to prevent infinite loop`);
+  logger.warn('⚠️ Hook running from wrong directory', {
+    currentDir,
+    expectedDir
+  });
+  logger.info('⚠️ Exiting to prevent infinite loop');
   process.exit(0); // Exit successfully to allow completion
 }
 
-// Load environment variables synchronously at startup
-const projectRoot = path.resolve(__dirname, '..');
-const envPath = path.join(projectRoot, '.env');
-config({ path: envPath });
+// Environment variables already loaded at the top of the file
 
-// Set environment variable to indicate we're in Claude stop hook context
-process.env.CLAUDE_STOP_HOOK = 'true';
-
-console.error('🔧 Loaded environment from:', envPath);
+logger.info('🔧 Loaded environment', { envPath });
 if (process.env.OPENAI_API_KEY) {
-  console.error('🔧 OPENAI_API_KEY is loaded');
+  logger.info('🔧 OPENAI_API_KEY is loaded');
 } else {
-  console.error('🔧 OPENAI_API_KEY is NOT loaded');
+  logger.warn('🔧 OPENAI_API_KEY is NOT loaded');
 }
 
 /**
@@ -91,7 +159,7 @@ function validateTodoList(): { shouldBlock: boolean; reason?: string } {
   const todoInput = process.env.CLAUDE_TOOL_INPUT;
   
   if (!todoInput) {
-    console.error('ℹ️ No CLAUDE_TOOL_INPUT provided - allowing completion');
+    logger.info('ℹ️ No CLAUDE_TOOL_INPUT provided - allowing completion');
     return { shouldBlock: false };
   }
 
@@ -99,7 +167,7 @@ function validateTodoList(): { shouldBlock: boolean; reason?: string } {
     const todos: TodoItem[] = JSON.parse(todoInput);
     
     if (!Array.isArray(todos)) {
-      console.error('⚠️ CLAUDE_TOOL_INPUT is not an array - allowing completion');
+      logger.warn('⚠️ CLAUDE_TOOL_INPUT is not an array - allowing completion');
       return { shouldBlock: false };
     }
 
@@ -130,41 +198,52 @@ function validateTodoList(): { shouldBlock: boolean; reason?: string } {
       };
     }
 
-    console.error(`✅ Todo validation passed - ${allUnfinished.length} unfinished tasks (no high priority)`);
+    logger.info(`✅ Todo validation passed - ${allUnfinished.length} unfinished tasks (no high priority)`);
     return { shouldBlock: false };
 
   } catch (error) {
-    console.error(`⚠️ Error parsing CLAUDE_TOOL_INPUT: ${error} - allowing completion`);
+    logger.warn(`⚠️ Error parsing CLAUDE_TOOL_INPUT: ${error} - allowing completion`);
     return { shouldBlock: false };
   }
+}
+
+/**
+ * Strip ANSI color codes and clean up output
+ */
+function stripAnsiCodes(text: string): string {
+  // Remove ANSI escape sequences
+  return text.replace(/\u001b\[[0-9;]*m/g, '');
 }
 
 /**
  * Parse validation output to extract detailed error information
  */
 function parseValidationOutput(stdout: string, stderr: string, code: number | null): Error {
-  const fullOutput = `${stdout}\n${stderr}`.trim();
+  const fullOutput = stripAnsiCodes(`${stdout}\n${stderr}`).trim();
 
   if (code === 2) {
     const errorLines = fullOutput
       .split('\n')
       .filter(
         line =>
-          line.includes('error') ||
-          line.includes('failed') ||
           line.includes('FAIL') ||
-          line.includes('✖') ||
-          line.includes('❌') ||
-          line.includes('Coverage')
+          line.includes('failed') ||
+          (line.includes('error') && !line.includes('console.error'))
       );
 
-    const MAX_ERROR_DISPLAY = 10;
-    let detailedMessage = `Validation blocked with exit code 2`;
+    const MAX_ERROR_DISPLAY = 5;
+    let detailedMessage = `Validation failed`;
     if (errorLines.length > 0) {
-      detailedMessage += `:\n${errorLines.slice(0, MAX_ERROR_DISPLAY).join('\n')}`;
+      const cleanErrors = errorLines
+        .slice(0, MAX_ERROR_DISPLAY)
+        .map(line => line.trim())
+        .filter(line => line.length > 0);
+      if (cleanErrors.length > 0) {
+        detailedMessage += `: ${cleanErrors.join(', ')}`;
+      }
     }
     if (errorLines.length > MAX_ERROR_DISPLAY) {
-      detailedMessage += `\n... and ${errorLines.length - MAX_ERROR_DISPLAY} more errors`;
+      detailedMessage += ` and ${errorLines.length - MAX_ERROR_DISPLAY} more errors`;
     }
 
     return new Error(detailedMessage);
@@ -194,21 +273,28 @@ function createValidationProcess(sessionId: string): Promise<void> {
       'npx',
       ['ts-node', 'scripts/validate-task.ts', sessionId, '--settings=settings-precommit.json'],
       {
-        stdio: ['inherit', 'pipe', 'pipe'],
+        stdio: ['pipe', 'pipe', 'pipe'], // Redirect all stdio to pipes
         cwd: process.cwd(),
+        env: {
+          ...process.env,
+          DEBUG: '', // Suppress all debug output including dotenv
+          DOTENV_CONFIG_DEBUG: 'false' // Suppress dotenv logs
+        }
       }
     );
 
     child.stdout?.on('data', (data: Buffer) => {
       const output = data.toString();
       stdout += output;
-      process.stdout.write(output);
+      // Log validation output to file instead of stdout
+      logger.info('Validation stdout', { output: output.trim() });
     });
 
     child.stderr?.on('data', (data: Buffer) => {
       const output = data.toString();
       stderr += output;
-      process.stderr.write(output);
+      // Log validation errors to file instead of stderr
+      logger.warn('Validation stderr', { output: output.trim() });
     });
 
     child.on('exit', (code: number | null) => {
@@ -229,7 +315,7 @@ function createValidationProcess(sessionId: string): Promise<void> {
  * Handle validation checks with timeout (using database-driven validation stages with todo list validation)
  */
 async function handleValidationChecks(): Promise<void> {
-  console.error('🧪 Running complete validation pipeline from database including todo list...');
+  logger.info('🧪 Running complete validation pipeline from database including todo list...');
 
   const VALIDATION_TIMEOUT = 1200000; // 20 minutes
   const timeoutPromise = new Promise<never>((_, reject) => {
@@ -244,14 +330,14 @@ async function handleValidationChecks(): Promise<void> {
     const validationPromise = createValidationProcess(sessionId);
 
     await Promise.race([validationPromise, timeoutPromise]);
-    console.error('✅ All validation checks passed including todo list');
+    logger.info('✅ All validation checks passed including todo list');
   } catch (error) {
-    console.error('⚠️ Validation checks failed:', error);
+    logger.error('⚠️ Validation checks failed', error instanceof Error ? error : new Error(String(error)));
     const blockResult = {
       decision: 'block',
       reason: error instanceof Error ? error.message : 'Validation checks failed',
     };
-    console.error(JSON.stringify(blockResult));
+    console.log(JSON.stringify(blockResult));
     process.exit(2);
   }
 }
@@ -260,21 +346,21 @@ async function handleValidationChecks(): Promise<void> {
  * Handle LLM review
  */
 async function handleLLMReview(allChanges: string): Promise<void> {
-  console.error('🤖 Running LLM code review (secondary quality check)...');
+  logger.info('🤖 Running LLM code review (secondary quality check)...');
   const reviewComments = await performCodeReview(allChanges);
 
   if (shouldBlockClaude(reviewComments)) {
-    console.error('⚠️ LLM review found issues - blocking completion');
+    logger.warn('⚠️ LLM review found issues - blocking completion');
     const result = processReviewResults(reviewComments);
     const blockResult = {
       decision: 'block',
       reason: result.reason || 'LLM review found medium or high severity issues',
     };
-    console.error(JSON.stringify(blockResult));
+    console.log(JSON.stringify(blockResult));
     process.exit(2);
   }
 
-  console.error('✅ LLM review passed - all quality gates cleared');
+  logger.info('✅ LLM review passed - all quality gates cleared');
 }
 
 /**
@@ -284,22 +370,22 @@ async function main(): Promise<void> {
   // Set a global timeout for the entire stop hook - must be longer than validation timeout
   const GLOBAL_TIMEOUT = 1500000; // 25 minutes
   const globalTimeout = setTimeout(() => {
-    console.error('⚠️ Stop hook timed out after 25 minutes');
-    console.error('{"decision": "block", "reason": "Stop hook execution timed out"}');
+    logger.error('⚠️ Stop hook timed out after 25 minutes');
+    console.log('{"decision": "block", "reason": "Stop hook execution timed out"}');
     process.exit(2);
   }, GLOBAL_TIMEOUT);
 
   try {
     // First, validate todo list from CLAUDE_TOOL_INPUT before running expensive validation
-    console.error('🔍 Checking todo list from CLAUDE_TOOL_INPUT...');
+    logger.info('🔍 Checking todo list from CLAUDE_TOOL_INPUT...');
     const todoValidation = validateTodoList();
     if (todoValidation.shouldBlock) {
-      console.error('⚠️ Todo validation failed - blocking completion');
+      logger.warn('⚠️ Todo validation failed - blocking completion');
       const blockResult = {
         decision: 'block',
         reason: todoValidation.reason || 'High priority tasks remain unfinished',
       };
-      console.error(JSON.stringify(blockResult));
+      console.log(JSON.stringify(blockResult));
       process.exit(2);
     }
 
@@ -308,13 +394,13 @@ async function main(): Promise<void> {
 
     // Then check for uncommitted files (since validation passed)
     if (hasUncommittedFiles()) {
-      console.error('⚠️ Uncommitted files detected - blocking completion');
-      console.error('💡 Please commit your changes before completing');
+      logger.warn('⚠️ Uncommitted files detected - blocking completion');
+      logger.info('💡 Please commit your changes before completing');
       const blockResult = {
         decision: 'block',
         reason: 'Uncommitted files detected. Please commit or stash changes before completing.',
       };
-      console.error(JSON.stringify(blockResult));
+      console.log(JSON.stringify(blockResult));
       process.exit(2); // Exit with code 2 to indicate block decision
     }
 
@@ -331,17 +417,17 @@ async function main(): Promise<void> {
     } catch {
       // Ignore if say command fails
     }
-    console.error('{"decision": "approve"}');
+    console.log('{"decision": "approve"}');
     process.exit(0);
   } catch (error) {
     clearTimeout(globalTimeout);
-    console.error('Stop hook error:', error);
-    console.error('{"decision": "block", "reason": "Stop hook execution failed"}');
+    logger.error('Stop hook error', error instanceof Error ? error : new Error(String(error)));
+    console.log('{"decision": "block", "reason": "Stop hook execution failed"}');
     process.exit(2); // Exit with code 2 to indicate block decision
   }
 }
 
 main().catch(error => {
-  console.error('Unhandled error:', error);
+  logger.error('Unhandled error', error instanceof Error ? error : new Error(String(error)));
   process.exit(2);
 });
