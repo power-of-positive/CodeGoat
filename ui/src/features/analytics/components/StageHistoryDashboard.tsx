@@ -259,7 +259,7 @@ export function StageHistoryDashboard({
   }, [currentView, filters]);
 
   return (
-    <div className={`space-y-6 ${expandedView ? 'fixed inset-0 z-50 bg-white p-6 overflow-auto' : ''}`}>
+    <div className={`space-y-6 ${expandedView ? 'fixed inset-0 z-50 bg-white p-6 overflow-auto' : 'p-6'}`}>
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>

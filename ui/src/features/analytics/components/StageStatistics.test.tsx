@@ -221,10 +221,10 @@ describe('StageStatistics', () => {
     renderWithQueryClient(<StageStatistics />);
 
     await waitFor(() => {
-      expect(screen.getByText('No Data Available')).toBeInTheDocument();
+      expect(screen.getByText('No Statistics Available')).toBeInTheDocument();
     });
 
-    expect(screen.getByText('No stage statistics found for the selected period.')).toBeInTheDocument();
+    expect(screen.getByText('No stage performance data found for the selected time period. Try adjusting your date range or check if validation runs exist.')).toBeInTheDocument();
   });
 
   it('handles stage filter selection', async () => {

@@ -8,6 +8,7 @@ import {
   AlertCircle,
   Activity,
   GitMerge,
+  Edit,
 } from 'lucide-react';
 import { Button } from '../../../shared/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../shared/ui/card';
@@ -121,10 +122,14 @@ function useMergeChanges(taskId: string | undefined, task: Task | undefined) {
 }
 
 // Task header component
-function TaskHeader({ navigate, task, mergeChangesMutation }: {
+function TaskHeader({ navigate, task, mergeChangesMutation, completeTaskMutation }: {
   navigate: (path: string) => void;
   task: Task;
   mergeChangesMutation: {
+    mutate: () => void;
+    isPending: boolean;
+  };
+  completeTaskMutation: {
     mutate: () => void;
     isPending: boolean;
   };
@@ -142,17 +147,42 @@ function TaskHeader({ navigate, task, mergeChangesMutation }: {
         </Button>
         <h1 className="text-2xl font-bold text-gray-900">Task Details</h1>
       </div>
-      {task.executorId && task.status === 'completed' && (
+      <div className="flex items-center gap-2">
         <Button
-          onClick={() => mergeChangesMutation.mutate()}
-          disabled={mergeChangesMutation.isPending}
-          className="flex items-center gap-2"
+          onClick={() => navigate(`/tasks?edit=${task.id}`)}
           variant="outline"
+          className="flex items-center gap-2"
         >
-          <GitMerge className="w-4 h-4" />
-          {mergeChangesMutation.isPending ? 'Merging...' : 'Merge Changes'}
+          <Edit className="w-4 h-4" />
+          Edit Task
         </Button>
-      )}
+        {task.status !== 'completed' && (
+          <Button
+            onClick={() => {
+              if (confirm('Are you sure you want to mark this task as completed?')) {
+                completeTaskMutation.mutate();
+              }
+            }}
+            disabled={completeTaskMutation.isPending}
+            className="flex items-center gap-2"
+            variant="default"
+          >
+            <CheckCircle className="w-4 h-4" />
+            {completeTaskMutation.isPending ? 'Completing...' : 'Mark Complete'}
+          </Button>
+        )}
+        {task.executorId && task.status === 'completed' && (
+          <Button
+            onClick={() => mergeChangesMutation.mutate()}
+            disabled={mergeChangesMutation.isPending}
+            className="flex items-center gap-2"
+            variant="outline"
+          >
+            <GitMerge className="w-4 h-4" />
+            {mergeChangesMutation.isPending ? 'Merging...' : 'Merge Changes'}
+          </Button>
+        )}
+      </div>
     </div>
   );
 }
@@ -335,6 +365,20 @@ export function TaskDetail() {
 
   const task = taskResponse;
   const mergeChangesMutation = useMergeChanges(taskId, task);
+  const queryClient = useQueryClient();
+
+  // Complete task mutation
+  const completeTaskMutation = useMutation({
+    mutationFn: () => taskApi.updateTask(taskId!, { status: 'completed' }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['task', taskId] });
+      alert('✅ Task marked as completed!');
+    },
+    onError: (error) => {
+      console.error('Failed to complete task:', error);
+      alert('❌ Failed to complete task. Please check the console for details.');
+    },
+  });
 
   const scenarioHandlers = {
     handleAddScenario: (scenario: Omit<BDDScenario, 'id'>) => {
@@ -360,7 +404,7 @@ export function TaskDetail() {
 
   return (
     <div className="p-6 space-y-6">
-      <TaskHeader navigate={navigate} task={task} mergeChangesMutation={mergeChangesMutation} />
+      <TaskHeader navigate={navigate} task={task} mergeChangesMutation={mergeChangesMutation} completeTaskMutation={completeTaskMutation} />
       <TaskInformation task={task} />
       <TaskLogs executorId={task.executorId} />
       {task.executorId && <WorkerInfo executorId={task.executorId} />}

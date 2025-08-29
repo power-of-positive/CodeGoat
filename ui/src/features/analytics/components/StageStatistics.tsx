@@ -28,6 +28,7 @@ import {
   Filter,
   Calendar,
   Download,
+  RefreshCw,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../shared/ui/card';
 import { Button } from '../../../shared/ui/button';
@@ -215,13 +216,21 @@ export function StageStatistics({ defaultDays = DEFAULT_DAYS_PERIOD, stageId }: 
   if (!stageData) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="text-center">
-          <BarChart3 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">No Data Available</h3>
-          <p className="text-gray-600">
-            No stage statistics found for the selected period.
-          </p>
-        </div>
+        <Card className="max-w-md w-full">
+          <CardContent className="p-8 text-center">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <BarChart3 className="w-8 h-8 text-gray-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">No Statistics Available</h3>
+            <p className="text-gray-600 mb-4">
+              No stage performance data found for the selected time period. Try adjusting your date range or check if validation runs exist.
+            </p>
+            <Button onClick={() => refetch()} variant="outline" className="flex items-center gap-2 mx-auto">
+              <RefreshCw className="w-4 h-4" />
+              Refresh Data
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }

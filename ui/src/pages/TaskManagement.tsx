@@ -1,7 +1,7 @@
 /* eslint-disable max-lines, max-lines-per-function, complexity, max-statements */
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import {
   Plus,
   Edit,
@@ -446,6 +446,7 @@ function TaskGrid({
 
 // Main TaskManagement component
 export function TaskManagement() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('table');
@@ -477,12 +478,34 @@ export function TaskManagement() {
     queryFn: taskApi.getTasks,
   });
 
+  // Handle edit query parameter
+  useEffect(() => {
+    const editId = searchParams.get('edit');
+    if (editId && tasks) {
+      const taskToEdit = tasks.find(task => task.id === editId);
+      if (taskToEdit) {
+        setEditingTask(taskToEdit);
+        // Clear the query parameter after setting the editing task
+        setSearchParams(prev => {
+          const newParams = new URLSearchParams(prev);
+          newParams.delete('edit');
+          return newParams;
+        });
+      }
+    }
+  }, [searchParams, tasks, setSearchParams]);
+
   // Create task mutation
   const createTaskMutation = useMutation({
     mutationFn: taskApi.createTask,
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       setShowCreateForm(false);
+      alert(`✅ Task created successfully!\n\nTask: "${data.content}"`);
+    },
+    onError: (error) => {
+      console.error('Failed to create task:', error);
+      alert('❌ Failed to create task. Please check the console for details.');
     },
   });
 
@@ -502,6 +525,11 @@ export function TaskManagement() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       setSelectedTasks(prev => prev.filter(id => !tasks.some(task => task.id === id)));
+      alert('✅ Task deleted successfully!');
+    },
+    onError: (error) => {
+      console.error('Failed to delete task:', error);
+      alert('❌ Failed to delete task. Please check the console for details.');
     },
   });
 
