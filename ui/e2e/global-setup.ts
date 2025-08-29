@@ -35,7 +35,7 @@ async function globalSetup(config: FullConfig) {
     // Check if frontend is ready
     while (retries < maxRetries) {
       try {
-        const response = await page.request.get('http://localhost:5175/', { 
+        const response = await page.request.get('http://localhost:5173/', { 
           timeout: 5000 
         });
         if (response.ok()) break;

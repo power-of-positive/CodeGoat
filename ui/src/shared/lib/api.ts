@@ -6,7 +6,6 @@ import {
   ValidationStage,
   ValidationRun,
   ValidationMetrics,
-  ValidationStageResult,
   UserSystemInfo,
   ThemeMode,
   Task,
@@ -21,16 +20,21 @@ import {
 } from '../types';
 
 // Internal API response types
-interface SessionResponse {
-  sessions: Array<{
-    sessionId: string;
-    startTime: string;
-    finalSuccess: boolean;
-    totalDuration?: number;
-    attempts: Array<{
-      stages: ValidationStageResult[];
-    }>;
-  }>;
+interface ValidationRunStage {
+  stageId: string;
+  stageName: string;
+  success: boolean;
+  duration: number;
+  output?: string;
+  errorMessage?: string;
+}
+
+interface ValidationRunResponse {
+  id: string;
+  timestamp: string;
+  success: boolean;
+  totalTime: number;
+  stages?: ValidationRunStage[];
 }
 
 interface StageSuccessRate {
@@ -146,16 +150,25 @@ export const settingsApi = {
 // Analytics API
 export const analyticsApi = {
   getValidationRuns: (agentFilter?: string): Promise<ValidationRun[]> => {
-    const url = agentFilter
-      ? `/analytics/sessions?limit=1000&agent=${encodeURIComponent(agentFilter)}`
-      : '/analytics/sessions?limit=1000';
-    return request<SessionResponse>(url).then(data =>
-      data.sessions.map(session => ({
-        id: session.sessionId,
-        timestamp: new Date(session.startTime).toISOString(),
-        success: session.finalSuccess,
-        duration: session.totalDuration || 0,
-        stages: session.attempts.flatMap(attempt => attempt.stages),
+    // Use the new validation runs API for better data - increase limit to get more results
+    const url = agentFilter 
+      ? `/validation-runs?limit=1000&agent=${encodeURIComponent(agentFilter)}`
+      : '/validation-runs?limit=1000';
+    return request(url).then((data: { runs: ValidationRunResponse[] }) =>
+      data.runs.map(run => ({
+        id: run.id,
+        timestamp: run.timestamp,
+        success: run.success,
+        duration: run.totalTime,
+        stages: run.stages?.map((stage: ValidationRunStage) => ({
+          id: stage.stageId,
+          name: stage.stageName,
+          success: stage.success,
+          duration: stage.duration,
+          attempt: 1,
+          output: stage.output,
+          error: stage.errorMessage,
+        })) || [],
       }))
     );
   },

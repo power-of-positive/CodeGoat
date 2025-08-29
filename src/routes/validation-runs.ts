@@ -726,8 +726,10 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
       const daysAgo = new Date();
       daysAgo.setDate(daysAgo.getDate() - parseInt(days as string));
 
-      const whereClause: Record<string, unknown> = {
-        timestamp: { gte: daysAgo }
+      const whereClause: Record<string, any> = {
+        timestamp: { 
+          gte: daysAgo 
+        }
       };
       
       if (environment) {
@@ -770,6 +772,17 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
 
       const runs = await db.validationRun.findMany(runsQuery);
 
+      // Convert BigInt values to numbers to avoid JSON serialization issues
+      const convertedRuns = runs.map((run: any) => ({
+        ...run,
+        totalTime: Number(run.totalTime),
+        startTime: run.startTime ? Number(run.startTime) : undefined,
+        stages: run.stages ? run.stages.map((stage: any) => ({
+          ...stage,
+          duration: Number(stage.duration)
+        })) : undefined
+      }));
+
       // Group runs by time granularity
       const groupByGranularity = (timestamp: Date): string => {
         switch (granularity) {
@@ -787,11 +800,21 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
         }
       };
 
-      const timelineData = runs.reduce((acc, run) => {
+      type TimelinePeriod = {
+        timestamp: string;
+        runs: typeof convertedRuns;
+        totalRuns: number;
+        successfulRuns: number;
+        failedRuns: number;
+        averageDuration: number;
+        successRate: number;
+        stagePerformance: Record<string, { success: number; total: number; avgDuration: number; successRate: number }>;
+      };
+
+      const timelineData = convertedRuns.reduce((acc, run) => {
         const timeKey = groupByGranularity(run.timestamp);
         
-        if (!acc[timeKey]) {
-          acc[timeKey] = {
+        acc[timeKey] ??= {
             timestamp: timeKey,
             runs: [],
             totalRuns: 0,
@@ -801,7 +824,6 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
             successRate: 0,
             stagePerformance: {} as Record<string, { success: number; total: number; avgDuration: number; successRate: number }>
           };
-        }
 
         acc[timeKey].runs.push(run);
         acc[timeKey].totalRuns++;
@@ -816,9 +838,7 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
         if (runWithStages.stages) {
           runWithStages.stages.forEach((stage: any) => {
             const key = stage.stageId;
-            if (!acc[timeKey].stagePerformance[key]) {
-              acc[timeKey].stagePerformance[key] = { success: 0, total: 0, avgDuration: 0, successRate: 0 };
-            }
+            acc[timeKey].stagePerformance[key] ??= { success: 0, total: 0, avgDuration: 0, successRate: 0 };
             acc[timeKey].stagePerformance[key].total++;
             if (stage.success) {
               acc[timeKey].stagePerformance[key].success++;
@@ -828,23 +848,13 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
         }
 
         return acc;
-      }, {} as Record<string, {
-        timestamp: string;
-        runs: typeof runs;
-        totalRuns: number;
-        successfulRuns: number;
-        failedRuns: number;
-        averageDuration: number;
-        successRate: number;
-        stagePerformance: Record<string, { success: number; total: number; avgDuration: number; successRate: number }>;
-      }>);
+      }, {} as Record<string, TimelinePeriod>);
 
       // Finalize calculations
-      const timeline = Object.values(timelineData).map((period) => {
+      const timeline = (Object.values(timelineData) as TimelinePeriod[]).map((period: TimelinePeriod) => {
         // Calculate average duration for the period
-        const totalDuration = period.runs.reduce((sum: number, run) => {
-          const runTyped = run as any;
-          return sum + Number(runTyped.totalTime);
+        const totalDuration = period.runs.reduce((sum: number, run: any) => {
+          return sum + Number(run.totalTime);
         }, 0);
         period.averageDuration = period.totalRuns > 0 ? totalDuration / period.totalRuns : 0;
 
@@ -856,10 +866,10 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
         });
 
         // Calculate success rate
-        (period as any).successRate = period.totalRuns > 0 ? (period.successfulRuns / period.totalRuns) * 100 : 0;
+        period.successRate = period.totalRuns > 0 ? (period.successfulRuns / period.totalRuns) * 100 : 0;
 
         return period;
-      }).sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+      }).sort((a: TimelinePeriod, b: TimelinePeriod) => a.timestamp.localeCompare(b.timestamp));
 
       res.json({
         success: true,

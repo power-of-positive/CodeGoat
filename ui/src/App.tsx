@@ -15,6 +15,7 @@ import { WorkersDashboard } from './pages/WorkersDashboard';
 import { WorkerDetail } from './features/workers/components/WorkerDetail';
 import StageManagement from './pages/StageManagement';
 import { Layout } from './shared/components/Layout';
+import { ErrorBoundary } from './shared/components/ErrorBoundary';
 
 // Query client configuration constants
 const MILLISECONDS_PER_SECOND = 1000;
@@ -32,28 +33,124 @@ const queryClient = new QueryClient({
 
 function App(): React.JSX.Element {
   return (
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <Layout>
-          <Routes>
+    <ErrorBoundary 
+      fallbackTitle="Application Error" 
+      fallbackDescription="The application encountered an unexpected error. Please refresh the page to continue."
+    >
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <Layout>
+            <Routes>
             <Route path="/" element={<Navigate to="/analytics" replace />} />
-            <Route path="/analytics" element={<Analytics />} />
-            <Route path="/stage-history" element={<StageHistoryDashboard />} />
-            <Route path="/kanban" element={<TaskBoard />} />
-            <Route path="/tasks" element={<TaskManagement />} />
-            <Route path="/tasks/:taskId" element={<TaskDetail />} />
-            <Route path="/task-analytics" element={<TaskAnalytics />} />
-            <Route path="/bdd-tests" element={<BDDTestsDashboard />} />
-            <Route path="/workers" element={<WorkersDashboard />} />
-            <Route path="/workers/:workerId" element={<WorkerDetail />} />
-            <Route path="/permissions" element={<PermissionEditor />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/stage-management" element={<StageManagement />} />
-            <Route path="/validation-run/:runId" element={<ValidationRunDetail />} />
+            <Route 
+              path="/analytics" 
+              element={
+                <ErrorBoundary fallbackTitle="Analytics Error" fallbackDescription="Unable to load the analytics page. This might be due to a data loading issue.">
+                  <Analytics />
+                </ErrorBoundary>
+              } 
+            />
+            <Route 
+              path="/stage-history" 
+              element={
+                <ErrorBoundary fallbackTitle="Stage History Error" fallbackDescription="Unable to load the stage history dashboard.">
+                  <StageHistoryDashboard />
+                </ErrorBoundary>
+              } 
+            />
+            <Route 
+              path="/kanban" 
+              element={
+                <ErrorBoundary fallbackTitle="Task Board Error" fallbackDescription="Unable to load the task board.">
+                  <TaskBoard />
+                </ErrorBoundary>
+              } 
+            />
+            <Route 
+              path="/tasks" 
+              element={
+                <ErrorBoundary fallbackTitle="Task Management Error" fallbackDescription="Unable to load the task management page.">
+                  <TaskManagement />
+                </ErrorBoundary>
+              } 
+            />
+            <Route 
+              path="/tasks/:taskId" 
+              element={
+                <ErrorBoundary fallbackTitle="Task Detail Error" fallbackDescription="Unable to load the task details.">
+                  <TaskDetail />
+                </ErrorBoundary>
+              } 
+            />
+            <Route 
+              path="/task-analytics" 
+              element={
+                <ErrorBoundary fallbackTitle="Task Analytics Error" fallbackDescription="Unable to load the task analytics page.">
+                  <TaskAnalytics />
+                </ErrorBoundary>
+              } 
+            />
+            <Route 
+              path="/bdd-tests" 
+              element={
+                <ErrorBoundary fallbackTitle="BDD Tests Error" fallbackDescription="Unable to load the BDD tests dashboard.">
+                  <BDDTestsDashboard />
+                </ErrorBoundary>
+              } 
+            />
+            <Route 
+              path="/workers" 
+              element={
+                <ErrorBoundary fallbackTitle="Workers Dashboard Error" fallbackDescription="Unable to load the workers dashboard.">
+                  <WorkersDashboard />
+                </ErrorBoundary>
+              } 
+            />
+            <Route 
+              path="/workers/:workerId" 
+              element={
+                <ErrorBoundary fallbackTitle="Worker Detail Error" fallbackDescription="Unable to load the worker details.">
+                  <WorkerDetail />
+                </ErrorBoundary>
+              } 
+            />
+            <Route 
+              path="/permissions" 
+              element={
+                <ErrorBoundary fallbackTitle="Permissions Error" fallbackDescription="Unable to load the permissions editor.">
+                  <PermissionEditor />
+                </ErrorBoundary>
+              } 
+            />
+            <Route 
+              path="/settings" 
+              element={
+                <ErrorBoundary fallbackTitle="Settings Error" fallbackDescription="Unable to load the settings page.">
+                  <Settings />
+                </ErrorBoundary>
+              } 
+            />
+            <Route 
+              path="/stage-management" 
+              element={
+                <ErrorBoundary fallbackTitle="Stage Management Error" fallbackDescription="Unable to load the stage management page.">
+                  <StageManagement />
+                </ErrorBoundary>
+              } 
+            />
+            <Route 
+              path="/validation-run/:runId" 
+              element={
+                <ErrorBoundary fallbackTitle="Validation Run Error" fallbackDescription="Unable to load the validation run details.">
+                  <ValidationRunDetail />
+                </ErrorBoundary>
+              } 
+            />
           </Routes>
         </Layout>
       </BrowserRouter>
     </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 

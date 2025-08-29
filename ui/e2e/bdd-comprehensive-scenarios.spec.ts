@@ -120,7 +120,7 @@ test.describe('BDD Comprehensive Scenarios E2E Tests', () => {
       await expect(firstScenario).toBeVisible();
       
       // Wait for the scenario to be in pending status and have Execute button
-      const executeButton = firstScenario.getByRole('button', { name: 'Execute' });
+      const executeButton = firstScenario.getByRole('button', { name: 'Execute Scenario' });
       await expect(executeButton).toBeVisible({ timeout: 10000 });
       await executeButton.click();
       
@@ -175,22 +175,27 @@ test.describe('BDD Comprehensive Scenarios E2E Tests', () => {
       
       // Execute a scenario to create history
       const firstScenario = page.locator('[data-testid="scenario-card"]').first();
-      await firstScenario.getByRole('button', { name: 'Execute' }).click();
+      await expect(firstScenario).toBeVisible({ timeout: 10000 });
+      
+      // Wait for Execute button to be available
+      const executeBtn = firstScenario.getByRole('button', { name: 'Execute Scenario' });
+      await expect(executeBtn).toBeVisible({ timeout: 10000 });
+      await executeBtn.click();
       
       // Wait for execution to complete
       await expect(page.locator('.execution-result')).toBeVisible({ timeout: 10000 });
       
-      // Click on scenario to view details
-      await firstScenario.getByTestId('scenario-title').click();
+      // Click on View Details button instead of title
+      await firstScenario.getByRole('button', { name: 'View Details' }).click();
       
-      // Should show execution history
-      await expect(page.getByRole('heading', { name: 'Execution History' })).toBeVisible();
-      await expect(page.getByTestId('execution-history-list')).toBeVisible();
+      // Should show modal with scenario details
+      await expect(page.getByTestId('modal-title')).toBeVisible();
+      // Check modal shows execution details
+      await expect(page.getByTestId('modal-status')).toBeVisible();
+      await expect(page.getByTestId('modal-executed-at')).toBeVisible();
       
-      // Should show execution entries
-      const executionEntries = page.locator('[data-testid="execution-entry"]');
-      const entryCount = await executionEntries.count();
-      expect(entryCount).toBeGreaterThan(0);
+      // Close modal
+      await page.getByTestId('close-modal').click();
     });
 
     test('should filter scenarios by status', async ({ page }) => {
@@ -344,13 +349,13 @@ test.describe('BDD Comprehensive Scenarios E2E Tests', () => {
       // Should have both passed and failed scenarios (due to mock random execution)
       expect(await passedScenarios.count() + await failedScenarios.count()).toBeGreaterThan(0);
       
-      // Status indicators should be visible
+      // Status indicators should be visible and have correct data attribute
       if (await passedScenarios.count() > 0) {
-        await expect(passedScenarios.first()).toHaveClass(/passed/);
+        await expect(passedScenarios.first()).toHaveAttribute('data-status', 'passed');
       }
       
       if (await failedScenarios.count() > 0) {
-        await expect(failedScenarios.first()).toHaveClass(/failed/);
+        await expect(failedScenarios.first()).toHaveAttribute('data-status', 'failed');
       }
     });
 
@@ -367,7 +372,7 @@ test.describe('BDD Comprehensive Scenarios E2E Tests', () => {
       
       // Execute a single scenario to check duration
       const firstScenario = page.locator('[data-testid="scenario-card"]').first();
-      await firstScenario.getByRole('button', { name: 'Execute' }).click();
+      await firstScenario.getByRole('button', { name: 'Execute Scenario' }).click();
       
       // Wait for execution to complete
       await expect(page.locator('.execution-result')).toBeVisible({ timeout: 10000 });

@@ -68,7 +68,7 @@ describe('Sidebar', () => {
       renderWithRouter(<Sidebar />);
 
       // Check that all navigation items are rendered
-      expect(screen.getByText('Analytics')).toBeInTheDocument();
+      expect(screen.getByText('Validation Analytics')).toBeInTheDocument();
       expect(screen.getByText('Stage History')).toBeInTheDocument();
       expect(screen.getByText('Kanban')).toBeInTheDocument();
       expect(screen.getByText('Tasks')).toBeInTheDocument();
@@ -211,14 +211,14 @@ describe('Sidebar', () => {
       expect(screen.getByTestId('menu-icon')).toBeInTheDocument();
       
       // Navigation items should still be accessible
-      expect(screen.getByText('Analytics')).toBeInTheDocument();
+      expect(screen.getByText('Validation Analytics')).toBeInTheDocument();
     });
 
     it('handles expanded state correctly', () => {
       renderWithRouter(<Sidebar />);
 
       // Sidebar starts expanded by default, so text should be visible
-      expect(screen.getByText('Analytics')).toBeInTheDocument();
+      expect(screen.getByText('Validation Analytics')).toBeInTheDocument();
       
       const toggleButtons = screen.getAllByRole('button');
       const firstToggleButton = toggleButtons[0];

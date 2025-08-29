@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Tasks UI', () => {
+test.describe('Task Management Comprehensive', () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to the task management page
     await page.goto('/tasks');
@@ -23,7 +23,8 @@ test.describe('Tasks UI', () => {
       // Should be on the tasks page
       await expect(page).toHaveURL(/.*\/tasks$/);
       
-      const heading = page.locator('text=Tasks');
+      // Look for the main page heading specifically
+      const heading = page.getByRole('heading', { name: 'Tasks' });
       if (await heading.count() > 0) {
         await expect(heading).toBeVisible();
       }
@@ -44,7 +45,8 @@ test.describe('Tasks UI', () => {
     await page.waitForLoadState('domcontentloaded');
     
     // Check main page elements
-    const heading = page.locator('text=Tasks');
+    // Look for the main page heading specifically
+    const heading = page.getByRole('heading', { name: 'Tasks' });
     if (await heading.count() > 0) {
       await expect(heading).toBeVisible();
     }
@@ -82,7 +84,7 @@ test.describe('Tasks UI', () => {
 
     // The loading state might be very brief, so we'll accept if we see it or if it's already loaded
     const loadingText = page.locator('text=Loading tasks...');
-    const mainContent = page.locator('text=Tasks');
+    const mainContent = page.getByRole('heading', { name: 'Tasks' });
 
     // Wait for either loading state or main content
     await expect(loadingText.or(mainContent)).toBeVisible({ timeout: 5000 });

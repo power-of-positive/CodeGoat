@@ -74,7 +74,7 @@ describe('Settings Component', () => {
     ).toBeInTheDocument();
     expect(screen.getByText(/version:/i)).toBeInTheDocument();
     expect(screen.getByText(/environment:/i)).toBeInTheDocument();
-    expect(screen.getByText(/node\.js:/i)).toBeInTheDocument();
+    expect(screen.getByText(/runtime:/i)).toBeInTheDocument();
     expect(screen.getByText(/v1\.0\.0/i)).toBeInTheDocument();
     
     // More specific selector for the environment value
@@ -82,6 +82,12 @@ describe('Settings Component', () => {
       selector: 'span.font-mono' 
     });
     expect(environmentValue).toBeInTheDocument();
+    
+    // Check runtime value
+    const runtimeValue = screen.getByText('Browser', { 
+      selector: 'span.font-mono' 
+    });
+    expect(runtimeValue).toBeInTheDocument();
   });
 
   it('displays quick access section with navigation links', () => {

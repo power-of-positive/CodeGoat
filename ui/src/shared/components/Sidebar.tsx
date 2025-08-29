@@ -35,7 +35,7 @@ const navItems: NavItem[] = [
   {
     href: '/analytics',
     icon: ChartColumn,
-    label: 'Analytics',
+    label: 'Validation Analytics',
     description: 'View validation metrics and performance data',
   },
   {

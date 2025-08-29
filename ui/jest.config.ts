@@ -55,6 +55,11 @@ const config: Config = {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
+  // Set NODE_ENV for tests
+  testEnvironmentOptions: {
+    customExportConditions: ['node', 'node-addons'],
+  },
+  setupFiles: ['<rootDir>/src/test/jest-setup.ts'],
 };
 
 export default config;

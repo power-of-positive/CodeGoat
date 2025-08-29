@@ -109,8 +109,8 @@ export function Settings() {
                 <span className="font-mono">Development</span>
               </div>
               <div className="flex justify-between">
-                <span>Node.js:</span>
-                <span className="font-mono">{typeof process !== 'undefined' ? process.version : 'N/A'}</span>
+                <span>Runtime:</span>
+                <span className="font-mono">Browser</span>
               </div>
             </div>
           </CardContent>

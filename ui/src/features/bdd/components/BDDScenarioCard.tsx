@@ -231,8 +231,8 @@ export function ScenarioCard({ scenario, onExecute }: {
             View Details
           </button>
 
-          {/* Execute button - only for pending scenarios */}
-          {scenario.status === 'PENDING' && (
+          {/* Execute button - for pending and failed scenarios */}
+          {(scenario.status === 'PENDING' || scenario.status === 'FAILED') && (
             <button 
               onClick={() => onExecute(scenario.id)}
               className="px-3 py-1 text-xs bg-blue-500 text-white rounded flex items-center gap-1"
