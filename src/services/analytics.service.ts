@@ -19,14 +19,12 @@ export type {
 
 export class AnalyticsService {
   private sessionsPath: string;
-  private metricsPath: string;
   private logger: ILogger;
   private db: PrismaClient;
 
-  constructor(logger: ILogger, sessionsPath?: string, metricsPath?: string) {
+  constructor(logger: ILogger, sessionsPath?: string) {
     this.logger = logger;
     this.sessionsPath = sessionsPath ?? path.join(process.cwd(), 'validation-sessions.json');
-    this.metricsPath = metricsPath ?? path.join(process.cwd(), 'validation-metrics.json');
     this.db = new PrismaClient();
   }
 
@@ -382,13 +380,46 @@ export class AnalyticsService {
   }
 
   /**
-   * Load validation metrics from validation-metrics.json
+   * Load validation metrics from database (replaces JSON file approach)
    */
   private async loadValidationMetrics(): Promise<Record<string, unknown>[]> {
     try {
-      const content = await fs.readFile(this.metricsPath, 'utf-8');
-      return JSON.parse(content);
-    } catch {
+      const validationRuns = await this.db.validationRun.findMany({
+        include: {
+          stages: {
+            orderBy: { order: 'asc' }
+          }
+        },
+        orderBy: { timestamp: 'desc' },
+        take: 1000 // Reasonable limit for analytics
+      });
+
+      // Transform database records to match the expected JSON format
+      return validationRuns.map(run => ({
+        timestamp: run.timestamp.toISOString(),
+        startTime: Number(run.startTime),
+        totalTime: run.totalTime,
+        totalDuration: run.totalTime,
+        totalStages: run.totalStages,
+        passed: run.passedStages,
+        failed: run.failedStages,
+        success: run.success,
+        sessionId: run.sessionId ?? `db-run-${run.id}`,
+        stages: run.stages.map(stage => ({
+          id: stage.stageId,
+          name: stage.stageName,
+          success: stage.success,
+          duration: stage.duration,
+          output: stage.output ?? '',
+          command: stage.command ?? '',
+          exitCode: stage.exitCode,
+          error: stage.errorMessage,
+          enabled: stage.enabled,
+          continueOnFailure: stage.continueOnFailure
+        }))
+      }));
+    } catch (error) {
+      this.logger.error('Failed to load validation metrics from database', error as Error);
       return [];
     }
   }

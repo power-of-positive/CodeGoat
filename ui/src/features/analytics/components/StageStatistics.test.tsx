@@ -7,7 +7,7 @@ import { analyticsApi } from '../../../shared/lib/api';
 // Mock the API
 jest.mock('../../../shared/lib/api', () => ({
   analyticsApi: {
-    getStageAnalytics: jest.fn(),
+    getStageStatistics: jest.fn(),
   },
 }));
 
@@ -33,82 +33,50 @@ jest.mock('recharts', () => ({
   Radar: () => <div data-testid="radar" />,
 }));
 
-const mockStageAnalyticsData = {
+const mockStageStatisticsData = {
   overview: {
-    totalStages: 5,
-    period: 'Last 30 days',
-    totalStageExecutions: 150,
+    totalAttempts: 100,
+    totalSuccesses: 95,
+    totalFailures: 5,
+    successRate: 95.0,
+    averageDuration: 15000, // 15 seconds
+    medianDuration: 12000,
+    minDuration: 5000,
+    maxDuration: 30000,
+    standardDeviation: 5000,
   },
-  stageStatistics: [
+  recentRuns: [
     {
-      stageId: 'lint',
-      stageName: 'Lint',
-      totalRuns: 50,
-      successfulRuns: 48,
-      failedRuns: 2,
-      successRate: 95.0,
-      totalDuration: 1525000, // 25.5 minutes total
-      avgDuration: 30500, // 30.5 seconds average
-      minDuration: 25000, // 25 seconds
-      maxDuration: 40000, // 40 seconds
-      reliability: 'excellent' as const,
+      timestamp: '2023-01-01T12:00:00.000Z',
+      success: true,
+      duration: 12000,
+      sessionId: 'session_1',
+    },
+    {
+      timestamp: '2023-01-01T11:00:00.000Z',
+      success: false,
+      duration: 25000,
+      sessionId: 'session_2',
+      error: 'Test failed',
     },
   ],
-  trends: [
-    {
-      metric: 'avgDuration',
-      current: 30500,
-      previous: 29000,
-      change: 5.2,
-      trend: 'up' as const
+  performanceMetrics: {
+    durationsPercentiles: {
+      p50: 12000,
+      p90: 20000,
+      p95: 25000,
+      p99: 30000,
     },
-    {
-      metric: 'successRate',
-      current: 95.0,
-      previous: 96.1,
-      change: -1.1,
-      trend: 'down' as const
+    successRateByTimeOfDay: {
+      '09:00': { attempts: 10, successes: 9, rate: 90 },
+      '10:00': { attempts: 15, successes: 14, rate: 93.3 },
+      '11:00': { attempts: 20, successes: 19, rate: 95 },
     },
-    {
-      metric: 'totalRuns',
-      current: 50,
-      previous: 44,
-      change: 12.3,
-      trend: 'up' as const
-    }
-  ],
-  insights: {
-    problematicStages: [
-      {
-        stageId: 'typecheck',
-        stageName: 'Type Check', 
-        totalRuns: 30,
-        successfulRuns: 25,
-        failedRuns: 5,
-        successRate: 83.3,
-        avgDuration: 45000,
-        reliability: 'poor' as const
-      }
-    ],
-    topPerformingStages: [
-      {
-        stageId: 'lint',
-        stageName: 'Lint',
-        avgDuration: 25500, // 25.5s
-        successRate: 98.5
-      },
-      {
-        stageId: 'typecheck', 
-        stageName: 'Type Check',
-        avgDuration: 120300, // 120.3s
-        successRate: 92.1
-      }
-    ],
-    stageExecutionPattern: [
-      { hour: 9, executions: 15 },
-      { hour: 10, executions: 25 },
-      { hour: 11, executions: 20 }
-    ],
+    failureReasons: {
+      'Test Failure': 3,
+      'Timeout': 1,
+      'Compilation Error': 1,
+    },
   },
 };
 
@@ -136,7 +104,7 @@ describe('StageStatistics', () => {
   });
 
   it('renders loading state initially', () => {
-    (analyticsApi.getStageAnalytics as jest.MockedFunction<any>).mockImplementation(
+    (analyticsApi.getStageStatistics as jest.MockedFunction<any>).mockImplementation(
       () => new Promise(() => {}) // Never resolves
     );
 
@@ -147,21 +115,21 @@ describe('StageStatistics', () => {
   });
 
   it('renders error state when API fails', async () => {
-    (analyticsApi.getStageAnalytics as jest.MockedFunction<any>).mockRejectedValue(
+    (analyticsApi.getStageStatistics as jest.MockedFunction<any>).mockRejectedValue(
       new Error('API Error')
     );
 
     renderWithQueryClient(<StageStatistics />);
 
     await waitFor(() => {
-      expect(screen.getByText(/Failed to load stage statistics/)).toBeInTheDocument();
+      expect(screen.getByText(/Failed to load stage performance statistics/)).toBeInTheDocument();
     });
 
     expect(screen.getByRole('button', { name: /Try Again/ })).toBeInTheDocument();
   });
 
   it('renders stage statistics when data is loaded', async () => {
-    (analyticsApi.getStageAnalytics as jest.MockedFunction<any>).mockResolvedValue(mockStageAnalyticsData);
+    (analyticsApi.getStageStatistics as jest.MockedFunction<any>).mockResolvedValue(mockStageStatisticsData);
 
     renderWithQueryClient(<StageStatistics />);
 
@@ -169,18 +137,20 @@ describe('StageStatistics', () => {
       expect(screen.getByText('Stage Performance Analytics')).toBeInTheDocument();
     });
 
-    // Check overview cards
-    expect(screen.getByText('Total Stages')).toBeInTheDocument();
-    expect(screen.getAllByText('5')).toHaveLength(2); // Multiple cards may show "5"
-    expect(screen.getByText('Total Executions')).toBeInTheDocument();
-    expect(screen.getByText('150')).toBeInTheDocument();
+    // Check overview cards with actual component text
+    expect(screen.getByText('Total Attempts')).toBeInTheDocument();
+    expect(screen.getByText('100')).toBeInTheDocument(); // From mock data
+    expect(screen.getByText('Success Rate')).toBeInTheDocument();
+    expect(screen.getByText('95.0%')).toBeInTheDocument();
+    expect(screen.getByText('Failures')).toBeInTheDocument();
+    expect(screen.getByText('5')).toBeInTheDocument();
 
-    // Check stage table (using getAllByText to handle multiple instances)
-    expect(screen.getAllByText('Lint')).toHaveLength(3); // Filter option, table, and insights section
+    // Check that filters are present
+    expect(screen.getByText('Linting')).toBeInTheDocument(); // Stage filter option
   });
 
   it('handles filter changes', async () => {
-    (analyticsApi.getStageAnalytics as jest.MockedFunction<any>).mockResolvedValue(mockStageAnalyticsData);
+    (analyticsApi.getStageStatistics as jest.MockedFunction<any>).mockResolvedValue(mockStageStatisticsData);
 
     renderWithQueryClient(<StageStatistics />);
 
@@ -188,19 +158,20 @@ describe('StageStatistics', () => {
       expect(screen.getByText('Stage Performance Analytics')).toBeInTheDocument();
     });
 
-    // Change time period
-    const timeSelect = screen.getByDisplayValue('Last 30 days');
+    // Change time period - find the second select element (time period)
+    const selects = screen.getAllByRole('combobox');
+    const timeSelect = selects[1]; // Second select is time period
     fireEvent.change(timeSelect, { target: { value: '7' } });
 
     await waitFor(() => {
-      expect(analyticsApi.getStageAnalytics).toHaveBeenCalledWith(
+      expect(analyticsApi.getStageStatistics).toHaveBeenCalledWith(
         expect.objectContaining({ days: 7 })
       );
     });
   });
 
   it('handles refresh functionality', async () => {
-    (analyticsApi.getStageAnalytics as jest.MockedFunction<any>).mockResolvedValue(mockStageAnalyticsData);
+    (analyticsApi.getStageStatistics as jest.MockedFunction<any>).mockResolvedValue(mockStageStatisticsData);
 
     renderWithQueryClient(<StageStatistics />);
 
@@ -212,11 +183,11 @@ describe('StageStatistics', () => {
     fireEvent.click(refreshButton);
 
     // Should call the API again
-    expect(analyticsApi.getStageAnalytics).toHaveBeenCalledTimes(2);
+    expect(analyticsApi.getStageStatistics).toHaveBeenCalledTimes(2);
   });
 
   it('handles no data state', async () => {
-    (analyticsApi.getStageAnalytics as jest.MockedFunction<any>).mockResolvedValue(null);
+    (analyticsApi.getStageStatistics as jest.MockedFunction<any>).mockResolvedValue(null);
 
     renderWithQueryClient(<StageStatistics />);
 
@@ -224,23 +195,23 @@ describe('StageStatistics', () => {
       expect(screen.getByText('No Statistics Available')).toBeInTheDocument();
     });
 
-    expect(screen.getByText('No stage performance data found for the selected time period. Try adjusting your date range or check if validation runs exist.')).toBeInTheDocument();
+    expect(screen.getByText('No stage performance data found for the selected time period.')).toBeInTheDocument();
   });
 
   it('handles stage filter selection', async () => {
-    (analyticsApi.getStageAnalytics as jest.MockedFunction<any>).mockResolvedValue(mockStageAnalyticsData);
+    (analyticsApi.getStageStatistics as jest.MockedFunction<any>).mockResolvedValue(mockStageStatisticsData);
 
     renderWithQueryClient(<StageStatistics stageId="specific-stage" />);
 
     await waitFor(() => {
-      expect(analyticsApi.getStageAnalytics).toHaveBeenCalledWith(
-        expect.objectContaining({ stageId: 'specific-stage' })
+      expect(analyticsApi.getStageStatistics).toHaveBeenCalledWith(
+        expect.objectContaining({ stage: 'specific-stage' })
       );
     });
   });
 
   it('displays performance metrics correctly', async () => {
-    (analyticsApi.getStageAnalytics as jest.MockedFunction<any>).mockResolvedValue(mockStageAnalyticsData);
+    (analyticsApi.getStageStatistics as jest.MockedFunction<any>).mockResolvedValue(mockStageStatisticsData);
 
     renderWithQueryClient(<StageStatistics />);
 
@@ -250,23 +221,23 @@ describe('StageStatistics', () => {
     });
 
     // Check for stage-specific metrics - using formatted duration from component
-    expect(screen.getByText('30500.0ms')).toBeInTheDocument(); // Duration from mock data formatted with decimals
+    expect(screen.getByText('15.0s')).toBeInTheDocument(); // Duration from mock data (15 seconds)
   });
 
   it('handles environment filter changes', async () => {
-    (analyticsApi.getStageAnalytics as jest.MockedFunction<any>).mockResolvedValue(mockStageAnalyticsData);
+    (analyticsApi.getStageStatistics as jest.MockedFunction<any>).mockResolvedValue(mockStageStatisticsData);
 
     renderWithQueryClient(<StageStatistics stageId="prod-stage" />);
 
     await waitFor(() => {
-      expect(analyticsApi.getStageAnalytics).toHaveBeenCalledWith(
-        expect.objectContaining({ stageId: 'prod-stage' })
+      expect(analyticsApi.getStageStatistics).toHaveBeenCalledWith(
+        expect.objectContaining({ stage: 'prod-stage' })
       );
     });
   });
 
   it('displays charts correctly', async () => {
-    (analyticsApi.getStageAnalytics as jest.MockedFunction<any>).mockResolvedValue(mockStageAnalyticsData);
+    (analyticsApi.getStageStatistics as jest.MockedFunction<any>).mockResolvedValue(mockStageStatisticsData);
 
     renderWithQueryClient(<StageStatistics />);
 
@@ -280,14 +251,14 @@ describe('StageStatistics', () => {
   });
 
   it('handles retry button click on error', async () => {
-    (analyticsApi.getStageAnalytics as jest.MockedFunction<any>)
+    (analyticsApi.getStageStatistics as jest.MockedFunction<any>)
       .mockRejectedValueOnce(new Error('API Error'))
-      .mockResolvedValueOnce(mockStageAnalyticsData);
+      .mockResolvedValueOnce(mockStageStatisticsData);
 
     renderWithQueryClient(<StageStatistics />);
 
     await waitFor(() => {
-      expect(screen.getByText(/Failed to load stage statistics/)).toBeInTheDocument();
+      expect(screen.getByText(/Failed to load stage performance statistics/)).toBeInTheDocument();
     });
 
     const retryButton = screen.getByRole('button', { name: /Try Again/ });
@@ -297,19 +268,19 @@ describe('StageStatistics', () => {
       expect(screen.getByText('Stage Performance Analytics')).toBeInTheDocument();
     });
 
-    expect(analyticsApi.getStageAnalytics).toHaveBeenCalledTimes(2);
+    expect(analyticsApi.getStageStatistics).toHaveBeenCalledTimes(2);
   });
 
   it('displays stage comparison data', async () => {
     const mockDataWithComparison = {
-      ...mockStageAnalyticsData,
+      ...mockStageStatisticsData,
       stageComparisons: [
         { stageName: 'Lint', avgDuration: 25.5, successRate: 98.5, executions: 50 },
         { stageName: 'Test', avgDuration: 120.3, successRate: 92.1, executions: 45 },
       ]
     };
 
-    (analyticsApi.getStageAnalytics as jest.MockedFunction<any>).mockResolvedValue(mockDataWithComparison);
+    (analyticsApi.getStageStatistics as jest.MockedFunction<any>).mockResolvedValue(mockDataWithComparison);
 
     renderWithQueryClient(<StageStatistics />);
 
@@ -318,26 +289,27 @@ describe('StageStatistics', () => {
     });
 
     // The component shows the data in the table and insights sections
-    expect(screen.getByText('25500.0ms')).toBeInTheDocument(); // From table formatting
+    expect(screen.getByText('15.0s')).toBeInTheDocument(); // Average duration from mock data
     expect(screen.getByText('95.0%')).toBeInTheDocument(); // Success rate from mock data
   });
 
   it('handles date range filter correctly', async () => {
-    (analyticsApi.getStageAnalytics as jest.MockedFunction<any>).mockResolvedValue(mockStageAnalyticsData);
+    (analyticsApi.getStageStatistics as jest.MockedFunction<any>).mockResolvedValue(mockStageStatisticsData);
 
     renderWithQueryClient(<StageStatistics defaultDays={30} />);
 
     await waitFor(() => {
-      expect(analyticsApi.getStageAnalytics).toHaveBeenCalledWith(
+      expect(analyticsApi.getStageStatistics).toHaveBeenCalledWith(
         expect.objectContaining({ 
-          days: 30
+          days: 30,
+          stage: 'lint' // Default stage
         })
       );
     });
   });
 
   it('displays loading skeletons correctly', () => {
-    (analyticsApi.getStageAnalytics as jest.MockedFunction<any>).mockImplementation(
+    (analyticsApi.getStageStatistics as jest.MockedFunction<any>).mockImplementation(
       () => new Promise(() => {}) // Never resolves to show loading state
     );
 
@@ -349,11 +321,11 @@ describe('StageStatistics', () => {
 
   it('handles empty stage list gracefully', async () => {
     const emptyData = {
-      ...mockStageAnalyticsData,
+      ...mockStageStatisticsData,
       stageStatistics: [] // Correct property name
     };
 
-    (analyticsApi.getStageAnalytics as jest.MockedFunction<any>).mockResolvedValue(emptyData);
+    (analyticsApi.getStageStatistics as jest.MockedFunction<any>).mockResolvedValue(emptyData);
 
     renderWithQueryClient(<StageStatistics />);
 
@@ -361,13 +333,13 @@ describe('StageStatistics', () => {
       expect(screen.getByText('Stage Performance Analytics')).toBeInTheDocument();
     });
 
-    // Component still renders with empty data, but table shows no rows
-    expect(screen.getByText('Detailed Stage Statistics')).toBeInTheDocument();
+    // Component still renders with empty data, but shows filters
+    expect(screen.getByText('Filters')).toBeInTheDocument();
   });
 
   it('displays trend indicators correctly', async () => {
     const dataWithTrends = {
-      ...mockStageAnalyticsData,
+      ...mockStageStatisticsData,
       trends: [
         {
           metric: 'avgDuration',
@@ -379,7 +351,7 @@ describe('StageStatistics', () => {
       ]
     };
 
-    (analyticsApi.getStageAnalytics as jest.MockedFunction<any>).mockResolvedValue(dataWithTrends);
+    (analyticsApi.getStageStatistics as jest.MockedFunction<any>).mockResolvedValue(dataWithTrends);
 
     renderWithQueryClient(<StageStatistics />);
 

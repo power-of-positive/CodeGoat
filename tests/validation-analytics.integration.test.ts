@@ -36,7 +36,7 @@ describe('Validation Analytics Integration Tests', () => {
     };
 
     settingsService = new SettingsService(mockLogger, testSettingsPath);
-    analyticsService = new AnalyticsService(mockLogger, testSessionsPath, testMetricsPath);
+    analyticsService = new AnalyticsService(mockLogger, testSessionsPath);
   });
 
   afterEach(() => {
