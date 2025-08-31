@@ -113,10 +113,7 @@ export function WorkerDetail() {
       if (!worker) {
         throw new Error('Worker data not available');
       }
-      const response = await claudeWorkersApi.startWorker({
-        taskId: worker.taskId,
-        taskContent: worker.taskContent,
-      });
+      const response = await claudeWorkersApi.startWorker(worker.taskId);
       return response;
     },
     onSuccess: () => {

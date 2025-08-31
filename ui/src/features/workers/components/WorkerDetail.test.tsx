@@ -10,7 +10,7 @@ import { claudeWorkersApi } from '../../../shared/lib/api';
 jest.mock('../../../shared/lib/api', () => ({
   claudeWorkersApi: {
     getWorkerStatus: jest.fn(),
-    getWorkersStatus: jest.fn(),
+    getWorkers: jest.fn(),
     startWorker: jest.fn(),
     stopWorker: jest.fn(),
     getWorkerLogs: jest.fn(),

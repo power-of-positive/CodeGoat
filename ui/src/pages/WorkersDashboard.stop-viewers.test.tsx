@@ -15,7 +15,7 @@ jest.mock('react-router-dom', () => ({
 // Mock the API
 jest.mock('../shared/lib/api', () => ({
   claudeWorkersApi: {
-    getWorkersStatus: jest.fn(),
+    getWorkers: jest.fn(),
     getWorkerLogs: jest.fn(),
     stopWorker: jest.fn(),
     mergeWorktree: jest.fn(),
@@ -95,7 +95,7 @@ describe('WorkersDashboard - Stop Worker & Viewers', () => {
         },
       ];
 
-      mockWorkersApi.getWorkersStatus.mockResolvedValue({
+      mockWorkersApi.getWorkers.mockResolvedValue({
         workers: mockWorkers,
         activeCount: 1,
         totalCount: 1,
@@ -148,7 +148,7 @@ describe('WorkersDashboard - Stop Worker & Viewers', () => {
         },
       ];
 
-      mockWorkersApi.getWorkersStatus.mockResolvedValue({
+      mockWorkersApi.getWorkers.mockResolvedValue({
         workers: mockWorkers,
         activeCount: 1,
         totalCount: 1,

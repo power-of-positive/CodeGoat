@@ -16,7 +16,7 @@ jest.mock('react-router-dom', () => ({
 // Mock the API
 jest.mock('../shared/lib/api', () => ({
   claudeWorkersApi: {
-    getWorkersStatus: jest.fn(),
+    getWorkers: jest.fn(),
     getWorkerLogs: jest.fn(),
     stopWorker: jest.fn(),
     mergeWorktree: jest.fn(),
@@ -81,7 +81,7 @@ describe('WorkersDashboard - Core Functionality', () => {
   });
 
   it('renders workers dashboard with initial state', async () => {
-    mockWorkersApi.getWorkersStatus.mockResolvedValue({
+    mockWorkersApi.getWorkers.mockResolvedValue({
       workers: [],
       activeCount: 0,
       totalCount: 0,
@@ -114,7 +114,7 @@ describe('WorkersDashboard - Core Functionality', () => {
       },
     ];
 
-    mockWorkersApi.getWorkersStatus.mockResolvedValue({
+    mockWorkersApi.getWorkers.mockResolvedValue({
       workers: mockWorkers,
       activeCount: 1,
       totalCount: 1,
@@ -131,7 +131,7 @@ describe('WorkersDashboard - Core Functionality', () => {
   });
 
   it('handles API error', async () => {
-    mockWorkersApi.getWorkersStatus.mockRejectedValue(new Error('API Error'));
+    mockWorkersApi.getWorkers.mockRejectedValue(new Error('API Error'));
 
     render(<WorkersDashboard />, { wrapper: createWrapper() });
 
@@ -156,7 +156,7 @@ describe('WorkersDashboard - Core Functionality', () => {
       },
     ];
 
-    mockWorkersApi.getWorkersStatus.mockResolvedValue({
+    mockWorkersApi.getWorkers.mockResolvedValue({
       workers: mockWorkers,
       activeCount: 1,
       totalCount: 1,
@@ -196,7 +196,7 @@ describe('WorkersDashboard - Core Functionality', () => {
       },
     ];
 
-    mockWorkersApi.getWorkersStatus.mockResolvedValue({
+    mockWorkersApi.getWorkers.mockResolvedValue({
       workers: mockWorkers,
       activeCount: 1,
       totalCount: 1,
@@ -248,7 +248,7 @@ describe('WorkersDashboard - Core Functionality', () => {
       },
     ];
 
-    mockWorkersApi.getWorkersStatus.mockResolvedValue({
+    mockWorkersApi.getWorkers.mockResolvedValue({
       workers: mockWorkers,
       activeCount: 1,
       totalCount: 1,
@@ -315,7 +315,7 @@ describe('WorkersDashboard - Core Functionality', () => {
         },
       ];
 
-      mockWorkersApi.getWorkersStatus.mockResolvedValue({
+      mockWorkersApi.getWorkers.mockResolvedValue({
         workers: mockWorkers,
         activeCount: 1,
         totalCount: 3,
@@ -357,7 +357,7 @@ describe('WorkersDashboard - Core Functionality', () => {
         },
       ];
 
-      mockWorkersApi.getWorkersStatus.mockResolvedValue({
+      mockWorkersApi.getWorkers.mockResolvedValue({
         workers: mockWorkers,
         activeCount: 1,
         totalCount: 2,
@@ -372,7 +372,7 @@ describe('WorkersDashboard - Core Functionality', () => {
     });
 
     it('displays 0% success rate when no workers exist', async () => {
-      mockWorkersApi.getWorkersStatus.mockResolvedValue({
+      mockWorkersApi.getWorkers.mockResolvedValue({
         workers: [],
         activeCount: 0,
         totalCount: 0,
@@ -403,7 +403,7 @@ describe('WorkersDashboard - Core Functionality', () => {
     };
 
     beforeEach(() => {
-      mockWorkersApi.getWorkersStatus.mockResolvedValue({
+      mockWorkersApi.getWorkers.mockResolvedValue({
         workers: [mockWorker],
         activeCount: 0,
         totalCount: 1,
@@ -602,7 +602,7 @@ describe('WorkersDashboard - Core Functionality', () => {
       const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
       const runningWorker = { ...mockWorker, status: 'running' as const };
       
-      mockWorkersApi.getWorkersStatus.mockResolvedValue({
+      mockWorkersApi.getWorkers.mockResolvedValue({
         workers: [runningWorker],
         activeCount: 1,
         totalCount: 1,
@@ -649,7 +649,7 @@ describe('WorkersDashboard - Core Functionality', () => {
     };
 
     beforeEach(() => {
-      mockWorkersApi.getWorkersStatus.mockResolvedValue({
+      mockWorkersApi.getWorkers.mockResolvedValue({
         workers: [mockWorker],
         activeCount: 0,
         totalCount: 1,
@@ -729,7 +729,7 @@ describe('WorkersDashboard - Core Functionality', () => {
     };
 
     beforeEach(() => {
-      mockWorkersApi.getWorkersStatus.mockResolvedValue({
+      mockWorkersApi.getWorkers.mockResolvedValue({
         workers: [mockWorker],
         activeCount: 1,
         totalCount: 1,
@@ -884,7 +884,7 @@ describe('WorkersDashboard - Core Functionality', () => {
 
   describe('Refresh Functionality', () => {
     it('handles refresh button click', async () => {
-      mockWorkersApi.getWorkersStatus.mockResolvedValue({
+      mockWorkersApi.getWorkers.mockResolvedValue({
         workers: [],
         activeCount: 0,
         totalCount: 0,
@@ -897,21 +897,21 @@ describe('WorkersDashboard - Core Functionality', () => {
         expect(screen.getByText('Claude Code Workers')).toBeInTheDocument();
       });
 
-      const initialCallCount = mockWorkersApi.getWorkersStatus.mock.calls.length;
+      const initialCallCount = mockWorkersApi.getWorkers.mock.calls.length;
 
       const refreshButton = screen.getByRole('button', { name: /refresh/i });
       fireEvent.click(refreshButton);
 
       // Should trigger another API call
       await waitFor(() => {
-        expect(mockWorkersApi.getWorkersStatus.mock.calls.length).toBeGreaterThan(initialCallCount);
+        expect(mockWorkersApi.getWorkers.mock.calls.length).toBeGreaterThan(initialCallCount);
       });
     });
   });
 
   describe('Loading and Empty States', () => {
     it('displays loading state initially', () => {
-      mockWorkersApi.getWorkersStatus.mockImplementation(() => new Promise(() => {})); // Never resolves
+      mockWorkersApi.getWorkers.mockImplementation(() => new Promise(() => {})); // Never resolves
 
       render(<WorkersDashboard />, { wrapper: createWrapper() });
 
@@ -919,7 +919,7 @@ describe('WorkersDashboard - Core Functionality', () => {
     });
 
     it('displays empty state when no workers exist', async () => {
-      mockWorkersApi.getWorkersStatus.mockResolvedValue({
+      mockWorkersApi.getWorkers.mockResolvedValue({
         workers: [],
         activeCount: 0,
         totalCount: 0,
@@ -960,7 +960,7 @@ describe('WorkersDashboard - Core Functionality', () => {
         },
       ];
 
-      mockWorkersApi.getWorkersStatus.mockResolvedValue({
+      mockWorkersApi.getWorkers.mockResolvedValue({
         workers: mockWorkers,
         activeCount: 1,
         totalCount: 2,

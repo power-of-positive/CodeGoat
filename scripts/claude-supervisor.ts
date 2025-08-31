@@ -213,7 +213,74 @@ class ClaudeSupervisor {
     return result;
   }
 
-  // eslint-disable-next-line max-lines-per-function
+  private createClaudeProcess(sessionId: string): ChildProcess {
+    const claudeCommand = 'npx';
+    const claudeArgs = [
+      '-y',
+      '@anthropic-ai/claude-code@latest',
+      '-p',
+      '--dangerously-skip-permissions',
+      '--verbose',
+      '--output-format=stream-json',
+    ];
+    
+    return spawn(claudeCommand, claudeArgs, {
+      stdio: ['pipe', 'pipe', 'pipe'],
+      cwd: process.cwd(),
+      env: { 
+        ...process.env, 
+        FORCE_COLOR: FORCE_COLOR_VALUE,
+        CLAUDE_API_KEY: process.env.CLAUDE_API_KEY,
+        CLAUDE_SUPERVISOR_SESSION: sessionId 
+      }
+    });
+  }
+
+  private setupProcessOutputHandling(process: ChildProcess, outputRef: {value: string}): void {
+    process.stdout?.on('data', (data) => {
+      const text = data.toString();
+      outputRef.value += text;
+      this.log(`[Claude] ${text.trim()}`);
+    });
+
+    process.stderr?.on('data', (data) => {
+      const text = data.toString();
+      outputRef.value += text;
+      this.log(`[Claude Error] ${text.trim()}`);
+    });
+  }
+
+  private setupProcessEventHandlers(
+    process: ChildProcess, 
+    timeout: NodeJS.Timeout, 
+    logFile: string, 
+    outputRef: {value: string}, 
+    resolve: (value: {success: boolean, error?: string}) => void
+  ): void {
+    process.on('close', async (code) => {
+      clearTimeout(timeout);
+      
+      // Save session log
+      await fs.writeFile(logFile, `STDOUT/STDERR:\n${outputRef.value}\n`);
+      
+      if (code === 0) {
+        this.log(`✅ Claude session completed successfully`);
+        resolve({ success: true });
+      } else {
+        this.log(`❌ Claude session failed with code ${code}`);
+        resolve({ success: false, error: `Exit code ${code}` });
+      }
+      
+      this.currentSession = null;
+    });
+
+    process.on('error', (error) => {
+      clearTimeout(timeout);
+      this.log(`💥 Claude process error: ${error.message}`);
+      resolve({ success: false, error: error.message });
+    });
+  }
+
   private async runClaudeCode(sessionId: string, prompt: string, attempt: number): Promise<{success: boolean, error?: string}> {
     return new Promise((resolve) => {
       const logFile = path.join(this.config.logDir, `${sessionId}-attempt-${attempt}.log`);
@@ -221,45 +288,12 @@ class ClaudeSupervisor {
       this.log(`🤖 Starting Claude session...`);
       this.log(`📝 Prompt: ${prompt.substring(0, PROMPT_PREVIEW_LENGTH)}...`);
       
-      // Use the same pattern as worker system
-      const claudeCommand = 'npx';
-      const claudeArgs = [
-        '-y',
-        '@anthropic-ai/claude-code@latest',
-        '-p',
-        '--dangerously-skip-permissions',
-        '--verbose',
-        '--output-format=stream-json',
-      ];
+      this.currentSession = this.createClaudeProcess(sessionId);
+      const outputRef = { value: '' };
       
-      // Create claude process directly (same as worker system)
-      this.currentSession = spawn(claudeCommand, claudeArgs, {
-        stdio: ['pipe', 'pipe', 'pipe'],
-        cwd: process.cwd(),
-        env: { 
-          ...process.env, 
-          FORCE_COLOR: FORCE_COLOR_VALUE,
-          CLAUDE_API_KEY: process.env.CLAUDE_API_KEY,
-          CLAUDE_SUPERVISOR_SESSION: sessionId 
-        }
-      });
+      this.setupProcessOutputHandling(this.currentSession, outputRef);
 
-      let output = '';
-
-      // Capture output
-      this.currentSession.stdout?.on('data', (data) => {
-        const text = data.toString();
-        output += text;
-        this.log(`[Claude] ${text.trim()}`);
-      });
-
-      this.currentSession.stderr?.on('data', (data) => {
-        const text = data.toString();
-        output += text;
-        this.log(`[Claude Error] ${text.trim()}`);
-      });
-
-      // Send initial prompt via stdin (same as worker system)
+      // Send initial prompt via stdin
       this.currentSession.stdin?.write(prompt + '\n');
       this.currentSession.stdin?.end();
 
@@ -270,29 +304,7 @@ class ClaudeSupervisor {
         resolve({ success: false, error: 'Session timeout' });
       }, this.config.sessionTimeout);
 
-      // Handle completion
-      this.currentSession.on('close', async (code) => {
-        clearTimeout(timeout);
-        
-        // Save session log
-        await fs.writeFile(logFile, `STDOUT/STDERR:\n${output}\n`);
-        
-        if (code === 0) {
-          this.log(`✅ Claude session completed successfully`);
-          resolve({ success: true });
-        } else {
-          this.log(`❌ Claude session failed with code ${code}`);
-          resolve({ success: false, error: `Exit code ${code}` });
-        }
-        
-        this.currentSession = null;
-      });
-
-      this.currentSession.on('error', (error) => {
-        clearTimeout(timeout);
-        this.log(`💥 Claude process error: ${error.message}`);
-        resolve({ success: false, error: error.message });
-      });
+      this.setupProcessEventHandlers(this.currentSession, timeout, logFile, outputRef, resolve);
     });
   }
 
