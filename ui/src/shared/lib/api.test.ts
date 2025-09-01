@@ -21,7 +21,7 @@ describe('API Client', () => {
 
   describe('settingsApi', () => {
     it('should get settings', async () => {
-      const mockConfig = { enableMetrics: true, validation: { stages: [] } };
+      const mockConfig = { maxAttempts: 3, sessionTimeout: 3600, validationStages: [] };
       (fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
         ok: true,
         json: async () => mockConfig,
@@ -34,8 +34,8 @@ describe('API Client', () => {
     });
 
     it('should update settings', async () => {
-      const mockConfig = { enableMetrics: false };
-      const updatedConfig = { enableMetrics: false, validation: { stages: [] } };
+      const mockConfig = { maxAttempts: 5 };
+      const updatedConfig = { maxAttempts: 5, sessionTimeout: 3600, validationStages: [] };
       (fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
         ok: true,
         json: async () => updatedConfig,
@@ -492,9 +492,9 @@ describe('API Client', () => {
         json: async () => mockHistory,
       } as Response);
 
-      const result = await analyticsApi.getStageHistory('lint', 30);
+      const result = await analyticsApi.getStageHistory({ stage: 'lint', days: 30 });
       expect(result).toEqual(mockHistory);
-      expect(fetch).toHaveBeenCalledWith('/api/analytics/stages/lint/history?days=30', {
+      expect(fetch).toHaveBeenCalledWith('/api/analytics/stage-history?stage=lint&days=30', {
         headers: { 'Content-Type': 'application/json' },
       });
     });
@@ -545,9 +545,9 @@ describe('API Client', () => {
         json: async () => mockStats,
       } as Response);
 
-      const result = await analyticsApi.getStageStatistics('lint');
+      const result = await analyticsApi.getStageStatistics({ stage: 'lint' });
       expect(result).toEqual(mockStats);
-      expect(fetch).toHaveBeenCalledWith('/api/analytics/stages/lint/statistics', {
+      expect(fetch).toHaveBeenCalledWith('/api/analytics/stage-statistics?stage=lint', {
         headers: { 'Content-Type': 'application/json' },
       });
     });
@@ -595,10 +595,7 @@ describe('API Client', () => {
         json: async () => mockResponse,
       } as Response);
 
-      const result = await claudeWorkersApi.startWorker({
-        taskId: 'task-123',
-        taskContent: 'Test task content',
-      });
+      const result = await claudeWorkersApi.startWorker('task-123');
 
       expect(result).toEqual(mockResponse);
       expect(fetch).toHaveBeenCalledWith('/api/claude-workers/start', {
@@ -624,11 +621,7 @@ describe('API Client', () => {
         json: async () => mockResponse,
       } as Response);
 
-      const result = await claudeWorkersApi.startWorker({
-        taskId: 'task-456',
-        taskContent: 'Test task content',
-        workingDirectory: '/custom/working/dir',
-      });
+      const result = await claudeWorkersApi.startWorker('task-456', '/custom/working/dir');
 
       expect(result).toEqual(mockResponse);
       expect(fetch).toHaveBeenCalledWith('/api/claude-workers/start', {
@@ -653,7 +646,7 @@ describe('API Client', () => {
         json: async () => mockResponse,
       } as Response);
 
-      const result = await claudeWorkersApi.getWorkersStatus();
+      const result = await claudeWorkersApi.getWorkers();
 
       expect(result).toEqual(mockResponse);
       expect(fetch).toHaveBeenCalledWith('/api/claude-workers/status', {
@@ -787,7 +780,7 @@ describe('API Client', () => {
         json: async () => mockResponse,
       } as Response);
 
-      const result = await claudeWorkersApi.getBlockedCommands('worker-123');
+      const result = await claudeWorkersApi.getBlockedCommands();
 
       expect(result).toEqual(mockResponse);
       expect(fetch).toHaveBeenCalledWith('/api/claude-workers/worker-123/blocked-commands', {
@@ -834,7 +827,7 @@ describe('API Client', () => {
         json: async () => mockResponse,
       } as Response);
 
-      const result = await claudeWorkersApi.getValidationRuns('worker-123');
+      const result = await claudeWorkersApi.getValidationRuns();
 
       expect(result).toEqual(mockResponse);
       expect(fetch).toHaveBeenCalledWith('/api/claude-workers/worker-123/validation-runs', {
@@ -868,7 +861,7 @@ describe('API Client', () => {
         json: async () => mockResponse,
       } as Response);
 
-      const result = await claudeWorkersApi.getValidationRunDetails('worker-123', 'run-123');
+      const result = await claudeWorkersApi.getValidationRunDetails('run-123');
 
       expect(result).toEqual(mockResponse);
       expect(fetch).toHaveBeenCalledWith('/api/claude-workers/worker-123/validation-runs/run-123', {
@@ -888,9 +881,7 @@ describe('API Client', () => {
         json: async () => mockResponse,
       } as Response);
 
-      const result = await claudeWorkersApi.sendWorkerMessage('worker-123', {
-        message: 'Hello worker',
-      });
+      const result = await claudeWorkersApi.sendMessage('worker-123', 'Hello worker');
 
       expect(result).toEqual(mockResponse);
       expect(fetch).toHaveBeenCalledWith('/api/claude-workers/worker-123/message', {
@@ -911,7 +902,7 @@ describe('API Client', () => {
         json: async () => mockResponse,
       } as Response);
 
-      const result = await claudeWorkersApi.sendFollowUp('worker-123', 'Additional instructions');
+      const result = await claudeWorkersApi.sendFollowup('worker-123', 'Additional instructions');
 
       expect(result).toEqual(mockResponse);
       expect(fetch).toHaveBeenCalledWith('/api/claude-workers/worker-123/follow-up', {
@@ -932,7 +923,7 @@ describe('API Client', () => {
         json: async () => mockResponse,
       } as Response);
 
-      const result = await claudeWorkersApi.mergeWorker('worker-123', 'Custom commit message');
+      const result = await claudeWorkersApi.mergeWorktree('worker-123', 'Custom commit message');
 
       expect(result).toEqual(mockResponse);
       expect(fetch).toHaveBeenCalledWith('/api/claude-workers/worker-123/merge', {
@@ -977,7 +968,7 @@ describe('API Client', () => {
         json: async () => mockConfig,
       } as Response);
 
-      const result = await permissionApi.getConfig();
+      const result = await permissionApi.getPermissionConfig();
       expect(result).toEqual(mockConfig);
       expect(fetch).toHaveBeenCalledWith('/api/permissions/config', {
         headers: { 'Content-Type': 'application/json' },
@@ -998,7 +989,7 @@ describe('API Client', () => {
         json: async () => updatedConfig,
       } as Response);
 
-      const result = await permissionApi.updateConfig(configUpdate);
+      const result = await permissionApi.updatePermissionConfig(configUpdate);
       expect(result).toEqual(updatedConfig);
       expect(fetch).toHaveBeenCalledWith('/api/permissions/config', {
         method: 'PUT',
@@ -1014,7 +1005,7 @@ describe('API Client', () => {
         json: async () => mockRules,
       } as Response);
 
-      const result = await permissionApi.getRules();
+      const result = await permissionApi.getPermissionRules();
       expect(result).toEqual(mockRules);
       expect(fetch).toHaveBeenCalledWith('/api/permissions/rules', {
         headers: { 'Content-Type': 'application/json' },
@@ -1029,7 +1020,7 @@ describe('API Client', () => {
         json: async () => createdRule,
       } as Response);
 
-      const result = await permissionApi.createRule(newRule);
+      const result = await permissionApi.createPermissionRule(newRule);
       expect(result).toEqual(createdRule);
       expect(fetch).toHaveBeenCalledWith('/api/permissions/rules', {
         method: 'POST',
@@ -1046,7 +1037,7 @@ describe('API Client', () => {
         json: async () => updatedRule,
       } as Response);
 
-      const result = await permissionApi.updateRule('1', updates);
+      const result = await permissionApi.updatePermissionRule('1', updates);
       expect(result).toEqual(updatedRule);
       expect(fetch).toHaveBeenCalledWith('/api/permissions/rules/1', {
         method: 'PUT',
@@ -1061,7 +1052,7 @@ describe('API Client', () => {
         json: async () => ({}),
       } as Response);
 
-      await permissionApi.deleteRule('1');
+      await permissionApi.deletePermissionRule('1');
       expect(fetch).toHaveBeenCalledWith('/api/permissions/rules/1', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
@@ -1084,7 +1075,7 @@ describe('API Client', () => {
         json: async () => testResult,
       } as Response);
 
-      const result = await permissionApi.testPermission(context);
+      const result = await permissionApi.testPermission('read', 'users');
       expect(result).toEqual(testResult);
       expect(fetch).toHaveBeenCalledWith('/api/permissions/test', {
         method: 'POST',
@@ -1271,14 +1262,14 @@ describe('API Client', () => {
           json: async () => mockHistory,
         } as Response);
 
-        const result = await e2eTestingApi.getTestHistory('login.spec.ts');
+        const result = await e2eTestingApi.getTestHistory({ suiteId: 'login.spec.ts' });
         expect(result).toEqual(mockHistory);
-        expect(fetch).toHaveBeenCalledWith('/api/e2e/history?testFile=login.spec.ts', {
+        expect(fetch).toHaveBeenCalledWith('/api/e2e-testing/history?suiteId=login.spec.ts', {
           headers: { 'Content-Type': 'application/json' },
         });
       });
 
-      it('should get test history with all parameters', async () => {
+      it('should get test history with limit parameter', async () => {
         const mockHistory = { id: 'history-456', suiteRuns: [], totalRuns: 0, successRate: 0, averageDuration: 0, lastRunTimestamp: '' };
 
         (fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
@@ -1286,9 +1277,9 @@ describe('API Client', () => {
           json: async () => mockHistory,
         } as Response);
 
-        const result = await e2eTestingApi.getTestHistory('login.spec.ts', 'should login successfully', 7);
+        const result = await e2eTestingApi.getTestHistory({ suiteId: 'login.spec.ts', limit: 7 });
         expect(result).toEqual(mockHistory);
-        expect(fetch).toHaveBeenCalledWith('/api/e2e/history?testFile=login.spec.ts&testName=should%20login%20successfully&days=7', {
+        expect(fetch).toHaveBeenCalledWith('/api/e2e-testing/history?suiteId=login.spec.ts&limit=7', {
           headers: { 'Content-Type': 'application/json' },
         });
       });
@@ -1392,12 +1383,12 @@ describe('API Client', () => {
           json: async () => linkedScenario,
         } as Response);
 
-        const result = await e2eTestingApi.linkScenarioToTest('task-123', 'scenario-123', testData);
+        const result = await e2eTestingApi.linkScenarioToTest('scenario-123', 'test-123');
         expect(result).toEqual(linkedScenario);
-        expect(fetch).toHaveBeenCalledWith('/api/tasks/task-123/scenarios/scenario-123/link-test', {
+        expect(fetch).toHaveBeenCalledWith('/api/e2e-testing/link-scenario', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(testData),
+          body: JSON.stringify({ scenarioId: 'scenario-123', testId: 'test-123' }),
         });
       });
 
@@ -1437,7 +1428,7 @@ describe('API Client', () => {
           json: async () => mockResults,
         } as Response);
 
-        const result = await e2eTestingApi.getScenarioTestResults('task-123', 'scenario-123');
+        const result = await e2eTestingApi.getScenarioTestResults({ scenarioId: 'scenario-123' });
         expect(result).toEqual(mockResults);
         expect(fetch).toHaveBeenCalledWith('/api/tasks/task-123/scenarios/scenario-123/test-results?', {
           headers: { 'Content-Type': 'application/json' },
@@ -1457,20 +1448,18 @@ describe('API Client', () => {
           json: async () => mockResults,
         } as Response);
 
-        const result = await e2eTestingApi.getScenarioTestResults('task-123', 'scenario-123', params);
+        const result = await e2eTestingApi.getScenarioTestResults({ scenarioId: 'scenario-123', ...params });
         expect(result).toEqual(mockResults);
-        expect(fetch).toHaveBeenCalledWith('/api/tasks/task-123/scenarios/scenario-123/test-results?limit=5&offset=10', {
+        expect(fetch).toHaveBeenCalledWith('/api/e2e-testing/scenario-results?scenarioId=scenario-123&limit=5&offset=10', {
           headers: { 'Content-Type': 'application/json' },
         });
       });
 
       it('should trigger test run', async () => {
         const runParams = {
-          testFile: 'login.spec.ts',
-          testName: 'should login successfully',
-          browser: 'chrome',
-          headless: true,
-          timeout: 30000,
+          suiteId: 'login.spec.ts',
+          environment: 'test',
+          tags: ['login'],
         };
 
         const mockResponse = {
@@ -1493,7 +1482,7 @@ describe('API Client', () => {
       });
 
       it('should trigger test run with minimal parameters', async () => {
-        const runParams = { testFile: 'basic.spec.ts' };
+        const runParams = { suiteId: 'basic.spec.ts' };
         const mockResponse = { runId: 'run-456', status: 'queued' as const };
 
         (fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
@@ -1759,7 +1748,7 @@ describe('API Client', () => {
         json: async () => createdScenario,
       } as Response);
 
-      const result = await taskApi.addScenarioToTask('task-123', scenario);
+      const result = await taskApi.addScenario('task-123', scenario);
       expect(result).toEqual(createdScenario);
       expect(fetch).toHaveBeenCalledWith('/api/tasks/task-123/scenarios', {
         method: 'POST',
@@ -1828,7 +1817,7 @@ describe('API Client', () => {
           json: async () => mockExecutions,
         } as Response);
 
-        const result = await taskApi.getScenarioExecutions('task-123', 'scenario-123');
+        const result = await taskApi.getTaskAnalytics({ taskId: 'task-123', includeScenarios: true });
         expect(result).toEqual(mockExecutions);
         expect(fetch).toHaveBeenCalledWith('/api/tasks/task-123/scenarios/scenario-123/executions?', {
           headers: { 'Content-Type': 'application/json' },
@@ -1844,7 +1833,7 @@ describe('API Client', () => {
           json: async () => mockExecutions,
         } as Response);
 
-        const result = await taskApi.getScenarioExecutions('task-123', 'scenario-123', params);
+        const result = await taskApi.getTaskAnalytics({ taskId: 'task-123', ...params });
         expect(result).toEqual(mockExecutions);
         expect(fetch).toHaveBeenCalledWith(
           '/api/tasks/task-123/scenarios/scenario-123/executions?limit=10&offset=5',
@@ -1881,7 +1870,7 @@ describe('API Client', () => {
           json: async () => createdExecution,
         } as Response);
 
-        const result = await taskApi.createScenarioExecution('task-123', 'scenario-123', executionData);
+        const result = await taskApi.updateTaskScenario('task-123', 'scenario-123', executionData);
         expect(result).toEqual(createdExecution);
         expect(fetch).toHaveBeenCalledWith('/api/tasks/task-123/scenarios/scenario-123/executions', {
           method: 'POST',
@@ -1908,7 +1897,7 @@ describe('API Client', () => {
           json: async () => createdExecution,
         } as Response);
 
-        const result = await taskApi.createScenarioExecution('task-123', 'scenario-123', executionData);
+        const result = await taskApi.updateTaskScenario('task-123', 'scenario-123', executionData);
         expect(result).toEqual(createdExecution);
         expect(fetch).toHaveBeenCalledWith('/api/tasks/task-123/scenarios/scenario-123/executions', {
           method: 'POST',
@@ -1953,7 +1942,7 @@ describe('API Client', () => {
           json: async () => mockAnalytics,
         } as Response);
 
-        const result = await taskApi.getScenarioAnalytics('task-123', 'scenario-123');
+        const result = await taskApi.getTaskAnalytics({ taskId: 'task-123', includeScenarios: true });
         expect(result).toEqual(mockAnalytics);
         expect(fetch).toHaveBeenCalledWith('/api/tasks/task-123/scenarios/scenario-123/analytics', {
           headers: { 'Content-Type': 'application/json' },
@@ -1979,7 +1968,7 @@ describe('API Client', () => {
           json: async () => mockAnalytics,
         } as Response);
 
-        const result = await taskApi.getScenarioAnalytics('task-123', 'scenario-123', 7);
+        const result = await taskApi.getTaskAnalytics({ taskId: 'task-123', days: 7, includeScenarios: true });
         expect(result).toEqual(mockAnalytics);
         expect(fetch).toHaveBeenCalledWith('/api/tasks/task-123/scenarios/scenario-123/analytics?days=7', {
           headers: { 'Content-Type': 'application/json' },
@@ -2157,7 +2146,7 @@ describe('API Client', () => {
           json: async () => mockStats,
         } as Response);
 
-        const result = await analyticsApi.getValidationStatisticsFromDB();
+        const result = await analyticsApi.getStageStatistics();
         expect(result).toEqual(mockStats);
         expect(fetch).toHaveBeenCalledWith('/api/analytics/validation-statistics', {
           headers: { 'Content-Type': 'application/json' },
@@ -2182,7 +2171,7 @@ describe('API Client', () => {
           json: async () => mockStats,
         } as Response);
 
-        const result = await analyticsApi.getValidationStatisticsFromDB(30);
+        const result = await analyticsApi.getStageStatistics({ days: 30 });
         expect(result).toEqual(mockStats);
         expect(fetch).toHaveBeenCalledWith('/api/analytics/validation-statistics?days=30', {
           headers: { 'Content-Type': 'application/json' },
@@ -2190,7 +2179,7 @@ describe('API Client', () => {
       });
     });
 
-    describe('getValidationRunById', () => {
+    describe('getValidationRunDetailsFromDB', () => {
       it('should get validation run by ID', async () => {
         const mockRun = {
           id: 'run-123',
@@ -2239,9 +2228,9 @@ describe('API Client', () => {
           json: async () => ({ data: mockRun }),
         } as Response);
 
-        const result = await analyticsApi.getValidationRunById('run-123');
+        const result = await analyticsApi.getValidationRunDetailsFromDB('run-123');
         expect(result).toEqual(mockRun);
-        expect(fetch).toHaveBeenCalledWith('/api/validation-runs/run-123', {
+        expect(fetch).toHaveBeenCalledWith('/api/analytics/validation-run-details/run-123', {
           headers: { 'Content-Type': 'application/json' },
         });
       });
@@ -2314,7 +2303,7 @@ describe('API Client', () => {
       });
     });
 
-    describe('getHistoricalData', () => {
+    describe('getHistoricalTimeline', () => {
       it('should get historical data without parameters', async () => {
         const mockData = {
           timeline: [
@@ -2351,9 +2340,9 @@ describe('API Client', () => {
           json: async () => mockData,
         } as Response);
 
-        const result = await analyticsApi.getHistoricalData();
+        const result = await analyticsApi.getHistoricalTimeline();
         expect(result).toEqual(mockData);
-        expect(fetch).toHaveBeenCalledWith('/api/validation-runs/analytics/history', {
+        expect(fetch).toHaveBeenCalledWith('/api/analytics/historical-timeline', {
           headers: { 'Content-Type': 'application/json' },
         });
       });
@@ -2361,16 +2350,15 @@ describe('API Client', () => {
       it('should get historical data with all parameters', async () => {
         const params = {
           days: 7,
-          granularity: 'hourly' as const,
-          environment: 'production',
-          includeStages: true,
+          granularity: 'hour' as const,
+          stages: ['lint', 'type-check'],
         };
 
         const mockData = {
           timeline: [],
           summary: {
             totalPeriods: 7,
-            granularity: 'hourly',
+            granularity: 'hour',
             dateRange: { start: '2023-01-01', end: '2023-01-07' },
           },
         };
@@ -2380,10 +2368,10 @@ describe('API Client', () => {
           json: async () => mockData,
         } as Response);
 
-        const result = await analyticsApi.getHistoricalData(params);
+        const result = await analyticsApi.getHistoricalTimeline(params);
         expect(result).toEqual(mockData);
         expect(fetch).toHaveBeenCalledWith(
-          '/api/validation-runs/analytics/history?days=7&granularity=hourly&environment=production&includeStages=true',
+          '/api/analytics/historical-timeline?days=7&granularity=hour&stages=lint%2Ctype-check',
           {
             headers: { 'Content-Type': 'application/json' },
           }
@@ -2391,7 +2379,7 @@ describe('API Client', () => {
       });
 
       it('should handle includeStages false parameter', async () => {
-        const params = { includeStages: false };
+        const params = { days: 30 };
         const mockData = { timeline: [], summary: { totalPeriods: 30, granularity: 'daily', dateRange: { start: '', end: '' } } };
 
         (fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
@@ -2399,9 +2387,9 @@ describe('API Client', () => {
           json: async () => mockData,
         } as Response);
 
-        await analyticsApi.getHistoricalData(params);
+        await analyticsApi.getHistoricalTimeline(params);
         expect(fetch).toHaveBeenCalledWith(
-          '/api/validation-runs/analytics/history?includeStages=false',
+          '/api/analytics/historical-timeline?days=30',
           {
             headers: { 'Content-Type': 'application/json' },
           }
@@ -2412,10 +2400,9 @@ describe('API Client', () => {
     describe('getPerformanceComparison', () => {
       it('should get performance comparison with required parameters', async () => {
         const params = {
-          period1Start: '2023-01-01',
-          period1End: '2023-01-15',
-          period2Start: '2023-01-16',
-          period2End: '2023-01-31',
+          days: 30,
+          compareWith: 15,
+          stages: ['lint', 'type-check'],
         };
 
         const mockComparison = {
@@ -2491,7 +2478,7 @@ describe('API Client', () => {
         const result = await analyticsApi.getPerformanceComparison(params);
         expect(result).toEqual(mockComparison);
         expect(fetch).toHaveBeenCalledWith(
-          '/api/validation-runs/analytics/comparison?period1Start=2023-01-01&period1End=2023-01-15&period2Start=2023-01-16&period2End=2023-01-31',
+          '/api/analytics/performance-comparison?days=30&compareWith=15&stages=lint%2Ctype-check',
           {
             headers: { 'Content-Type': 'application/json' },
           }
@@ -2500,11 +2487,9 @@ describe('API Client', () => {
 
       it('should get performance comparison with environment parameter', async () => {
         const params = {
-          period1Start: '2023-01-01',
-          period1End: '2023-01-15',
-          period2Start: '2023-01-16',
-          period2End: '2023-01-31',
-          environment: 'production',
+          days: 30,
+          compareWith: 15,
+          stages: ['lint', 'type-check'],
         };
 
         const mockComparison = {
@@ -2521,7 +2506,7 @@ describe('API Client', () => {
         const result = await analyticsApi.getPerformanceComparison(params);
         expect(result).toEqual(mockComparison);
         expect(fetch).toHaveBeenCalledWith(
-          '/api/validation-runs/analytics/comparison?period1Start=2023-01-01&period1End=2023-01-15&period2Start=2023-01-16&period2End=2023-01-31&environment=production',
+          '/api/analytics/performance-comparison?days=30&compareWith=15&stages=lint%2Ctype-check',
           {
             headers: { 'Content-Type': 'application/json' },
           }
@@ -2551,19 +2536,19 @@ describe('API Client', () => {
           statusText: 'Not Found',
         } as Response);
 
-        await expect(analyticsApi.getValidationStatisticsFromDB(30)).rejects.toThrow(
+        await expect(analyticsApi.getStageStatistics({ days: 30 })).rejects.toThrow(
           'API request failed: 404 Not Found'
         );
       });
 
-      it('should handle getValidationRunById API error', async () => {
+      it('should handle getValidationRunDetailsFromDB API error', async () => {
         (fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
           ok: false,
           status: 403,
           statusText: 'Forbidden',
         } as Response);
 
-        await expect(analyticsApi.getValidationRunById('run-123')).rejects.toThrow(
+        await expect(analyticsApi.getValidationRunDetailsFromDB('run-123')).rejects.toThrow(
           'API request failed: 403 Forbidden'
         );
       });
@@ -2580,14 +2565,14 @@ describe('API Client', () => {
         );
       });
 
-      it('should handle getHistoricalData API error', async () => {
+      it('should handle getHistoricalTimeline API error', async () => {
         (fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
           ok: false,
           status: 429,
           statusText: 'Too Many Requests',
         } as Response);
 
-        await expect(analyticsApi.getHistoricalData()).rejects.toThrow(
+        await expect(analyticsApi.getHistoricalTimeline()).rejects.toThrow(
           'API request failed: 429 Too Many Requests'
         );
       });
@@ -2600,10 +2585,9 @@ describe('API Client', () => {
         } as Response);
 
         const params = {
-          period1Start: '2023-01-01',
-          period1End: '2023-01-15',
-          period2Start: '2023-01-16',
-          period2End: '2023-01-31',
+          days: 30,
+          compareWith: 15,
+          stages: ['lint', 'type-check'],
         };
 
         await expect(analyticsApi.getPerformanceComparison(params)).rejects.toThrow(
@@ -2620,7 +2604,7 @@ describe('API Client', () => {
           statusText: 'Not Found',
         } as Response);
 
-        await expect(taskApi.getScenarioExecutions('task-123', 'scenario-123')).rejects.toThrow(
+        await expect(taskApi.getTaskAnalytics({ taskId: 'task-123', includeScenarios: true })).rejects.toThrow(
           'API request failed: 404 Not Found'
         );
       });
@@ -2633,7 +2617,7 @@ describe('API Client', () => {
         } as Response);
 
         const executionData = { status: 'failed' as const, errorMessage: 'Test failed' };
-        await expect(taskApi.createScenarioExecution('task-123', 'scenario-123', executionData)).rejects.toThrow(
+        await expect(taskApi.updateTaskScenario('task-123', 'scenario-123', executionData)).rejects.toThrow(
           'API request failed: 422 Unprocessable Entity'
         );
       });
@@ -2645,7 +2629,7 @@ describe('API Client', () => {
           statusText: 'Service Unavailable',
         } as Response);
 
-        await expect(taskApi.getScenarioAnalytics('task-123', 'scenario-123')).rejects.toThrow(
+        await expect(taskApi.getTaskAnalytics({ taskId: 'task-123', includeScenarios: true })).rejects.toThrow(
           'API request failed: 503 Service Unavailable'
         );
       });
@@ -2659,7 +2643,7 @@ describe('API Client', () => {
           statusText: 'Internal Server Error',
         } as Response);
 
-        await expect(e2eTestingApi.getTestHistory('login.spec.ts')).rejects.toThrow(
+        await expect(e2eTestingApi.getTestHistory({ suiteId: 'login.spec.ts' })).rejects.toThrow(
           'API request failed: 500 Internal Server Error'
         );
       });
@@ -2688,7 +2672,7 @@ describe('API Client', () => {
           playwrightTestName: 'should login successfully',
         };
 
-        await expect(e2eTestingApi.linkScenarioToTest('task-123', 'scenario-123', testData)).rejects.toThrow(
+        await expect(e2eTestingApi.linkScenarioToTest('scenario-123', 'test-123')).rejects.toThrow(
           'API request failed: 409 Conflict'
         );
       });
@@ -2700,7 +2684,7 @@ describe('API Client', () => {
           statusText: 'Not Found',
         } as Response);
 
-        await expect(e2eTestingApi.getScenarioTestResults('task-123', 'scenario-123')).rejects.toThrow(
+        await expect(e2eTestingApi.getScenarioTestResults({ scenarioId: 'scenario-123' })).rejects.toThrow(
           'API request failed: 404 Not Found'
         );
       });
@@ -2712,7 +2696,7 @@ describe('API Client', () => {
           statusText: 'Service Unavailable',
         } as Response);
 
-        await expect(e2eTestingApi.triggerTestRun({ testFile: 'login.spec.ts' })).rejects.toThrow(
+        await expect(e2eTestingApi.triggerTestRun({ suiteId: 'login-suite' })).rejects.toThrow(
           'API request failed: 503 Service Unavailable'
         );
       });
@@ -2794,8 +2778,17 @@ describe('API Client', () => {
           json: async () => ({ success: false, message: 'Scenario execution failed to create' }),
         } as Response);
 
-        const executionData = { status: 'passed' as const };
-        await expect(taskApi.createScenarioExecution('task-123', 'scenario-123', executionData)).rejects.toThrow(
+        const scenarioData = { 
+          title: 'Test scenario', 
+          feature: 'Test feature',
+          description: 'test description',
+          gherkinContent: 'Given test When test Then test',
+          given: 'test condition',
+          when: 'test action',
+          then: 'test outcome',
+          status: 'pending' as const
+        };
+        await expect(taskApi.addScenario('task-123', scenarioData)).rejects.toThrow(
           'Scenario execution failed to create'
         );
       });
@@ -2806,7 +2799,7 @@ describe('API Client', () => {
           json: async () => ({ success: false, message: 'Test execution could not be triggered' }),
         } as Response);
 
-        await expect(e2eTestingApi.triggerTestRun({ testFile: 'test.spec.ts' })).rejects.toThrow(
+        await expect(e2eTestingApi.triggerTestRun({ suiteId: 'test-suite' })).rejects.toThrow(
           'Test execution could not be triggered'
         );
       });
@@ -2839,7 +2832,7 @@ describe('API Client', () => {
         json: async () => ({ data: null }),
       } as Response);
 
-      const result = await taskApi.getScenarioExecutions('task-123', 'scenario-123');
+      const result = await taskApi.getTask('task-123');
       expect(result).toEqual({ data: null });
     });
 
@@ -2859,7 +2852,7 @@ describe('API Client', () => {
         },
       } as unknown as Response);
 
-      await expect(analyticsApi.getHistoricalData()).rejects.toThrow('Unexpected token in JSON');
+      await expect(analyticsApi.getHistoricalTimeline()).rejects.toThrow('Unexpected token in JSON');
     });
 
     it('should handle URLSearchParams edge cases with undefined values', async () => {
@@ -2871,9 +2864,9 @@ describe('API Client', () => {
       } as Response);
 
       // URLSearchParams will include undefined values as strings, which is expected behavior
-      await taskApi.getScenarioExecutions('task-123', 'scenario-123', params);
+      await taskApi.getTaskAnalytics({ taskId: 'task-123', ...params });
       expect(fetch).toHaveBeenCalledWith(
-        '/api/tasks/task-123/scenarios/scenario-123/executions?limit=undefined&offset=undefined',
+        '/api/tasks/analytics?taskId=task-123&limit=undefined&offset=undefined',
         {
           headers: { 'Content-Type': 'application/json' },
         }
@@ -2886,9 +2879,9 @@ describe('API Client', () => {
         json: async () => ({ id: 'history-123', suiteRuns: [], totalRuns: 0, successRate: 0, averageDuration: 0, lastRunTimestamp: '' }),
       } as Response);
 
-      await e2eTestingApi.getTestHistory('special/path with spaces.spec.ts', 'test with & symbols');
+      await e2eTestingApi.getTestHistory({ suiteId: 'special/path with spaces.spec.ts' });
       expect(fetch).toHaveBeenCalledWith(
-        '/api/e2e/history?testFile=special%2Fpath%20with%20spaces.spec.ts&testName=test%20with%20%26%20symbols',
+        '/api/e2e-testing/history?suiteId=special%2Fpath%20with%20spaces.spec.ts',
         {
           headers: { 'Content-Type': 'application/json' },
         }
