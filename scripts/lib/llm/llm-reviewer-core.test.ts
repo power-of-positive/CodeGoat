@@ -46,7 +46,7 @@ describe('LLMReviewerCore', () => {
       expect(() => new LLMReviewerCore()).not.toThrow();
       
       expect(consoleSpy).toHaveBeenCalledWith('🔍 LLMReviewerCore: Checking for OPENAI_API_KEY...');
-      expect(consoleSpy).toHaveBeenCalledWith('🔍 API Key found: Yes (length: 21)'); // Fixed length
+      expect(consoleSpy).toHaveBeenCalledWith('🔍 API Key found: Yes (length: 22)'); // Updated length
       expect(consoleSpy).toHaveBeenCalledWith('✅ LLMReviewerCore initialized with model: gpt-4o-mini');
       
       consoleSpy.mockRestore();

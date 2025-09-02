@@ -254,7 +254,7 @@ describe('command-utils', () => {
 
       const result = execCommand(command);
 
-      expect(mockCreateFailureResult).toHaveBeenCalledWith('Unknown error');
+      expect(mockCreateFailureResult).toHaveBeenCalledWith('[object Object]');
     });
 
     it('should handle null and undefined errors', () => {

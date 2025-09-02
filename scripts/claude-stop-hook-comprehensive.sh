@@ -17,5 +17,5 @@ NC='\033[0m' # No Color
 
 echo -e "${CYAN}🔥 Starting comprehensive Claude Code validation pipeline...${NC}" >&2
 
-# Call the clean TypeScript stop hook directly and let it output JSON to stdout
-npx tsx scripts/claude-stop-hook-clean.ts
+# Call the comprehensive validation runner that runs ALL stages
+npx tsx scripts/run-all-validation.ts

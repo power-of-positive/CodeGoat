@@ -12,7 +12,8 @@
       "Update(settings-precommit.json)",
       "Update(eslint.shared.mjs)",
       "Update(settings-precommit.json)",
-      "Update(settings-precommit.json)"
+      "Update(settings-precommit.json)",
+      "Update(~/Scientist/Research/personal_projects/codegoat/settings-precommit.json)"
     ]
   },
   "hooks": {

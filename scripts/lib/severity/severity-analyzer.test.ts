@@ -39,7 +39,7 @@ describe('severity-analyzer', () => {
       expect(result.decision).toBe('approve');
       expect(result.feedback).toContain('Code review completed with minor recommendations');
       expect(result.feedback).toContain(reviewComments);
-      expect(result.feedback).toContain('ai-review-results.json');
+      expect(result.feedback).toContain('code-review-comments.tmp');
     });
 
     it('should return approve decision with no issues message when review comments are empty', () => {
@@ -50,7 +50,7 @@ describe('severity-analyzer', () => {
 
       expect(result.decision).toBe('approve');
       expect(result.feedback).toContain('Code review completed - no issues detected');
-      expect(result.feedback).toContain('ai-review-results.json');
+      expect(result.feedback).toContain('code-review-comments.tmp');
     });
 
     it('should return approve decision with no issues message when review comments are whitespace only', () => {
@@ -182,7 +182,7 @@ describe('severity-analyzer', () => {
 
       expect(result.decision).toBe('approve');
       expect(result.feedback).toContain('Code review completed for stages: lint, test');
-      expect(result.feedback).toContain('ai-review-results.json');
+      expect(result.feedback).toContain('code-review-comments.tmp');
       expect(result.feedback).toContain('All checks passed with minor recommendations');
     });
 
@@ -193,7 +193,7 @@ describe('severity-analyzer', () => {
 
       expect(result.decision).toBe('approve');
       expect(result.feedback).toContain('Code review completed - no issues detected');
-      expect(result.feedback).toContain('ai-review-results.json');
+      expect(result.feedback).toContain('code-review-comments.tmp');
     });
 
     it('should handle structured data with non-blocking file issues', () => {

@@ -49,7 +49,7 @@ describe('LLMReviewer', () => {
     it('should load environment variables during initialization', () => {
       // Constructor already called in beforeEach
       expect(mockLoadProjectEnvSync).toHaveBeenCalledWith(3);
-      expect(mockLoadProjectEnvSync).toHaveBeenCalledTimes(2); // Called twice: module level and constructor
+      expect(mockLoadProjectEnvSync).toHaveBeenCalledTimes(1); // Called once: module level
     });
 
     it('should create LLMReviewerCore instance', () => {

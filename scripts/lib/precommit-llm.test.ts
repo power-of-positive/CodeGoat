@@ -27,7 +27,7 @@ describe('precommit-llm', () => {
   describe('runLlmReviewProcess', () => {
     it('should return null when SKIP_LLM_REVIEW is set to true', async () => {
       process.env.SKIP_LLM_REVIEW = 'true';
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
       const result = await runLlmReviewProcess('/mock/project', 'output');
 
