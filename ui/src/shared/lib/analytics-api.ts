@@ -1,5 +1,5 @@
 import { apiRequest, buildQueryParams } from './api-base';
-import { ValidationRun, ValidationResult } from '../types/index';
+import { ValidationRun, HistoricalTimelineData } from '../types/index';
 
 export interface StageAnalytics {
   stageName: string;
@@ -86,8 +86,8 @@ export const analyticsApi = {
     return apiRequest<ValidationRun[]>(`/analytics/validation-runs-db${queryParams}`);
   },
 
-  async getValidationRunDetailsFromDB(runId: string): Promise<ValidationResult[]> {
-    return apiRequest<ValidationResult[]>(`/analytics/validation-run-details/${runId}`);
+  async getValidationRunDetailsFromDB(runId: string): Promise<ValidationRun[]> {
+    return apiRequest<ValidationRun[]>(`/analytics/validation-run-details/${runId}`);
   },
 
   async getPerformanceComparison(options?: {
@@ -103,8 +103,8 @@ export const analyticsApi = {
     days?: number;
     granularity?: 'hour' | 'day' | 'week';
     stages?: string[];
-  }): Promise<unknown> {
+  }): Promise<HistoricalTimelineData> {
     const queryParams = buildQueryParams(options || {});
-    return apiRequest<unknown>(`/analytics/historical-timeline${queryParams}`);
+    return apiRequest<HistoricalTimelineData>(`/analytics/historical-timeline${queryParams}`);
   },
 };

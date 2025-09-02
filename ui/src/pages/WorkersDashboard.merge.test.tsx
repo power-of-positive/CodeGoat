@@ -103,12 +103,7 @@ describe('WorkersDashboard - Merge Functionality', () => {
         totalBlockedCommands: 0,
       });
 
-      mockWorkersApi.mergeWorktree.mockResolvedValue({
-        message: 'Successfully merged',
-        workerId: 'worker-123-abc',
-        mergedBranch: 'main',
-        hasChanges: true,
-      });
+      mockWorkersApi.mergeWorktree.mockResolvedValue(undefined);
 
       // Mock window.confirm and window.alert
       window.confirm = jest.fn(() => true);
@@ -133,7 +128,7 @@ describe('WorkersDashboard - Merge Functionality', () => {
 
       await waitFor(() => {
         expect(mockWorkersApi.mergeWorktree).toHaveBeenCalledWith('worker-123-abc');
-        expect(window.alert).toHaveBeenCalledWith('Successfully merged changes from worker-123-abc with changes committed');
+        expect(window.alert).toHaveBeenCalledWith('Successfully merged changes from worker-123-abc');
       });
     });
 
@@ -160,12 +155,7 @@ describe('WorkersDashboard - Merge Functionality', () => {
         totalBlockedCommands: 0,
       });
 
-      mockWorkersApi.mergeWorktree.mockResolvedValue({
-        message: 'Successfully merged',
-        workerId: 'worker-123-abc',
-        mergedBranch: 'main',
-        hasChanges: false,
-      });
+      mockWorkersApi.mergeWorktree.mockResolvedValue(undefined);
 
       window.confirm = jest.fn(() => true);
       window.alert = jest.fn();
@@ -185,7 +175,7 @@ describe('WorkersDashboard - Merge Functionality', () => {
       });
 
       await waitFor(() => {
-        expect(window.alert).toHaveBeenCalledWith('Successfully merged changes from worker-123-abc (no changes to commit)');
+        expect(window.alert).toHaveBeenCalledWith('Successfully merged changes from worker-123-abc');
       });
     });
 

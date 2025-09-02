@@ -312,7 +312,8 @@ describe('Shared Types', () => {
           name: 'Linting',
           success: true,
           duration: 5000,
-          attempt: 1
+          attempt: 1,
+          status: 'passed' as const
         };
 
         const run: ValidationRun = {
@@ -320,7 +321,8 @@ describe('Shared Types', () => {
           timestamp: '2023-01-01T00:00:00Z',
           stages: [stageResult],
           success: true,
-          duration: 5000
+          duration: 5000,
+          overallStatus: 'passed' as const
         };
 
         expect(run.id).toBe('run-1');
@@ -647,7 +649,8 @@ describe('Shared Types', () => {
         name: 'Testing',
         success: true,
         duration: 5000,
-        attempt: 1
+        attempt: 1,
+        status: 'passed' as const
       };
 
       const validationRun: ValidationRun = {
@@ -655,7 +658,8 @@ describe('Shared Types', () => {
         timestamp: '2023-01-01T00:00:00Z',
         stages: [validationStageResult],
         success: true,
-        duration: 5000
+        duration: 5000,
+        overallStatus: 'passed' as const
       };
 
       const task: Task = {

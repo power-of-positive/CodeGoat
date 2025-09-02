@@ -67,7 +67,7 @@ function useTaskData(taskId: string | undefined) {
 
   const createScenarioMutation = useMutation({
     mutationFn: (scenario: Omit<BDDScenario, 'id'>) =>
-      taskApi.addScenarioToTask(taskId!, scenario),
+      taskApi.addScenario(taskId!, scenario),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['task', taskId] });
     },
@@ -112,7 +112,7 @@ function useMergeChanges(taskId: string | undefined, task: Task | undefined) {
         throw new Error('No executor ID available for this task');
       }
       const commitMessage = `Task ${taskId}: Merge changes from task execution`;
-      const response = await claudeWorkersApi.mergeWorker(task.executorId, commitMessage);
+      const response = await claudeWorkersApi.mergeWorktree(task.executorId, commitMessage);
       return response;
     },
     onSuccess: () => {
@@ -400,7 +400,13 @@ export function TaskDetail() {
     return <TaskNotFound navigate={navigate} />;
   }
 
-  const validationRuns: ValidationRunData[] = (task.validationRuns as ValidationRunData[]) || [];
+  const validationRuns: ValidationRunData[] = (task.validationRuns || []).map(run => ({
+    id: run.id,
+    success: run.success,
+    duration: run.duration,
+    timestamp: run.timestamp,
+    stages: run.stages?.map(s => s.name).join(', '),
+  }));
 
   return (
     <div className="p-6 space-y-6">

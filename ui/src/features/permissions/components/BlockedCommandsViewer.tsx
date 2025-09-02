@@ -13,7 +13,7 @@ interface BlockedCommandsViewerProps {
 export function BlockedCommandsViewer({ workerId, onClose }: BlockedCommandsViewerProps) {
   const { data: blockedData, isLoading } = useQuery({
     queryKey: ['worker-blocked-commands', workerId],
-    queryFn: () => claudeWorkersApi.getBlockedCommands(workerId),
+    queryFn: () => claudeWorkersApi.getBlockedCommands(),
     refetchInterval: 5000, // Refresh every 5 seconds
   });
 
@@ -37,20 +37,15 @@ export function BlockedCommandsViewer({ workerId, onClose }: BlockedCommandsView
           </div>
         ) : (
           <div>
-            {blockedData && blockedData.blockedCommandsList.length > 0 ? (
+            {blockedData && blockedData.length > 0 ? (
               <div className="space-y-3">
                 <div className="text-sm text-gray-600 mb-4">
                   Total blocked commands:{' '}
                   <span className="font-semibold text-orange-600">
-                    {blockedData.blockedCommands}
+                    {blockedData.filter(cmd => cmd.workerId === workerId).length}
                   </span>
-                  {!blockedData.hasPermissionSystem && (
-                    <span className="ml-2 text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
-                      Permission system disabled
-                    </span>
-                  )}
                 </div>
-                {blockedData.blockedCommandsList.map((blocked, index) => (
+                {blockedData.filter(cmd => cmd.workerId === workerId).map((blocked, index) => (
                   <div key={index} className="bg-red-50 border border-red-200 rounded-lg p-3">
                     <div className="flex items-start justify-between mb-2">
                       <div className="font-mono text-sm text-red-800 bg-red-100 px-2 py-1 rounded">
@@ -63,9 +58,9 @@ export function BlockedCommandsViewer({ workerId, onClose }: BlockedCommandsView
                     <div className="text-sm text-red-700 mb-1">
                       <strong>Reason:</strong> {blocked.reason}
                     </div>
-                    {blocked.suggestion && (
+                    {blocked.context && (
                       <div className="text-sm text-gray-600">
-                        <strong>Suggestion:</strong> {blocked.suggestion}
+                        <strong>Context:</strong> {blocked.context}
                       </div>
                     )}
                   </div>
@@ -75,11 +70,9 @@ export function BlockedCommandsViewer({ workerId, onClose }: BlockedCommandsView
               <div className="text-center py-8">
                 <ShieldAlert className="h-8 w-8 text-gray-400 mx-auto mb-2" />
                 <div className="text-sm text-gray-600">No blocked commands</div>
-                {blockedData && !blockedData.hasPermissionSystem && (
-                  <div className="text-xs text-yellow-600 mt-2">
-                    Permission system is not active for this worker
-                  </div>
-                )}
+                <div className="text-xs text-gray-500 mt-2">
+                  No commands have been blocked by the security system
+                </div>
               </div>
             )}
           </div>

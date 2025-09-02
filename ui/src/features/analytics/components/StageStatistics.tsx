@@ -1,4 +1,4 @@
-/* eslint-disable max-lines */
+ 
 import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -74,7 +74,9 @@ export function StageStatistics({ defaultDays = DEFAULT_DAYS_PERIOD, stageId }: 
   ], []);
 
   const handleExportData = () => {
-    if (!stageData) return;
+    if (!stageData) {
+      return;
+    }
     
     const exportData = {
       exportDate: new Date().toISOString(),

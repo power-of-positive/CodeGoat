@@ -380,13 +380,13 @@ export function StageHistoryView({
 
   const { data: historyData, isLoading: historyLoading } = useQuery({
     queryKey: ['stage-history', stageId, timeRange],
-    queryFn: () => analyticsApi.getStageHistory(stageId, timeRange),
+    queryFn: () => analyticsApi.getStageHistory({ stage: stageId, days: timeRange }),
     staleTime: STALE_TIME_MINUTES * MINUTES_PER_HOUR * MILLISECONDS_PER_SECOND, // 5 minutes
   });
 
   const { data: statisticsData, isLoading: statisticsLoading } = useQuery({
     queryKey: ['stage-statistics', stageId],
-    queryFn: () => analyticsApi.getStageStatistics(stageId),
+    queryFn: () => analyticsApi.getStageStatistics({ stage: stageId, includeDetails: true }),
     staleTime: STALE_TIME_MINUTES * MINUTES_PER_HOUR * MILLISECONDS_PER_SECOND, // 5 minutes
   });
 
@@ -439,17 +439,17 @@ export function StageHistoryView({
         </div>
       </div>
 
-      {statisticsData && (
-        <OverviewStats statistics={statisticsData.statistics} />
+      {statisticsData && (statisticsData as { statistics?: StageStatistics })?.statistics && (
+        <OverviewStats statistics={(statisticsData as { statistics: StageStatistics }).statistics} />
       )}
 
-      {historyData && <HistoryTrends history={historyData.history} />}
+      {historyData && (historyData as unknown as { history?: StageHistory })?.history && <HistoryTrends history={(historyData as unknown as { history: StageHistory }).history} />}
 
-      {statisticsData && (
-        <PerformanceMetrics statistics={statisticsData.statistics} />
+      {statisticsData && (statisticsData as { statistics?: StageStatistics })?.statistics && (
+        <PerformanceMetrics statistics={(statisticsData as { statistics: StageStatistics }).statistics} />
       )}
 
-      {statisticsData && <RecentRuns statistics={statisticsData.statistics} />}
+      {statisticsData && (statisticsData as { statistics?: StageStatistics })?.statistics && <RecentRuns statistics={(statisticsData as { statistics: StageStatistics }).statistics} />}
     </div>
   );
 }

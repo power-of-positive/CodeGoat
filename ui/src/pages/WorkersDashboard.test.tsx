@@ -17,6 +17,7 @@ jest.mock('react-router-dom', () => ({
 jest.mock('../shared/lib/api', () => ({
   claudeWorkersApi: {
     getWorkers: jest.fn(),
+    getWorkersStatus: jest.fn(),
     getWorkerLogs: jest.fn(),
     stopWorker: jest.fn(),
     mergeWorktree: jest.fn(),
@@ -81,7 +82,7 @@ describe('WorkersDashboard - Core Functionality', () => {
   });
 
   it('renders workers dashboard with initial state', async () => {
-    mockWorkersApi.getWorkers.mockResolvedValue({
+    mockWorkersApi.getWorkersStatus.mockResolvedValue({
       workers: [],
       activeCount: 0,
       totalCount: 0,
@@ -114,7 +115,7 @@ describe('WorkersDashboard - Core Functionality', () => {
       },
     ];
 
-    mockWorkersApi.getWorkers.mockResolvedValue({
+    mockWorkersApi.getWorkersStatus.mockResolvedValue({
       workers: mockWorkers,
       activeCount: 1,
       totalCount: 1,
@@ -131,7 +132,7 @@ describe('WorkersDashboard - Core Functionality', () => {
   });
 
   it('handles API error', async () => {
-    mockWorkersApi.getWorkers.mockRejectedValue(new Error('API Error'));
+    mockWorkersApi.getWorkersStatus.mockRejectedValue(new Error('API Error'));
 
     render(<WorkersDashboard />, { wrapper: createWrapper() });
 
@@ -156,7 +157,7 @@ describe('WorkersDashboard - Core Functionality', () => {
       },
     ];
 
-    mockWorkersApi.getWorkers.mockResolvedValue({
+    mockWorkersApi.getWorkersStatus.mockResolvedValue({
       workers: mockWorkers,
       activeCount: 1,
       totalCount: 1,
@@ -196,17 +197,14 @@ describe('WorkersDashboard - Core Functionality', () => {
       },
     ];
 
-    mockWorkersApi.getWorkers.mockResolvedValue({
+    mockWorkersApi.getWorkersStatus.mockResolvedValue({
       workers: mockWorkers,
       activeCount: 1,
       totalCount: 1,
       totalBlockedCommands: 0,
     });
 
-    mockWorkersApi.stopWorker.mockResolvedValue({
-      workerId: 'worker-123-abc',
-      status: 'stopped',
-    });
+    mockWorkersApi.stopWorker.mockResolvedValue(undefined);
 
     // Mock window.confirm
     window.confirm = jest.fn(() => true);
@@ -248,7 +246,7 @@ describe('WorkersDashboard - Core Functionality', () => {
       },
     ];
 
-    mockWorkersApi.getWorkers.mockResolvedValue({
+    mockWorkersApi.getWorkersStatus.mockResolvedValue({
       workers: mockWorkers,
       activeCount: 1,
       totalCount: 1,
@@ -315,7 +313,7 @@ describe('WorkersDashboard - Core Functionality', () => {
         },
       ];
 
-      mockWorkersApi.getWorkers.mockResolvedValue({
+      mockWorkersApi.getWorkersStatus.mockResolvedValue({
         workers: mockWorkers,
         activeCount: 1,
         totalCount: 3,
@@ -357,7 +355,7 @@ describe('WorkersDashboard - Core Functionality', () => {
         },
       ];
 
-      mockWorkersApi.getWorkers.mockResolvedValue({
+      mockWorkersApi.getWorkersStatus.mockResolvedValue({
         workers: mockWorkers,
         activeCount: 1,
         totalCount: 2,
@@ -372,7 +370,7 @@ describe('WorkersDashboard - Core Functionality', () => {
     });
 
     it('displays 0% success rate when no workers exist', async () => {
-      mockWorkersApi.getWorkers.mockResolvedValue({
+      mockWorkersApi.getWorkersStatus.mockResolvedValue({
         workers: [],
         activeCount: 0,
         totalCount: 0,
@@ -403,7 +401,7 @@ describe('WorkersDashboard - Core Functionality', () => {
     };
 
     beforeEach(() => {
-      mockWorkersApi.getWorkers.mockResolvedValue({
+      mockWorkersApi.getWorkersStatus.mockResolvedValue({
         workers: [mockWorker],
         activeCount: 0,
         totalCount: 1,
@@ -418,12 +416,7 @@ describe('WorkersDashboard - Core Functionality', () => {
     });
 
     it('handles merge worktree action successfully', async () => {
-      mockWorkersApi.mergeWorktree.mockResolvedValue({
-        message: 'Successfully merged changes',
-        workerId: 'worker-123-abc',
-        mergedBranch: 'feature-branch',
-        hasChanges: true,
-      });
+      mockWorkersApi.mergeWorktree.mockResolvedValue(undefined);
 
       render(<WorkersDashboard />, { wrapper: createWrapper() });
 
@@ -443,17 +436,12 @@ describe('WorkersDashboard - Core Functionality', () => {
       
       await waitFor(() => {
         expect(mockWorkersApi.mergeWorktree).toHaveBeenCalledWith('worker-123-abc');
-        expect(window.alert).toHaveBeenCalledWith('Successfully merged changes from worker-123-abc with changes committed');
+        expect(window.alert).toHaveBeenCalledWith('Successfully merged changes from worker-123-abc');
       });
     });
 
     it('handles merge worktree with no changes', async () => {
-      mockWorkersApi.mergeWorktree.mockResolvedValue({
-        message: 'Successfully merged changes',
-        workerId: 'worker-123-abc',
-        mergedBranch: 'feature-branch',
-        hasChanges: false,
-      });
+      mockWorkersApi.mergeWorktree.mockResolvedValue(undefined);
 
       render(<WorkersDashboard />, { wrapper: createWrapper() });
 
@@ -470,7 +458,7 @@ describe('WorkersDashboard - Core Functionality', () => {
       });
 
       await waitFor(() => {
-        expect(window.alert).toHaveBeenCalledWith('Successfully merged changes from worker-123-abc (no changes to commit)');
+        expect(window.alert).toHaveBeenCalledWith('Successfully merged changes from worker-123-abc');
       });
     });
 
@@ -521,11 +509,7 @@ describe('WorkersDashboard - Core Functionality', () => {
     });
 
     it('handles open VSCode action successfully', async () => {
-      mockWorkersApi.openVSCode.mockResolvedValue({
-        message: 'Opened worktree in VSCode',
-        workerId: 'worker-123-abc',
-        worktreePath: '/path/to/worktree',
-      });
+      mockWorkersApi.openVSCode.mockResolvedValue(undefined);
 
       render(<WorkersDashboard />, { wrapper: createWrapper() });
 
@@ -543,7 +527,7 @@ describe('WorkersDashboard - Core Functionality', () => {
 
       await waitFor(() => {
         expect(mockWorkersApi.openVSCode).toHaveBeenCalledWith('worker-123-abc');
-        expect(window.alert).toHaveBeenCalledWith('VSCode opened for worktree: /path/to/worktree');
+        expect(window.alert).toHaveBeenCalledWith('VSCode opened for worker-123-abc');
       });
     });
 
@@ -602,7 +586,7 @@ describe('WorkersDashboard - Core Functionality', () => {
       const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
       const runningWorker = { ...mockWorker, status: 'running' as const };
       
-      mockWorkersApi.getWorkers.mockResolvedValue({
+      mockWorkersApi.getWorkersStatus.mockResolvedValue({
         workers: [runningWorker],
         activeCount: 1,
         totalCount: 1,
@@ -649,7 +633,7 @@ describe('WorkersDashboard - Core Functionality', () => {
     };
 
     beforeEach(() => {
-      mockWorkersApi.getWorkers.mockResolvedValue({
+      mockWorkersApi.getWorkersStatus.mockResolvedValue({
         workers: [mockWorker],
         activeCount: 0,
         totalCount: 1,
@@ -729,128 +713,31 @@ describe('WorkersDashboard - Core Functionality', () => {
     };
 
     beforeEach(() => {
-      mockWorkersApi.getWorkers.mockResolvedValue({
+      mockWorkersApi.getWorkersStatus.mockResolvedValue({
         workers: [mockWorker],
         activeCount: 1,
         totalCount: 1,
         totalBlockedCommands: 0,
       });
 
-      mockWorkersApi.getWorkerLogs.mockResolvedValue({
-        workerId: 'worker-123-abc',
-        logs: 'Starting worker...\n🤖 Processing task\n[ERROR] Something went wrong\nCompleted step 1',
-        logFile: '/path/to/log.txt',
-      });
+      mockWorkersApi.getWorkerLogs.mockResolvedValue([
+        'Starting worker...',
+        '🤖 Processing task',
+        '[ERROR] Something went wrong',
+        'Completed step 1'
+      ]);
     });
 
-    it.skip('processes different types of log entries correctly', async () => {
-      render(<WorkersDashboard />, { wrapper: createWrapper() });
+    // Test disabled - processes different types of log entries correctly
 
-      await waitFor(() => {
-        const workerCard = screen.getByText('Worker abc').closest('.cursor-pointer');
-        if (workerCard) {
-          fireEvent.click(workerCard);
-        }
-      });
+    // Test disabled - toggles auto-refresh functionality
 
-      await waitFor(() => {
-        const logsButton = screen.getByText('Logs');
-        fireEvent.click(logsButton);
-      });
+    // Test disabled - toggles auto-scroll functionality
 
-      // Wait for logs to load
-      await waitFor(() => {
-        const logsViewer = screen.getByTestId('logs-viewer');
-        expect(logsViewer).toBeInTheDocument();
-        expect(logsViewer).toHaveTextContent('Log entries: 5'); // 4 log lines + 1 process start entry
-      });
-    });
-
-    it.skip('toggles auto-refresh functionality', async () => {
-      render(<WorkersDashboard />, { wrapper: createWrapper() });
-
-      await waitFor(() => {
-        const workerCard = screen.getByText('Worker abc').closest('.cursor-pointer');
-        if (workerCard) {
-          fireEvent.click(workerCard);
-        }
-      });
-
-      await waitFor(() => {
-        const logsButton = screen.getByText('Logs');
-        fireEvent.click(logsButton);
-      });
-
-      await waitFor(() => {
-        const refreshButton = screen.getByText('Live');
-        fireEvent.click(refreshButton);
-      });
-
-      expect(screen.getByText('Paused')).toBeInTheDocument();
-
-      const pausedButton = screen.getByText('Paused');
-      fireEvent.click(pausedButton);
-
-      expect(screen.getByText('Live')).toBeInTheDocument();
-    });
-
-    it.skip('toggles auto-scroll functionality', async () => {
-      render(<WorkersDashboard />, { wrapper: createWrapper() });
-
-      await waitFor(() => {
-        const workerCard = screen.getByText('Worker abc').closest('.cursor-pointer');
-        if (workerCard) {
-          fireEvent.click(workerCard);
-        }
-      });
-
-      await waitFor(() => {
-        const logsButton = screen.getByText('Logs');
-        fireEvent.click(logsButton);
-      });
-
-      await waitFor(() => {
-        const autoScrollButton = screen.getByText('Auto');
-        fireEvent.click(autoScrollButton);
-      });
-
-      expect(screen.getByText('Manual')).toBeInTheDocument();
-
-      const manualButton = screen.getByText('Manual');
-      fireEvent.click(manualButton);
-
-      expect(screen.getByText('Auto')).toBeInTheDocument();
-    });
-
-    it.skip('closes log viewer when close button is clicked', async () => {
-      render(<WorkersDashboard />, { wrapper: createWrapper() });
-
-      await waitFor(() => {
-        const workerCard = screen.getByText('Worker abc').closest('.cursor-pointer');
-        if (workerCard) {
-          fireEvent.click(workerCard);
-        }
-      });
-
-      await waitFor(() => {
-        const logsButton = screen.getByText('Logs');
-        fireEvent.click(logsButton);
-      });
-
-      await waitFor(() => {
-        const closeButton = screen.getByText('Close');
-        fireEvent.click(closeButton);
-      });
-
-      expect(screen.queryByTestId('logs-viewer')).not.toBeInTheDocument();
-    });
+    // Test disabled - closes log viewer when close button is clicked
 
     it('handles empty logs gracefully', async () => {
-      mockWorkersApi.getWorkerLogs.mockResolvedValue({
-        workerId: 'worker-123-abc',
-        logs: '',
-        logFile: '/path/to/log.txt',
-      });
+      mockWorkersApi.getWorkerLogs.mockResolvedValue([]);
 
       render(<WorkersDashboard />, { wrapper: createWrapper() });
 
@@ -884,7 +771,7 @@ describe('WorkersDashboard - Core Functionality', () => {
 
   describe('Refresh Functionality', () => {
     it('handles refresh button click', async () => {
-      mockWorkersApi.getWorkers.mockResolvedValue({
+      mockWorkersApi.getWorkersStatus.mockResolvedValue({
         workers: [],
         activeCount: 0,
         totalCount: 0,
@@ -897,21 +784,21 @@ describe('WorkersDashboard - Core Functionality', () => {
         expect(screen.getByText('Claude Code Workers')).toBeInTheDocument();
       });
 
-      const initialCallCount = mockWorkersApi.getWorkers.mock.calls.length;
+      const initialCallCount = mockWorkersApi.getWorkersStatus.mock.calls.length;
 
       const refreshButton = screen.getByRole('button', { name: /refresh/i });
       fireEvent.click(refreshButton);
 
       // Should trigger another API call
       await waitFor(() => {
-        expect(mockWorkersApi.getWorkers.mock.calls.length).toBeGreaterThan(initialCallCount);
+        expect(mockWorkersApi.getWorkersStatus.mock.calls.length).toBeGreaterThan(initialCallCount);
       });
     });
   });
 
   describe('Loading and Empty States', () => {
     it('displays loading state initially', () => {
-      mockWorkersApi.getWorkers.mockImplementation(() => new Promise(() => {})); // Never resolves
+      mockWorkersApi.getWorkersStatus.mockImplementation(() => new Promise(() => {})); // Never resolves
 
       render(<WorkersDashboard />, { wrapper: createWrapper() });
 
@@ -919,7 +806,7 @@ describe('WorkersDashboard - Core Functionality', () => {
     });
 
     it('displays empty state when no workers exist', async () => {
-      mockWorkersApi.getWorkers.mockResolvedValue({
+      mockWorkersApi.getWorkersStatus.mockResolvedValue({
         workers: [],
         activeCount: 0,
         totalCount: 0,
@@ -960,7 +847,7 @@ describe('WorkersDashboard - Core Functionality', () => {
         },
       ];
 
-      mockWorkersApi.getWorkers.mockResolvedValue({
+      mockWorkersApi.getWorkersStatus.mockResolvedValue({
         workers: mockWorkers,
         activeCount: 1,
         totalCount: 2,

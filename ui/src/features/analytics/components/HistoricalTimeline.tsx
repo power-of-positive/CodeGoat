@@ -33,6 +33,7 @@ import { Button } from '../../../shared/ui/button';
 import { SimpleSelect as Select, Option } from '../../../shared/ui/select';
 import { PageLoading } from '../../../shared/ui/loading';
 import { analyticsApi } from '../../../shared/lib/api';
+import { HistoricalTimelineData } from '../../../shared/types/index';
 
 interface HistoricalTimelineProps {
   defaultDays?: number;
@@ -48,7 +49,7 @@ interface HistoricalTimelineProps {
 //   failedRuns: number;
 //   successRate: number;
 //   averageDuration: number;
-//   stagePerformance: Record<string, {
+//   stages: Record<string, {
 //     success: number;
 //     total: number;
 //     avgDuration: number;
@@ -69,9 +70,9 @@ interface StageVisibilityControl {
 }
 
 const GRANULARITY_OPTIONS = {
-  hourly: { label: 'Hourly', value: 'hourly' },
-  daily: { label: 'Daily', value: 'daily' },
-  weekly: { label: 'Weekly', value: 'weekly' },
+  hour: { label: 'Hourly', value: 'hour' },
+  day: { label: 'Daily', value: 'day' },
+  week: { label: 'Weekly', value: 'week' },
 } as const;
 
 // Time and refresh constants
@@ -94,7 +95,7 @@ export function HistoricalTimeline({
   refreshInterval = DEFAULT_REFRESH_INTERVAL_MS
 }: HistoricalTimelineProps) {
   const [days, setDays] = useState(defaultDays);
-  const [granularity, setGranularity] = useState<'hourly' | 'daily' | 'weekly'>('daily');
+  const [granularity, setGranularity] = useState<'hour' | 'day' | 'week'>('day');
   const [environment, setEnvironment] = useState('');
   const [includeStages] = useState(true); // Remove setIncludeStages as it's not used
   const [chartType, setChartType] = useState<'success-rate' | 'duration' | 'volume' | 'combined'>('combined');
@@ -108,14 +109,13 @@ export function HistoricalTimeline({
     isLoading,
     error,
     refetch,
-  } = useQuery({
+  } = useQuery<HistoricalTimelineData>({
     queryKey: ['historical-timeline', days, granularity, environment, includeStages],
     queryFn: () =>
-      analyticsApi.getHistoricalData({
+      analyticsApi.getHistoricalTimeline({
         days,
         granularity,
-        environment: environment || undefined,
-        includeStages,
+        stages: includeStages ? undefined : [],
       }),
     staleTime: QUERY_STALE_TIME_MINUTES * SECONDS_PER_MINUTE * MILLISECONDS_PER_SECOND,
     refetchInterval: autoRefresh ? refreshInterval : false,
@@ -129,7 +129,7 @@ export function HistoricalTimeline({
     
     const stageSet = new Set<string>();
     timelineData.timeline.forEach(period => {
-      Object.keys(period.stagePerformance || {}).forEach(stageId => {
+      Object.keys(period.stages || {}).forEach(stageId => {
         stageSet.add(stageId);
       });
     });
@@ -178,19 +178,19 @@ export function HistoricalTimeline({
   const formatTimestamp = (timestamp: string) => {
     const date = new Date(timestamp);
     switch (granularity) {
-      case 'hourly':
+      case 'hour':
         return date.toLocaleString('en-US', {
           month: 'short',
           day: 'numeric',
           hour: 'numeric',
           hour12: true,
         });
-      case 'daily':
+      case 'day':
         return date.toLocaleDateString('en-US', {
           month: 'short',
           day: 'numeric',
         });
-      case 'weekly': {
+      case 'week': {
         const endOfWeek = new Date(date);
         endOfWeek.setDate(date.getDate() + WEEK_OFFSET_DAYS);
         return `${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${endOfWeek.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
@@ -235,7 +235,7 @@ export function HistoricalTimeline({
     );
   }
 
-  const { timeline, summary } = timelineData;
+  const { timeline, summary } = timelineData || { timeline: [], summary: { totalRuns: 0, successRate: 0, averageDuration: 0, totalPeriods: 0 } };
 
   // Prepare chart data with formatted timestamps
   const chartData = timeline.map((period, index) => ({
@@ -243,7 +243,7 @@ export function HistoricalTimeline({
     displayTime: formatTimestamp(period.timestamp),
     index,
     // Flatten stage performance for easier charting
-    ...Object.entries(period.stagePerformance || {}).reduce((acc, [stageId, perf]) => {
+    ...Object.entries(period.stages || {}).reduce((acc, [stageId, perf]) => {
       acc[`${stageId}_successRate`] = perf.successRate;
       acc[`${stageId}_avgDuration`] = perf.avgDuration;
       return acc;
@@ -465,7 +465,7 @@ export function HistoricalTimeline({
               <div>
                 <p className="text-sm font-medium text-gray-600">Granularity</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {GRANULARITY_OPTIONS[granularity].label}
+                  {GRANULARITY_OPTIONS[granularity]?.label || 'Unknown'}
                 </p>
               </div>
               <Clock className="w-8 h-8 text-green-500" />
@@ -805,11 +805,11 @@ export function HistoricalTimeline({
                   </div>
 
                   {/* Stage Performance */}
-                  {includeStages && Object.keys(currentPeriod.stagePerformance || {}).length > 0 && (
+                  {includeStages && Object.keys(currentPeriod.stages || {}).length > 0 && (
                     <div className="md:col-span-2 space-y-2">
                       <h4 className="font-medium text-gray-900">Stage Performance</h4>
                       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                        {Object.entries(currentPeriod.stagePerformance || {}).map(([stageId, perf]) => (
+                        {Object.entries(currentPeriod.stages || {}).map(([stageId, perf]) => (
                           <div key={stageId} className="p-3 border rounded">
                             <h5 className="font-medium text-sm text-gray-900 mb-1">{stageId}</h5>
                             <div className="space-y-1 text-xs">

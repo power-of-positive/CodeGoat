@@ -160,7 +160,7 @@ function StageDetailExpanded({ stage }: { stage: ValidationStageResult }) {
 function useDbRun(runId: string | undefined) {
   return useQuery({
     queryKey: ['validation-run', runId],
-    queryFn: () => analyticsApi.getValidationRunById(runId!),
+    queryFn: () => analyticsApi.getValidationRunDetailsFromDB(runId!),
     enabled: !!runId,
   });
 }
@@ -274,7 +274,8 @@ function transformDbRun(dbRun: {
     timestamp: dbRun.timestamp,
     success: dbRun.success,
     duration: dbRun.totalTime,
-    stages: dbRun.stages.map((stage: {
+    overallStatus: (dbRun.success ? 'passed' : 'failed') as 'passed' | 'failed',
+    stages: (dbRun.stages || []).map((stage: {
       stageId: string;
       stageName: string;
       success: boolean;
@@ -289,6 +290,7 @@ function transformDbRun(dbRun: {
       attempt: 1, // Database doesn't track attempts yet, default to 1
       output: stage.output || undefined,
       error: stage.errorMessage || undefined,
+      status: stage.success ? 'passed' : 'failed',
     })),
   };
 }
@@ -316,6 +318,7 @@ function findRunInTasks(
           timestamp: taskRun.timestamp,
           success: taskRun.success,
           duration: taskRun.duration,
+          overallStatus: (taskRun.success ? 'passed' : 'failed') as 'passed' | 'failed',
           stages: stages,
         };
         const taskContext = {
@@ -504,7 +507,7 @@ export function ValidationRunDetail() {
     return <ErrorState navigate={navigate} />;
   }
 
-  const { run, taskContext } = processRunData(runId, dbRun, analyticsRuns, allTasks);
+  const { run, taskContext } = processRunData(runId, dbRun as unknown as Parameters<typeof processRunData>[1], analyticsRuns, allTasks);
 
   if (!run) {
     return <NotFoundState runId={runId} navigate={navigate} />;

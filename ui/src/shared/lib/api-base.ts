@@ -25,20 +25,21 @@ export class APIError extends Error {
 // Base API client with error handling
 export async function apiRequest<T>(
   endpoint: string,
-  options: RequestInit = {}
+  options: Omit<RequestInit, 'body'> & { body?: unknown } = {}
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
   
+  const { body, ...restOptions } = options;
   const config: RequestInit = {
     headers: {
       'Content-Type': 'application/json',
-      ...options.headers,
+      ...restOptions.headers,
     },
-    ...options,
+    ...restOptions,
   };
-
-  if (config.body && typeof config.body === 'object') {
-    config.body = JSON.stringify(config.body);
+  
+  if (body) {
+    config.body = typeof body === 'object' ? JSON.stringify(body) : String(body);
   }
 
   try {

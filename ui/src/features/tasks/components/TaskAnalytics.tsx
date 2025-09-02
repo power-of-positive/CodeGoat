@@ -31,7 +31,7 @@ import { Button } from '../../../shared/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../shared/ui/card';
 import { Badge } from '../../../shared/ui/badge';
 import { taskApi } from '../../../shared/lib/api';
-import { Task } from '../../../shared/types/index';
+import { TaskAnalyticsData, Task } from '../../../shared/types/index';
 
 // Constants
 const DEFAULT_DAYS_PERIOD = 30;
@@ -159,9 +159,9 @@ export function TaskAnalytics() {
     isLoading,
     error,
     refetch,
-  } = useQuery({
+  } = useQuery<TaskAnalyticsData>({
     queryKey: ['task-analytics'],
-    queryFn: taskApi.getTaskAnalytics,
+    queryFn: () => taskApi.getTaskAnalytics(),
     staleTime: STALE_TIME_MINUTES * MINUTES_TO_MILLISECONDS,
   });
 
@@ -432,8 +432,18 @@ export function TaskAnalytics() {
               className="overflow-y-auto" 
               style={{ maxHeight: `${MAX_SCROLL_HEIGHT_REM}rem` }}
             >
-              {analytics.recentCompletions.map((task) => (
-                <TaskRow key={task.id} task={task} />
+              {analytics.recentCompletions.map((completion) => (
+                <TaskRow 
+                  key={completion.id} 
+                  task={{
+                    id: completion.id,
+                    content: completion.title,
+                    status: 'completed' as const,
+                    taskType: 'task' as const,
+                    priority: completion.priority,
+                    duration: `${completion.duration}ms`,
+                  }} 
+                />
               ))}
             </div>
           )}

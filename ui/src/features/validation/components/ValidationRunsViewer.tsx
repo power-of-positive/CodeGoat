@@ -17,7 +17,7 @@ interface ValidationRunsViewerProps {
 export function ValidationRunsViewer({ workerId, onClose }: ValidationRunsViewerProps) {
   const { data: validationData, isLoading } = useQuery({
     queryKey: ['worker-validation-runs', workerId],
-    queryFn: () => claudeWorkersApi.getValidationRuns(workerId),
+    queryFn: () => claudeWorkersApi.getValidationRuns(),
     refetchInterval: 5000,
   });
 
@@ -49,13 +49,13 @@ export function ValidationRunsViewer({ workerId, onClose }: ValidationRunsViewer
           </div>
         ) : (
           <div>
-            {validationData && validationData.validationRuns.length > 0 ? (
+            {validationData && validationData.length > 0 ? (
               <div className="space-y-4">
                 <div className="text-sm text-gray-600 mb-4">
                   Total validation runs:{' '}
-                  <span className="font-semibold text-purple-600">{validationData.totalRuns}</span>
+                  <span className="font-semibold text-purple-600">{validationData.length}</span>
                 </div>
-                {validationData.validationRuns.map(run => (
+                {validationData.map(run => (
                   <div key={run.id} className="border rounded-lg p-4 space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">

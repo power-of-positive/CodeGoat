@@ -42,22 +42,18 @@ jest.mock('recharts', () => ({
 
 const mockValidationMetrics = {
   totalRuns: 50,
-  successfulRuns: 40,
-  failedRuns: 10,
-  successRate: 0.8, // As decimal, will be converted to 80% in display
+  successRate: 80, // As percentage (0-100), will be converted to 80% in display
   averageDuration: 120000, // In milliseconds, will be converted to 120s in display
-  stageMetrics: {
-    lint: {
-      id: 'lint',
-      name: 'Code Linting',
-      enabled: true,
-      attempts: 45,
-      successes: 40,
-      successRate: 0.888, // As decimal, will be converted to 88.8% in display
-      averageDuration: 30000, // In milliseconds
+  stages: [
+    {
+      stageName: 'Code Linting',
       totalRuns: 45,
+      successRate: 88.8, // As percentage (0-100), will be converted to 88.8% in display
+      averageDuration: 30000, // In milliseconds
+      recentTrend: 'stable' as const,
     },
-  },
+  ],
+  recentRuns: [],
 };
 
 const mockRecentRuns = [

@@ -39,26 +39,20 @@ const createWrapper = () => {
   );
 };
 
-const mockValidationData = {
-  workerId: 'worker-123-456',
-  totalRuns: 3,
-  lastRun: {
-    id: 'run-abc-def-123',
-    timestamp: '2023-01-01T10:00:00Z',
-    overallStatus: 'passed' as const,
-  },
-  validationRuns: [
+const mockValidationData = [
     {
       id: 'run-abc-def-123',
       timestamp: '2023-01-01T10:00:00Z',
       overallStatus: 'passed' as const,
+      success: true,
+      duration: 17500,
       stages: [
         {
           name: 'lint',
           command: 'npm run lint',
           status: 'passed' as const,
           duration: 2500,
-        },
+        } as any,
         {
           name: 'test',
           command: 'npm test',
@@ -72,6 +66,8 @@ const mockValidationData = {
       id: 'run-def-ghi-456',
       timestamp: '2023-01-01T09:00:00Z',
       overallStatus: 'failed' as const,
+      success: false,
+      duration: 10000,
       stages: [
         {
           name: 'lint',
@@ -97,6 +93,8 @@ const mockValidationData = {
       id: 'run-ghi-jkl-789',
       timestamp: '2023-01-01T08:00:00Z',
       overallStatus: 'running' as const,
+      success: false,
+      duration: 0,
       stages: [
         {
           name: 'lint',
@@ -111,8 +109,7 @@ const mockValidationData = {
         },
       ],
     },
-  ],
-};
+];
 
 describe('ValidationRunsViewer', () => {
   const defaultProps = {
@@ -126,7 +123,7 @@ describe('ValidationRunsViewer', () => {
 
   describe('Component Rendering', () => {
     it('should render component with header and close button', async () => {
-      mockClaudeWorkersApi.getValidationRuns.mockResolvedValue(mockValidationData);
+      mockClaudeWorkersApi.getValidationRuns.mockResolvedValue(mockValidationData as any);
       const Wrapper = createWrapper();
 
       render(
@@ -142,7 +139,7 @@ describe('ValidationRunsViewer', () => {
 
     it('should display loading state initially', async () => {
       mockClaudeWorkersApi.getValidationRuns.mockImplementation(() => 
-        new Promise(resolve => setTimeout(() => resolve(mockValidationData), 100))
+        new Promise(resolve => setTimeout(() => resolve(mockValidationData as any), 100))
       );
       const Wrapper = createWrapper();
 
@@ -157,7 +154,7 @@ describe('ValidationRunsViewer', () => {
 
     it('should handle close button click', async () => {
       const onClose = jest.fn();
-      mockClaudeWorkersApi.getValidationRuns.mockResolvedValue(mockValidationData);
+      mockClaudeWorkersApi.getValidationRuns.mockResolvedValue(mockValidationData as any);
       const Wrapper = createWrapper();
 
       render(
@@ -175,7 +172,7 @@ describe('ValidationRunsViewer', () => {
 
   describe('Data Display', () => {
     it('should display validation runs data when loaded', async () => {
-      mockClaudeWorkersApi.getValidationRuns.mockResolvedValue(mockValidationData);
+      mockClaudeWorkersApi.getValidationRuns.mockResolvedValue(mockValidationData as any);
       const Wrapper = createWrapper();
 
       render(
@@ -195,7 +192,7 @@ describe('ValidationRunsViewer', () => {
     });
 
     it('should display formatted timestamps correctly', async () => {
-      mockClaudeWorkersApi.getValidationRuns.mockResolvedValue(mockValidationData);
+      mockClaudeWorkersApi.getValidationRuns.mockResolvedValue(mockValidationData as any);
       const Wrapper = createWrapper();
 
       render(
@@ -213,7 +210,7 @@ describe('ValidationRunsViewer', () => {
     });
 
     it('should display run IDs in shortened format', async () => {
-      mockClaudeWorkersApi.getValidationRuns.mockResolvedValue(mockValidationData);
+      mockClaudeWorkersApi.getValidationRuns.mockResolvedValue(mockValidationData as any);
       const Wrapper = createWrapper();
 
       render(
@@ -229,12 +226,7 @@ describe('ValidationRunsViewer', () => {
     });
 
     it('should display empty state when no validation runs', async () => {
-      mockClaudeWorkersApi.getValidationRuns.mockResolvedValue({
-        workerId: 'worker-123-456',
-        totalRuns: 0,
-        lastRun: null,
-        validationRuns: [],
-      });
+      mockClaudeWorkersApi.getValidationRuns.mockResolvedValue([]);
       const Wrapper = createWrapper();
 
       render(
@@ -252,7 +244,7 @@ describe('ValidationRunsViewer', () => {
 
   describe('Status Styling', () => {
     it('should apply correct CSS classes for different statuses', async () => {
-      mockClaudeWorkersApi.getValidationRuns.mockResolvedValue(mockValidationData);
+      mockClaudeWorkersApi.getValidationRuns.mockResolvedValue(mockValidationData as any);
       const Wrapper = createWrapper();
 
       render(
@@ -274,37 +266,38 @@ describe('ValidationRunsViewer', () => {
     });
 
     it('should handle pending and skipped status styles', async () => {
-      const pendingData = {
-        ...mockValidationData,
-        validationRuns: [
-          {
-            id: 'run-pending',
-            timestamp: '2023-01-01T10:00:00Z',
-            overallStatus: 'pending' as const,
-            stages: [
-              {
-                name: 'lint',
-                command: 'npm run lint',
-                status: 'pending' as const,
-              },
-            ],
-          },
-          {
-            id: 'run-with-skipped',
-            timestamp: '2023-01-01T09:00:00Z',
-            overallStatus: 'failed' as const,
-            stages: [
-              {
-                name: 'test',
-                command: 'npm test',
-                status: 'skipped' as const,
-              },
-            ],
-          },
-        ],
-      };
+      const pendingData = [
+        {
+          id: 'run-pending',
+          timestamp: '2023-01-01T10:00:00Z',
+          overallStatus: 'pending' as const,
+          success: false,
+          duration: 0,
+          stages: [
+            {
+              name: 'lint',
+              command: 'npm run lint',
+              status: 'pending' as const,
+            },
+          ],
+        },
+        {
+          id: 'run-with-skipped',
+          timestamp: '2023-01-01T09:00:00Z',
+          overallStatus: 'failed' as const,
+          success: false,
+          duration: 1000,
+          stages: [
+            {
+              name: 'test',
+              command: 'npm test',
+              status: 'skipped' as const,
+            },
+          ],
+        },
+      ];
 
-      mockClaudeWorkersApi.getValidationRuns.mockResolvedValue(pendingData);
+      mockClaudeWorkersApi.getValidationRuns.mockResolvedValue(pendingData as any);
       const Wrapper = createWrapper();
 
       render(
@@ -334,7 +327,7 @@ describe('ValidationRunsViewer', () => {
 
   describe('Stages Display', () => {
     it('should display stages with correct status indicators', async () => {
-      mockClaudeWorkersApi.getValidationRuns.mockResolvedValue(mockValidationData);
+      mockClaudeWorkersApi.getValidationRuns.mockResolvedValue(mockValidationData as any);
       const Wrapper = createWrapper();
 
       render(
@@ -359,7 +352,7 @@ describe('ValidationRunsViewer', () => {
     });
 
     it('should display stage durations correctly formatted', async () => {
-      mockClaudeWorkersApi.getValidationRuns.mockResolvedValue(mockValidationData);
+      mockClaudeWorkersApi.getValidationRuns.mockResolvedValue(mockValidationData as any);
       const Wrapper = createWrapper();
 
       render(
@@ -375,26 +368,25 @@ describe('ValidationRunsViewer', () => {
     });
 
     it('should handle stages without duration', async () => {
-      const dataWithoutDuration = {
-        ...mockValidationData,
-        validationRuns: [
-          {
-            id: 'run-no-duration',
-            timestamp: '2023-01-01T10:00:00Z',
-            overallStatus: 'running' as const,
-            stages: [
-              {
-                name: 'lint',
-                command: 'npm run lint',
-                status: 'running' as const,
-                // No duration property
-              },
-            ],
-          },
-        ],
-      };
+      const dataWithoutDuration = [
+        {
+          id: 'run-no-duration',
+          timestamp: '2023-01-01T10:00:00Z',
+          overallStatus: 'running' as const,
+          success: false,
+          duration: 5000,
+          stages: [
+            {
+              name: 'lint',
+              command: 'npm run lint',
+              status: 'running' as const,
+              // No duration property
+            },
+          ],
+        },
+      ];
 
-      mockClaudeWorkersApi.getValidationRuns.mockResolvedValue(dataWithoutDuration);
+      mockClaudeWorkersApi.getValidationRuns.mockResolvedValue(dataWithoutDuration as any);
       const Wrapper = createWrapper();
 
       render(
@@ -411,7 +403,7 @@ describe('ValidationRunsViewer', () => {
     });
 
     it('should apply correct status colors to stage indicators', async () => {
-      mockClaudeWorkersApi.getValidationRuns.mockResolvedValue(mockValidationData);
+      mockClaudeWorkersApi.getValidationRuns.mockResolvedValue(mockValidationData as any);
       const Wrapper = createWrapper();
 
       render(
@@ -444,19 +436,18 @@ describe('ValidationRunsViewer', () => {
     });
 
     it('should handle empty stages array', async () => {
-      const dataWithEmptyStages = {
-        ...mockValidationData,
-        validationRuns: [
-          {
-            id: 'run-empty-stages',
-            timestamp: '2023-01-01T10:00:00Z',
-            overallStatus: 'pending' as const,
-            stages: [],
-          },
-        ],
-      };
+      const dataWithEmptyStages = [
+        {
+          id: 'run-empty-stages',
+          timestamp: '2023-01-01T10:00:00Z',
+          overallStatus: 'pending' as const,
+          success: false,
+          duration: 0,
+          stages: [],
+        },
+      ];
 
-      mockClaudeWorkersApi.getValidationRuns.mockResolvedValue(dataWithEmptyStages);
+      mockClaudeWorkersApi.getValidationRuns.mockResolvedValue(dataWithEmptyStages as any);
       const Wrapper = createWrapper();
 
       render(
@@ -475,7 +466,7 @@ describe('ValidationRunsViewer', () => {
 
   describe('Metrics File Links', () => {
     it('should display metrics file link when available', async () => {
-      mockClaudeWorkersApi.getValidationRuns.mockResolvedValue(mockValidationData);
+      mockClaudeWorkersApi.getValidationRuns.mockResolvedValue(mockValidationData as any);
       const Wrapper = createWrapper();
 
       render(
@@ -497,20 +488,19 @@ describe('ValidationRunsViewer', () => {
     });
 
     it('should not display metrics link when not available', async () => {
-      const dataWithoutMetrics = {
-        ...mockValidationData,
-        validationRuns: [
-          {
-            id: 'run-no-metrics',
-            timestamp: '2023-01-01T10:00:00Z',
-            overallStatus: 'failed' as const,
-            stages: [],
-            // No metricsFile property
-          },
-        ],
-      };
+      const dataWithoutMetrics = [
+        {
+          id: 'run-no-metrics',
+          timestamp: '2023-01-01T10:00:00Z',
+          overallStatus: 'failed' as const,
+          success: false,
+          duration: 3000,
+          stages: [],
+          // No metricsFile property
+        },
+      ];
 
-      mockClaudeWorkersApi.getValidationRuns.mockResolvedValue(dataWithoutMetrics);
+      mockClaudeWorkersApi.getValidationRuns.mockResolvedValue(dataWithoutMetrics as any);
       const Wrapper = createWrapper();
 
       render(
@@ -545,23 +535,16 @@ describe('ValidationRunsViewer', () => {
     });
 
     it('should handle malformed response data', async () => {
-      mockClaudeWorkersApi.getValidationRuns.mockResolvedValue({
-        workerId: 'worker-123-456',
-        totalRuns: 1,
-        lastRun: {
-          id: 'run-abc-def-123',
-          timestamp: '2023-01-01T10:00:00Z',
-          overallStatus: 'passed' as const,
+      mockClaudeWorkersApi.getValidationRuns.mockResolvedValue([
+        {
+          id: 'malformed-run',
+          timestamp: 'invalid-date',
+          overallStatus: 'unknown' as any,
+          success: false,
+          duration: 0,
+          stages: [],
         },
-        validationRuns: [
-          {
-            id: 'malformed-run',
-            timestamp: 'invalid-date',
-            overallStatus: 'unknown' as any,
-            stages: [],
-          },
-        ],
-      });
+      ] as any);
       const Wrapper = createWrapper();
 
       render(
@@ -580,7 +563,7 @@ describe('ValidationRunsViewer', () => {
 
   describe('Query Behavior', () => {
     it('should setup query with correct parameters', async () => {
-      mockClaudeWorkersApi.getValidationRuns.mockResolvedValue(mockValidationData);
+      mockClaudeWorkersApi.getValidationRuns.mockResolvedValue(mockValidationData as any);
       const Wrapper = createWrapper();
 
       render(
@@ -589,12 +572,12 @@ describe('ValidationRunsViewer', () => {
         </Wrapper>
       );
 
-      expect(mockClaudeWorkersApi.getValidationRuns).toHaveBeenCalledWith('worker-123-456');
+      expect(mockClaudeWorkersApi.getValidationRuns).toHaveBeenCalledWith();
     });
 
     it('should refetch data at specified intervals', async () => {
       jest.useFakeTimers();
-      mockClaudeWorkersApi.getValidationRuns.mockResolvedValue(mockValidationData);
+      mockClaudeWorkersApi.getValidationRuns.mockResolvedValue(mockValidationData as any);
       const Wrapper = createWrapper();
 
       render(
@@ -630,10 +613,7 @@ describe('ValidationRunsViewer', () => {
       ];
 
       for (const testCase of testCases) {
-        mockClaudeWorkersApi.getValidationRuns.mockResolvedValue({
-          ...mockValidationData,
-          workerId: testCase.workerId,
-        });
+        mockClaudeWorkersApi.getValidationRuns.mockResolvedValue(mockValidationData as any);
         const Wrapper = createWrapper();
 
         const { rerender } = render(
@@ -654,7 +634,7 @@ describe('ValidationRunsViewer', () => {
 
   describe('Accessibility', () => {
     it('should have proper ARIA labels and roles', async () => {
-      mockClaudeWorkersApi.getValidationRuns.mockResolvedValue(mockValidationData);
+      mockClaudeWorkersApi.getValidationRuns.mockResolvedValue(mockValidationData as any);
       const Wrapper = createWrapper();
 
       render(
@@ -670,7 +650,7 @@ describe('ValidationRunsViewer', () => {
     });
 
     it('should handle keyboard navigation', async () => {
-      mockClaudeWorkersApi.getValidationRuns.mockResolvedValue(mockValidationData);
+      mockClaudeWorkersApi.getValidationRuns.mockResolvedValue(mockValidationData as any);
       const onClose = jest.fn();
       const Wrapper = createWrapper();
 

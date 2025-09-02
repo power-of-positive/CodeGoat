@@ -484,10 +484,10 @@ export function TaskBoard() {
     mutationFn: claudeWorkersApi.startWorker,
     onSuccess: (data) => {
       console.error(
-        `🚀 Started Claude worker ${data.workerId} for task ${data.taskId}`
+        `🚀 Started Claude worker ${data.id} for task ${data.taskId}`
       );
       // Show success notification with link to worker monitoring
-      const message = `Started Claude Code worker!\nWorker ID: ${data.workerId}\nPID: ${data.pid}\n\nView progress in the Workers dashboard.`;
+      const message = `Started Claude Code worker!\nWorker ID: ${data.id}\nPID: ${data.pid}\n\nView progress in the Workers dashboard.`;
       alert(message);
     },
     onError: (error) => {
@@ -532,11 +532,7 @@ export function TaskBoard() {
         `Start Claude Code worker for task: "${task.content}"?\n\nThis will spawn a new process and execute the task automatically.`
       )
     ) {
-      startWorkerMutation.mutate({
-        taskId: task.id,
-        taskContent: task.content,
-        // Let the backend determine the working directory
-      });
+      startWorkerMutation.mutate(task.id);
     }
   };
 

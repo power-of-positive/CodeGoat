@@ -30,6 +30,44 @@ interface BDDExecutionHistoryProps {
   scenarioId: string;
 }
 
+interface AnalyticsSummary {
+  totalExecutions: number;
+  successRate: number;
+  passedExecutions: number;
+  failedExecutions: number;
+  averageDuration: number;
+  skippedExecutions: number;
+}
+
+interface AnalyticsTrend {
+  date: string;
+  passed: number;
+  failed: number;
+  skipped: number;
+}
+
+interface StepResult {
+  step: string;
+  status: string;
+  duration: number;
+}
+
+interface ExecutionDetails {
+  id: string;
+  status: string;
+  executedAt: string;
+  executionDuration: number;
+  environment?: string;
+  executedBy?: string;
+  errorMessage?: string;
+  stepResults?: StepResult[];
+}
+
+interface AnalyticsData {
+  summary: AnalyticsSummary;
+  trends: AnalyticsTrend[];
+}
+
 const BDDExecutionHistory: React.FC<BDDExecutionHistoryProps> = ({
   taskId,
   scenarioId,
@@ -170,7 +208,7 @@ const BDDExecutionHistory: React.FC<BDDExecutionHistoryProps> = ({
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {analytics.summary.totalExecutions}
+                {(analytics as AnalyticsData)?.summary.totalExecutions}
               </div>
             </CardContent>
           </Card>
@@ -183,11 +221,11 @@ const BDDExecutionHistory: React.FC<BDDExecutionHistoryProps> = ({
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-green-600">
-                {analytics.summary.successRate.toFixed(1)}%
+                {(analytics as AnalyticsData)?.summary.successRate.toFixed(1)}%
               </div>
               <div className="text-sm text-gray-500 mt-1">
-                {analytics.summary.passedExecutions} passed,{' '}
-                {analytics.summary.failedExecutions} failed
+                {(analytics as AnalyticsData)?.summary.passedExecutions} passed,{' '}
+                {(analytics as AnalyticsData)?.summary.failedExecutions} failed
               </div>
             </CardContent>
           </Card>
@@ -200,7 +238,7 @@ const BDDExecutionHistory: React.FC<BDDExecutionHistoryProps> = ({
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {formatDuration(analytics.summary.averageDuration)}
+                {formatDuration((analytics as AnalyticsData)?.summary.averageDuration)}
               </div>
             </CardContent>
           </Card>
@@ -213,7 +251,7 @@ const BDDExecutionHistory: React.FC<BDDExecutionHistoryProps> = ({
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-yellow-600">
-                {analytics.summary.skippedExecutions}
+                {(analytics as AnalyticsData)?.summary.skippedExecutions}
               </div>
             </CardContent>
           </Card>
@@ -221,7 +259,7 @@ const BDDExecutionHistory: React.FC<BDDExecutionHistoryProps> = ({
       )}
 
       {/* Execution Trends Chart */}
-      {analytics && analytics.trends.length > 0 && (
+      {analytics && (analytics as AnalyticsData)?.trends.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center">
@@ -232,7 +270,7 @@ const BDDExecutionHistory: React.FC<BDDExecutionHistoryProps> = ({
           <CardContent>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={analytics.trends}>
+                <BarChart data={(analytics as AnalyticsData)?.trends}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis
                     dataKey="date"
@@ -289,30 +327,30 @@ const BDDExecutionHistory: React.FC<BDDExecutionHistoryProps> = ({
             <div className="space-y-3">
               {executions.map((execution) => (
                 <div
-                  key={execution.id}
+                  key={(execution as ExecutionDetails)?.id}
                   className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
                 >
                   <div className="flex items-center space-x-4">
-                    {getStatusBadge(execution.status)}
+                    {getStatusBadge((execution as ExecutionDetails)?.status)}
                     <div>
                       <div className="font-medium text-sm">
-                        {formatDate(execution.executedAt)}
+                        {formatDate((execution as ExecutionDetails)?.executedAt)}
                       </div>
                       <div className="text-xs text-gray-500">
-                        Duration: {formatDuration(execution.executionDuration)}
-                        {execution.environment && ` • ${execution.environment}`}
-                        {execution.executedBy &&
-                          ` • by ${execution.executedBy}`}
+                        Duration: {formatDuration((execution as ExecutionDetails)?.executionDuration)}
+                        {(execution as ExecutionDetails)?.environment && ` • ${(execution as ExecutionDetails)?.environment}`}
+                        {(execution as ExecutionDetails)?.executedBy &&
+                          ` • by ${(execution as ExecutionDetails)?.executedBy}`}
                       </div>
                     </div>
                   </div>
 
-                  {execution.errorMessage && (
+                  {(execution as ExecutionDetails)?.errorMessage && (
                     <div
                       className="max-w-md truncate text-sm text-red-600"
-                      title={execution.errorMessage}
+                      title={(execution as ExecutionDetails)?.errorMessage}
                     >
-                      {execution.errorMessage}
+                      {(execution as ExecutionDetails)?.errorMessage}
                     </div>
                   )}
                 </div>
@@ -331,22 +369,22 @@ const BDDExecutionHistory: React.FC<BDDExecutionHistoryProps> = ({
       </Card>
 
       {/* Step Results for Recent Executions */}
-      {executions && executions.some((e) => e.stepResults) && (
+      {executions && executions.some((e) => (e as ExecutionDetails)?.stepResults) && (
         <Card>
           <CardHeader>
             <CardTitle>Latest Step Results</CardTitle>
           </CardHeader>
           <CardContent>
             {executions
-              .filter((e) => e.stepResults)
+              .filter((e) => (e as ExecutionDetails)?.stepResults)
               .slice(0, 1)
               .map((execution) => (
-                <div key={execution.id} className="space-y-2">
+                <div key={(execution as ExecutionDetails)?.id} className="space-y-2">
                   <div className="text-sm font-medium text-gray-600 mb-3">
-                    Execution from {formatDate(execution.executedAt)}
+                    Execution from {formatDate((execution as ExecutionDetails)?.executedAt)}
                   </div>
                   <div className="space-y-2">
-                    {execution.stepResults?.map((step, index) => (
+                    {(execution as ExecutionDetails)?.stepResults?.map((step, index) => (
                       <div
                         key={index}
                         className="flex items-center justify-between p-2 bg-gray-50 rounded"

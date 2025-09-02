@@ -212,10 +212,7 @@ describe('WorkerDetail', () => {
     fireEvent.click(startButton);
 
     await waitFor(() => {
-      expect(claudeWorkersApi.startWorker).toHaveBeenCalledWith({
-        taskId: 'task-456',
-        taskContent: 'Implement feature X',
-      });
+      expect(claudeWorkersApi.startWorker).toHaveBeenCalledWith('task-456');
     });
   });
 
@@ -597,7 +594,7 @@ describe('WorkerDetail', () => {
       fireEvent.click(mergeButton);
 
       await waitFor(() => {
-        expect(claudeWorkersApi.mergeWorkerChanges).toHaveBeenCalledWith('worker-123', undefined);
+        expect(claudeWorkersApi.mergeWorkerChanges).toHaveBeenCalledWith('worker-123', { commitMessage: undefined });
       });
     });
 
@@ -627,10 +624,7 @@ describe('WorkerDetail', () => {
       fireEvent.click(retryButton);
 
       await waitFor(() => {
-        expect(claudeWorkersApi.startWorker).toHaveBeenCalledWith({
-          taskId: 'task-456',
-          taskContent: 'Implement feature X',
-        });
+        expect(claudeWorkersApi.startWorker).toHaveBeenCalledWith('task-456');
       });
     });
 

@@ -1,6 +1,13 @@
 import { apiRequest } from './api-base';
 import { Worker, ValidationRun, BlockedCommand } from '../types/index';
 
+interface WorkersStatusResponse {
+  workers: Worker[];
+  activeCount: number;
+  totalCount: number;
+  totalBlockedCommands: number;
+}
+
 export const claudeWorkersApi = {
   async startWorker(taskId?: string, workingDirectory?: string): Promise<Worker> {
     const body: Record<string, string> = {};
@@ -23,6 +30,20 @@ export const claudeWorkersApi = {
     } catch (error) {
       console.error('Failed to fetch workers:', error);
       return [];
+    }
+  },
+
+  async getWorkersStatus(): Promise<WorkersStatusResponse> {
+    try {
+      return await apiRequest<WorkersStatusResponse>('/claude-workers/status');
+    } catch (error) {
+      console.error('Failed to fetch workers status:', error);
+      return {
+        workers: [],
+        activeCount: 0,
+        totalCount: 0,
+        totalBlockedCommands: 0,
+      };
     }
   },
 

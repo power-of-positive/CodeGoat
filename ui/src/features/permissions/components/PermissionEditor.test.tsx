@@ -7,14 +7,14 @@ import { PermissionActionType, PermissionScope } from '../../../shared/types';
 // Mock the API
 jest.mock('../../../shared/lib/api', () => ({
   permissionApi: {
-    getConfig: jest.fn(),
-    getRules: jest.fn(),
+    getPermissionConfig: jest.fn(),
+    getPermissionRules: jest.fn(),
     getDefaultConfigs: jest.fn(),
-    createRule: jest.fn(),
-    updateRule: jest.fn(),
-    deleteRule: jest.fn(),
+    createPermissionRule: jest.fn(),
+    updatePermissionRule: jest.fn(),
+    deletePermissionRule: jest.fn(),
     testPermission: jest.fn(),
-    updateConfig: jest.fn(),
+    updatePermissionConfig: jest.fn(),
   },
 }));
 
@@ -44,14 +44,14 @@ describe('PermissionEditor', () => {
     jest.clearAllMocks();
 
     // Setup default mock responses
-    mockPermissionApi.getConfig.mockResolvedValue({
+    mockPermissionApi.getPermissionConfig.mockResolvedValue({
       defaultAllow: false,
       enableLogging: true,
       strictMode: true,
       rules: [],
     });
 
-    mockPermissionApi.getRules.mockResolvedValue([
+    mockPermissionApi.getPermissionRules.mockResolvedValue([
       {
         id: '1',
         action: PermissionActionType.FILE_READ,
@@ -182,7 +182,7 @@ describe('PermissionEditor', () => {
   });
 
   it('handles create rule form submission', async () => {
-    mockPermissionApi.createRule.mockResolvedValue({
+    mockPermissionApi.createPermissionRule.mockResolvedValue({
       id: '2',
       action: PermissionActionType.FILE_WRITE,
       scope: PermissionScope.GLOBAL,
@@ -223,7 +223,7 @@ describe('PermissionEditor', () => {
     });
 
     await waitFor(() => {
-      expect(mockPermissionApi.createRule).toHaveBeenCalledWith({
+      expect(mockPermissionApi.createPermissionRule).toHaveBeenCalledWith({
         action: PermissionActionType.FILE_WRITE,
         scope: PermissionScope.GLOBAL,
         resource: '',
@@ -266,16 +266,16 @@ describe('PermissionEditor', () => {
     });
 
     await waitFor(() => {
-      expect(mockPermissionApi.testPermission).toHaveBeenCalledWith({
-        action: PermissionActionType.FILE_READ,
-        target: '/tmp/test.txt',
-      });
+      expect(mockPermissionApi.testPermission).toHaveBeenCalledWith(
+        PermissionActionType.FILE_READ,
+        '/tmp/test.txt'
+      );
     });
   });
 
   it('displays loading state', () => {
-    mockPermissionApi.getConfig.mockReturnValue(new Promise(() => {})); // Never resolves
-    mockPermissionApi.getRules.mockReturnValue(new Promise(() => {})); // Never resolves
+    mockPermissionApi.getPermissionConfig.mockReturnValue(new Promise(() => {})); // Never resolves
+    mockPermissionApi.getPermissionRules.mockReturnValue(new Promise(() => {})); // Never resolves
 
     renderWithQueryClient(<PermissionEditor />);
 
@@ -285,7 +285,7 @@ describe('PermissionEditor', () => {
   });
 
   it('shows empty state when no rules exist', async () => {
-    mockPermissionApi.getRules.mockResolvedValue([]);
+    mockPermissionApi.getPermissionRules.mockResolvedValue([]);
 
     renderWithQueryClient(<PermissionEditor />);
 
@@ -299,7 +299,7 @@ describe('PermissionEditor', () => {
   });
 
   it('sorts rules by priority', async () => {
-    mockPermissionApi.getRules.mockResolvedValue([
+    mockPermissionApi.getPermissionRules.mockResolvedValue([
       {
         id: '1',
         action: PermissionActionType.FILE_READ,
@@ -326,7 +326,7 @@ describe('PermissionEditor', () => {
   });
 
   it('handles configuration updates', async () => {
-    mockPermissionApi.updateConfig.mockResolvedValue({
+    mockPermissionApi.updatePermissionConfig.mockResolvedValue({
       defaultAllow: true,
       enableLogging: true,
       strictMode: true,
@@ -341,7 +341,7 @@ describe('PermissionEditor', () => {
     });
 
     await waitFor(() => {
-      expect(mockPermissionApi.updateConfig).toHaveBeenCalledWith({
+      expect(mockPermissionApi.updatePermissionConfig).toHaveBeenCalledWith({
         defaultAllow: true,
       });
     });
@@ -363,7 +363,7 @@ describe('PermissionEditor', () => {
 
   it('handles rule deletion with confirmation', async () => {
     global.confirm = jest.fn(() => true);
-    mockPermissionApi.deleteRule.mockResolvedValue({});
+    mockPermissionApi.deletePermissionRule.mockResolvedValue({});
 
     renderWithQueryClient(<PermissionEditor />);
 
@@ -375,12 +375,12 @@ describe('PermissionEditor', () => {
     expect(global.confirm).toHaveBeenCalledWith(
       'Are you sure you want to delete this rule?'
     );
-    expect(mockPermissionApi.deleteRule).toHaveBeenCalledWith('1');
+    expect(mockPermissionApi.deletePermissionRule).toHaveBeenCalledWith('1');
   });
 
   it('cancels rule deletion when user declines', async () => {
     global.confirm = jest.fn(() => false);
-    mockPermissionApi.deleteRule.mockResolvedValue({});
+    mockPermissionApi.deletePermissionRule.mockResolvedValue({});
 
     renderWithQueryClient(<PermissionEditor />);
 
@@ -392,12 +392,12 @@ describe('PermissionEditor', () => {
     expect(global.confirm).toHaveBeenCalledWith(
       'Are you sure you want to delete this rule?'
     );
-    expect(mockPermissionApi.deleteRule).not.toHaveBeenCalled();
+    expect(mockPermissionApi.deletePermissionRule).not.toHaveBeenCalled();
   });
 
   it('handles default config loading with confirmation', async () => {
     global.confirm = jest.fn(() => true);
-    mockPermissionApi.updateConfig.mockResolvedValue({});
+    mockPermissionApi.updatePermissionConfig.mockResolvedValue({});
 
     renderWithQueryClient(<PermissionEditor />);
 
@@ -409,12 +409,12 @@ describe('PermissionEditor', () => {
     expect(global.confirm).toHaveBeenCalledWith(
       'Load restrictive configuration? This will replace current settings.'
     );
-    expect(mockPermissionApi.updateConfig).toHaveBeenCalled();
+    expect(mockPermissionApi.updatePermissionConfig).toHaveBeenCalled();
   });
 
   it('cancels default config loading when user declines', async () => {
     global.confirm = jest.fn(() => false);
-    mockPermissionApi.updateConfig.mockResolvedValue({});
+    mockPermissionApi.updatePermissionConfig.mockResolvedValue({});
 
     renderWithQueryClient(<PermissionEditor />);
 
@@ -426,11 +426,11 @@ describe('PermissionEditor', () => {
     expect(global.confirm).toHaveBeenCalledWith(
       'Load restrictive configuration? This will replace current settings.'
     );
-    expect(mockPermissionApi.updateConfig).not.toHaveBeenCalled();
+    expect(mockPermissionApi.updatePermissionConfig).not.toHaveBeenCalled();
   });
 
   it('handles update rule form submission', async () => {
-    mockPermissionApi.updateRule.mockResolvedValue({
+    mockPermissionApi.updatePermissionRule.mockResolvedValue({
       id: '1',
       action: PermissionActionType.FILE_WRITE,
       scope: PermissionScope.GLOBAL,
@@ -468,7 +468,7 @@ describe('PermissionEditor', () => {
     });
 
     await waitFor(() => {
-      expect(mockPermissionApi.updateRule).toHaveBeenCalledWith('1', {
+      expect(mockPermissionApi.updatePermissionRule).toHaveBeenCalledWith('1', {
         action: PermissionActionType.FILE_WRITE,
         scope: PermissionScope.WORKTREE,
         resource: '',
@@ -524,7 +524,7 @@ describe('PermissionEditor', () => {
       },
     ];
 
-    mockPermissionApi.getRules.mockResolvedValue(rulesWithDifferentActions);
+    mockPermissionApi.getPermissionRules.mockResolvedValue(rulesWithDifferentActions);
 
     renderWithQueryClient(<PermissionEditor />);
 

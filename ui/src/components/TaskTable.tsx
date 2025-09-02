@@ -191,6 +191,7 @@ export function TaskTable({
                           size="sm"
                           variant="ghost"
                           onClick={() => onEdit(task)}
+                          aria-label={`Edit task ${task.id}`}
                         >
                           <Edit className="w-4 h-4" />
                         </Button>
@@ -198,6 +199,7 @@ export function TaskTable({
                           size="sm"
                           variant="ghost"
                           onClick={() => onStartWorker(task)}
+                          aria-label={`Start worker for task ${task.id}`}
                         >
                           <Play className="w-4 h-4" />
                         </Button>
@@ -205,6 +207,7 @@ export function TaskTable({
                           size="sm"
                           variant="ghost"
                           onClick={() => onDelete(task.id)}
+                          aria-label={`Delete task ${task.id}`}
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>

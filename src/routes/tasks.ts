@@ -1,5 +1,5 @@
 import express from 'express';
-import { WinstonLogger } from '../logger-winston';
+import type { ILogger } from '../logger-interface';
 import { getDatabaseService } from '../services/database';
 import { TaskStatus, Priority, Task, BDDScenarioStatus, TaskType } from '@prisma/client';
 
@@ -160,7 +160,7 @@ function calculateDuration(startTime?: string, endTime?: string): string | undef
   }
 }
 
-export function createTaskRoutes(logger: WinstonLogger) {
+export function createTaskRoutes(logger: ILogger) {
   const router = express.Router();
 
   // GET /api/tasks - Get all tasks

@@ -16,6 +16,7 @@ const mockRuns: ValidationRun[] = [
     timestamp: '2023-01-01T10:00:00Z',
     success: true,
     duration: 120000,
+    overallStatus: 'passed' as const,
     stages: [
       {
         id: 'lint',
@@ -25,6 +26,7 @@ const mockRuns: ValidationRun[] = [
         output: 'All linting checks passed',
         error: '',
         attempt: 1,
+        status: 'passed' as const,
       },
       {
         id: 'test',
@@ -34,6 +36,7 @@ const mockRuns: ValidationRun[] = [
         output: 'All tests passed',
         error: '',
         attempt: 1,
+        status: 'passed' as const,
       },
     ],
   },
@@ -42,6 +45,7 @@ const mockRuns: ValidationRun[] = [
     timestamp: '2023-01-01T09:00:00Z',
     success: false,
     duration: 150000,
+    overallStatus: 'failed' as const,
     stages: [
       {
         id: 'lint',
@@ -51,6 +55,7 @@ const mockRuns: ValidationRun[] = [
         output: 'Linting passed',
         error: '',
         attempt: 1,
+        status: 'passed' as const,
       },
       {
         id: 'test',
@@ -60,6 +65,7 @@ const mockRuns: ValidationRun[] = [
         output: 'Some tests failed',
         error: 'Test error: Cannot read property of undefined',
         attempt: 1,
+        status: 'failed' as const,
       },
     ],
   },
@@ -288,6 +294,7 @@ describe('RecentRuns', () => {
         timestamp: '2023-01-01T10:00:00Z',
         success: true,
         duration: 120000,
+        overallStatus: 'passed' as const,
         stages: [
           {
             id: 'lint',
@@ -297,6 +304,7 @@ describe('RecentRuns', () => {
             output: '',
             error: '',
             attempt: 1,
+        status: 'passed' as const,
           },
         ],
       },
@@ -332,6 +340,7 @@ describe('RecentRuns', () => {
         timestamp: '2023-01-01T10:00:00Z',
         success: true,
         duration: 120000,
+        overallStatus: 'passed' as const,
         stages: [
           {
             id: 'lint',
@@ -341,6 +350,7 @@ describe('RecentRuns', () => {
             output: 'Output',
             error: '',
             attempt: 1,
+        status: 'passed' as const,
           },
           {
             id: 'test-stage',
@@ -350,6 +360,7 @@ describe('RecentRuns', () => {
             output: 'Output',
             error: '',
             attempt: 1,
+        status: 'passed' as const,
           },
         ],
       },

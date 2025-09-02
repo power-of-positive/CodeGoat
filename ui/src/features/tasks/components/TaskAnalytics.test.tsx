@@ -43,7 +43,7 @@ const mockTaskAnalytics = {
     completedTasks: 75,
     inProgressTasks: 15,
     pendingTasks: 10,
-    completionRate: '75%',
+    completionRate: 75,
     averageCompletionTimeMinutes: 60,
   },
   priorityBreakdown: {
@@ -54,27 +54,23 @@ const mockTaskAnalytics = {
   recentCompletions: [
     {
       id: 'task-1',
-      content: 'Test Task 1',
-      priority: 'high',
-      status: 'completed',
-      endTime: '2024-01-01T12:00:00Z',
-      duration: '2h 30m',
-      executorId: 'user-1',
+      title: 'Test Task 1',
+      priority: 'high' as const,
+      completedAt: '2024-01-01T12:00:00Z',
+      duration: 9000,
     },
     {
       id: 'task-2',
-      content: 'Test Task 2',
-      priority: 'medium',
-      status: 'completed',
-      endTime: '2024-01-02T10:00:00Z',
-      duration: '1h 15m',
-      executorId: 'user-2',
+      title: 'Test Task 2',
+      priority: 'medium' as const,
+      completedAt: '2024-01-02T10:00:00Z',
+      duration: 4500,
     },
   ],
   dailyCompletions: [
-    { date: '2024-01-01', completed: 5 },
-    { date: '2024-01-02', completed: 8 },
-    { date: '2024-01-03', completed: 6 },
+    { date: '2024-01-01', completed: 5, total: 10 },
+    { date: '2024-01-02', completed: 8, total: 12 },
+    { date: '2024-01-03', completed: 6, total: 8 },
   ],
 };
 
@@ -140,7 +136,7 @@ describe('TaskAnalytics', () => {
     await waitFor(() => {
       expect(screen.getByText('100')).toBeInTheDocument(); // Total tasks
       expect(screen.getByText('75')).toBeInTheDocument(); // Completed tasks
-      expect(screen.getByText('75%% completion rate')).toBeInTheDocument(); // Completion rate as formatted by component
+      expect(screen.getByText('75% completion rate')).toBeInTheDocument(); // Completion rate as formatted by component
     });
   });
 

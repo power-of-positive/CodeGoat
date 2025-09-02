@@ -1,5 +1,5 @@
 import { apiRequest } from './api-base';
-import { Task, BDDScenario } from '../types/index';
+import { TaskAnalyticsData, Task, BDDScenario } from '../types/index';
 
 export interface CreateTaskData {
   content: string;
@@ -46,7 +46,7 @@ export const taskApi = {
     taskId?: string;
     days?: number;
     includeScenarios?: boolean;
-  }): Promise<unknown> {
+  }): Promise<TaskAnalyticsData> {
     const queryParams = new URLSearchParams();
     
     if (options?.taskId) {
@@ -60,7 +60,7 @@ export const taskApi = {
     }
     
     const queryString = queryParams.toString();
-    return apiRequest<unknown>(`/tasks/analytics${queryString ? `?${queryString}` : ''}`);
+    return apiRequest<TaskAnalyticsData>(`/tasks/analytics${queryString ? `?${queryString}` : ''}`);
   },
 
   // BDD Scenario methods
@@ -82,5 +82,21 @@ export const taskApi = {
     await apiRequest<void>(`/tasks/${taskId}/scenarios/${scenarioId}`, {
       method: 'DELETE',
     });
+  },
+
+  // BDD scenario execution methods (stub implementations)
+  async getScenarioExecutions(_taskId: string, _scenarioId: string, _options?: { limit?: number }): Promise<unknown[]> {
+    // Stub implementation - returns empty array
+    return [];
+  },
+
+  async getScenarioAnalytics(_taskId: string, _scenarioId: string, _days?: number): Promise<unknown> {
+    // Stub implementation - returns empty analytics
+    return {
+      totalExecutions: 0,
+      successRate: 0,
+      averageDuration: 0,
+      recentRuns: [],
+    };
   },
 };

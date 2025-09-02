@@ -11,6 +11,8 @@ import { ValidationChart } from './ValidationChart';
 import { TimeSeriesCharts } from './TimeSeriesCharts';
 import { AnalyticsHeader, MetricsSummary } from './AnalyticsComponents';
 import { RecentRuns } from '../../validation/components/RecentRuns';
+import type { ValidationMetrics } from '../../../shared/types/index';
+import type { AnalyticsData } from '../../../shared/lib/analytics-api';
 
 // Constants
 const MS_PER_SECOND = 1000;
@@ -18,21 +20,56 @@ const SECONDS_PER_MINUTE = 60;
 const CACHE_STALE_TIME_MINUTES = 5;
 const CACHE_STALE_TIME_MS = CACHE_STALE_TIME_MINUTES * SECONDS_PER_MINUTE * MS_PER_SECOND;
 
+// Transform AnalyticsData to ValidationMetrics format
+function transformAnalyticsData(data?: AnalyticsData): ValidationMetrics | undefined {
+  if (!data) {
+    return undefined;
+  }
+
+  const successfulRuns = Math.floor((data.successRate / 100) * data.totalRuns);
+  const failedRuns = data.totalRuns - successfulRuns;
+
+  // Transform stages data to stageMetrics format
+  const stageMetrics = (data.stages || []).reduce((acc, stage) => {
+    const successfulStageRuns = Math.floor((stage.successRate / 100) * stage.totalRuns);
+    acc[stage.stageName.toLowerCase().replace(/\s+/g, '-')] = {
+      id: stage.stageName.toLowerCase().replace(/\s+/g, '-'),
+      name: stage.stageName,
+      enabled: true,
+      attempts: stage.totalRuns,
+      successes: successfulStageRuns,
+      successRate: stage.successRate / 100,
+      averageDuration: stage.averageDuration,
+      totalRuns: stage.totalRuns,
+    };
+    return acc;
+  }, {} as ValidationMetrics['stageMetrics']);
+
+  return {
+    totalRuns: data.totalRuns,
+    successfulRuns,
+    failedRuns,
+    successRate: data.successRate / 100,
+    averageDuration: data.averageDuration,
+    stageMetrics,
+  };
+}
+
 function useAnalyticsData(agentFilter?: string) {
   const metricsQuery = useQuery({
     queryKey: ['validation-metrics', agentFilter],
-    queryFn: () => analyticsApi.getValidationMetrics(agentFilter),
+    queryFn: () => analyticsApi.getValidationMetrics(),
     staleTime: CACHE_STALE_TIME_MS,
   });
 
   const runsQuery = useQuery({
     queryKey: ['validation-runs', agentFilter],
-    queryFn: () => analyticsApi.getValidationRuns(agentFilter),
+    queryFn: () => analyticsApi.getValidationRuns(),
     staleTime: CACHE_STALE_TIME_MS,
   });
 
   return {
-    metrics: metricsQuery.data,
+    metrics: metricsQuery.data ? transformAnalyticsData(metricsQuery.data) : null,
     runs: runsQuery.data || [],
     isLoading: metricsQuery.isLoading || runsQuery.isLoading,
     error: metricsQuery.error || runsQuery.error,

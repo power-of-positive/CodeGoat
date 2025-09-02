@@ -318,7 +318,7 @@ function createValidationProcess(sessionId: string): Promise<void> {
 
     const child = spawn(
       'npx',
-      ['ts-node', 'scripts/validate-task.ts', sessionId, '--settings=settings-precommit.json'],
+      ['ts-node', 'scripts/validate-task.ts', sessionId, '--settings=settings.json'],
       {
         stdio: ['pipe', 'pipe', 'pipe'], // Redirect all stdio to pipes
         cwd: process.cwd(),
@@ -382,9 +382,9 @@ async function handleValidationChecks(): Promise<void> {
     logger.error('⚠️ Validation checks failed', error instanceof Error ? error : new Error(String(error)));
     const blockResult = {
       decision: 'block',
-      reason: error instanceof Error ? error.message : 'Validation checks failed',
+      reason: 'Validation failed - fix the issues before stopping',
     };
-    console.log(JSON.stringify(blockResult));
+    process.stdout.write(JSON.stringify(blockResult) + '\n');
     process.exit(2);
   }
 }
@@ -399,19 +399,17 @@ async function handleLLMReview(allChanges: string): Promise<void> {
   const {
     performCodeReview,
     shouldBlockClaude,
-    processReviewResults,
   } = await import('./lib/utils/review-processor');
   
   const reviewComments = await performCodeReview(allChanges);
 
   if (shouldBlockClaude(reviewComments)) {
     logger.warn('⚠️ LLM review found issues - blocking completion');
-    const result = processReviewResults(reviewComments);
     const blockResult = {
       decision: 'block',
-      reason: result.reason || 'LLM review found medium or high severity issues',
+      reason: 'LLM review found issues - please address them',
     };
-    console.log(JSON.stringify(blockResult));
+    process.stdout.write(JSON.stringify(blockResult) + '\n');
     process.exit(2);
   }
 
@@ -426,7 +424,7 @@ async function main(): Promise<void> {
   const GLOBAL_TIMEOUT = 1500000; // 25 minutes
   const globalTimeout = setTimeout(() => {
     logger.error('⚠️ Stop hook timed out after 25 minutes');
-    console.log('{"decision": "block", "reason": "Stop hook execution timed out"}');
+    process.stdout.write('{"decision": "block", "reason": "Stop hook execution timed out"}\n');
     process.exit(2);
   }, GLOBAL_TIMEOUT);
 
@@ -438,7 +436,7 @@ async function main(): Promise<void> {
       logger.warn('⚠️ Todo validation failed - blocking completion');
       const blockResult = {
         decision: 'block',
-        reason: todoValidation.reason || 'High priority tasks remain unfinished',
+        reason: 'High priority tasks remain unfinished',
       };
       console.log(JSON.stringify(blockResult));
       process.exit(2);
@@ -453,7 +451,7 @@ async function main(): Promise<void> {
       logger.info('💡 Please commit your changes before completing');
       const blockResult = {
         decision: 'block',
-        reason: 'Uncommitted files detected. Please commit or stash changes before completing.',
+        reason: 'Uncommitted files detected - please commit changes',
       };
       console.log(JSON.stringify(blockResult));
       process.exit(2); // Exit with code 2 to indicate block decision
@@ -472,17 +470,18 @@ async function main(): Promise<void> {
     } catch {
       // Ignore if say command fails
     }
-    console.log('{"decision": "approve"}');
+    process.stdout.write('{"decision": "approve"}\n');
     process.exit(0);
   } catch (error) {
     clearTimeout(globalTimeout);
     logger.error('Stop hook error', error instanceof Error ? error : new Error(String(error)));
-    console.log('{"decision": "block", "reason": "Stop hook execution failed"}');
+    process.stdout.write('{"decision": "block", "reason": "Stop hook execution failed"}\n');
     process.exit(2); // Exit with code 2 to indicate block decision
   }
 }
 
 main().catch(error => {
   logger.error('Unhandled error', error instanceof Error ? error : new Error(String(error)));
+  process.stdout.write('{"decision": "block", "reason": "Unhandled error in stop hook"}\n');
   process.exit(2);
 });

@@ -184,6 +184,7 @@ describe('AnalyticsComponents', () => {
         success: true,
         duration: 5000,
         attempt: 1,
+        status: 'passed',
       };
 
       render(<StageDetail stage={stage} />);
@@ -202,6 +203,7 @@ describe('AnalyticsComponents', () => {
         success: false,
         duration: 3000,
         attempt: 1,
+        status: 'failed',
       };
 
       render(<StageDetail stage={stage} />);
@@ -219,6 +221,7 @@ describe('AnalyticsComponents', () => {
         duration: 2000,
         attempt: 1,
         output: 'This is standard output',
+        status: 'passed',
       };
 
       render(<StageDetail stage={stage} />);
@@ -250,6 +253,7 @@ describe('AnalyticsComponents', () => {
         duration: 1000,
         attempt: 1,
         error: 'This is an error message',
+        status: 'failed',
       };
 
       render(<StageDetail stage={stage} />);
@@ -271,6 +275,7 @@ describe('AnalyticsComponents', () => {
         duration: 4000,
         attempt: 1,
         output: 'Standard output here',
+        status: 'failed',
         error: 'Error message here',
       };
 
@@ -292,6 +297,7 @@ describe('AnalyticsComponents', () => {
         success: true,
         duration: 1000,
         attempt: 1,
+        status: 'passed',
       };
 
       render(<StageDetail stage={stage} />);
@@ -311,6 +317,7 @@ describe('AnalyticsComponents', () => {
         duration: 1000,
         attempt: 1,
         output: '',
+        status: 'passed',
         error: '   ',
       };
 
@@ -331,6 +338,7 @@ describe('AnalyticsComponents', () => {
         success: true,
         duration: 1000,
         attempt: 1,
+        status: 'passed',
       };
 
       render(<StageDetail stage={stage} />);
@@ -346,6 +354,7 @@ describe('AnalyticsComponents', () => {
         duration: 2000,
         attempt: 1,
         output: 'Some output',
+        status: 'passed',
       };
 
       render(<StageDetail stage={stage} />);

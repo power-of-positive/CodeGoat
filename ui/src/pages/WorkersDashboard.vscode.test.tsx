@@ -102,11 +102,7 @@ describe('WorkersDashboard - VSCode Functionality', () => {
         totalBlockedCommands: 0,
       });
 
-      mockWorkersApi.openVSCode.mockResolvedValue({
-        message: 'VSCode opened',
-        workerId: 'worker-123-abc',
-        worktreePath: '/path/to/worktree',
-      });
+      mockWorkersApi.openVSCode.mockResolvedValue(undefined);
 
       window.alert = jest.fn();
 
@@ -127,7 +123,7 @@ describe('WorkersDashboard - VSCode Functionality', () => {
 
       await waitFor(() => {
         expect(mockWorkersApi.openVSCode).toHaveBeenCalledWith('worker-123-abc');
-        expect(window.alert).toHaveBeenCalledWith('VSCode opened for worktree: /path/to/worktree');
+        expect(window.alert).toHaveBeenCalledWith('VSCode opened for worker-123-abc');
       });
     });
 

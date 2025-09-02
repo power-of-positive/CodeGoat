@@ -48,11 +48,6 @@ interface WorkersStatusResponse {
   totalBlockedCommands: number;
 }
 
-interface WorkerLogsResponse {
-  workerId: string;
-  logs: string;
-  logFile: string;
-}
 
 interface LogViewerProps {
   workerId: string;
@@ -63,7 +58,7 @@ function LogViewer({ workerId, onClose }: LogViewerProps) {
   const [isAutoRefresh, setIsAutoRefresh] = useState(true);
   const [autoScroll, setAutoScroll] = useState(true);
 
-  const { data: logsData } = useQuery<WorkerLogsResponse>({
+  const { data: logsData } = useQuery<string[]>({
     queryKey: ['worker-logs', workerId],
     queryFn: () => claudeWorkersApi.getWorkerLogs(workerId),
     refetchInterval: isAutoRefresh ? AUTO_REFRESH_INTERVAL_MS : false,
@@ -71,13 +66,11 @@ function LogViewer({ workerId, onClose }: LogViewerProps) {
 
   // Process logs into UnifiedLogEntry format to match TaskDetail
   const logEntries = React.useMemo(() => {
-    if (!logsData?.logs) {
+    if (!logsData || logsData.length === 0) {
       return [];
     }
 
-    const lines = logsData.logs
-      .split('\n')
-      .filter((line: string) => line.trim());
+    const lines = logsData.filter((line: string) => line.trim());
     const entries: UnifiedLogEntry[] = [];
     const baseTimestamp = Date.now() - lines.length * LOG_PROCESSING_INTERVALS.BASE_INTERVAL_MS;
 
@@ -206,10 +199,8 @@ function useWorkerMutations(queryClient: { invalidateQueries: (query: { queryKey
 
   const mergeWorktreeMutation = useMutation({
     mutationFn: claudeWorkersApi.mergeWorktree,
-    onSuccess: data => {
-      alert(
-        `Successfully merged changes from ${data.workerId}${data.hasChanges ? ' with changes committed' : ' (no changes to commit)'}`
-      );
+    onSuccess: (data, workerId) => {
+      alert(`Successfully merged changes from ${workerId}`);
       queryClient.invalidateQueries({ queryKey: ['workers-status'] });
     },
     onError: error => {
@@ -220,8 +211,8 @@ function useWorkerMutations(queryClient: { invalidateQueries: (query: { queryKey
 
   const openVSCodeMutation = useMutation({
     mutationFn: claudeWorkersApi.openVSCode,
-    onSuccess: data => {
-      alert(`VSCode opened for worktree: ${data.worktreePath}`);
+    onSuccess: (data, workerId) => {
+      alert(`VSCode opened for ${workerId}`);
     },
     onError: error => {
       console.error('Failed to open VSCode:', error);

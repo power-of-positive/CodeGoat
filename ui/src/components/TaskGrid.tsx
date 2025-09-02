@@ -128,6 +128,7 @@ export function TaskGrid({
                       onEdit(task);
                     }}
                     className="opacity-0 group-hover:opacity-100 transition-opacity"
+                    aria-label={`Edit task ${task.id}`}
                   >
                     <Edit className="w-3 h-3" />
                   </Button>
@@ -139,6 +140,7 @@ export function TaskGrid({
                       onStartWorker(task);
                     }}
                     className="opacity-0 group-hover:opacity-100 transition-opacity"
+                    aria-label={`Start worker for task ${task.id}`}
                   >
                     <Play className="w-3 h-3" />
                   </Button>
@@ -150,6 +152,7 @@ export function TaskGrid({
                       onDelete(task.id);
                     }}
                     className="opacity-0 group-hover:opacity-100 transition-opacity"
+                    aria-label={`Delete task ${task.id}`}
                   >
                     <Trash2 className="w-3 h-3" />
                   </Button>

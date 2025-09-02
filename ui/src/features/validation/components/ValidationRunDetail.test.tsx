@@ -12,6 +12,7 @@ jest.mock('../../../shared/lib/api', () => ({
   analyticsApi: {
     getValidationRuns: jest.fn(),
     getValidationRunById: jest.fn(),
+    getValidationRunDetailsFromDB: jest.fn(),
   },
   taskApi: {
     getTasks: jest.fn(),
@@ -31,6 +32,7 @@ const mockValidationRun: ValidationRun = {
   timestamp: '2024-01-15T10:30:00.000Z',
   success: true,
   duration: 45000,
+  overallStatus: 'passed',
   stages: [
     {
       id: 'lint',
@@ -39,6 +41,7 @@ const mockValidationRun: ValidationRun = {
       duration: 5000,
       attempt: 1,
       output: 'All lint checks passed',
+      status: 'passed',
     },
     {
       id: 'typecheck',
@@ -48,6 +51,7 @@ const mockValidationRun: ValidationRun = {
       attempt: 2,
       output: 'TypeScript compilation completed',
       error: 'Type error in file.ts:15',
+      status: 'failed',
     },
   ],
 };
@@ -78,7 +82,7 @@ describe('ValidationRunDetail', () => {
   });
 
   it('should render loading state initially', () => {
-    (analyticsApi.getValidationRuns as jest.Mock).mockReturnValue(
+    (analyticsApi.getValidationRunDetailsFromDB as jest.Mock).mockReturnValue(
       new Promise(() => {}) // Never resolves
     );
 
@@ -90,7 +94,7 @@ describe('ValidationRunDetail', () => {
   });
 
   it('should render error state when API fails', async () => {
-    (analyticsApi.getValidationRuns as jest.Mock).mockRejectedValue(
+    (analyticsApi.getValidationRunDetailsFromDB as jest.Mock).mockRejectedValue(
       new Error('API Error')
     );
 
@@ -105,13 +109,10 @@ describe('ValidationRunDetail', () => {
   });
 
   it('should render not found state when run does not exist', async () => {
-    (analyticsApi.getValidationRunById as jest.Mock).mockResolvedValue(null); // Run not found in DB
-    (analyticsApi.getValidationRuns as jest.Mock).mockResolvedValue(
-      [] // Empty array, so run won't be found
-    );
-    (taskApi.getTasks as jest.Mock).mockResolvedValue(
-      [] // Empty array, no tasks with validation runs
-    );
+    // Mock all APIs to return empty/null so no run is found
+    (analyticsApi.getValidationRunDetailsFromDB as jest.Mock).mockResolvedValue(null);
+    (analyticsApi.getValidationRuns as jest.Mock).mockResolvedValue([]);
+    (taskApi.getTasks as jest.Mock).mockResolvedValue([]);
 
     renderWithProviders(<ValidationRunDetail />);
 
@@ -127,7 +128,7 @@ describe('ValidationRunDetail', () => {
 
   it('should render validation run details when data is available', async () => {
     // Set up mocks so it falls back to analytics run (not dbRun)
-    (analyticsApi.getValidationRunById as jest.Mock).mockResolvedValue(null); // Not found in DB, fallback to analytics
+    (analyticsApi.getValidationRunDetailsFromDB as jest.Mock).mockResolvedValue(null); // Not found in DB, fallback to analytics
     (analyticsApi.getValidationRuns as jest.Mock).mockResolvedValue([
       mockValidationRun,
     ]);
@@ -156,7 +157,7 @@ describe('ValidationRunDetail', () => {
 
   it('should show stage logs when Show Logs button is clicked', async () => {
     // Set up mocks so it falls back to analytics run (not dbRun)
-    (analyticsApi.getValidationRunById as jest.Mock).mockResolvedValue(null); // Not found in DB, fallback to analytics
+    (analyticsApi.getValidationRunDetailsFromDB as jest.Mock).mockResolvedValue(null); // Not found in DB, fallback to analytics
     (analyticsApi.getValidationRuns as jest.Mock).mockResolvedValue([
       mockValidationRun,
     ]);
@@ -195,6 +196,7 @@ describe('ValidationRunDetail', () => {
   });
 
   it('should navigate back to analytics when back button is clicked', async () => {
+    (analyticsApi.getValidationRunDetailsFromDB as jest.Mock).mockResolvedValue(null);
     (analyticsApi.getValidationRuns as jest.Mock).mockResolvedValue([
       mockValidationRun,
     ]);
@@ -223,7 +225,7 @@ describe('ValidationRunDetail', () => {
     };
 
     // Set up mocks so it falls back to analytics run (not dbRun)
-    (analyticsApi.getValidationRunById as jest.Mock).mockResolvedValue(null); // Not found in DB, fallback to analytics
+    (analyticsApi.getValidationRunDetailsFromDB as jest.Mock).mockResolvedValue(null); // Not found in DB, fallback to analytics
     (analyticsApi.getValidationRuns as jest.Mock).mockResolvedValue([
       failedRun,
     ]);

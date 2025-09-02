@@ -1,9 +1,10 @@
 import request from 'supertest';
 import express from 'express';
 import { createTaskRoutes } from '../../routes/tasks';
-import { WinstonLogger } from '../../logger-winston';
 import { getDatabaseService } from '../../services/database';
 import { TaskStatus, Priority, TaskType, BDDScenarioStatus } from '@prisma/client';
+import { createMockLogger } from '../../test-helpers/logger.mock';
+import type { ILogger } from '../../logger-interface';
 
 // Mock the database service
 jest.mock('../../services/database');
@@ -34,12 +35,12 @@ const mockDb = {
 
 describe('Tasks Route - Story Completion Validation', () => {
   let app: express.Application;
-  let logger: WinstonLogger;
+  let logger: jest.Mocked<ILogger>;
 
   beforeEach(() => {
     app = express();
     app.use(express.json());
-    logger = new WinstonLogger();
+    logger = createMockLogger();
     app.use('/api/tasks', createTaskRoutes(logger));
 
     // Clear all mocks and reset database service

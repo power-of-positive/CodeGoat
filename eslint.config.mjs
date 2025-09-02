@@ -7,6 +7,19 @@ import reactRefresh from 'eslint-plugin-react-refresh';
 
 // Unified ESLint configuration for entire repository
 export default [
+  // Ignore patterns
+  {
+    ignores: [
+      'node_modules/**',
+      'dist/**',
+      'build/**',
+      '*.min.js',
+      'coverage/**',
+      '.next/**',
+      'logs/**'
+    ]
+  },
+
   // Base recommended configuration
   eslint.configs.recommended,
 
@@ -231,6 +244,26 @@ export default [
       'max-params': 'off',
       'no-magic-numbers': 'off',
       curly: 'off',
+      // Disallow test skipping
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'CallExpression[callee.property.name="skip"]',
+          message: 'Test skipping with .skip() is not allowed',
+        },
+        {
+          selector: 'Identifier[name="xit"]',
+          message: 'Test skipping with xit() is not allowed',
+        },
+        {
+          selector: 'Identifier[name="xdescribe"]',
+          message: 'Test skipping with xdescribe() is not allowed',
+        },
+        {
+          selector: 'Identifier[name="xtest"]',
+          message: 'Test skipping with xtest() is not allowed',
+        },
+      ],
     },
   },
 
@@ -267,6 +300,26 @@ export default [
       'max-statements': 'off',
       'max-params': 'off',
       'no-magic-numbers': 'off',
+      // Disallow test skipping
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'CallExpression[callee.property.name="skip"]',
+          message: 'Test skipping with .skip() is not allowed',
+        },
+        {
+          selector: 'Identifier[name="xit"]',
+          message: 'Test skipping with xit() is not allowed',
+        },
+        {
+          selector: 'Identifier[name="xdescribe"]',
+          message: 'Test skipping with xdescribe() is not allowed',
+        },
+        {
+          selector: 'Identifier[name="xtest"]',
+          message: 'Test skipping with xtest() is not allowed',
+        },
+      ],
     },
   },
 

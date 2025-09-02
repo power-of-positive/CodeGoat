@@ -13,7 +13,7 @@ async function navigateToBDDPage(page: any) {
     // Check if we're in error state and skip if API not available
     const errorMessage = await page.locator('text=Error Loading BDD Scenarios').isVisible();
     if (errorMessage) {
-      test.skip(true, 'BDD API not available');
+      // // test.skip(true, 'BDD API not available');
     }
     throw error;
   }
@@ -51,7 +51,7 @@ test.describe('BDD Comprehensive Scenarios E2E Tests', () => {
         // Check if we're in error state and skip if API not available
         const errorMessage = await page.locator('text=Error Loading BDD Scenarios').isVisible();
         if (errorMessage) {
-          test.skip(true, 'BDD API not available');
+          // // test.skip(true, 'BDD API not available');
         }
         throw error;
       }
@@ -77,7 +77,7 @@ test.describe('BDD Comprehensive Scenarios E2E Tests', () => {
         // Check if we're in error state and skip if API not available
         const errorMessage = await page.locator('text=Error Loading BDD Scenarios').isVisible();
         if (errorMessage) {
-          test.skip(true, 'BDD API not available');
+          // // test.skip(true, 'BDD API not available');
         }
         throw error;
       }
@@ -106,7 +106,7 @@ test.describe('BDD Comprehensive Scenarios E2E Tests', () => {
         // Check if we're in error state and skip if API not available
         const errorMessage = await page.locator('text=Error Loading BDD Scenarios').isVisible();
         if (errorMessage) {
-          test.skip(true, 'BDD API not available');
+          // // test.skip(true, 'BDD API not available');
         }
         throw error;
       }

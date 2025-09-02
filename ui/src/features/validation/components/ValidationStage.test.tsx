@@ -12,6 +12,7 @@ describe('ValidationStage', () => {
     attempt: 1,
     output: 'All files pass linting',
     error: undefined,
+    status: 'passed',
   };
 
   const mockFailedStage: ValidationStageResult = {
@@ -22,6 +23,7 @@ describe('ValidationStage', () => {
     attempt: 1,
     output: 'Some tests failed',
     error: 'Test suite failed',
+    status: 'failed',
   };
 
   it('renders successful stage correctly', () => {

@@ -343,12 +343,7 @@ describe('WorkerInfo', () => {
       totalBlockedCommands: 0,
     });
 
-    mockWorkersApi.mergeWorktree.mockResolvedValue({
-      message: 'Successfully merged',
-      workerId: 'worker-123-abc',
-      mergedBranch: 'main',
-      hasChanges: true,
-    });
+    mockWorkersApi.mergeWorktree.mockResolvedValue(undefined);
 
     render(<WorkerInfo executorId="worker-123-abc" />, { wrapper: createWrapper() });
 

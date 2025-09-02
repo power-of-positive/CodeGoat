@@ -65,16 +65,20 @@ export function PermissionEditor() {
   const queryClient = useQueryClient();
 
   // Fetch permission configuration
-  const { data: config, isLoading: configLoading } = useQuery({
+  const { data: configData, isLoading: configLoading } = useQuery({
     queryKey: ['permission-config'],
-    queryFn: permissionApi.getConfig,
+    queryFn: permissionApi.getPermissionConfig,
   });
+  
+  const config = configData as { defaultAllow?: boolean; enableLogging?: boolean; strictMode?: boolean } | undefined;
 
   // Fetch permission rules
-  const { data: rules = [], isLoading: rulesLoading } = useQuery({
+  const { data: rulesData = [], isLoading: rulesLoading } = useQuery({
     queryKey: ['permission-rules'],
-    queryFn: permissionApi.getRules,
+    queryFn: permissionApi.getPermissionRules,
   });
+  
+  const rules = rulesData as PermissionRule[];
 
   // Fetch default configurations
   const { data: defaultConfigs = {} } = useQuery({
@@ -84,7 +88,7 @@ export function PermissionEditor() {
 
   // Create rule mutation
   const createRuleMutation = useMutation({
-    mutationFn: permissionApi.createRule,
+    mutationFn: (data: PermissionFormData) => permissionApi.createPermissionRule(data as unknown as Record<string, unknown>),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['permission-rules'] });
       setShowCreateForm(false);
@@ -100,7 +104,7 @@ export function PermissionEditor() {
     }: {
       id: string;
       updates: Partial<PermissionRule>;
-    }) => permissionApi.updateRule(id, updates),
+    }) => permissionApi.updatePermissionRule(id, updates),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['permission-rules'] });
       setEditingRule(null);
@@ -110,7 +114,7 @@ export function PermissionEditor() {
 
   // Delete rule mutation
   const deleteRuleMutation = useMutation({
-    mutationFn: permissionApi.deleteRule,
+    mutationFn: permissionApi.deletePermissionRule,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['permission-rules'] });
     },
@@ -118,7 +122,7 @@ export function PermissionEditor() {
 
   // Update config mutation
   const updateConfigMutation = useMutation({
-    mutationFn: permissionApi.updateConfig,
+    mutationFn: (data: Partial<PermissionConfig>) => permissionApi.updatePermissionConfig(data as Record<string, unknown>),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['permission-config'] });
     },
@@ -126,20 +130,24 @@ export function PermissionEditor() {
 
   // Test permission mutation
   const testPermissionMutation = useMutation({
-    mutationFn: permissionApi.testPermission,
+    mutationFn: ({ action, resource }: { action: string; resource: string }) => 
+      permissionApi.testPermission(action, resource),
     onSuccess: (result) => {
-      setTestResult(result);
+      setTestResult({
+        allowed: result.allowed,
+        reason: result.reason || '',
+      });
     },
   });
 
   // Import Claude settings mutation
   const importClaudeSettingsMutation = useMutation({
     mutationFn: permissionApi.importClaudeSettings,
-    onSuccess: (result) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['permission-rules'] });
       queryClient.invalidateQueries({ queryKey: ['permission-config'] });
       alert(
-        `Successfully imported ${result.importedRules} permission rules from .claude/settings.json`
+        'Successfully imported permission rules from .claude/settings.json'
       );
     },
     onError: (error: Error) => {
@@ -192,7 +200,10 @@ export function PermissionEditor() {
   };
 
   const handleTestPermission = () => {
-    testPermissionMutation.mutate(testData);
+    testPermissionMutation.mutate({
+      action: testData.action,
+      resource: testData.target || '',
+    });
   };
 
   const handleLoadDefaultConfig = (configName: string) => {

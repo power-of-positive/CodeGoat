@@ -148,10 +148,7 @@ export function WorkerDetail() {
         throw new Error('Worker data not available');
       }
       // Start the worker again with the same task and worktree
-      const response = await claudeWorkersApi.startWorker({
-        taskId: worker.taskId,
-        taskContent: worker.taskContent,
-      });
+      const response = await claudeWorkersApi.startWorker(worker.taskId);
       return response;
     },
     onSuccess: () => {
@@ -165,7 +162,7 @@ export function WorkerDetail() {
   // Merge worker changes with commit message
   const mergeChangesMutation = useMutation({
     mutationFn: async (commitMessage?: string) => {
-      const response = await claudeWorkersApi.mergeWorkerChanges(workerId!, commitMessage);
+      const response = await claudeWorkersApi.mergeWorkerChanges(workerId!, { commitMessage });
       return response;
     },
     onSuccess: () => {

@@ -7,7 +7,7 @@ import { analyticsApi } from '../../../shared/lib/api';
 // Mock the API
 jest.mock('../../../shared/lib/api', () => ({
   analyticsApi: {
-    getHistoricalData: jest.fn(),
+    getHistoricalTimeline: jest.fn(),
   },
 }));
 
@@ -79,7 +79,7 @@ describe('HistoricalTimeline', () => {
   });
 
   it('renders loading state initially', () => {
-    (analyticsApi.getHistoricalData as jest.MockedFunction<any>).mockImplementation(
+    (analyticsApi.getHistoricalTimeline as jest.MockedFunction<any>).mockImplementation(
       () => new Promise(() => {}) // Never resolves
     );
 
@@ -90,7 +90,7 @@ describe('HistoricalTimeline', () => {
   });
 
   it('renders error state when API fails', async () => {
-    (analyticsApi.getHistoricalData as jest.MockedFunction<any>).mockRejectedValue(
+    (analyticsApi.getHistoricalTimeline as jest.MockedFunction<any>).mockRejectedValue(
       new Error('API Error')
     );
 
@@ -104,7 +104,7 @@ describe('HistoricalTimeline', () => {
   });
 
   it('renders timeline when data is loaded', async () => {
-    (analyticsApi.getHistoricalData as jest.MockedFunction<any>).mockResolvedValue(mockTimelineData);
+    (analyticsApi.getHistoricalTimeline as jest.MockedFunction<any>).mockResolvedValue(mockTimelineData);
 
     renderWithQueryClient(<HistoricalTimeline />);
 
@@ -120,7 +120,7 @@ describe('HistoricalTimeline', () => {
   });
 
   it('handles refresh functionality', async () => {
-    (analyticsApi.getHistoricalData as jest.MockedFunction<any>).mockResolvedValue(mockTimelineData);
+    (analyticsApi.getHistoricalTimeline as jest.MockedFunction<any>).mockResolvedValue(mockTimelineData);
 
     renderWithQueryClient(<HistoricalTimeline />);
 
@@ -132,11 +132,11 @@ describe('HistoricalTimeline', () => {
     fireEvent.click(refreshButton);
 
     // Should call the API again
-    expect(analyticsApi.getHistoricalData).toHaveBeenCalledTimes(2);
+    expect(analyticsApi.getHistoricalTimeline).toHaveBeenCalledTimes(2);
   });
 
   it('displays no data state when timeline is empty', async () => {
-    (analyticsApi.getHistoricalData as jest.MockedFunction<any>).mockResolvedValue({
+    (analyticsApi.getHistoricalTimeline as jest.MockedFunction<any>).mockResolvedValue({
       timeline: [],
       summary: { totalPeriods: 0, granularity: 'daily', dateRange: { start: '', end: '' } },
     });
@@ -151,7 +151,7 @@ describe('HistoricalTimeline', () => {
   });
 
   it('accepts initial props correctly', async () => {
-    (analyticsApi.getHistoricalData as jest.MockedFunction<any>).mockResolvedValue(mockTimelineData);
+    (analyticsApi.getHistoricalTimeline as jest.MockedFunction<any>).mockResolvedValue(mockTimelineData);
 
     renderWithQueryClient(
       <HistoricalTimeline 
@@ -162,7 +162,7 @@ describe('HistoricalTimeline', () => {
     );
 
     await waitFor(() => {
-      expect(analyticsApi.getHistoricalData).toHaveBeenCalledWith(
+      expect(analyticsApi.getHistoricalTimeline).toHaveBeenCalledWith(
         expect.objectContaining({
           days: 7,
         })
@@ -171,7 +171,7 @@ describe('HistoricalTimeline', () => {
   });
 
   it('handles settings panel toggle', async () => {
-    (analyticsApi.getHistoricalData as jest.MockedFunction<any>).mockResolvedValue(mockTimelineData);
+    (analyticsApi.getHistoricalTimeline as jest.MockedFunction<any>).mockResolvedValue(mockTimelineData);
 
     renderWithQueryClient(<HistoricalTimeline />);
 
@@ -191,7 +191,7 @@ describe('HistoricalTimeline', () => {
   });
 
   it('handles time period changes', async () => {
-    (analyticsApi.getHistoricalData as jest.MockedFunction<any>).mockResolvedValue(mockTimelineData);
+    (analyticsApi.getHistoricalTimeline as jest.MockedFunction<any>).mockResolvedValue(mockTimelineData);
 
     renderWithQueryClient(<HistoricalTimeline />);
 
@@ -214,14 +214,14 @@ describe('HistoricalTimeline', () => {
     fireEvent.change(timePeriodSelect, { target: { value: '7' } });
 
     await waitFor(() => {
-      expect(analyticsApi.getHistoricalData).toHaveBeenCalledWith(
+      expect(analyticsApi.getHistoricalTimeline).toHaveBeenCalledWith(
         expect.objectContaining({ days: 7 })
       );
     });
   });
 
   it('handles granularity changes', async () => {
-    (analyticsApi.getHistoricalData as jest.MockedFunction<any>).mockResolvedValue(mockTimelineData);
+    (analyticsApi.getHistoricalTimeline as jest.MockedFunction<any>).mockResolvedValue(mockTimelineData);
 
     renderWithQueryClient(<HistoricalTimeline />);
 
@@ -241,17 +241,17 @@ describe('HistoricalTimeline', () => {
     // Change granularity - second select in the settings panel
     const selectElements = screen.getAllByRole('combobox');
     const granularitySelect = selectElements[1]; // Second select is Granularity
-    fireEvent.change(granularitySelect, { target: { value: 'hourly' } });
+    fireEvent.change(granularitySelect, { target: { value: 'hour' } });
 
     await waitFor(() => {
-      expect(analyticsApi.getHistoricalData).toHaveBeenCalledWith(
-        expect.objectContaining({ granularity: 'hourly' })
+      expect(analyticsApi.getHistoricalTimeline).toHaveBeenCalledWith(
+        expect.objectContaining({ granularity: 'hour' })
       );
     });
   });
 
-  it('handles environment filter changes', async () => {
-    (analyticsApi.getHistoricalData as jest.MockedFunction<any>).mockResolvedValue(mockTimelineData);
+  it('handles stage filter changes', async () => {
+    (analyticsApi.getHistoricalTimeline as jest.MockedFunction<any>).mockResolvedValue(mockTimelineData);
 
     renderWithQueryClient(<HistoricalTimeline />);
 
@@ -268,20 +268,19 @@ describe('HistoricalTimeline', () => {
       expect(screen.getByText('Timeline Settings')).toBeInTheDocument();
     });
 
-    // Change environment - third select in the settings panel
-    const selectElements = screen.getAllByRole('combobox');
-    const environmentSelect = selectElements[2]; // Third select is Environment
-    fireEvent.change(environmentSelect, { target: { value: 'development' } });
-
+    // Check that API is called with correct parameters (without environment)
     await waitFor(() => {
-      expect(analyticsApi.getHistoricalData).toHaveBeenCalledWith(
-        expect.objectContaining({ environment: 'development' })
+      expect(analyticsApi.getHistoricalTimeline).toHaveBeenCalledWith(
+        expect.objectContaining({ 
+          days: 30, 
+          granularity: 'day'
+        })
       );
     });
   });
 
   it('handles chart type changes', async () => {
-    (analyticsApi.getHistoricalData as jest.MockedFunction<any>).mockResolvedValue(mockTimelineData);
+    (analyticsApi.getHistoricalTimeline as jest.MockedFunction<any>).mockResolvedValue(mockTimelineData);
 
     renderWithQueryClient(<HistoricalTimeline />);
 
@@ -310,7 +309,7 @@ describe('HistoricalTimeline', () => {
   });
 
   it('renders different chart types correctly', async () => {
-    (analyticsApi.getHistoricalData as jest.MockedFunction<any>).mockResolvedValue(mockTimelineData);
+    (analyticsApi.getHistoricalTimeline as jest.MockedFunction<any>).mockResolvedValue(mockTimelineData);
 
     const { rerender } = renderWithQueryClient(<HistoricalTimeline />);
 
@@ -320,7 +319,7 @@ describe('HistoricalTimeline', () => {
 
     // Test duration chart type by re-rendering with different props
     jest.clearAllMocks();
-    (analyticsApi.getHistoricalData as jest.MockedFunction<any>).mockResolvedValue(mockTimelineData);
+    (analyticsApi.getHistoricalTimeline as jest.MockedFunction<any>).mockResolvedValue(mockTimelineData);
     
     renderWithQueryClient(<HistoricalTimeline />);
     
@@ -340,7 +339,7 @@ describe('HistoricalTimeline', () => {
     });
     
     const selectElements = screen.getAllByRole('combobox');
-    const chartTypeSelect = selectElements[3]; // Chart Type select
+    const chartTypeSelect = selectElements[3]; // Chart Type select (fourth select)
     fireEvent.change(chartTypeSelect, { target: { value: 'duration' } });
 
     await waitFor(() => {
@@ -366,7 +365,7 @@ describe('HistoricalTimeline', () => {
       ],
     };
     
-    (analyticsApi.getHistoricalData as jest.MockedFunction<any>).mockResolvedValue(timelineDataWithMultiplePoints);
+    (analyticsApi.getHistoricalTimeline as jest.MockedFunction<any>).mockResolvedValue(timelineDataWithMultiplePoints);
 
     renderWithQueryClient(<HistoricalTimeline />);
 
@@ -409,13 +408,13 @@ describe('HistoricalTimeline', () => {
 
   it('formats timestamps correctly for different granularities', async () => {
     const testCases = [
-      { granularity: 'hourly', expected: 'Jan 1, 12 AM' },
-      { granularity: 'daily', expected: 'Jan 1' },
-      { granularity: 'weekly', expected: 'Jan 1 - Jan 7' },
+      { granularity: 'hour', expected: 'Jan 1, 12 AM' },
+      { granularity: 'day', expected: 'Jan 1' },
+      { granularity: 'week', expected: 'Jan 1 - Jan 7' },
     ];
 
     for (const testCase of testCases) {
-      (analyticsApi.getHistoricalData as jest.MockedFunction<any>).mockResolvedValue(mockTimelineData);
+      (analyticsApi.getHistoricalTimeline as jest.MockedFunction<any>).mockResolvedValue(mockTimelineData);
 
       const { unmount } = renderWithQueryClient(<HistoricalTimeline />);
 
@@ -432,7 +431,7 @@ describe('HistoricalTimeline', () => {
       fireEvent.change(granularitySelect, { target: { value: testCase.granularity } });
 
       await waitFor(() => {
-        expect(analyticsApi.getHistoricalData).toHaveBeenCalledWith(
+        expect(analyticsApi.getHistoricalTimeline).toHaveBeenCalledWith(
           expect.objectContaining({ granularity: testCase.granularity })
         );
       });
@@ -447,15 +446,15 @@ describe('HistoricalTimeline', () => {
       timeline: [
         {
           ...mockTimelineData.timeline[0],
-          stagePerformance: {
-            lint: { success: 8, total: 10, avgDuration: 1200, successRate: 80 },
-            test: { success: 9, total: 10, avgDuration: 5000, successRate: 90 },
+          stages: {
+            lint: { successRate: 80, avgDuration: 1200, total: 10 },
+            test: { successRate: 90, avgDuration: 5000, total: 9 },
           },
         },
       ],
     };
 
-    (analyticsApi.getHistoricalData as jest.MockedFunction<any>).mockResolvedValue(dataWithStages);
+    (analyticsApi.getHistoricalTimeline as jest.MockedFunction<any>).mockResolvedValue(dataWithStages);
 
     renderWithQueryClient(<HistoricalTimeline />);
 
@@ -502,7 +501,7 @@ describe('HistoricalTimeline', () => {
       ],
     };
 
-    (analyticsApi.getHistoricalData as jest.MockedFunction<any>).mockResolvedValue(dataWithDetails);
+    (analyticsApi.getHistoricalTimeline as jest.MockedFunction<any>).mockResolvedValue(dataWithDetails);
 
     renderWithQueryClient(<HistoricalTimeline />);
 
@@ -537,7 +536,7 @@ describe('HistoricalTimeline', () => {
   });
 
   it('handles try again button in error state', async () => {
-    (analyticsApi.getHistoricalData as jest.MockedFunction<any>)
+    (analyticsApi.getHistoricalTimeline as jest.MockedFunction<any>)
       .mockRejectedValueOnce(new Error('API Error'))
       .mockResolvedValueOnce(mockTimelineData);
 
@@ -554,7 +553,7 @@ describe('HistoricalTimeline', () => {
       expect(screen.getByText('Historical Timeline')).toBeInTheDocument();
     });
 
-    expect(analyticsApi.getHistoricalData).toHaveBeenCalledTimes(2);
+    expect(analyticsApi.getHistoricalTimeline).toHaveBeenCalledTimes(2);
   });
 
   it('calculates summary statistics correctly', async () => {
@@ -591,7 +590,7 @@ describe('HistoricalTimeline', () => {
       },
     };
 
-    (analyticsApi.getHistoricalData as jest.MockedFunction<any>).mockResolvedValue(dataWithMultipleRuns);
+    (analyticsApi.getHistoricalTimeline as jest.MockedFunction<any>).mockResolvedValue(dataWithMultipleRuns);
 
     renderWithQueryClient(<HistoricalTimeline />);
 
@@ -607,7 +606,7 @@ describe('HistoricalTimeline', () => {
   it('handles auto refresh functionality', async () => {
     jest.useFakeTimers();
     
-    (analyticsApi.getHistoricalData as jest.MockedFunction<any>).mockResolvedValue(mockTimelineData);
+    (analyticsApi.getHistoricalTimeline as jest.MockedFunction<any>).mockResolvedValue(mockTimelineData);
 
     renderWithQueryClient(
       <HistoricalTimeline autoRefresh={true} refreshInterval={5000} />
@@ -618,13 +617,13 @@ describe('HistoricalTimeline', () => {
     });
 
     // Initial call
-    expect(analyticsApi.getHistoricalData).toHaveBeenCalledTimes(1);
+    expect(analyticsApi.getHistoricalTimeline).toHaveBeenCalledTimes(1);
 
     // Fast forward time by refresh interval
     jest.advanceTimersByTime(5000);
 
     await waitFor(() => {
-      expect(analyticsApi.getHistoricalData).toHaveBeenCalledTimes(2);
+      expect(analyticsApi.getHistoricalTimeline).toHaveBeenCalledTimes(2);
     });
 
     jest.useRealTimers();

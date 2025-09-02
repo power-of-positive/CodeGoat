@@ -11,6 +11,7 @@
       "Update(../settings-precommit.json)",
       "Update(settings-precommit.json)",
       "Update(eslint.shared.mjs)",
+      "Update(settings-precommit.json)",
       "Update(settings-precommit.json)"
     ]
   },
@@ -31,7 +32,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cd /Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat && npx tsx scripts/claude-stop-hook.ts"
+            "command": "bash /Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/scripts/claude-stop-hook-comprehensive.sh"
           }
         ]
       }

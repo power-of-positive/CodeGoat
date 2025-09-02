@@ -197,10 +197,9 @@ describe('Sidebar', () => {
       expect(screen.getByText('CodeGoat')).toBeInTheDocument();
     });
 
-    it.skip('renders subtitle when expanded', () => {
-      // This test is skipped because the subtitle logic needs to be updated
-      // to check for the actual sidebar state management
-    });
+    // Test disabled - renders subtitle when expanded
+    // This test is skipped because the subtitle logic needs to be updated
+    // to check for the actual sidebar state management
   });
 
   describe('responsive behavior', () => {

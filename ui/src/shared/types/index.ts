@@ -42,6 +42,8 @@ export interface ValidationRun {
   stages: ValidationStageResult[];
   success: boolean;
   duration: number;
+  overallStatus: 'passed' | 'failed' | 'running' | 'pending' | 'skipped';
+  metricsFile?: string;
 }
 
 export interface ValidationStageResult {
@@ -52,6 +54,8 @@ export interface ValidationStageResult {
   attempt: number;
   output?: string;
   error?: string;
+  command?: string;
+  status: 'passed' | 'failed' | 'running' | 'pending' | 'skipped';
 }
 
 export interface ValidationMetrics {
@@ -98,6 +102,7 @@ export interface Task {
   startTime?: string;
   endTime?: string;
   duration?: string;
+  createdAt?: string;
   bddScenarios?: BDDScenario[];
   executorId?: string;
   validationRuns?: ValidationRun[];
@@ -236,4 +241,94 @@ export interface E2ETestHistory {
   successRate: number;
   averageDuration: number;
   lastRunTimestamp: string;
+}
+
+// Worker types for Claude workers API
+export interface Worker {
+  id: string;
+  taskId: string;
+  taskContent: string;
+  status: 'starting' | 'running' | 'completed' | 'failed' | 'stopped' | 'validating';
+  startTime: string;
+  endTime?: string;
+  pid?: number;
+  logFile: string;
+  blockedCommands: number;
+  hasPermissionSystem: boolean;
+  validationPassed?: boolean;
+  validationRuns?: number;
+}
+
+// Blocked command tracking
+export interface BlockedCommand {
+  id: string;
+  workerId: string;
+  command: string;
+  reason: string;
+  timestamp: string;
+  context?: string;
+}
+
+// Historical timeline data structure
+export interface HistoricalTimelineData {
+  timeline: TimelineEntry[];
+  summary: {
+    totalRuns: number;
+    successRate: number;
+    averageDuration: number;
+    totalPeriods: number;
+  };
+}
+
+export interface TimelineEntry {
+  timestamp: string;
+  stages: Record<string, StagePerformance>;
+  totalRuns: number;
+  successRate: number;
+  averageDuration: number;
+}
+
+export interface StagePerformance {
+  successRate: number;
+  avgDuration: number;
+  total: number;
+}
+
+// Task Analytics data structure
+export interface TaskAnalyticsData {
+  overview: {
+    totalTasks: number;
+    completedTasks: number;
+    inProgressTasks: number;
+    pendingTasks: number;
+    completionRate: number;
+    averageCompletionTimeMinutes: number;
+  };
+  priorityBreakdown: {
+    high: PriorityBreakdown;
+    medium: PriorityBreakdown;
+    low: PriorityBreakdown;
+  };
+  dailyCompletions: DailyCompletion[];
+  recentCompletions: RecentCompletion[];
+}
+
+export interface PriorityBreakdown {
+  total: number;
+  completed: number;
+  completionRate: string;
+}
+
+export interface DailyCompletion {
+  date: string;
+  completed: number;
+  total: number;
+}
+
+export interface RecentCompletion {
+  id: string;
+  title: string;
+  completedAt: string;
+  priority: 'high' | 'medium' | 'low';
+  duration: number;
 }

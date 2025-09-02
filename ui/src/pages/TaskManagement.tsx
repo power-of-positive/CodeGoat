@@ -170,7 +170,7 @@ export function TaskManagement() {
       }
 
       // Convert to comparable values
-      if (typeof aVal === 'string') {
+      if (typeof aVal === 'string' && typeof bVal === 'string') {
         aVal = aVal.toLowerCase();
         bVal = bVal.toLowerCase();
       }
@@ -213,24 +213,32 @@ export function TaskManagement() {
     }
   };
 
+  const handleDeleteTask = (id: string) => {
+    if (window.confirm('Are you sure you want to delete this task?')) {
+      deleteTaskMutation.mutate(id);
+    }
+  };
+
   const handleBulkDelete = () => {
     if (selectedTasks.length === 0) {
       return;
     }
     
-    if (window.confirm(`Are you sure you want to delete ${selectedTasks.length} tasks?`)) {
+    if (window.confirm(`Are you sure you want to delete ${selectedTasks.length} selected tasks?`)) {
       bulkDeleteMutation.mutate(selectedTasks);
     }
   };
 
   const handleStartWorker = async (task: Task) => {
-    try {
-      await claudeWorkersApi.startWorker(task.id, process.cwd());
-      queryClient.invalidateQueries({ queryKey: ['workers'] });
-      alert(`✅ Started Claude worker for task: ${task.id}`);
-    } catch (error) {
-      console.error('Failed to start worker:', error);
-      alert('❌ Failed to start Claude worker. Please check the console for details.');
+    if (window.confirm(`Start Claude Code worker for task: "${task.content}"?`)) {
+      try {
+        await claudeWorkersApi.startWorker(task.id, process.cwd());
+        queryClient.invalidateQueries({ queryKey: ['workers'] });
+        alert(`✅ Started Claude Code worker!\nTask: ${task.id}\nContent: "${task.content}"`);
+      } catch (error) {
+        console.error('Failed to start Claude worker:', error);
+        alert('❌ Failed to start Claude Code worker. Please check the console for details.');
+      }
     }
   };
 
@@ -295,6 +303,8 @@ export function TaskManagement() {
               <TaskFiltersComponent
                 filters={filters}
                 onFiltersChange={setFilters}
+                isOpen={showFilters}
+                onToggle={() => setShowFilters(!showFilters)}
               />
             </CardContent>
           </Card>
@@ -305,7 +315,38 @@ export function TaskManagement() {
       {filteredAndSortedTasks.length === 0 ? (
         <Card>
           <CardContent className="p-8 text-center">
-            <p className="text-gray-500">No tasks found matching your criteria.</p>
+            {tasks.length === 0 ? (
+              <>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">No Tasks Found</h3>
+                <p className="text-gray-600 mb-4">You haven't created any tasks yet.</p>
+                <button
+                  onClick={() => setShowCreateForm(true)}
+                  className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                >
+                  Create Your First Task
+                </button>
+              </>
+            ) : (
+              <>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">No Tasks Found</h3>
+                <p className="text-gray-600 mb-4">No tasks match your current filters.</p>
+                <button
+                  onClick={() => {
+                    setFilters({
+                      status: 'all',
+                      priority: 'all',
+                      taskType: 'all',
+                      dateRange: 'all',
+                      search: '',
+                      executor: '',
+                    });
+                  }}
+                  className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+                >
+                  Clear Filters
+                </button>
+              </>
+            )}
           </CardContent>
         </Card>
       ) : viewMode === 'table' ? (
@@ -314,7 +355,7 @@ export function TaskManagement() {
           sortConfig={sortConfig}
           onSort={handleSort}
           onEdit={setEditingTask}
-          onDelete={(id) => deleteTaskMutation.mutate(id)}
+          onDelete={handleDeleteTask}
           onStartWorker={handleStartWorker}
           selectedTasks={selectedTasks}
           onTaskSelect={handleTaskSelect}
@@ -324,7 +365,7 @@ export function TaskManagement() {
         <TaskGrid
           tasks={filteredAndSortedTasks}
           onEdit={setEditingTask}
-          onDelete={(id) => deleteTaskMutation.mutate(id)}
+          onDelete={handleDeleteTask}
           onStartWorker={handleStartWorker}
           selectedTasks={selectedTasks}
           onTaskSelect={handleTaskSelect}
@@ -346,9 +387,8 @@ export function TaskManagement() {
               </Button>
             </div>
             <TaskForm
-              onSubmit={(data) => createTaskMutation.mutate(data)}
+              onSave={(data) => createTaskMutation.mutate(data)}
               onCancel={() => setShowCreateForm(false)}
-              isLoading={createTaskMutation.isPending}
             />
           </div>
         </div>
@@ -370,9 +410,8 @@ export function TaskManagement() {
             </div>
             <TaskForm
               task={editingTask}
-              onSubmit={(data) => updateTaskMutation.mutate({ id: editingTask.id, data })}
+              onSave={(data) => updateTaskMutation.mutate({ id: editingTask.id, data })}
               onCancel={() => setEditingTask(null)}
-              isLoading={updateTaskMutation.isPending}
             />
           </div>
         </div>

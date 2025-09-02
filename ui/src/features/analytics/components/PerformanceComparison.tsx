@@ -39,6 +39,48 @@ interface PerformanceComparisonProps {
   defaultPeriod2?: { start: string; end: string };
 }
 
+interface PeriodData {
+  successRate: number;
+  averageTime?: number;
+  avgDuration?: number;
+  totalRuns: number;
+  label?: string;
+  stages: Array<{
+    stageId: string;
+    successRate: number;
+    avgDuration: number;
+  }>;
+}
+
+interface ComparisonData {
+  periods: {
+    period1: PeriodData;
+    period2: PeriodData;
+  };
+  comparison: {
+    overall: {
+      successRate: number;
+      averageTime?: number;
+      avgDuration?: number;
+      totalRuns: number;
+    };
+    stages: Array<{
+      stageId: string;
+      stageName: string;
+      status: string;
+      successRateChange?: { percentage: number; value?: number; trend?: 'up' | 'down' | 'stable' };
+      durationChange?: { percentage: number; value?: number; trend?: 'up' | 'down' | 'stable' };
+    }>;
+  };
+  insights: {
+    improved: number;
+    degraded: number;
+    stable: number;
+    newStages: number;
+    removedStages: number;
+  };
+}
+
 interface TrendIndicatorProps {
   trend: 'up' | 'down' | 'stable';
   value: number;
@@ -168,11 +210,9 @@ export function PerformanceComparison({
     queryKey: ['performance-comparison', period1Start, period1End, period2Start, period2End, environment],
     queryFn: () =>
       analyticsApi.getPerformanceComparison({
-        period1Start,
-        period1End,
-        period2Start,
-        period2End,
-        environment: environment || undefined,
+        days: 30, // Default comparison period
+        compareWith: 60, // Compare with previous 60 days
+        stages: [], // All stages
       }),
     enabled: !!(period1Start && period1End && period2Start && period2End),
     staleTime: QUERY_STALE_TIME_MINUTES * MINUTES_PER_HOUR * MILLISECONDS_PER_SECOND,
@@ -196,7 +236,19 @@ export function PerformanceComparison({
       return null;
     }
 
-    const { periods, comparison } = comparisonData;
+    const data = (comparisonData as ComparisonData) || {
+      periods: { 
+        period1: { successRate: 0, averageTime: 0, avgDuration: 0, totalRuns: 0, label: 'Period 1', stages: [] }, 
+        period2: { successRate: 0, averageTime: 0, avgDuration: 0, totalRuns: 0, label: 'Period 2', stages: [] } 
+      }, 
+      comparison: { 
+        overall: { successRate: 0, averageTime: 0, avgDuration: 0, totalRuns: 0 }, 
+        stages: [] 
+      },
+      insights: { improved: 0, degraded: 0, stable: 0, newStages: 0, removedStages: 0 }
+    };
+    
+    const { periods, comparison, insights } = data;
 
     // Overall metrics comparison
     const overallMetrics: ComparisonMetric[] = [
@@ -204,15 +256,23 @@ export function PerformanceComparison({
         label: 'Success Rate',
         period1Value: periods.period1.successRate,
         period2Value: periods.period2.successRate,
-        change: comparison.overall.successRate,
+        change: {
+          value: comparison.overall.successRate || 0,
+          percentage: Math.abs(comparison.overall.successRate || 0),
+          trend: (comparison.overall.successRate || 0) > 0 ? 'up' : (comparison.overall.successRate || 0) < 0 ? 'down' : 'stable'
+        },
         suffix: '%',
         isPositive: true,
       },
       {
         label: 'Average Duration',
-        period1Value: periods.period1.avgDuration,
-        period2Value: periods.period2.avgDuration,
-        change: comparison.overall.avgDuration,
+        period1Value: periods.period1.avgDuration || 0,
+        period2Value: periods.period2.avgDuration || 0,
+        change: {
+          value: comparison.overall.avgDuration || 0,
+          percentage: Math.abs(comparison.overall.avgDuration || 0),
+          trend: (comparison.overall.avgDuration || 0) > 0 ? 'up' : (comparison.overall.avgDuration || 0) < 0 ? 'down' : 'stable'
+        },
         suffix: 'ms',
         isPositive: false, // Lower is better for duration
       },
@@ -220,7 +280,11 @@ export function PerformanceComparison({
         label: 'Total Runs',
         period1Value: periods.period1.totalRuns,
         period2Value: periods.period2.totalRuns,
-        change: comparison.overall.totalRuns,
+        change: {
+          value: comparison.overall.totalRuns || 0,
+          percentage: Math.abs(comparison.overall.totalRuns || 0),
+          trend: (comparison.overall.totalRuns || 0) > 0 ? 'up' : (comparison.overall.totalRuns || 0) < 0 ? 'down' : 'stable'
+        },
         suffix: '',
         isPositive: true,
       },
@@ -258,6 +322,9 @@ export function PerformanceComparison({
       overallMetrics,
       stageComparisonData,
       radarData,
+      insights,
+      periods,
+      comparison,
     };
   }, [comparisonData]);
 
@@ -296,8 +363,7 @@ export function PerformanceComparison({
     );
   }
 
-  const { periods, comparison, insights } = comparisonData;
-  const { overallMetrics, stageComparisonData, radarData } = chartData;
+  const { overallMetrics, stageComparisonData, radarData, insights, periods, comparison } = chartData;
 
   return (
     <div className="space-y-6">
