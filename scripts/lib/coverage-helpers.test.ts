@@ -17,19 +17,16 @@ describe('coverage-helpers', () => {
     jest.clearAllMocks();
     mockLogger = {
       log: jest.fn(),
-      error: jest.fn()
+      error: jest.fn(),
     };
   });
 
   describe('findTestFiles', () => {
     it('should find .test.ts files for changed files', () => {
-      const changedFiles = [
-        '/scripts/lib/utils/file1.ts',
-        '/scripts/lib/utils/file2.ts'
-      ];
+      const changedFiles = ['/scripts/lib/utils/file1.ts', '/scripts/lib/utils/file2.ts'];
       const scriptsDir = '/scripts';
 
-      mockExistsSync.mockImplementation((filePath) => {
+      mockExistsSync.mockImplementation(filePath => {
         const pathStr = String(filePath);
         return pathStr.includes('file1.test.ts') || pathStr.includes('file2.test.ts');
       });
@@ -45,7 +42,7 @@ describe('coverage-helpers', () => {
       const changedFiles = ['/scripts/lib/utils/file1.ts'];
       const scriptsDir = '/scripts';
 
-      mockExistsSync.mockImplementation((filePath) => {
+      mockExistsSync.mockImplementation(filePath => {
         const pathStr = String(filePath);
         return pathStr.includes('file1.spec.ts');
       });
@@ -71,11 +68,11 @@ describe('coverage-helpers', () => {
       const changedFiles = [
         '/scripts/lib/utils/file1.ts',
         '/scripts/lib/utils/file2.ts',
-        '/scripts/lib/utils/file3.ts'
+        '/scripts/lib/utils/file3.ts',
       ];
       const scriptsDir = '/scripts';
 
-      mockExistsSync.mockImplementation((filePath) => {
+      mockExistsSync.mockImplementation(filePath => {
         const pathStr = String(filePath);
         return pathStr.includes('file1.test.ts') || pathStr.includes('file3.spec.ts');
       });
@@ -113,7 +110,7 @@ describe('coverage-helpers', () => {
 
     it('should build targeted coverage command when test files exist', () => {
       const changedFiles = ['/scripts/lib/utils/file1.ts'];
-      
+
       mockExistsSync.mockReturnValue(true);
 
       const result = buildCoverageCommand(baseCommand, changedFiles, scriptsDir, mockLogger);
@@ -126,22 +123,21 @@ describe('coverage-helpers', () => {
 
     it('should skip when changed files have no test files', () => {
       const changedFiles = ['/scripts/lib/utils/file1.ts'];
-      
+
       mockExistsSync.mockReturnValue(false);
 
       const result = buildCoverageCommand(baseCommand, changedFiles, scriptsDir, mockLogger);
 
       expect(result.command).toBe('');
       expect(result.shouldSkip).toBe(true);
-      expect(mockLogger.log).toHaveBeenCalledWith('⚡ No test files found for changed files, skipping coverage');
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        '⚡ No test files found for changed files, skipping coverage'
+      );
     });
 
     it('should handle multiple test files', () => {
-      const changedFiles = [
-        '/scripts/lib/utils/file1.ts',
-        '/scripts/lib/utils/file2.ts'
-      ];
-      
+      const changedFiles = ['/scripts/lib/utils/file1.ts', '/scripts/lib/utils/file2.ts'];
+
       mockExistsSync.mockReturnValue(true);
 
       const result = buildCoverageCommand(baseCommand, changedFiles, scriptsDir, mockLogger);
@@ -177,10 +173,10 @@ describe('coverage-helpers', () => {
         cwd: scriptsDir,
         env: expect.objectContaining({
           RUNNING_COVERAGE: 'true',
-          NODE_ENV: 'test'
+          NODE_ENV: 'test',
         }),
         timeout,
-        encoding: 'utf8'
+        encoding: 'utf8',
       });
       expect(mockLogger.log).toHaveBeenCalledWith('✅ Coverage analysis completed successfully');
     });
@@ -198,7 +194,7 @@ describe('coverage-helpers', () => {
       const result = executeCoverage(coverageCommand, scriptsDir, timeout, mockLogger);
 
       expect(result.failed).toBe(true);
-      expect(result.output).toContain('Coverage execution failed');
+      expect(result.output).toContain('Coverage failed - tests are failing');
     });
 
     it('should handle timeout errors', () => {
@@ -231,10 +227,10 @@ describe('coverage-helpers', () => {
         env: expect.objectContaining({
           CUSTOM_VAR: 'test-value',
           RUNNING_COVERAGE: 'true',
-          NODE_ENV: 'test'
+          NODE_ENV: 'test',
         }),
         timeout,
-        encoding: 'utf8'
+        encoding: 'utf8',
       });
 
       // Cleanup

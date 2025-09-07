@@ -8,9 +8,9 @@ const BYTES_PER_KB = 1024;
 const SQLITE_HEADER_LENGTH = 16;
 const TABLE_PADDING = {
   TYPE: 8,
-  FILENAME: 40, 
+  FILENAME: 40,
   SIZE: 10,
-  DATE: 20
+  DATE: 20,
 };
 const SEPARATOR_LINE_LENGTH = 88;
 const DECIMAL_PLACES_FOR_SIZE = 1;
@@ -46,17 +46,17 @@ function generateBackupFilename(type: 'manual' | 'auto', description?: string): 
 
 function createBackup(type: 'manual' | 'auto' = 'manual', description?: string): BackupMetadata {
   ensureBackupDir();
-  
+
   if (!fs.existsSync(CONFIG.dbPath)) {
     throw new Error(`Database file not found: ${CONFIG.dbPath}`);
   }
 
   const filename = generateBackupFilename(type, description);
   const backupPath = path.join(CONFIG.backupDir, filename);
-  
+
   // Copy the database file
   fs.copyFileSync(CONFIG.dbPath, backupPath);
-  
+
   const stats = fs.statSync(backupPath);
   const metadata: BackupMetadata = {
     filename,
@@ -66,27 +66,31 @@ function createBackup(type: 'manual' | 'auto' = 'manual', description?: string):
     description,
   };
 
-  console.error(`✅ Backup created: ${filename} (${(stats.size / BYTES_PER_KB).toFixed(DECIMAL_PLACES_FOR_SIZE)} KB)`);
+  console.error(
+    `✅ Backup created: ${filename} (${(stats.size / BYTES_PER_KB).toFixed(DECIMAL_PLACES_FOR_SIZE)} KB)`
+  );
   return metadata;
 }
 
 function listBackups(): BackupMetadata[] {
   ensureBackupDir();
-  
-  const files = fs.readdirSync(CONFIG.backupDir)
+
+  const files = fs
+    .readdirSync(CONFIG.backupDir)
     .filter(file => file.startsWith('kanban-backup-') && file.endsWith('.db'))
     .map(file => {
       const filePath = path.join(CONFIG.backupDir, file);
       const stats = fs.statSync(filePath);
-      
+
       // Parse filename to extract metadata
       const match = file.match(/kanban-backup-(manual|auto)-(.+?)(?:-(.+?))?\.db$/);
       const type = (match?.[1] as 'manual' | 'auto') || 'manual';
       const timestampRaw = match?.[2] || '';
       // Convert ISO string format back: 2025-08-22T07-10-28-901Z -> 2025-08-22T07:10:28.901Z
-      const timestamp = timestampRaw.replace(/T(\d{2})-(\d{2})-(\d{2})-(\d{3})Z$/, 'T$1:$2:$3.$4Z') || '';
+      const timestamp =
+        timestampRaw.replace(/T(\d{2})-(\d{2})-(\d{2})-(\d{3})Z$/, 'T$1:$2:$3.$4Z') || '';
       const description = match?.[3]?.replace(/-/g, ' ');
-      
+
       return {
         filename: file,
         timestamp: timestamp || stats.mtime.toISOString(),
@@ -96,13 +100,13 @@ function listBackups(): BackupMetadata[] {
       };
     })
     .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-  
+
   return files;
 }
 
 function restoreBackup(filename: string): void {
   const backupPath = path.join(CONFIG.backupDir, filename);
-  
+
   if (!fs.existsSync(backupPath)) {
     throw new Error(`Backup file not found: ${filename}`);
   }
@@ -117,9 +121,11 @@ function restoreBackup(filename: string): void {
 
   // Restore the backup
   fs.copyFileSync(backupPath, CONFIG.dbPath);
-  
+
   const stats = fs.statSync(CONFIG.dbPath);
-  console.error(`✅ Database restored from: ${filename} (${(stats.size / BYTES_PER_KB).toFixed(DECIMAL_PLACES_FOR_SIZE)} KB)`);
+  console.error(
+    `✅ Database restored from: ${filename} (${(stats.size / BYTES_PER_KB).toFixed(DECIMAL_PLACES_FOR_SIZE)} KB)`
+  );
   console.error(`⚠️  Please restart the application to ensure proper database connection.`);
 }
 
@@ -149,7 +155,7 @@ function cleanupOldBackups(): void {
 
 function verifyBackup(filename: string): boolean {
   const backupPath = path.join(CONFIG.backupDir, filename);
-  
+
   if (!fs.existsSync(backupPath)) {
     console.error(`❌ Backup file not found: ${filename}`);
     return false;
@@ -159,7 +165,7 @@ function verifyBackup(filename: string): boolean {
     // Try to read the SQLite header to verify it's a valid database
     const buffer = fs.readFileSync(backupPath);
     const header = buffer.subarray(0, SQLITE_HEADER_LENGTH).toString('ascii');
-    
+
     if (header.startsWith('SQLite format 3')) {
       console.error(`✅ Backup verified: ${filename}`);
       return true;
@@ -180,16 +186,24 @@ function formatBackupList(backups: BackupMetadata[]): void {
   }
 
   console.error('\n📦 Available Backups:\n');
-  console.error('Type'.padEnd(TABLE_PADDING.TYPE) + 'Filename'.padEnd(TABLE_PADDING.FILENAME) + 'Size'.padEnd(TABLE_PADDING.SIZE) + 'Date'.padEnd(TABLE_PADDING.DATE) + 'Description');
+  console.error(
+    'Type'.padEnd(TABLE_PADDING.TYPE) +
+      'Filename'.padEnd(TABLE_PADDING.FILENAME) +
+      'Size'.padEnd(TABLE_PADDING.SIZE) +
+      'Date'.padEnd(TABLE_PADDING.DATE) +
+      'Description'
+  );
   console.error('-'.repeat(SEPARATOR_LINE_LENGTH));
-  
+
   backups.forEach(backup => {
     const type = backup.type.toUpperCase().padEnd(TABLE_PADDING.TYPE - 1);
     const filename = backup.filename.padEnd(TABLE_PADDING.FILENAME - 1);
-    const size = `${(backup.size / BYTES_PER_KB).toFixed(DECIMAL_PLACES_FOR_SIZE)} KB`.padEnd(TABLE_PADDING.SIZE - 1);
+    const size = `${(backup.size / BYTES_PER_KB).toFixed(DECIMAL_PLACES_FOR_SIZE)} KB`.padEnd(
+      TABLE_PADDING.SIZE - 1
+    );
     const date = new Date(backup.timestamp).toLocaleString().padEnd(TABLE_PADDING.DATE - 1);
     const description = backup.description || '';
-    
+
     console.error(`${type} ${filename} ${size} ${date} ${description}`);
   });
   console.error();
@@ -197,7 +211,7 @@ function formatBackupList(backups: BackupMetadata[]): void {
 
 function handleBackupCommands(command: string, args: string[]): void {
   const description = args.join(' ').trim() || undefined;
-  
+
   switch (command) {
     case 'create':
     case 'backup':
@@ -244,10 +258,12 @@ function handleStatusCommand(): void {
   console.error(`Backup Directory: ${CONFIG.backupDir}`);
   console.error(`Max Manual Backups: ${CONFIG.maxBackups}`);
   console.error(`Max Auto Backups: ${CONFIG.cronBackups}`);
-  
+
   if (fs.existsSync(CONFIG.dbPath)) {
     const dbStats = fs.statSync(CONFIG.dbPath);
-    console.error(`Database Size: ${(dbStats.size / BYTES_PER_KB).toFixed(DECIMAL_PLACES_FOR_SIZE)} KB`);
+    console.error(
+      `Database Size: ${(dbStats.size / BYTES_PER_KB).toFixed(DECIMAL_PLACES_FOR_SIZE)} KB`
+    );
     console.error(`Last Modified: ${dbStats.mtime.toLocaleString()}`);
   } else {
     console.error('❌ Database file not found!');
@@ -257,11 +273,15 @@ function handleStatusCommand(): void {
   console.error(`Total Backups: ${backups.length}`);
   console.error(`Manual Backups: ${backups.filter(b => b.type === 'manual').length}`);
   console.error(`Auto Backups: ${backups.filter(b => b.type === 'auto').length}`);
-  
+
   if (backups.length > 0) {
     const totalSize = backups.reduce((sum, b) => sum + b.size, 0);
-    console.error(`Total Backup Size: ${(totalSize / BYTES_PER_KB).toFixed(DECIMAL_PLACES_FOR_SIZE)} KB`);
-    console.error(`Latest Backup: ${backups[0].filename} (${new Date(backups[0].timestamp).toLocaleString()})`);
+    console.error(
+      `Total Backup Size: ${(totalSize / BYTES_PER_KB).toFixed(DECIMAL_PLACES_FOR_SIZE)} KB`
+    );
+    console.error(
+      `Latest Backup: ${backups[0].filename} (${new Date(backups[0].timestamp).toLocaleString()})`
+    );
   }
   console.error();
 }

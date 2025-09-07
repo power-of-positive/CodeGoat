@@ -20,22 +20,16 @@ interface PageLoadingProps {
 
 const sizeClasses = {
   sm: 'h-4 w-4',
-  md: 'h-6 w-6', 
+  md: 'h-6 w-6',
   lg: 'h-8 w-8',
 };
 
-export function LoadingSpinner({ 
-  size = 'md', 
-  message, 
-  className = '' 
-}: LoadingSpinnerProps) {
+export function LoadingSpinner({ size = 'md', message, className = '' }: LoadingSpinnerProps) {
   return (
     <div className={`flex items-center justify-center ${className}`}>
       <div className="text-center">
         <RefreshCw className={`${sizeClasses[size]} animate-spin mx-auto text-blue-600`} />
-        {message && (
-          <p className="mt-2 text-sm text-gray-600">{message}</p>
-        )}
+        {message && <p className="mt-2 text-sm text-gray-600">{message}</p>}
       </div>
     </div>
   );
@@ -48,7 +42,7 @@ export function LoadingSkeleton({ className = '', children }: LoadingSkeletonPro
         <>
           <div className="h-8 bg-gray-200 rounded w-1/3 mb-4"></div>
           <div className="grid grid-cols-3 gap-4 mb-6">
-            {[1, 2, 3].map((i) => (
+            {[1, 2, 3].map(i => (
               <div key={i} className="h-24 bg-gray-200 rounded"></div>
             ))}
           </div>
@@ -63,13 +57,13 @@ export function LoadingSkeleton({ className = '', children }: LoadingSkeletonPro
   );
 }
 
-export function PageLoading({ 
-  message = 'Loading...', 
+export function PageLoading({
+  message = 'Loading...',
   type = 'spinner',
-  className = ''
+  className = '',
 }: PageLoadingProps) {
   const containerClass = `p-6 ${className}`;
-  
+
   if (type === 'skeleton') {
     return (
       <div className={containerClass}>

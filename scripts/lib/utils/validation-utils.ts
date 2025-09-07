@@ -30,7 +30,9 @@ export function validateInput(value: string, type: 'path' | 'command'): void {
  */
 export function validatePort(port: number): void {
   if (!Number.isInteger(port) || port < MIN_PORT_NUMBER || port > MAX_PORT_NUMBER) {
-    throw new Error(`Invalid port: ${port}. Must be integer between ${MIN_PORT_NUMBER}-${MAX_PORT_NUMBER}`);
+    throw new Error(
+      `Invalid port: ${port}. Must be integer between ${MIN_PORT_NUMBER}-${MAX_PORT_NUMBER}`
+    );
   }
 }
 

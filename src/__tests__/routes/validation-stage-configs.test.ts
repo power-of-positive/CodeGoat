@@ -25,6 +25,12 @@ jest.mock('@prisma/client', () => ({
   PrismaClient: jest.fn().mockImplementation(() => mockPrismaClient),
 }));
 
+// Mock database service
+jest.mock('../../services/database', () => ({
+  getDatabaseService: jest.fn().mockImplementation(() => mockPrismaClient),
+  createDatabaseService: jest.fn().mockImplementation(() => mockPrismaClient),
+}));
+
 // Import router after mocking
 import validationStageConfigsRouter from '../../routes/validation-stage-configs';
 
@@ -80,9 +86,7 @@ describe('Validation Stage Configs Routes', () => {
 
       mockPrismaClient.validationStageConfig.findMany.mockResolvedValue(mockStages);
 
-      const response = await request(app)
-        .get('/api/validation-stage-configs')
-        .expect(200);
+      const response = await request(app).get('/api/validation-stage-configs').expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.data).toHaveLength(2);
@@ -169,11 +173,11 @@ describe('Validation Stage Configs Routes', () => {
     });
 
     it('should handle database errors', async () => {
-      mockPrismaClient.validationStageConfig.findMany.mockRejectedValue(new Error('Database error'));
+      mockPrismaClient.validationStageConfig.findMany.mockRejectedValue(
+        new Error('Database error')
+      );
 
-      const response = await request(app)
-        .get('/api/validation-stage-configs')
-        .expect(500);
+      const response = await request(app).get('/api/validation-stage-configs').expect(500);
 
       expect(response.body).toEqual({
         success: false,
@@ -201,9 +205,7 @@ describe('Validation Stage Configs Routes', () => {
 
       mockPrismaClient.validationStageConfig.findUnique.mockResolvedValue(mockStage);
 
-      const response = await request(app)
-        .get('/api/validation-stage-configs/lint')
-        .expect(200);
+      const response = await request(app).get('/api/validation-stage-configs/lint').expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.data.stageId).toBe('lint');
@@ -228,11 +230,11 @@ describe('Validation Stage Configs Routes', () => {
     }, 10000);
 
     it('should handle database errors', async () => {
-      mockPrismaClient.validationStageConfig.findUnique.mockRejectedValue(new Error('Database error'));
+      mockPrismaClient.validationStageConfig.findUnique.mockRejectedValue(
+        new Error('Database error')
+      );
 
-      const response = await request(app)
-        .get('/api/validation-stage-configs/lint')
-        .expect(500);
+      const response = await request(app).get('/api/validation-stage-configs/lint').expect(500);
 
       expect(response.body).toEqual({
         success: false,
@@ -347,7 +349,7 @@ describe('Validation Stage Configs Routes', () => {
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Validation failed');
-    });
+    }, 10000);
 
     it('should handle database errors', async () => {
       mockPrismaClient.validationStageConfig.findUnique.mockResolvedValue(null);
@@ -506,9 +508,7 @@ describe('Validation Stage Configs Routes', () => {
       mockPrismaClient.validationStageConfig.findUnique.mockResolvedValue(existingStage);
       mockPrismaClient.validationStageConfig.delete.mockResolvedValue(existingStage);
 
-      const response = await request(app)
-        .delete('/api/validation-stage-configs/lint')
-        .expect(200);
+      const response = await request(app).delete('/api/validation-stage-configs/lint').expect(200);
 
       expect(response.body).toEqual({
         success: true,
@@ -552,9 +552,7 @@ describe('Validation Stage Configs Routes', () => {
       mockPrismaClient.validationStageConfig.findUnique.mockResolvedValue(existingStage);
       mockPrismaClient.validationStageConfig.delete.mockRejectedValue(new Error('Database error'));
 
-      const response = await request(app)
-        .delete('/api/validation-stage-configs/lint')
-        .expect(500);
+      const response = await request(app).delete('/api/validation-stage-configs/lint').expect(500);
 
       expect(response.body).toEqual({
         success: false,
@@ -690,9 +688,7 @@ describe('Validation Stage Configs Routes', () => {
 
     it('should handle database errors during reorder', async () => {
       const reorderData = {
-        stages: [
-          { stageId: 'lint', priority: 2 },
-        ],
+        stages: [{ stageId: 'lint', priority: 2 }],
       };
 
       mockPrismaClient.$transaction.mockRejectedValue(new Error('Database error'));

@@ -60,15 +60,11 @@ function BDDScenarioForm({ scenario, onSave, onCancel }: BDDScenarioFormProps) {
   const [title, setTitle] = useState(scenario?.title || '');
   const [feature, setFeature] = useState(scenario?.feature || '');
   const [description, setDescription] = useState(scenario?.description || '');
-  const [gherkinContent, setGherkinContent] = useState(
-    scenario?.gherkinContent || ''
-  );
+  const [gherkinContent, setGherkinContent] = useState(scenario?.gherkinContent || '');
   const [given] = useState(scenario?.given || '');
   const [when] = useState(scenario?.when || '');
   const [then] = useState(scenario?.then || '');
-  const [status, setStatus] = useState<BDDScenario['status']>(
-    scenario?.status || 'pending'
-  );
+  const [status, setStatus] = useState<BDDScenario['status']>(scenario?.status || 'pending');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -127,7 +123,7 @@ function BDDScenarioForm({ scenario, onSave, onCancel }: BDDScenarioFormProps) {
                 id="scenario-title"
                 type="text"
                 value={title}
-                onChange={(e) => setTitle(e.target.value)}
+                onChange={e => setTitle(e.target.value)}
                 className="w-full p-2 border border-gray-300 rounded-md text-sm"
                 placeholder="e.g., Creating a new task"
                 required
@@ -145,7 +141,7 @@ function BDDScenarioForm({ scenario, onSave, onCancel }: BDDScenarioFormProps) {
                 id="feature-name"
                 type="text"
                 value={feature}
-                onChange={(e) => setFeature(e.target.value)}
+                onChange={e => setFeature(e.target.value)}
                 className="w-full p-2 border border-gray-300 rounded-md text-sm"
                 placeholder="e.g., Task Management"
                 required
@@ -154,16 +150,13 @@ function BDDScenarioForm({ scenario, onSave, onCancel }: BDDScenarioFormProps) {
           </div>
 
           <div>
-            <label
-              htmlFor="description"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
+            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
               Description (Optional)
             </label>
             <textarea
               id="description"
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              onChange={e => setDescription(e.target.value)}
               className="w-full p-2 border border-gray-300 rounded-md text-sm h-20"
               placeholder="Brief description of what this scenario tests..."
             />
@@ -179,7 +172,7 @@ function BDDScenarioForm({ scenario, onSave, onCancel }: BDDScenarioFormProps) {
             <textarea
               id="gherkin-content"
               value={gherkinContent}
-              onChange={(e) => setGherkinContent(e.target.value)}
+              onChange={e => setGherkinContent(e.target.value)}
               className="w-full p-2 border border-gray-300 rounded-md text-sm h-40 font-mono"
               placeholder={gherkinTemplate}
               required
@@ -187,18 +180,13 @@ function BDDScenarioForm({ scenario, onSave, onCancel }: BDDScenarioFormProps) {
           </div>
 
           <div>
-            <label
-              htmlFor="status"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
+            <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
               Status
             </label>
             <select
               id="status"
               value={status}
-              onChange={(e) =>
-                setStatus(e.target.value as BDDScenario['status'])
-              }
+              onChange={e => setStatus(e.target.value as BDDScenario['status'])}
               className="w-full p-2 border border-gray-300 rounded-md text-sm"
             >
               <option value="pending">Pending</option>
@@ -212,12 +200,7 @@ function BDDScenarioForm({ scenario, onSave, onCancel }: BDDScenarioFormProps) {
             <Button type="submit" size="sm">
               {scenario ? 'Update Scenario' : 'Add Scenario'}
             </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={onCancel}
-            >
+            <Button type="button" variant="outline" size="sm" onClick={onCancel}>
               Cancel
             </Button>
           </div>
@@ -251,13 +234,8 @@ function BDDScenarioCard({
         <div className="flex justify-between items-start mb-2">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1">
-              <h4 className="font-medium text-gray-900 text-sm">
-                {scenario.title}
-              </h4>
-              <Badge
-                variant="outline"
-                className={`${statusConfig.color} text-xs`}
-              >
+              <h4 className="font-medium text-gray-900 text-sm">{scenario.title}</h4>
+              <Badge variant="outline" className={`${statusConfig.color} text-xs`}>
                 <StatusIcon className="w-3 h-3 mr-1" />
                 {statusConfig.label}
               </Badge>
@@ -271,18 +249,14 @@ function BDDScenarioCard({
             </div>
 
             {scenario.description && (
-              <p className="text-sm text-gray-700 mb-2">
-                {scenario.description}
-              </p>
+              <p className="text-sm text-gray-700 mb-2">{scenario.description}</p>
             )}
 
             {scenario.executedAt && (
               <div className="text-xs text-gray-500 mb-2">
                 Executed: {new Date(scenario.executedAt).toLocaleString()}
                 {scenario.executionDuration && (
-                  <span className="ml-2">
-                    Duration: {scenario.executionDuration}ms
-                  </span>
+                  <span className="ml-2">Duration: {scenario.executionDuration}ms</span>
                 )}
               </div>
             )}
@@ -355,9 +329,7 @@ export function BDDScenarioManager({
   readonly = false,
 }: BDDScenarioManagerProps) {
   const [showForm, setShowForm] = useState(false);
-  const [editingScenario, setEditingScenario] = useState<BDDScenario | null>(
-    null
-  );
+  const [editingScenario, setEditingScenario] = useState<BDDScenario | null>(null);
 
   const handleAddScenario = (scenarioData: Omit<BDDScenario, 'id'>) => {
     onAddScenario(scenarioData);
@@ -398,15 +370,10 @@ export function BDDScenarioManager({
       {scenarios.length > 0 && (
         <div className="flex gap-2 mb-4">
           {Object.entries(scenarioStats).map(([status, count]) => {
-            const config =
-              scenarioStatusConfig[status as BDDScenario['status']];
+            const config = scenarioStatusConfig[status as BDDScenario['status']];
             const StatusIcon = config.icon;
             return (
-              <Badge
-                key={status}
-                variant="outline"
-                className={`${config.color} text-xs`}
-              >
+              <Badge key={status} variant="outline" className={`${config.color} text-xs`}>
                 <StatusIcon className="w-3 h-3 mr-1" />
                 {config.label}: {count}
               </Badge>
@@ -432,8 +399,7 @@ export function BDDScenarioManager({
             <FileText className="w-12 h-12 text-gray-400 mx-auto mb-3" />
             <h4 className="font-medium text-gray-900 mb-1">No BDD Scenarios</h4>
             <p className="text-sm text-gray-600 mb-3">
-              Add BDD scenarios to document and test the expected behavior for
-              this task.
+              Add BDD scenarios to document and test the expected behavior for this task.
             </p>
             {!readonly && (
               <Button size="sm" onClick={() => setShowForm(true)}>
@@ -445,7 +411,7 @@ export function BDDScenarioManager({
         </Card>
       ) : (
         <div>
-          {scenarios.map((scenario) => (
+          {scenarios.map(scenario => (
             <BDDScenarioCard
               key={scenario.id}
               taskId={taskId}

@@ -30,10 +30,10 @@ export default defineConfig({
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
-    
+
     /* Take screenshot only on failure */
     screenshot: 'only-on-failure',
-    
+
     /* Record video only on failure */
     video: 'retain-on-failure',
 
@@ -48,7 +48,7 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      use: { 
+      use: {
         ...devices['Desktop Chrome'],
         /* Enable headless mode for faster execution */
         headless: true,
@@ -61,10 +61,10 @@ export default defineConfig({
   /* Global setup and teardown */
   globalSetup: require.resolve('./ui/e2e/global-setup.ts'),
   globalTeardown: require.resolve('./ui/e2e/global-teardown.ts'),
-  
+
   /* Global test timeout */
   timeout: GLOBAL_TIMEOUT_SECONDS * 1000,
-  
+
   /* Expect timeout for assertions */
   expect: {
     timeout: 15 * 1000,
@@ -84,7 +84,7 @@ export default defineConfig({
         AI_REVIEWER_ENABLED: 'false',
         LOG_LEVEL: 'error',
         PORT: '3001',
-      }
+      },
     },
     {
       command: 'cd ui && npm run dev',
@@ -93,7 +93,7 @@ export default defineConfig({
       timeout: 120000,
       env: {
         VITE_API_URL: 'http://localhost:3001',
-      }
+      },
     },
   ],
 });

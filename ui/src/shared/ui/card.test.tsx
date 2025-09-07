@@ -1,12 +1,6 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-} from './card';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from './card';
 
 describe('Card Components', () => {
   describe('Card', () => {
@@ -34,9 +28,7 @@ describe('Card Components', () => {
     });
 
     it('applies custom className', () => {
-      const { container } = render(
-        <Card className="custom-class">Content</Card>
-      );
+      const { container } = render(<Card className="custom-class">Content</Card>);
       const card = container.firstChild;
 
       expect(card).toHaveClass('custom-class');
@@ -62,9 +54,7 @@ describe('Card Components', () => {
     });
 
     it('applies custom className', () => {
-      const { container } = render(
-        <CardHeader className="custom-header">Content</CardHeader>
-      );
+      const { container } = render(<CardHeader className="custom-header">Content</CardHeader>);
       const header = container.firstChild;
 
       expect(header).toHaveClass('custom-header');
@@ -89,12 +79,7 @@ describe('Card Components', () => {
       render(<CardTitle>Test Title</CardTitle>);
       const title = screen.getByText('Test Title');
 
-      expect(title).toHaveClass(
-        'text-2xl',
-        'font-semibold',
-        'leading-none',
-        'tracking-tight'
-      );
+      expect(title).toHaveClass('text-2xl', 'font-semibold', 'leading-none', 'tracking-tight');
     });
 
     it('applies custom className', () => {
@@ -127,11 +112,7 @@ describe('Card Components', () => {
     });
 
     it('applies custom className', () => {
-      render(
-        <CardDescription className="custom-description">
-          Test Description
-        </CardDescription>
-      );
+      render(<CardDescription className="custom-description">Test Description</CardDescription>);
       const description = screen.getByText('Test Description');
 
       expect(description).toHaveClass('custom-description');
@@ -157,9 +138,7 @@ describe('Card Components', () => {
     });
 
     it('applies custom className', () => {
-      const { container } = render(
-        <CardContent className="custom-content">Content</CardContent>
-      );
+      const { container } = render(<CardContent className="custom-content">Content</CardContent>);
       const content = container.firstChild;
 
       expect(content).toHaveClass('custom-content');
@@ -190,9 +169,7 @@ describe('Card Components', () => {
         <Card className="w-full">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg">Settings</CardTitle>
-            <CardDescription className="text-gray-500">
-              Manage your preferences
-            </CardDescription>
+            <CardDescription className="text-gray-500">Manage your preferences</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div data-testid="setting-1">Setting 1</div>
@@ -202,9 +179,7 @@ describe('Card Components', () => {
       );
 
       expect(screen.getByText('Settings')).toHaveClass('text-lg');
-      expect(screen.getByText('Manage your preferences')).toHaveClass(
-        'text-gray-500'
-      );
+      expect(screen.getByText('Manage your preferences')).toHaveClass('text-gray-500');
       expect(screen.getByTestId('setting-1')).toBeInTheDocument();
       expect(screen.getByTestId('setting-2')).toBeInTheDocument();
     });

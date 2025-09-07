@@ -15,13 +15,10 @@ async function fetchAndBackupTasks() {
           { status: 'TODO' },
           { status: 'PENDING' },
           { status: 'IN_PROGRESS' },
-          { status: 'INPROGRESS' }
-        ]
+          { status: 'INPROGRESS' },
+        ],
       },
-      orderBy: [
-        { priority: 'desc' },
-        { createdAt: 'asc' }
-      ]
+      orderBy: [{ priority: 'desc' }, { createdAt: 'asc' }],
     });
 
     console.log(`Found ${tasks.length} incomplete tasks`);
@@ -39,8 +36,8 @@ async function fetchAndBackupTasks() {
         tags: task.tags ? JSON.parse(task.tags) : [],
         taskType: task.taskType,
         createdAt: task.createdAt,
-        updatedAt: task.updatedAt
-      }))
+        updatedAt: task.updatedAt,
+      })),
     };
 
     // Save backup to todo-list.json

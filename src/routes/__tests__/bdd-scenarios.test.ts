@@ -164,9 +164,7 @@ describe('BDD Scenarios API Routes', () => {
 
       mockService.createScenario.mockResolvedValue(mockCreatedScenario);
 
-      const response = await request(app)
-        .post('/api/bdd-scenarios')
-        .send(scenarioData);
+      const response = await request(app).post('/api/bdd-scenarios').send(scenarioData);
 
       expect(response.status).toBe(201);
       expect(response.body).toEqual({
@@ -181,9 +179,7 @@ describe('BDD Scenarios API Routes', () => {
         title: 'New Scenario',
       };
 
-      const response = await request(app)
-        .post('/api/bdd-scenarios')
-        .send(incompleteData);
+      const response = await request(app).post('/api/bdd-scenarios').send(incompleteData);
 
       expect(response.status).toBe(400);
       expect(response.body).toEqual({
@@ -213,11 +209,7 @@ describe('BDD Scenarios API Routes', () => {
         success: true,
         data: mockUpdatedScenario,
       });
-      expect(mockService.updateScenarioStatus).toHaveBeenCalledWith(
-        scenarioId,
-        status,
-        undefined
-      );
+      expect(mockService.updateScenarioStatus).toHaveBeenCalledWith(scenarioId, status, undefined);
     });
 
     it('should validate status values', async () => {
@@ -309,11 +301,7 @@ describe('BDD Scenarios API Routes', () => {
         success: true,
         data: mockLinkedScenario,
       });
-      expect(mockService.linkToPlaywrightTest).toHaveBeenCalledWith(
-        scenarioId,
-        testFile,
-        testName
-      );
+      expect(mockService.linkToPlaywrightTest).toHaveBeenCalledWith(scenarioId, testFile, testName);
     });
 
     it('should validate required fields for linking', async () => {

@@ -67,7 +67,7 @@ describe('API Client', () => {
 
       const result = await settingsApi.getValidationStages();
       expect(result).toEqual(mockStages);
-      expect(fetch).toHaveBeenCalledWith('/api/settings/validation-stages', {
+      expect(fetch).toHaveBeenCalledWith('/api/validation-stage-configs', {
         headers: { 'Content-Type': 'application/json' },
       });
     });
@@ -182,7 +182,9 @@ describe('API Client', () => {
     });
 
     it('should handle getTasks error gracefully', async () => {
-      (fetch as jest.MockedFunction<typeof fetch>).mockRejectedValueOnce(new Error('Network error'));
+      (fetch as jest.MockedFunction<typeof fetch>).mockRejectedValueOnce(
+        new Error('Network error')
+      );
 
       const result = await taskApi.getTasks();
       expect(result).toEqual([]);
@@ -190,8 +192,13 @@ describe('API Client', () => {
 
     it('should create task', async () => {
       const newTask = { content: 'New task', priority: 'high' as const };
-      const createdTask = { id: 'task-new', ...newTask, status: 'pending' as const, taskType: 'task' as const };
-      
+      const createdTask = {
+        id: 'task-new',
+        ...newTask,
+        status: 'pending' as const,
+        taskType: 'task' as const,
+      };
+
       (fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
         ok: true,
         json: async () => createdTask,
@@ -312,9 +319,7 @@ describe('API Client', () => {
 
   describe('e2eTestingApi', () => {
     it('should get test suites', async () => {
-      const mockSuites = [
-        { id: 'suite-1', name: 'Login Tests', status: 'active' },
-      ];
+      const mockSuites = [{ id: 'suite-1', name: 'Login Tests', status: 'active' }];
 
       (fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
         ok: true,
@@ -337,9 +342,7 @@ describe('API Client', () => {
         statusText: 'Internal Server Error',
       } as Response);
 
-      await expect(settingsApi.getSettings()).rejects.toThrow(
-        'HTTP error! status: 500'
-      );
+      await expect(settingsApi.getSettings()).rejects.toThrow('HTTP error! status: 500');
     });
   });
 });

@@ -5,18 +5,18 @@ import '@testing-library/jest-dom';
 // Mock createRoot and the App component to test main.tsx logic
 const mockRender = jest.fn();
 const mockCreateRoot = jest.fn(() => ({
-  render: mockRender
+  render: mockRender,
 }));
 
 jest.mock('react-dom/client', () => ({
-  createRoot: mockCreateRoot
+  createRoot: mockCreateRoot,
 }));
 
 // Mock App component
 const MockApp = () => <div data-testid="app">App Component</div>;
 jest.mock('./App', () => ({
   __esModule: true,
-  default: MockApp
+  default: MockApp,
 }));
 
 // Mock CSS import
@@ -36,7 +36,7 @@ describe('main.tsx', () => {
     // Create a mock DOM element
     const mockRootElement = document.createElement('div');
     mockRootElement.id = 'root';
-    
+
     // Mock getElementById to return our mock element
     jest.spyOn(document, 'getElementById').mockReturnValue(mockRootElement);
 
@@ -64,7 +64,6 @@ describe('main.tsx', () => {
     // In practice, createRoot will handle null and might throw, but in our mock it won't
     // Let's test that getElementById was called and createRoot receives what getElementById returns
     expect(() => {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
       require('./main');
     }).not.toThrow(); // The mock won't actually throw
 
@@ -75,9 +74,9 @@ describe('main.tsx', () => {
   it('handles different root element scenarios', async () => {
     const customRootElement = document.createElement('div');
     customRootElement.id = 'custom-root';
-    
+
     jest.spyOn(document, 'getElementById').mockReturnValue(customRootElement);
-    
+
     await import('./main');
 
     expect(mockCreateRoot).toHaveBeenCalledWith(customRootElement);
@@ -87,14 +86,14 @@ describe('main.tsx', () => {
   it('wraps App in StrictMode correctly', async () => {
     const mockRootElement = document.createElement('div');
     jest.spyOn(document, 'getElementById').mockReturnValue(mockRootElement);
-    
+
     await import('./main');
 
     const renderCall = mockRender.mock.calls[0][0];
-    
+
     // Check that it's wrapped in StrictMode
     expect(renderCall.type).toBe(React.StrictMode);
-    
+
     // Check that App is the child
     expect(renderCall.props.children.type).toBe(MockApp);
   });
@@ -102,15 +101,15 @@ describe('main.tsx', () => {
   it('integrates createRoot API correctly', async () => {
     const mockRootElement = document.createElement('div');
     jest.spyOn(document, 'getElementById').mockReturnValue(mockRootElement);
-    
+
     await import('./main');
 
     // Should call createRoot with the DOM element
     expect(mockCreateRoot).toHaveBeenCalledWith(mockRootElement);
-    
+
     // Should call render on the root
     expect(mockRender).toHaveBeenCalledTimes(1);
-    
+
     // Should render the correct component structure
     const renderArg = mockRender.mock.calls[0][0];
     expect(React.isValidElement(renderArg)).toBe(true);

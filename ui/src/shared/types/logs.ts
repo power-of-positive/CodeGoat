@@ -25,7 +25,15 @@ export type ClaudeActionType =
 
 // Enhanced types for vibe-kanban style log streaming
 export interface ActionType {
-  action: 'file_read' | 'file_edit' | 'command_run' | 'search' | 'web_fetch' | 'task_create' | 'plan_presentation' | 'todo_management';
+  action:
+    | 'file_read'
+    | 'file_edit'
+    | 'command_run'
+    | 'search'
+    | 'web_fetch'
+    | 'task_create'
+    | 'plan_presentation'
+    | 'todo_management';
   path?: string;
   changes?: unknown[];
 }

@@ -49,9 +49,7 @@ function useWorkerData(executorId: string) {
   const workersQuery = useQuery({
     queryKey: ['workers-status'],
     queryFn: () =>
-      import('../../../shared/lib/api').then((api) =>
-        api.claudeWorkersApi.getWorkersStatus()
-      ),
+      import('../../../shared/lib/api').then(api => api.claudeWorkersApi.getWorkersStatus()),
     refetchInterval: 5000,
   });
 
@@ -66,7 +64,7 @@ function useWorkerData(executorId: string) {
     },
   });
 
-  const worker = workersQuery.data?.workers.find((w) => w.id === executorId);
+  const worker = workersQuery.data?.workers.find(w => w.id === executorId);
 
   return { worker, mergeWorktreeMutation };
 }
@@ -84,9 +82,7 @@ function WorkerNotFound({ executorId }: { executorId: string }) {
       <CardContent>
         <div className="text-sm text-gray-600">
           Worker ID: <span className="font-mono">{executorId}</span>
-          <p className="text-xs text-gray-400 mt-2">
-            Worker not currently active
-          </p>
+          <p className="text-xs text-gray-400 mt-2">Worker not currently active</p>
         </div>
       </CardContent>
     </Card>
@@ -158,9 +154,7 @@ function WorkerDetails({ worker }: { worker: WorkerData }) {
 
       <div className="flex items-center justify-between">
         <span className="text-sm text-gray-600">Started:</span>
-        <span className="text-sm">
-          {new Date(worker.startTime).toLocaleString()}
-        </span>
+        <span className="text-sm">{new Date(worker.startTime).toLocaleString()}</span>
       </div>
 
       <WorkerValidationStatus worker={worker} />
@@ -180,9 +174,7 @@ function WorkerValidationStatus({ worker }: { worker: WorkerData }) {
       <span className="text-sm text-gray-600">Validation:</span>
       <Badge
         className={`text-xs ${
-          worker.validationPassed
-            ? 'bg-green-100 text-green-800'
-            : 'bg-red-100 text-red-800'
+          worker.validationPassed ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
         }`}
       >
         {worker.validationPassed ? '✅ Passed' : '❌ Failed'}
@@ -200,10 +192,7 @@ function WorkerBlockedCommands({ worker }: { worker: WorkerData }) {
   return (
     <div className="flex items-center justify-between">
       <span className="text-sm text-gray-600">Blocked Commands:</span>
-      <Badge
-        variant="outline"
-        className="text-xs bg-orange-50 text-orange-700"
-      >
+      <Badge variant="outline" className="text-xs bg-orange-50 text-orange-700">
         {worker.blockedCommands}
       </Badge>
     </div>
@@ -211,15 +200,19 @@ function WorkerBlockedCommands({ worker }: { worker: WorkerData }) {
 }
 
 // Worker merge action component
-function WorkerMergeAction({ worker, mergeWorktreeMutation }: {
+function WorkerMergeAction({
+  worker,
+  mergeWorktreeMutation,
+}: {
   worker: WorkerData;
   mergeWorktreeMutation: {
     mutate: () => void;
     isPending: boolean;
   };
 }) {
-  const canMerge = (worker.status === 'completed' || worker.status === 'stopped') && worker.validationPassed;
-  
+  const canMerge =
+    (worker.status === 'completed' || worker.status === 'stopped') && worker.validationPassed;
+
   if (!canMerge) {
     return null;
   }
@@ -233,11 +226,7 @@ function WorkerMergeAction({ worker, mergeWorktreeMutation }: {
         variant="outline"
       >
         <GitMerge className="h-4 w-4" />
-        <span>
-          {mergeWorktreeMutation.isPending
-            ? 'Merging...'
-            : 'Merge Worker Changes'}
-        </span>
+        <span>{mergeWorktreeMutation.isPending ? 'Merging...' : 'Merge Worker Changes'}</span>
       </Button>
     </div>
   );

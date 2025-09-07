@@ -63,7 +63,9 @@ async function handleGetFallback(
     res.json(fallbackSettings);
   } catch (error) {
     context.logger.error('Failed to load fallback settings', error as Error);
-    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ error: 'Failed to load fallback settings' });
+    res
+      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+      .json({ error: 'Failed to load fallback settings' });
   }
 }
 
@@ -86,7 +88,9 @@ async function handleUpdateFallback(
       });
     } else {
       context.logger.error('Failed to update fallback settings', error as Error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ error: 'Failed to update fallback settings' });
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json({ error: 'Failed to update fallback settings' });
     }
   }
 }
@@ -118,7 +122,9 @@ function createValidationHandlers(
       res.json(validationSettings);
     } catch (error) {
       logger.error('Failed to load validation settings', error as Error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ error: 'Failed to load validation settings' });
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json({ error: 'Failed to load validation settings' });
     }
   };
 
@@ -137,7 +143,9 @@ function createValidationHandlers(
         });
       } else {
         logger.error('Failed to update validation settings', error as Error);
-        res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ error: 'Failed to update validation settings' });
+        res
+          .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+          .json({ error: 'Failed to update validation settings' });
       }
     }
   };
@@ -182,7 +190,9 @@ function createAddStageHandler(settingsService: SettingsService, logger: ILogger
         res.status(HTTP_STATUS.CONFLICT).json({ error: 'Stage with this ID already exists' });
       } else {
         logger.error('Failed to add validation stage', error as Error);
-        res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ error: 'Failed to add validation stage' });
+        res
+          .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+          .json({ error: 'Failed to add validation stage' });
       }
     }
   };
@@ -207,7 +217,9 @@ function createUpdateStageHandler(settingsService: SettingsService, logger: ILog
         res.status(HTTP_STATUS.NOT_FOUND).json({ error: 'Validation stage not found' });
       } else {
         logger.error('Failed to update validation stage', error as Error);
-        res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ error: 'Failed to update validation stage' });
+        res
+          .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+          .json({ error: 'Failed to update validation stage' });
       }
     }
   };
@@ -226,7 +238,9 @@ function createRemoveStageHandler(settingsService: SettingsService, logger: ILog
         res.status(HTTP_STATUS.NOT_FOUND).json({ error: 'No validation stages found' });
       } else {
         logger.error('Failed to remove validation stage', error as Error);
-        res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ error: 'Failed to remove validation stage' });
+        res
+          .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+          .json({ error: 'Failed to remove validation stage' });
       }
     }
   };
@@ -246,7 +260,9 @@ function createGetStageHandler(settingsService: SettingsService, logger: ILogger
       res.json(stage);
     } catch (error) {
       logger.error('Failed to get validation stage', error as Error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ error: 'Failed to get validation stage' });
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json({ error: 'Failed to get validation stage' });
     }
   };
 }
@@ -258,7 +274,9 @@ function createGetStagesHandler(settingsService: SettingsService, logger: ILogge
       res.json({ stages });
     } catch (error) {
       logger.error('Failed to get validation stages', error as Error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ error: 'Failed to get validation stages' });
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json({ error: 'Failed to get validation stages' });
     }
   };
 }

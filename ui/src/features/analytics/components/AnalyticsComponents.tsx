@@ -59,12 +59,8 @@ export function AnalyticsHeader({ refetch }: { refetch: () => void }) {
       <div className="flex items-center gap-3">
         <BarChart3 className="h-6 w-6 text-blue-600" />
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            Validation Analytics
-          </h1>
-          <p className="text-gray-600">
-            Track validation pipeline performance and success rates
-          </p>
+          <h1 className="text-2xl font-bold text-gray-900">Validation Analytics</h1>
+          <p className="text-gray-600">Track validation pipeline performance and success rates</p>
         </div>
       </div>
       <div className="flex items-center gap-2">
@@ -102,9 +98,7 @@ export function MetricsSummary({ metrics }: { metrics: ValidationMetrics }) {
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6" data-testid="metrics-summary">
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-gray-700">
-            Total Runs
-          </CardTitle>
+          <CardTitle className="text-sm font-medium text-gray-700">Total Runs</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-gray-900">{totalRuns}</div>
@@ -113,22 +107,16 @@ export function MetricsSummary({ metrics }: { metrics: ValidationMetrics }) {
 
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-gray-700">
-            Success Rate
-          </CardTitle>
+          <CardTitle className="text-sm font-medium text-gray-700">Success Rate</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-green-600">
-            {(successRate * 100).toFixed(1)}%
-          </div>
+          <div className="text-2xl font-bold text-green-600">{(successRate * 100).toFixed(1)}%</div>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-gray-700">
-            Avg Duration
-          </CardTitle>
+          <CardTitle className="text-sm font-medium text-gray-700">Avg Duration</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-gray-900">
@@ -158,9 +146,7 @@ export function StageDetail({ stage }: { stage: ValidationStageResult }) {
           ) : (
             <div className="w-2 h-2 bg-red-500 rounded-full" />
           )}
-          <span className="text-sm text-gray-900">
-            {stage.name || stage.id}
-          </span>
+          <span className="text-sm text-gray-900">{stage.name || stage.id}</span>
           {hasLogs && <FileText className="w-3 h-3 text-gray-400" />}
         </div>
         <div className="flex items-center gap-2">
@@ -168,21 +154,13 @@ export function StageDetail({ stage }: { stage: ValidationStageResult }) {
             <span className={stage.success ? 'text-green-600' : 'text-red-600'}>
               {stage.success ? 'PASS' : 'FAIL'}
             </span>
-            <span className="text-gray-500">
-              {(stage.duration / 1000).toFixed(1)}s
-            </span>
+            <span className="text-gray-500">{(stage.duration / 1000).toFixed(1)}s</span>
           </div>
           {hasLogs &&
             (showLogs ? (
-              <ChevronDown
-                className="w-4 h-4 text-gray-400"
-                data-testid="chevron-down"
-              />
+              <ChevronDown className="w-4 h-4 text-gray-400" data-testid="chevron-down" />
             ) : (
-              <ChevronRight
-                className="w-4 h-4 text-gray-400"
-                data-testid="chevron-right"
-              />
+              <ChevronRight className="w-4 h-4 text-gray-400" data-testid="chevron-right" />
             ))}
         </div>
       </div>
@@ -191,9 +169,7 @@ export function StageDetail({ stage }: { stage: ValidationStageResult }) {
         <div className="border-t border-gray-200 p-3 bg-gray-50">
           {hasError && (
             <div className="mb-3">
-              <div className="text-xs font-medium text-red-700 mb-1">
-                Error Output:
-              </div>
+              <div className="text-xs font-medium text-red-700 mb-1">Error Output:</div>
               <pre className="text-xs bg-red-50 text-red-800 p-2 rounded border overflow-x-auto whitespace-pre-wrap">
                 {stage.error}
               </pre>

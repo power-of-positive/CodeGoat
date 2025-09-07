@@ -31,7 +31,7 @@ export class BDDScenarioService {
    */
   async parseComprehensiveBDDScenarios(): Promise<BDDScenarioInput[]> {
     const bddFilePath = path.join(process.cwd(), 'BDD_COMPREHENSIVE_SCENARIOS.feature');
-    
+
     try {
       const content = await fs.readFile(bddFilePath, 'utf-8');
       return this.parseBDDFeatureFile(content);
@@ -88,8 +88,7 @@ export class BDDScenarioService {
       // Add lines to current scenario
       if (inScenario) {
         // Stop at next scenario or feature section
-        if (line.startsWith('Scenario:') || 
-            (line.startsWith('#') && line.includes('===='))) {
+        if (line.startsWith('Scenario:') || (line.startsWith('#') && line.includes('===='))) {
           i--; // Reprocess this line
           inScenario = false;
           continue;

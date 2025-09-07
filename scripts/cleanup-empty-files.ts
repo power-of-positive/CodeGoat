@@ -12,12 +12,15 @@ interface FileToRemove {
 
 function findEmptyFiles(): FileToRemove[] {
   const filesToRemove: FileToRemove[] = [];
-  
+
   try {
     const emptyFiles = execSync(
       'find . -type f -size 0 -not -path "./node_modules/*" -not -path "./ui/node_modules/*" -not -path "./.git/*" -not -path "./dist/*" -not -path "./ui/dist/*" -not -path "./build/*" -not -path "./coverage/*" -not -path "./test-results/*" 2>/dev/null',
       { encoding: 'utf8' }
-    ).trim().split('\n').filter(Boolean);
+    )
+      .trim()
+      .split('\n')
+      .filter(Boolean);
 
     for (const file of emptyFiles) {
       if (fs.existsSync(file)) {
@@ -32,7 +35,7 @@ function findEmptyFiles(): FileToRemove[] {
   } catch {
     console.log('⚠️  Could not find empty files, continuing...');
   }
-  
+
   return filesToRemove;
 }
 
@@ -50,7 +53,7 @@ function findTempFiles(): FileToRemove[] {
       filesToRemove.push({ path: file, reason: 'Temporary test file', size: stat.size });
     }
   }
-  
+
   return filesToRemove;
 }
 
@@ -59,7 +62,7 @@ function findCoverageFiles(): FileToRemove[] {
   const coverageFiles = [
     './ui/coverage/prettify.js',
     './coverage/lcov-report/prettify.js',
-    './coverage/scripts/prettify.js'
+    './coverage/scripts/prettify.js',
   ];
 
   for (const file of coverageFiles) {
@@ -68,7 +71,7 @@ function findCoverageFiles(): FileToRemove[] {
       filesToRemove.push({ path: file, reason: 'Generated coverage file', size: stat.size });
     }
   }
-  
+
   return filesToRemove;
 }
 
@@ -79,18 +82,18 @@ function displayFilesToRemove(filesToRemove: FileToRemove[]): number {
   }
 
   console.log('📋 Files to be removed:');
-  console.log('=' .repeat(60));
-  
+  console.log('='.repeat(60));
+
   let totalSize = 0;
   for (const file of filesToRemove) {
     console.log(`🗑️  ${file.path}`);
     console.log(`   └── ${file.reason} (${file.size} bytes)`);
     totalSize += file.size;
   }
-  
-  console.log('=' .repeat(60));
+
+  console.log('='.repeat(60));
   console.log(`📊 Total: ${filesToRemove.length} files, ${totalSize} bytes\n`);
-  
+
   return totalSize;
 }
 
@@ -111,7 +114,9 @@ function removeFiles(filesToRemove: FileToRemove[]): number {
 function cleanupEmptyDirectories(): void {
   console.log('\n🧹 Cleaning up empty directories...');
   try {
-    execSync('find . -type d -empty -not -path "./.git/*" -not -path "./node_modules/*" -not -path "./ui/node_modules/*" -delete 2>/dev/null || true');
+    execSync(
+      'find . -type d -empty -not -path "./.git/*" -not -path "./node_modules/*" -not -path "./ui/node_modules/*" -delete 2>/dev/null || true'
+    );
     console.log('✅ Empty directories cleaned up');
   } catch {
     console.log('⚠️  Could not clean empty directories');
@@ -124,7 +129,7 @@ async function cleanupEmptyFiles() {
   const filesToRemove: FileToRemove[] = [
     ...findEmptyFiles(),
     ...findTempFiles(),
-    ...findCoverageFiles()
+    ...findCoverageFiles(),
   ];
 
   const totalSize = displayFilesToRemove(filesToRemove);

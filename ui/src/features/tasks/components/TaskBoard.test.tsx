@@ -1,11 +1,5 @@
 import React from 'react';
-import {
-  render,
-  screen,
-  waitFor,
-  fireEvent,
-  act,
-} from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
 import '@testing-library/jest-dom';
@@ -74,9 +68,7 @@ const renderWithProviders = (component: React.ReactElement) => {
   const queryClient = createTestQueryClient();
   return render(
     <BrowserRouter>
-      <QueryClientProvider client={queryClient}>
-        {component}
-      </QueryClientProvider>
+      <QueryClientProvider client={queryClient}>{component}</QueryClientProvider>
     </BrowserRouter>
   );
 };
@@ -146,9 +138,7 @@ describe('TaskBoard', () => {
     fireEvent.click(screen.getByText('Add Task'));
 
     expect(screen.getByText('Create New Task')).toBeInTheDocument();
-    expect(
-      screen.getByPlaceholderText('Describe the task...')
-    ).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Describe the task...')).toBeInTheDocument();
   });
 
   it('should display priority badges correctly', async () => {
@@ -350,7 +340,7 @@ describe('TaskBoard', () => {
 
     // Mock a slow mutation
     (taskApi.createTask as jest.Mock).mockReturnValue(
-      new Promise((resolve) => setTimeout(resolve, 1000))
+      new Promise(resolve => setTimeout(resolve, 1000))
     );
 
     renderWithProviders(<TaskBoard />);
@@ -431,9 +421,7 @@ describe('TaskBoard', () => {
     // Find and click the first task's menu button - look for MoreVertical icon
     const moreButtons = screen.getAllByRole('button');
     const menuButton = moreButtons.find(
-      (button) =>
-        button.querySelector('svg') &&
-        button.getAttribute('class')?.includes('opacity-0')
+      button => button.querySelector('svg') && button.getAttribute('class')?.includes('opacity-0')
     );
     expect(menuButton).toBeTruthy();
     fireEvent.click(menuButton!);
@@ -482,9 +470,7 @@ describe('TaskBoard', () => {
     // Find and click the first task's menu button - look for MoreVertical icon
     const moreButtons = screen.getAllByRole('button');
     const menuButton = moreButtons.find(
-      (button) =>
-        button.querySelector('svg') &&
-        button.getAttribute('class')?.includes('opacity-0')
+      button => button.querySelector('svg') && button.getAttribute('class')?.includes('opacity-0')
     );
     expect(menuButton).toBeTruthy();
     fireEvent.click(menuButton!);
@@ -496,9 +482,7 @@ describe('TaskBoard', () => {
     });
 
     // Verify confirmation was shown and API was called
-    expect(window.confirm).toHaveBeenCalledWith(
-      'Are you sure you want to delete this task?'
-    );
+    expect(window.confirm).toHaveBeenCalledWith('Are you sure you want to delete this task?');
 
     await waitFor(() => {
       expect(taskApi.deleteTask).toHaveBeenCalledWith('1');
@@ -520,9 +504,7 @@ describe('TaskBoard', () => {
     // Find and click the first task's menu button - look for MoreVertical icon
     const moreButtons = screen.getAllByRole('button');
     const menuButton = moreButtons.find(
-      (button) =>
-        button.querySelector('svg') &&
-        button.getAttribute('class')?.includes('opacity-0')
+      button => button.querySelector('svg') && button.getAttribute('class')?.includes('opacity-0')
     );
     expect(menuButton).toBeTruthy();
     fireEvent.click(menuButton!);
@@ -534,9 +516,7 @@ describe('TaskBoard', () => {
     });
 
     // Verify confirmation was shown but API was not called
-    expect(window.confirm).toHaveBeenCalledWith(
-      'Are you sure you want to delete this task?'
-    );
+    expect(window.confirm).toHaveBeenCalledWith('Are you sure you want to delete this task?');
     expect(taskApi.deleteTask).not.toHaveBeenCalled();
   });
 
@@ -552,9 +532,7 @@ describe('TaskBoard', () => {
     // Find and click the first task's menu button - look for MoreVertical icon
     const moreButtons = screen.getAllByRole('button');
     const menuButton = moreButtons.find(
-      (button) =>
-        button.querySelector('svg') &&
-        button.getAttribute('class')?.includes('opacity-0')
+      button => button.querySelector('svg') && button.getAttribute('class')?.includes('opacity-0')
     );
     expect(menuButton).toBeTruthy();
     fireEvent.click(menuButton!);

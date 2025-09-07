@@ -73,7 +73,10 @@ function formatDuration(startTime: string, endTime?: string) {
   const duration = end.getTime() - start.getTime();
 
   const hours = Math.floor(duration / (MS_PER_SECOND * SECONDS_PER_MINUTE * MINUTES_PER_HOUR));
-  const minutes = Math.floor((duration % (MS_PER_SECOND * SECONDS_PER_MINUTE * MINUTES_PER_HOUR)) / (MS_PER_SECOND * SECONDS_PER_MINUTE));
+  const minutes = Math.floor(
+    (duration % (MS_PER_SECOND * SECONDS_PER_MINUTE * MINUTES_PER_HOUR)) /
+      (MS_PER_SECOND * SECONDS_PER_MINUTE)
+  );
   const seconds = Math.floor((duration % (MS_PER_SECOND * SECONDS_PER_MINUTE)) / MS_PER_SECOND);
 
   if (hours > 0) {
@@ -86,7 +89,11 @@ function formatDuration(startTime: string, endTime?: string) {
 }
 
 // Worker header component
-function WorkerHeader({ worker, isExpanded, onToggleExpanded }: {
+function WorkerHeader({
+  worker,
+  isExpanded,
+  onToggleExpanded,
+}: {
   worker: WorkerStatus;
   isExpanded: boolean;
   onToggleExpanded: () => void;
@@ -94,10 +101,7 @@ function WorkerHeader({ worker, isExpanded, onToggleExpanded }: {
   const StatusIcon = statusIcons[worker.status];
 
   return (
-    <div
-      className="cursor-pointer -m-6 p-6 rounded-lg"
-      onClick={onToggleExpanded}
-    >
+    <div className="cursor-pointer -m-6 p-6 rounded-lg" onClick={onToggleExpanded}>
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
           <div className="flex items-center">
@@ -148,26 +152,17 @@ function ValidationBadges({ worker }: { worker: WorkerStatus }) {
   return (
     <>
       {worker.validationPassed === false && worker.status === 'failed' && (
-        <Badge
-          variant="outline"
-          className="text-xs bg-orange-50 border-orange-300 text-orange-700"
-        >
+        <Badge variant="outline" className="text-xs bg-orange-50 border-orange-300 text-orange-700">
           ⚠️ Validation Failed
         </Badge>
       )}
       {worker.validationPassed === true && worker.status === 'completed' && (
-        <Badge
-          variant="outline"
-          className="text-xs bg-green-50 border-green-300 text-green-700"
-        >
+        <Badge variant="outline" className="text-xs bg-green-50 border-green-300 text-green-700">
           ✅ Validated
         </Badge>
       )}
       {worker.validationRuns && worker.validationRuns > 0 && (
-        <Badge
-          variant="outline"
-          className="text-xs bg-purple-50 border-purple-300 text-purple-700"
-        >
+        <Badge variant="outline" className="text-xs bg-purple-50 border-purple-300 text-purple-700">
           🔍 {worker.validationRuns} validation{worker.validationRuns > 1 ? 's' : ''}
         </Badge>
       )}
@@ -192,9 +187,7 @@ function TaskContent({ taskContent }: { taskContent: string }) {
   return (
     <div>
       <p className="text-sm font-medium text-gray-700 mb-1">Task:</p>
-      <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded border">
-        {taskContent}
-      </p>
+      <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded border">{taskContent}</p>
     </div>
   );
 }
@@ -211,9 +204,7 @@ function TimingInfo({ worker }: { worker: WorkerStatus }) {
         <p className="font-medium text-gray-700">Duration:</p>
         <div className="flex items-center space-x-1">
           <Clock className="h-3 w-3 text-gray-500" />
-          <p className="text-gray-600">
-            {formatDuration(worker.startTime, worker.endTime)}
-          </p>
+          <p className="text-gray-600">{formatDuration(worker.startTime, worker.endTime)}</p>
         </div>
       </div>
     </div>
@@ -225,9 +216,7 @@ function LogFileInfo({ logFile }: { logFile: string }) {
   return (
     <div>
       <p className="text-sm font-medium text-gray-700 mb-1">Log File:</p>
-      <p className="text-xs text-gray-500 font-mono bg-gray-50 p-1 rounded">
-        {logFile}
-      </p>
+      <p className="text-xs text-gray-500 font-mono bg-gray-50 p-1 rounded">{logFile}</p>
     </div>
   );
 }
@@ -263,7 +252,10 @@ function PermissionSystemInfo({ worker }: { worker: WorkerStatus }) {
 }
 
 // Worker actions component
-function WorkerActions({ worker, actions }: {
+function WorkerActions({
+  worker,
+  actions,
+}: {
   worker: WorkerStatus;
   actions: {
     onViewLogs: (workerId: string) => void;
@@ -274,8 +266,9 @@ function WorkerActions({ worker, actions }: {
     onViewValidationRuns: (workerId: string) => void;
   };
 }) {
-  const canMerge = (worker.status === 'completed' || worker.status === 'stopped') && worker.validationPassed;
-  
+  const canMerge =
+    (worker.status === 'completed' || worker.status === 'stopped') && worker.validationPassed;
+
   return (
     <div className="flex space-x-2 pt-2 border-t">
       <Button
@@ -359,7 +352,7 @@ export function WorkerCard({
   onViewValidationRuns,
 }: WorkerCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  
+
   const actions = {
     onViewLogs,
     onStopWorker,
@@ -372,9 +365,9 @@ export function WorkerCard({
   return (
     <Card className="mb-4">
       <CardHeader className="pb-3">
-        <WorkerHeader 
-          worker={worker} 
-          isExpanded={isExpanded} 
+        <WorkerHeader
+          worker={worker}
+          isExpanded={isExpanded}
           onToggleExpanded={() => setIsExpanded(!isExpanded)}
         />
       </CardHeader>

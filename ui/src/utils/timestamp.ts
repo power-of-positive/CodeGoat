@@ -5,15 +5,16 @@ const timestampCache = new Map<string | number, string>();
 
 export const formatStableTimestamp = (timestamp: string | number): string => {
   const key = typeof timestamp === 'string' ? timestamp : timestamp.toString();
-  
+
   if (timestampCache.has(key)) {
     return timestampCache.get(key)!;
   }
-  
-  const formatted = typeof timestamp === 'number' 
-    ? new Date(timestamp).toLocaleTimeString()
-    : new Date(timestamp).toLocaleTimeString();
-  
+
+  const formatted =
+    typeof timestamp === 'number'
+      ? new Date(timestamp).toLocaleTimeString()
+      : new Date(timestamp).toLocaleTimeString();
+
   timestampCache.set(key, formatted);
   return formatted;
 };

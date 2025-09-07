@@ -33,19 +33,19 @@ const bddScenarios: BDDScenarioData[] = [
     Then I should see a list of all BDD scenarios
     And I should see their current status (pending, passed, failed, skipped)
     And I should see which scenarios are linked to Playwright tests
-    And I should see which scenarios have no test coverage`
+    And I should see which scenarios have no test coverage`,
   },
   {
     taskId: 'CODEGOAT-001',
     title: 'Discover unlinked BDD scenarios',
-    feature: 'BDD Scenario Audit and Linking', 
+    feature: 'BDD Scenario Audit and Linking',
     description: 'Users should be able to filter and identify BDD scenarios without test coverage',
     gherkinContent: `Scenario: Discover unlinked BDD scenarios
     Given I am on the BDD Tests Dashboard
     When I filter by "Unlinked scenarios"
     Then I should see all BDD scenarios without associated Playwright tests
     And I should see a "Link to Test" button for each unlinked scenario
-    And I should see the scenario's gherkin content`
+    And I should see the scenario's gherkin content`,
   },
   {
     taskId: 'CODEGOAT-001',
@@ -61,7 +61,7 @@ const bddScenarios: BDDScenarioData[] = [
     And I click "Create Link"
     Then the scenario should be marked as linked
     And I should see the test file path in the scenario details
-    And the link should be saved to the database`
+    And the link should be saved to the database`,
   },
 
   // CODEGOAT-014: Switching across agents in analytics page does not change the data displayed
@@ -80,7 +80,7 @@ const bddScenarios: BDDScenarioData[] = [
     Then I should see "claude_cli" as an option
     And I should see "gemini_cli" as an option
     And I should see "cursor_cli" as an option
-    And I should see "All Agents" as an option`
+    And I should see "All Agents" as an option`,
   },
   {
     taskId: 'CODEGOAT-014',
@@ -93,7 +93,7 @@ const bddScenarios: BDDScenarioData[] = [
     Then the analytics data should update to show only Claude CLI results
     And the summary cards should reflect Claude CLI metrics
     And the charts should update with Claude CLI data points
-    And the recent runs list should show only Claude CLI runs`
+    And the recent runs list should show only Claude CLI runs`,
   },
 
   // CODEGOAT-015: Add task editing functionality to the tasks board
@@ -113,7 +113,7 @@ const bddScenarios: BDDScenarioData[] = [
     Then a task edit modal should open
     And the modal should display the current task details
     And I should see fields for title, description, priority, and status
-    And the save and cancel buttons should be available`
+    And the save and cancel buttons should be available`,
   },
   {
     taskId: 'CODEGOAT-015',
@@ -128,7 +128,7 @@ const bddScenarios: BDDScenarioData[] = [
     Then the modal should close
     And the task card should display the updated title
     And the task should be saved to the database
-    And I should see a success notification`
+    And I should see a success notification`,
   },
   {
     taskId: 'CODEGOAT-015',
@@ -145,7 +145,7 @@ const bddScenarios: BDDScenarioData[] = [
     And I click "Save Scenario"
     Then the scenario should be added to the task
     And the task card should show the scenario count
-    And the scenario should be available for linking to tests`
+    And the scenario should be available for linking to tests`,
   },
 
   // CODEGOAT-017: Reorganise folder structure of the files
@@ -164,7 +164,7 @@ const bddScenarios: BDDScenarioData[] = [
     Then I should see a "pages" folder containing all page components
     And I should see pages like AnalyticsPage, DashboardPage, SettingsPage are in the pages folder
     And page files should follow naming convention *Page.tsx
-    And page components should not be mixed with reusable components`
+    And page components should not be mixed with reusable components`,
   },
 
   // CODEGOAT-018: Increase test coverage to 90%
@@ -183,7 +183,7 @@ const bddScenarios: BDDScenarioData[] = [
     Then I should see the current coverage percentage for the entire codebase
     And I should see coverage broken down by file and folder
     And I should see lines, branches, and functions coverage
-    And I should see which files have the lowest coverage`
+    And I should see which files have the lowest coverage`,
   },
 
   // CODEGOAT-019: Tighten eslint rules to improve quality
@@ -202,7 +202,7 @@ const bddScenarios: BDDScenarioData[] = [
     Then I should enable @typescript-eslint/strict rules
     And I should require explicit return types for functions
     And I should disallow 'any' types without comments
-    And I should enforce consistent naming conventions`
+    And I should enforce consistent naming conventions`,
   },
 
   // CODEGOAT-022: Add task duration charts and time range filters
@@ -221,7 +221,7 @@ const bddScenarios: BDDScenarioData[] = [
     Then I should see a task duration chart showing average completion times
     And I should see tasks grouped by priority (high, medium, low)
     And I should see duration data for the last 30 days by default
-    And I should see both individual task durations and averages`
+    And I should see both individual task durations and averages`,
   },
   {
     taskId: 'CODEGOAT-022',
@@ -234,7 +234,7 @@ const bddScenarios: BDDScenarioData[] = [
     Then all charts should update to show only data from the last 7 days
     And I should see task duration trends for the past week
     And the summary metrics should reflect the 7-day period
-    And the URL should update to reflect the selected time range`
+    And the URL should update to reflect the selected time range`,
   },
 
   // CODEGOAT-024: Add BDD test coverage reporting
@@ -253,7 +253,7 @@ const bddScenarios: BDDScenarioData[] = [
     Then I should see the overall BDD coverage percentage
     And I should see total number of BDD scenarios
     And I should see number of scenarios with linked Playwright tests
-    And I should see number of scenarios without test coverage`
+    And I should see number of scenarios without test coverage`,
   },
   {
     taskId: 'CODEGOAT-024',
@@ -265,7 +265,7 @@ const bddScenarios: BDDScenarioData[] = [
     Then I should see each feature listed with its coverage percentage
     And I should see features sorted by lowest coverage first
     And I should see number of scenarios per feature
-    And I should be able to click on a feature to see its scenarios`
+    And I should be able to click on a feature to see its scenarios`,
   },
 
   // CODEGOAT-025: Create comprehensive BDD scenarios for all todo-list.json tasks
@@ -284,7 +284,7 @@ const bddScenarios: BDDScenarioData[] = [
     Then I should identify which tasks are user-facing features
     And I should distinguish between technical tasks and user stories
     And I should mark user-facing tasks as requiring BDD scenarios
-    And I should prioritize based on user impact`
+    And I should prioritize based on user impact`,
   },
 
   // CODEGOAT-026: Decouple business logic from API routes
@@ -304,7 +304,7 @@ const bddScenarios: BDDScenarioData[] = [
     And I should see which routes have database operations
     And I should see which routes have complex calculations
     And I should see which routes have external API calls
-    And I should create a refactoring plan`
+    And I should create a refactoring plan`,
   },
 
   // CODEGOAT-027: Add analytics for workers
@@ -323,7 +323,7 @@ const bddScenarios: BDDScenarioData[] = [
     Then I should see average execution time per worker
     And I should see execution time trends over the last 30 days
     And I should see the longest running tasks by worker
-    And I should see execution time percentiles (50th, 90th, 95th)`
+    And I should see execution time percentiles (50th, 90th, 95th)`,
   },
 
   // CODEGOAT-028: Analytics page performance investigation
@@ -343,14 +343,14 @@ const bddScenarios: BDDScenarioData[] = [
     Then I should record the total page load time
     And I should measure time to first meaningful paint
     And I should measure time to interactive
-    And I should identify the slowest loading components`
+    And I should identify the slowest loading components`,
   },
 ];
 
 async function addBddScenarios() {
   try {
     console.error('🔍 Adding comprehensive BDD scenarios to the database...');
-    
+
     let addedCount = 0;
     let skippedCount = 0;
 
@@ -358,11 +358,13 @@ async function addBddScenarios() {
       try {
         // Check if task exists
         const task = await prisma.task.findUnique({
-          where: { id: scenarioData.taskId }
+          where: { id: scenarioData.taskId },
         });
 
         if (!task) {
-          console.error(`⚠️  Task ${scenarioData.taskId} not found, skipping scenario: ${scenarioData.title}`);
+          console.error(
+            `⚠️  Task ${scenarioData.taskId} not found, skipping scenario: ${scenarioData.title}`
+          );
           skippedCount++;
           continue;
         }
@@ -371,12 +373,14 @@ async function addBddScenarios() {
         const existingScenario = await prisma.bDDScenario.findFirst({
           where: {
             taskId: scenarioData.taskId,
-            title: scenarioData.title
-          }
+            title: scenarioData.title,
+          },
         });
 
         if (existingScenario) {
-          console.error(`⚠️  Scenario already exists: ${scenarioData.title} for ${scenarioData.taskId}`);
+          console.error(
+            `⚠️  Scenario already exists: ${scenarioData.title} for ${scenarioData.taskId}`
+          );
           skippedCount++;
           continue;
         }
@@ -389,15 +393,17 @@ async function addBddScenarios() {
             feature: scenarioData.feature,
             description: scenarioData.description,
             gherkinContent: scenarioData.gherkinContent,
-            status: 'PENDING'
-          }
+            status: 'PENDING',
+          },
         });
 
         console.error(`✅ Added BDD scenario: ${scenarioData.title} for ${scenarioData.taskId}`);
         addedCount++;
-
       } catch (error) {
-        console.error(`❌ Error adding scenario "${scenarioData.title}" for ${scenarioData.taskId}:`, error);
+        console.error(
+          `❌ Error adding scenario "${scenarioData.title}" for ${scenarioData.taskId}:`,
+          error
+        );
       }
     }
 
@@ -405,7 +411,6 @@ async function addBddScenarios() {
     console.error(`   ✅ Added: ${addedCount} scenarios`);
     console.error(`   ⚠️  Skipped: ${skippedCount} scenarios`);
     console.error(`   📈 Total processed: ${bddScenarios.length} scenarios`);
-
   } catch (error) {
     console.error('💥 Script failed:', error);
     throw error;
@@ -421,7 +426,7 @@ if (require.main === module) {
       console.error('\n🎉 BDD scenario addition completed successfully!');
       process.exit(0);
     })
-    .catch((error) => {
+    .catch(error => {
       console.error('💥 Script failed:', error);
       process.exit(1);
     });

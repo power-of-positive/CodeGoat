@@ -45,9 +45,9 @@ describe('BlockedCommandsViewer', () => {
 
   it('renders loading state initially', () => {
     mockApi.getBlockedCommands.mockImplementation(() => new Promise(() => {})); // Never resolves
-    
+
     renderComponent();
-    
+
     expect(screen.getByText('Loading blocked commands...')).toBeInTheDocument();
   });
 
@@ -72,9 +72,9 @@ describe('BlockedCommandsViewer', () => {
     ];
 
     mockApi.getBlockedCommands.mockResolvedValue(mockData);
-    
+
     renderComponent();
-    
+
     await screen.findByText('Total blocked commands:');
     expect(screen.getByText('2')).toBeInTheDocument();
     expect(screen.getByText('rm -rf /')).toBeInTheDocument();
@@ -87,9 +87,9 @@ describe('BlockedCommandsViewer', () => {
     const mockData = [];
 
     mockApi.getBlockedCommands.mockResolvedValue(mockData);
-    
+
     renderComponent();
-    
+
     await screen.findByText('No blocked commands');
     expect(screen.getAllByTestId('shield-alert-icon').length).toBeGreaterThan(0);
   });
@@ -106,9 +106,9 @@ describe('BlockedCommandsViewer', () => {
     ];
 
     mockApi.getBlockedCommands.mockResolvedValue(mockData);
-    
+
     renderComponent();
-    
+
     await screen.findByText('test command'); // Just verify data loads
   });
 
@@ -116,29 +116,29 @@ describe('BlockedCommandsViewer', () => {
     const mockData = [];
 
     mockApi.getBlockedCommands.mockResolvedValue(mockData);
-    
+
     renderComponent();
-    
+
     await screen.findByText('No commands have been blocked by the security system');
   });
 
   it('calls onClose when close button is clicked', () => {
     const mockOnClose = jest.fn();
     mockApi.getBlockedCommands.mockResolvedValue([]);
-    
+
     renderComponent({ onClose: mockOnClose });
-    
+
     const closeButton = screen.getByText('Close');
     closeButton.click();
-    
+
     expect(mockOnClose).toHaveBeenCalledTimes(1);
   });
 
   it('displays worker ID in title', () => {
     mockApi.getBlockedCommands.mockResolvedValue([]);
-    
+
     renderComponent({ workerId: 'worker-abc123' });
-    
+
     expect(screen.getByText('Blocked Commands - abc123')).toBeInTheDocument();
   });
 
@@ -154,9 +154,9 @@ describe('BlockedCommandsViewer', () => {
     ];
 
     mockApi.getBlockedCommands.mockResolvedValue(mockData);
-    
+
     renderComponent();
-    
+
     await screen.findByText('test');
     // Check that date formatting is applied (exact format may vary by locale)
     expect(screen.getAllByText(/2024|Jan|1/).length).toBeGreaterThan(0);
@@ -175,9 +175,9 @@ describe('BlockedCommandsViewer', () => {
     ];
 
     mockApi.getBlockedCommands.mockResolvedValue(mockData);
-    
+
     renderComponent();
-    
+
     await screen.findByText('dangerous-command');
     expect(screen.getByText('Not allowed')).toBeInTheDocument();
     expect(screen.queryByText('Context:')).not.toBeInTheDocument();
@@ -185,9 +185,9 @@ describe('BlockedCommandsViewer', () => {
 
   it('handles API errors gracefully', async () => {
     mockApi.getBlockedCommands.mockRejectedValue(new Error('API Error'));
-    
+
     renderComponent();
-    
+
     // Component should handle error gracefully and show loading state
     expect(screen.getByText('Loading blocked commands...')).toBeInTheDocument();
   });

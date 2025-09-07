@@ -36,14 +36,14 @@ model Task {
   templateId         String?    @map("template_id")
   title              String
   description        String?
-  status             TaskStatus @default(TODO)
-  priority           Priority   @default(MEDIUM)
+  status             String @default("todo")
+  priority           String @default("medium")
   tags               String?    // JSON array stored as string
   createdAt          DateTime   @default(now()) @map("created_at")
   updatedAt          DateTime   @updatedAt @map("updated_at")
   
   // Todo task specific fields (from TodoTask)
-  taskType           TaskType?     @default(TASK) @map("task_type")
+  taskType           String?     @default("task") @map("task_type")
   executorId         String?       @map("executor_id")
   startTime          DateTime?     @map("start_time")
   endTime            DateTime?     @map("end_time")
@@ -90,7 +90,7 @@ model TaskAttempt {
   branchName   String        @map("branch_name")
   mergeCommit  String?       @map("merge_commit")
   executor     String        // AI model used
-  status       AttemptStatus
+  status       String
   stdout       String?
   stderr       String?
   createdAt    DateTime      @default(now()) @map("created_at")
@@ -110,8 +110,8 @@ model TaskAttempt {
 model ExecutionProcess {
   id               String        @id @default(uuid())
   taskAttemptId    String        @map("task_attempt_id")
-  processType      ProcessType   @map("process_type")
-  status           ProcessStatus
+  processType      String   @map("process_type")
+  status           String
   command          String
   args             String?       // JSON array stored as string
   workingDirectory String        @map("working_directory")
@@ -133,7 +133,7 @@ model ExecutionProcess {
 model ExecutionProcessLog {
   id                  String          @id @default(uuid())
   executionProcessId  String          @map("execution_process_id")
-  stream              LogStream
+  stream              String
   data                String
   createdAt           DateTime        @default(now()) @map("created_at")
   
@@ -147,7 +147,7 @@ model ExecutorSession {
   id            String        @id @default(uuid())
   taskAttemptId String        @map("task_attempt_id")
   executor      String
-  status        ProcessStatus
+  status        String
   startedAt     DateTime?     @map("started_at")
   completedAt   DateTime?     @map("completed_at")
   createdAt     DateTime      @default(now()) @map("created_at")
@@ -271,7 +271,7 @@ model ValidationLog {
   id            String        @id @default(uuid())
   runId         String        @map("run_id")
   stageId       String?       @map("stage_id") // Optional: associate with specific stage
-  level         LogLevel      @default(INFO)
+  level         String      @default("info")
   message       String
   timestamp     DateTime      @default(now())
   metadata      String?       // JSON metadata stored as string
@@ -290,7 +290,7 @@ model BDDScenario {
   feature           String
   description       String
   gherkinContent    String           @map("gherkin_content")
-  status            BDDScenarioStatus @default(PENDING)
+  status            String @default("pending")
   executedAt        DateTime?        @map("executed_at")
   executionDuration Int?             @map("execution_duration") // Duration in milliseconds
   errorMessage      String?          @map("error_message")
@@ -310,7 +310,7 @@ model BDDScenario {
 model BDDScenarioExecution {
   id                String           @id @default(uuid())
   scenarioId        String           @map("scenario_id")
-  status            BDDScenarioStatus
+  status            String
   executedAt        DateTime         @default(now()) @map("executed_at")
   executionDuration Int?             @map("execution_duration") // Duration in milliseconds
   errorMessage      String?          @map("error_message")
@@ -325,70 +325,13 @@ model BDDScenarioExecution {
   @@map("bdd_scenario_executions")
 }
 
-// Enums
-enum TaskStatus {
-  TODO        @map("todo")
-  INPROGRESS  @map("inprogress")
-  INREVIEW    @map("inreview")
-  DONE        @map("done")
-  CANCELLED   @map("cancelled")
-  // Todo task statuses
-  PENDING     @map("pending")
-  IN_PROGRESS @map("in_progress")
-  COMPLETED   @map("completed")
-}
-
-enum Priority {
-  LOW     @map("low")
-  MEDIUM  @map("medium")
-  HIGH    @map("high")
-  URGENT  @map("urgent")
-}
-
-enum AttemptStatus {
-  CREATED   @map("created")
-  RUNNING   @map("running")
-  COMPLETED @map("completed")
-  FAILED    @map("failed")
-  CANCELLED @map("cancelled")
-}
-
-enum ProcessType {
-  SETUPSCRIPT @map("setupscript")
-  CODINGAGENT @map("codingagent")
-  DEVSERVER   @map("devserver")
-  VALIDATION  @map("validation")
-  CLEANUP     @map("cleanup")
-}
-
-enum ProcessStatus {
-  RUNNING   @map("running")
-  COMPLETED @map("completed")
-  FAILED    @map("failed")
-  KILLED    @map("killed")
-}
-
-enum LogStream {
-  STDOUT @map("stdout")
-  STDERR @map("stderr")
-}
-
-
-enum BDDScenarioStatus {
-  PENDING @map("pending")
-  PASSED  @map("passed")
-  FAILED  @map("failed")
-  SKIPPED @map("skipped")
-}
-
-enum TaskType {
-  STORY @map("story")
-  TASK  @map("task")
-}
-
-enum LogLevel {
-  DEBUG @map("debug")
-  INFO  @map("info")
-  WARN  @map("warn")
-  ERROR @map("error")
-}
+// String-based enums for SQLite compatibility
+// TaskStatus: "todo", "inprogress", "inreview", "done", "cancelled", "pending", "in_progress", "completed"
+// Priority: "low", "medium", "high", "urgent"
+// AttemptStatus: "created", "running", "completed", "failed", "cancelled"
+// ProcessType: "setupscript", "codingagent", "devserver", "validation", "cleanup"
+// ProcessStatus: "running", "completed", "failed", "killed"
+// LogStream: "stdout", "stderr"
+// BDDScenarioStatus: "pending", "passed", "failed", "skipped"
+// TaskType: "story", "task"
+// LogLevel: "debug", "info", "warn", "error"

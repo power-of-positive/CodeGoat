@@ -10,7 +10,7 @@ import {
   processReviewResult,
   handleReviewError,
   type LlmReviewResult,
-  type ReviewResult
+  type ReviewResult,
 } from './precommit-llm-helpers';
 
 // Mock fs
@@ -31,7 +31,7 @@ describe('precommit-llm-helpers', () => {
 
     it('should pass validation for valid inputs', () => {
       expect(() => validateInputs('/valid/project/path', 'valid output string')).not.toThrow();
-      
+
       expect(mockFs.existsSync).toHaveBeenCalledWith(path.resolve('/valid/project/path'));
     });
 
@@ -42,7 +42,7 @@ describe('precommit-llm-helpers', () => {
         { input: '', error: 'Invalid projectRoot: must be non-empty string' },
         { input: 123, error: 'Invalid projectRoot: must be non-empty string' },
         { input: [], error: 'Invalid projectRoot: must be non-empty string' },
-        { input: {}, error: 'Invalid projectRoot: must be non-empty string' }
+        { input: {}, error: 'Invalid projectRoot: must be non-empty string' },
       ];
 
       invalidRoots.forEach(({ input, error }) => {
@@ -56,7 +56,7 @@ describe('precommit-llm-helpers', () => {
         { input: undefined, error: 'Invalid allOutput: must be string' },
         { input: 123, error: 'Invalid allOutput: must be string' },
         { input: [], error: 'Invalid allOutput: must be string' },
-        { input: {}, error: 'Invalid allOutput: must be string' }
+        { input: {}, error: 'Invalid allOutput: must be string' },
       ];
 
       invalidOutputs.forEach(({ input, error }) => {
@@ -82,7 +82,7 @@ describe('precommit-llm-helpers', () => {
         { path: '/project`command`/injection', pattern: 'command injection' },
         { path: '/project|cat /etc/passwd', pattern: 'pipe command injection' },
         { path: '/project&&rm -rf /', pattern: 'command chaining' },
-        { path: '/project;cat secrets', pattern: 'semicolon command' }
+        { path: '/project;cat secrets', pattern: 'semicolon command' },
       ];
 
       dangerousPatterns.forEach(({ path: dangerousPath }) => {
@@ -108,7 +108,7 @@ describe('precommit-llm-helpers', () => {
         '/Users/developer/workspace/project',
         '/tmp/build-12345',
         '/workspace/project-name_v1.2.3',
-        '/path/with-dashes-and_underscores'
+        '/path/with-dashes-and_underscores',
       ];
 
       validPaths.forEach(validPath => {
@@ -122,7 +122,7 @@ describe('precommit-llm-helpers', () => {
         './current/directory',
         '../parent/directory',
         '~/home/directory',
-        'relative/path/without/dot'
+        'relative/path/without/dot',
       ];
 
       relativePaths.forEach(relativePath => {
@@ -143,7 +143,7 @@ describe('precommit-llm-helpers', () => {
         new Error('Network error occurred'),
         new Error('Connection failed'),
         new Error('Rate limit exceeded'),
-        new Error('API rate-limit reached')
+        new Error('API rate-limit reached'),
       ];
 
       transientErrors.forEach(error => {
@@ -158,7 +158,7 @@ describe('precommit-llm-helpers', () => {
         new Error('Malformed request'),
         new Error('Syntax error in code'),
         new Error('File permission denied'),
-        new Error('Critical system failure')
+        new Error('Critical system failure'),
       ];
 
       permanentErrors.forEach(error => {
@@ -176,7 +176,7 @@ describe('precommit-llm-helpers', () => {
         new Error('network failure'),
         new Error('RATE LIMIT exceeded'),
         new Error('Rate-Limit exceeded'),
-        new Error('rate limit exceeded')
+        new Error('rate limit exceeded'),
       ];
 
       caseVariations.forEach(error => {
@@ -189,7 +189,7 @@ describe('precommit-llm-helpers', () => {
         new Error('Connection failed due to network issues'),
         new Error('The request timed out after 30 seconds'),
         new Error('Server connection was reset unexpectedly'),
-        new Error('API rate limit has been exceeded, please retry')
+        new Error('API rate limit has been exceeded, please retry'),
       ];
 
       partialMatches.forEach(error => {
@@ -203,11 +203,13 @@ describe('precommit-llm-helpers', () => {
         new Error('timeout'),
         new Error('network'),
         new Error('ENOENT'),
-        new Error('connection')
+        new Error('connection'),
       ];
 
       minimalErrors.forEach(error => {
-        const expected = ['timeout', 'network', 'ENOENT', 'connection'].includes(error.message.toLowerCase());
+        const expected = ['timeout', 'network', 'enoent', 'connection'].includes(
+          error.message.toLowerCase()
+        );
         expect(isTransientError(error)).toBe(expected);
       });
     });
@@ -216,7 +218,7 @@ describe('precommit-llm-helpers', () => {
   describe('processReviewResult', () => {
     it('should return success for non-blocked reviews', () => {
       const reviewResult: ReviewResult = { blocked: false };
-      
+
       const result = processReviewResult(reviewResult, 'All checks passed');
 
       expect(result).toEqual({ status: 'success' });
@@ -225,19 +227,19 @@ describe('precommit-llm-helpers', () => {
     it('should return blocked status with sanitized output', () => {
       const reviewResult: ReviewResult = {
         blocked: true,
-        output: 'Review found security issues with OPENAI_API_KEY=sk-1234567890'
+        output: 'Review found security issues with OPENAI_API_KEY=sk-1234567890',
       };
-      
+
       const result = processReviewResult(reviewResult, 'Precommit output');
 
       expect(result).toEqual({
         status: 'blocked',
         result: {
           decision: 'block',
-          reason: expect.stringContaining('Pre-commit checks failed')
-        }
+          reason: expect.stringContaining('Pre-commit checks failed'),
+        },
       });
-      
+
       // Check that API key is sanitized
       if ('result' in result && 'reason' in result.result) {
         expect(result.result.reason).not.toContain('sk-1234567890');
@@ -248,7 +250,7 @@ describe('precommit-llm-helpers', () => {
     it('should handle missing blocked property gracefully', () => {
       const consoleSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
       const reviewResult = {} as ReviewResult;
-      
+
       const result = processReviewResult(reviewResult, 'output');
 
       expect(result).toEqual({ status: 'success' });
@@ -261,7 +263,7 @@ describe('precommit-llm-helpers', () => {
 
     it('should handle missing output property when blocked', () => {
       const reviewResult: ReviewResult = { blocked: true };
-      
+
       const result = processReviewResult(reviewResult, 'Precommit checks');
 
       if (result.status === 'blocked' && 'result' in result) {
@@ -272,9 +274,9 @@ describe('precommit-llm-helpers', () => {
     it('should sanitize user paths in error messages', () => {
       const reviewResult: ReviewResult = {
         blocked: true,
-        output: 'Error in /Users/john.doe/secret/project and /home/admin/confidential'
+        output: 'Error in /Users/john.doe/secret/project and /home/admin/confidential',
       };
-      
+
       const result = processReviewResult(reviewResult, 'output');
 
       if (result.status === 'blocked' && 'result' in result) {
@@ -288,13 +290,15 @@ describe('precommit-llm-helpers', () => {
     it('should sanitize long secrets in error messages', () => {
       const reviewResult: ReviewResult = {
         blocked: true,
-        output: 'Found secret: abcdef1234567890abcdef1234567890abcdef1234567890'
+        output: 'Found secret: abcdef1234567890abcdef1234567890abcdef1234567890',
       };
-      
+
       const result = processReviewResult(reviewResult, 'output');
 
       if (result.status === 'blocked' && 'result' in result) {
-        expect(result.result.reason).not.toContain('abcdef1234567890abcdef1234567890abcdef1234567890');
+        expect(result.result.reason).not.toContain(
+          'abcdef1234567890abcdef1234567890abcdef1234567890'
+        );
         expect(result.result.reason).toContain('abcd***7890');
       }
     });
@@ -302,9 +306,9 @@ describe('precommit-llm-helpers', () => {
     it('should not over-sanitize short strings', () => {
       const reviewResult: ReviewResult = {
         blocked: true,
-        output: 'Error with short string like "test123" which is fine'
+        output: 'Error with short string like "test123" which is fine',
       };
-      
+
       const result = processReviewResult(reviewResult, 'output');
 
       if (result.status === 'blocked' && 'result' in result) {
@@ -315,9 +319,9 @@ describe('precommit-llm-helpers', () => {
     it('should combine allOutput and review output correctly', () => {
       const reviewResult: ReviewResult = {
         blocked: true,
-        output: 'LLM review output'
+        output: 'LLM review output',
       };
-      
+
       const result = processReviewResult(reviewResult, 'Precommit output\n');
 
       if (result.status === 'blocked' && 'result' in result) {
@@ -332,7 +336,7 @@ describe('precommit-llm-helpers', () => {
     it('should allow commit for transient errors', () => {
       const transientError = new Error('ECONNRESET: Connection reset');
       const consoleSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
-      
+
       const result = handleReviewError(transientError);
 
       expect(result).toEqual({ status: 'success' });
@@ -346,7 +350,7 @@ describe('precommit-llm-helpers', () => {
     it('should allow commit for non-transient errors with warning', () => {
       const permanentError = new Error('Invalid API key');
       const consoleSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
-      
+
       const result = handleReviewError(permanentError);
 
       expect(result).toEqual({ status: 'success' });
@@ -360,7 +364,7 @@ describe('precommit-llm-helpers', () => {
     it('should handle non-Error exceptions', () => {
       const stringError = 'String error occurred';
       const consoleSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
-      
+
       const result = handleReviewError(stringError);
 
       expect(result).toEqual({ status: 'success' });
@@ -372,27 +376,23 @@ describe('precommit-llm-helpers', () => {
     });
 
     it('should sanitize error messages in console output', () => {
-      const errorWithSecrets = new Error('API key OPENAI_API_KEY=sk-secret and path /Users/admin/secret');
+      const errorWithSecrets = new Error(
+        'API key OPENAI_API_KEY=sk-secret and path /Users/admin/secret'
+      );
       const consoleSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
-      
+
       handleReviewError(errorWithSecrets);
 
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('OPENAI_API_KEY=***')
-      );
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('/Users/***')
-      );
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.not.stringContaining('sk-secret')
-      );
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('OPENAI_API_KEY=***'));
+      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('/Users/***'));
+      expect(consoleSpy).toHaveBeenCalledWith(expect.not.stringContaining('sk-secret'));
 
       consoleSpy.mockRestore();
     });
 
     it('should handle null and undefined errors', () => {
       const consoleSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
-      
+
       const result1 = handleReviewError(null);
       const result2 = handleReviewError(undefined);
 
@@ -408,23 +408,21 @@ describe('precommit-llm-helpers', () => {
 
     it('should differentiate between transient and permanent error logging', () => {
       const consoleSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
-      
+
       // Transient error
       handleReviewError(new Error('TIMEOUT'));
       expect(consoleSpy).toHaveBeenCalledWith(
         expect.stringContaining('⚠️ Transient LLM review error (allowing commit):')
       );
-      
+
       consoleSpy.mockClear();
-      
+
       // Permanent error
       handleReviewError(new Error('Invalid config'));
       expect(consoleSpy).toHaveBeenCalledWith(
         expect.stringContaining('LLM review generation failed:')
       );
-      expect(consoleSpy).not.toHaveBeenCalledWith(
-        expect.stringContaining('⚠️ Transient')
-      );
+      expect(consoleSpy).not.toHaveBeenCalledWith(expect.stringContaining('⚠️ Transient'));
 
       consoleSpy.mockRestore();
     });
@@ -441,30 +439,30 @@ describe('precommit-llm-helpers', () => {
           Home: /home/another.user/work
           Long secret: abcdefghijklmnopqrstuvwxyz1234567890abcdefghijklmn
           Short: abc123
-        `
+        `,
       };
-      
+
       const result = processReviewResult(reviewResult, 'test');
 
       if (result.status === 'blocked' && 'result' in result) {
         const reason = result.result.reason;
-        
+
         // API keys should be sanitized
         expect(reason).toContain('OPENAI_API_KEY=***');
         expect(reason).toContain('API_KEY=***');
         expect(reason).not.toContain('sk-1234567890abcdef');
         expect(reason).not.toContain('another-secret-key');
-        
+
         // User paths should be sanitized
         expect(reason).toContain('/Users/***');
         expect(reason).toContain('/home/***');
         expect(reason).not.toContain('sensitive.user');
         expect(reason).not.toContain('another.user');
-        
+
         // Long secrets should be truncated
         expect(reason).toContain('abcd***klmn');
         expect(reason).not.toContain('abcdefghijklmnopqrstuvwxyz1234567890abcdefghijklmn');
-        
+
         // Short strings should not be affected
         expect(reason).toContain('abc123');
       }
@@ -478,24 +476,24 @@ describe('precommit-llm-helpers', () => {
           Exactly 8 chars: abcdefgh
           Less than 8: abc
           Boundary test: abcdefghijklmnopqrstuvwxyz12345
-        `
+        `,
       };
-      
+
       const result = processReviewResult(reviewResult, 'test');
 
       if (result.status === 'blocked' && 'result' in result) {
         const reason = result.result.reason;
-        
+
         // 32 chars should be truncated (>= 32 and > 8)
         expect(reason).toContain('abcd***3456');
         expect(reason).not.toContain('abcdefghijklmnopqrstuvwxyz123456');
-        
+
         // 8 chars should not be truncated (not > 8)
         expect(reason).toContain('abcdefgh');
-        
+
         // Less than 8 should not be truncated
         expect(reason).toContain('abc');
-        
+
         // 31 chars should not be truncated (< 32)
         expect(reason).toContain('abcdefghijklmnopqrstuvwxyz12345');
       }

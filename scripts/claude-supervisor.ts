@@ -58,12 +58,12 @@ class ClaudeSupervisor {
       hookTimeout: HOOK_TIMEOUT_MINUTES * MINUTES_TO_MS,
       logDir: './logs/supervisor',
       claudeCommand: ['claude'],
-      ...config
+      ...config,
     };
 
     this.rl = readline.createInterface({
       input: process.stdin,
-      output: process.stdout
+      output: process.stdout,
     });
 
     this.setupInteractiveCommands();
@@ -75,9 +75,9 @@ class ClaudeSupervisor {
   }
 
   private setupInteractiveCommands(): void {
-    this.rl.on('line', async (input) => {
+    this.rl.on('line', async input => {
       const command = input.trim().toLowerCase();
-      
+
       switch (command) {
         case 'status':
           this.showStatus();
@@ -149,7 +149,7 @@ class ClaudeSupervisor {
     this.sessionCounter++;
     const sessionId = `session-${this.sessionCounter}-${Date.now()}`;
     let attempts = 0;
-    
+
     this.log(`🚀 Starting supervised Claude session: ${sessionId}`);
     this.log(`📝 Initial prompt: ${initialPrompt.substring(0, PROMPT_PREVIEW_LENGTH)}...`);
 
@@ -157,29 +157,29 @@ class ClaudeSupervisor {
       success: false,
       sessionId,
       attempts: 0,
-      logs: []
+      logs: [],
     };
 
     while (attempts < this.config.maxAttempts && this.isRunning) {
       attempts++;
       result.attempts = attempts;
-      
+
       this.log(`🔄 Attempt ${attempts}/${this.config.maxAttempts}`);
-      
+
       try {
         // Run Claude Code session
         const claudeResult = await this.runClaudeCode(sessionId, initialPrompt, attempts);
-        
+
         if (!claudeResult.success) {
           this.log(`❌ Claude session failed: ${claudeResult.error}`);
           continue;
         }
 
         this.log(`✅ Claude session completed, running validation...`);
-        
+
         // Run validation hook
         const validationResult = await this.runValidationHook(sessionId);
-        
+
         if (validationResult.success) {
           this.log(`🎉 Validation passed! Session completed successfully.`);
           result.success = true;
@@ -188,17 +188,16 @@ class ClaudeSupervisor {
         } else {
           this.log(`❌ Validation failed, preparing feedback for next attempt...`);
           result.validationResults = validationResult.results;
-          
+
           // Generate feedback prompt for next iteration
           initialPrompt = this.generateFeedbackPrompt(validationResult.results, attempts);
           this.log(`🔄 Generated feedback prompt for next attempt`);
         }
-        
       } catch (error) {
         this.log(`💥 Session error: ${error}`);
         result.error = error instanceof Error ? error.message : String(error);
       }
-      
+
       // Brief pause between attempts
       await this.sleep(SLEEP_BETWEEN_ATTEMPTS);
     }
@@ -209,7 +208,7 @@ class ClaudeSupervisor {
 
     result.logs = [...this.logs];
     await this.saveSessionResults(result);
-    
+
     return result;
   }
 
@@ -223,27 +222,27 @@ class ClaudeSupervisor {
       '--verbose',
       '--output-format=stream-json',
     ];
-    
+
     return spawn(claudeCommand, claudeArgs, {
       stdio: ['pipe', 'pipe', 'pipe'],
       cwd: process.cwd(),
-      env: { 
-        ...process.env, 
+      env: {
+        ...process.env,
         FORCE_COLOR: FORCE_COLOR_VALUE,
         CLAUDE_API_KEY: process.env.CLAUDE_API_KEY,
-        CLAUDE_SUPERVISOR_SESSION: sessionId 
-      }
+        CLAUDE_SUPERVISOR_SESSION: sessionId,
+      },
     });
   }
 
-  private setupProcessOutputHandling(process: ChildProcess, outputRef: {value: string}): void {
-    process.stdout?.on('data', (data) => {
+  private setupProcessOutputHandling(process: ChildProcess, outputRef: { value: string }): void {
+    process.stdout?.on('data', data => {
       const text = data.toString();
       outputRef.value += text;
       this.log(`[Claude] ${text.trim()}`);
     });
 
-    process.stderr?.on('data', (data) => {
+    process.stderr?.on('data', data => {
       const text = data.toString();
       outputRef.value += text;
       this.log(`[Claude Error] ${text.trim()}`);
@@ -251,18 +250,18 @@ class ClaudeSupervisor {
   }
 
   private setupProcessEventHandlers(
-    process: ChildProcess, 
-    timeout: NodeJS.Timeout, 
-    logFile: string, 
-    outputRef: {value: string}, 
-    resolve: (value: {success: boolean, error?: string}) => void
+    process: ChildProcess,
+    timeout: NodeJS.Timeout,
+    logFile: string,
+    outputRef: { value: string },
+    resolve: (value: { success: boolean; error?: string }) => void
   ): void {
-    process.on('close', async (code) => {
+    process.on('close', async code => {
       clearTimeout(timeout);
-      
+
       // Save session log
       await fs.writeFile(logFile, `STDOUT/STDERR:\n${outputRef.value}\n`);
-      
+
       if (code === 0) {
         this.log(`✅ Claude session completed successfully`);
         resolve({ success: true });
@@ -270,27 +269,31 @@ class ClaudeSupervisor {
         this.log(`❌ Claude session failed with code ${code}`);
         resolve({ success: false, error: `Exit code ${code}` });
       }
-      
+
       this.currentSession = null;
     });
 
-    process.on('error', (error) => {
+    process.on('error', error => {
       clearTimeout(timeout);
       this.log(`💥 Claude process error: ${error.message}`);
       resolve({ success: false, error: error.message });
     });
   }
 
-  private async runClaudeCode(sessionId: string, prompt: string, attempt: number): Promise<{success: boolean, error?: string}> {
-    return new Promise((resolve) => {
+  private async runClaudeCode(
+    sessionId: string,
+    prompt: string,
+    attempt: number
+  ): Promise<{ success: boolean; error?: string }> {
+    return new Promise(resolve => {
       const logFile = path.join(this.config.logDir, `${sessionId}-attempt-${attempt}.log`);
-      
+
       this.log(`🤖 Starting Claude session...`);
       this.log(`📝 Prompt: ${prompt.substring(0, PROMPT_PREVIEW_LENGTH)}...`);
-      
+
       this.currentSession = this.createClaudeProcess(sessionId);
       const outputRef = { value: '' };
-      
+
       this.setupProcessOutputHandling(this.currentSession, outputRef);
 
       // Send initial prompt via stdin
@@ -308,25 +311,27 @@ class ClaudeSupervisor {
     });
   }
 
-  private async runValidationHook(sessionId: string): Promise<{success: boolean, results: ValidationResult[]}> {
-    return new Promise((resolve) => {
+  private async runValidationHook(
+    sessionId: string
+  ): Promise<{ success: boolean; results: ValidationResult[] }> {
+    return new Promise(resolve => {
       this.log(`🔍 Running validation hook...`);
-      
+
       const hookProcess = spawn('npx', ['ts-node', 'scripts/claude-stop-hook.ts'], {
         stdio: ['pipe', 'pipe', 'pipe'],
         cwd: process.cwd(),
-        env: { ...process.env, CLAUDE_SUPERVISOR_VALIDATION: sessionId }
+        env: { ...process.env, CLAUDE_SUPERVISOR_VALIDATION: sessionId },
       });
 
       let output = '';
 
-      hookProcess.stdout?.on('data', (data) => {
+      hookProcess.stdout?.on('data', data => {
         const text = data.toString();
         output += text;
         this.log(`[Hook] ${text.trim()}`);
       });
 
-      hookProcess.stderr?.on('data', (data) => {
+      hookProcess.stderr?.on('data', data => {
         const text = data.toString();
         this.log(`[Hook Error] ${text.trim()}`);
       });
@@ -337,11 +342,11 @@ class ClaudeSupervisor {
         resolve({ success: false, results: [] });
       }, this.config.hookTimeout);
 
-      hookProcess.on('close', (code) => {
+      hookProcess.on('close', code => {
         clearTimeout(timeout);
-        
+
         const results = this.parseValidationResults(output);
-        
+
         if (code === 0) {
           this.log(`✅ Validation hook passed`);
           resolve({ success: true, results });
@@ -355,11 +360,11 @@ class ClaudeSupervisor {
 
   private parseValidationResults(output: string): ValidationResult[] {
     const results: ValidationResult[] = [];
-    
+
     // Parse validation output for stage results
     // This would need to be adapted based on your validation hook output format
     const lines = output.split('\n');
-    
+
     for (const line of lines) {
       if (line.includes('✅') && line.includes('Passed')) {
         const stageName = this.extractStageName(line);
@@ -369,15 +374,15 @@ class ClaudeSupervisor {
       } else if (line.includes('❌') && line.includes('Failed')) {
         const stageName = this.extractStageName(line);
         if (stageName) {
-          results.push({ 
-            stage: stageName, 
+          results.push({
+            stage: stageName,
             success: false,
-            error: line
+            error: line,
           });
         }
       }
     }
-    
+
     return results;
   }
 
@@ -389,19 +394,19 @@ class ClaudeSupervisor {
 
   private generateFeedbackPrompt(validationResults: ValidationResult[], attempt: number): string {
     const failedStages = validationResults.filter(r => !r.success);
-    
+
     let prompt = `Previous attempt ${attempt} failed validation. Please fix the following issues:\n\n`;
-    
+
     for (const failure of failedStages) {
       prompt += `❌ ${failure.stage}: ${failure.error || 'Failed'}\n`;
       if (failure.output) {
         prompt += `   Output: ${failure.output.substring(0, MAX_OUTPUT_LENGTH)}...\n`;
       }
     }
-    
+
     prompt += `\nPlease address these validation failures and ensure all tests pass before completion. `;
     prompt += `Do not stop until all validation stages are green.`;
-    
+
     return prompt;
   }
 
@@ -454,10 +459,10 @@ class ClaudeSupervisor {
 }
 
 // CLI Interface
-// eslint-disable-next-line complexity
+
 async function main() {
   const args = process.argv.slice(2);
-  
+
   if (args.length === 0) {
     console.error(`
 🎯 Claude Supervisor - Automated Claude Code with Validation
@@ -485,7 +490,7 @@ Examples:
   // Parse arguments
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
-    
+
     if (arg === '--interactive') {
       interactive = true;
     } else if (arg === '--max-attempts') {
@@ -507,21 +512,20 @@ Examples:
   } else if (prompt) {
     try {
       const result = await supervisor.runSession(prompt);
-      
+
       console.error('\n📊 Final Results:');
       console.error(`  Success: ${result.success}`);
       console.error(`  Attempts: ${result.attempts}`);
       console.error(`  Session ID: ${result.sessionId}`);
-      
+
       if (result.validationResults) {
         console.error(`  Validation Results:`);
         for (const vr of result.validationResults) {
           console.error(`    ${vr.success ? '✅' : '❌'} ${vr.stage}`);
         }
       }
-      
+
       process.exit(result.success ? 0 : 1);
-      
     } catch (error) {
       console.error(`💥 Supervisor error:`, error);
       process.exit(1);

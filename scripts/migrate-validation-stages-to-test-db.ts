@@ -34,9 +34,9 @@ async function migrateValidationStages() {
   const prisma = new PrismaClient({
     datasources: {
       db: {
-        url: process.env.KANBAN_DATABASE_URL || 'file:./prisma/kanban-test.db'
-      }
-    }
+        url: process.env.KANBAN_DATABASE_URL || 'file:./prisma/kanban-test.db',
+      },
+    },
   });
 
   try {
@@ -46,7 +46,7 @@ async function migrateValidationStages() {
     const settings: Settings = JSON.parse(settingsContent);
 
     const stages = settings.validation?.stages || [];
-    
+
     if (stages.length === 0) {
       console.log('⚠️  No validation stages found in settings-precommit.json');
       return;
@@ -74,25 +74,31 @@ async function migrateValidationStages() {
             description: stage.description || `${stage.name} validation stage`,
             environment: stage.environment || null,
             category: stage.category || 'validation',
-          }
+          },
         });
-        
-        console.log(`✅ Migrated: ${stage.id} - ${stage.name} (enabled: ${stage.enabled !== false})`);
+
+        console.log(
+          `✅ Migrated: ${stage.id} - ${stage.name} (enabled: ${stage.enabled !== false})`
+        );
         migratedCount++;
       } catch (error) {
         console.error(`❌ Failed to migrate stage ${stage.id}:`, error);
       }
     }
 
-    console.log(`\n🎉 Successfully migrated ${migratedCount}/${stages.length} validation stages to test database`);
+    console.log(
+      `\n🎉 Successfully migrated ${migratedCount}/${stages.length} validation stages to test database`
+    );
 
     // Verify migration
     const dbStages = await prisma.validationStageConfig.findMany({
-      orderBy: { priority: 'asc' }
+      orderBy: { priority: 'asc' },
     });
-    
+
     const enabledCount = dbStages.filter(s => s.enabled).length;
-    console.log(`📊 Database now contains ${dbStages.length} total stages (${enabledCount} enabled)`);
+    console.log(
+      `📊 Database now contains ${dbStages.length} total stages (${enabledCount} enabled)`
+    );
 
     console.log('\n🔍 Enabled stages:');
     dbStages
@@ -100,7 +106,6 @@ async function migrateValidationStages() {
       .forEach(stage => {
         console.log(`  ${stage.priority}. ${stage.stageId} - ${stage.name}`);
       });
-
   } catch (error) {
     console.error('❌ Migration failed:', error);
     process.exit(1);

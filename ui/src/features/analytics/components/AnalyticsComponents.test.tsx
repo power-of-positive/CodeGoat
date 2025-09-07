@@ -1,17 +1,7 @@
 import React from 'react';
-import {
-  render,
-  screen,
-  fireEvent,
-  waitFor,
-  act,
-} from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import {
-  AnalyticsHeader,
-  MetricsSummary,
-  StageDetail,
-} from './AnalyticsComponents';
+import { AnalyticsHeader, MetricsSummary, StageDetail } from './AnalyticsComponents';
 import { ValidationMetrics, ValidationStageResult } from '../../../shared/types/index';
 
 describe('AnalyticsComponents', () => {
@@ -22,13 +12,9 @@ describe('AnalyticsComponents', () => {
 
       expect(screen.getByText('Validation Analytics')).toBeInTheDocument();
       expect(
-        screen.getByText(
-          'Track validation pipeline performance and success rates'
-        )
+        screen.getByText('Track validation pipeline performance and success rates')
       ).toBeInTheDocument();
-      expect(
-        screen.getByRole('button', { name: /refresh/i })
-      ).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /refresh/i })).toBeInTheDocument();
     });
 
     it('should call refetch when refresh button is clicked', async () => {
@@ -51,7 +37,7 @@ describe('AnalyticsComponents', () => {
       let resolveRefetch: () => void;
       const mockRefetch = jest.fn().mockImplementation(
         () =>
-          new Promise<void>((resolve) => {
+          new Promise<void>(resolve => {
             resolveRefetch = resolve;
           })
       );
@@ -90,9 +76,7 @@ describe('AnalyticsComponents', () => {
           })
       );
 
-      const consoleSpy = jest
-        .spyOn(console, 'error')
-        .mockImplementation(() => {});
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
       render(<AnalyticsHeader refetch={mockRefetch} />);
 
@@ -115,10 +99,7 @@ describe('AnalyticsComponents', () => {
         expect(refreshButton).not.toBeDisabled();
       });
 
-      expect(consoleSpy).toHaveBeenCalledWith(
-        'Refresh failed:',
-        expect.any(Error)
-      );
+      expect(consoleSpy).toHaveBeenCalledWith('Refresh failed:', expect.any(Error));
       consoleSpy.mockRestore();
     });
   });
@@ -325,9 +306,7 @@ describe('AnalyticsComponents', () => {
 
       // Should not show file icon or chevrons for empty/whitespace logs
       const container = screen.getByText('Empty Logs Stage').closest('div');
-      expect(
-        container?.querySelector('.lucide-file-text')
-      ).not.toBeInTheDocument();
+      expect(container?.querySelector('.lucide-file-text')).not.toBeInTheDocument();
       expect(screen.queryByTestId('chevron-right')).not.toBeInTheDocument();
     });
 

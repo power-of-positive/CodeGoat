@@ -1,4 +1,3 @@
- 
 import React, { useState } from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -7,19 +6,29 @@ import { TaskFilters, TaskFiltersState } from './TaskFilters';
 // Mock Lucide React icons
 jest.mock('lucide-react', () => ({
   Search: ({ className }: { className?: string }) => (
-    <div data-testid="search-icon" className={className}>Search</div>
+    <div data-testid="search-icon" className={className}>
+      Search
+    </div>
   ),
   Filter: ({ className }: { className?: string }) => (
-    <div data-testid="filter-icon" className={className}>Filter</div>
+    <div data-testid="filter-icon" className={className}>
+      Filter
+    </div>
   ),
   X: ({ className }: { className?: string }) => (
-    <div data-testid="x-icon" className={className}>X</div>
+    <div data-testid="x-icon" className={className}>
+      X
+    </div>
   ),
   ChevronDown: ({ className }: { className?: string }) => (
-    <div data-testid="chevron-down-icon" className={className}>ChevronDown</div>
+    <div data-testid="chevron-down-icon" className={className}>
+      ChevronDown
+    </div>
   ),
   ChevronUp: ({ className }: { className?: string }) => (
-    <div data-testid="chevron-up-icon" className={className}>ChevronUp</div>
+    <div data-testid="chevron-up-icon" className={className}>
+      ChevronUp
+    </div>
   ),
 }));
 
@@ -64,7 +73,7 @@ jest.mock('../../../shared/ui/badge', () => ({
 }));
 
 // Test wrapper component to handle state
-const TaskFiltersTestWrapper = ({ 
+const TaskFiltersTestWrapper = ({
   initialFilters = {
     status: 'all' as const,
     priority: 'all' as const,
@@ -76,9 +85,9 @@ const TaskFiltersTestWrapper = ({
   onFiltersChange,
   isOpen = true,
   onToggle = () => {},
-  ...props 
-}: { 
-  initialFilters?: TaskFiltersState; 
+  ...props
+}: {
+  initialFilters?: TaskFiltersState;
   onFiltersChange?: (filters: TaskFiltersState) => void;
   isOpen?: boolean;
   onToggle?: () => void;
@@ -91,7 +100,7 @@ const TaskFiltersTestWrapper = ({
   };
 
   return (
-    <TaskFilters 
+    <TaskFilters
       filters={filters}
       onFiltersChange={handleFiltersChange}
       isOpen={isOpen}
@@ -256,10 +265,10 @@ describe('TaskFilters', () => {
 
       // Verify the input value is updated correctly
       expect((searchInput as HTMLInputElement).value).toBe('test search');
-      
+
       // Verify onFiltersChange was called (will be called for each character)
       expect(mockOnFiltersChange).toHaveBeenCalled();
-      
+
       // Check that the final call has the complete text
       const calls = mockOnFiltersChange.mock.calls;
       const lastCall = calls[calls.length - 1][0];
@@ -367,7 +376,7 @@ describe('TaskFilters', () => {
 
       // Verify the input value is updated correctly
       expect((executorInput as HTMLInputElement).value).toBe('john.doe');
-      
+
       // Check that the final call has the complete text
       const calls = mockOnFiltersChange.mock.calls;
       const lastCall = calls[calls.length - 1][0];

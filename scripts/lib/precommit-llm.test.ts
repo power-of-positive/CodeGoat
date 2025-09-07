@@ -2,7 +2,6 @@
  * Tests for precommit-llm.ts
  */
 
-
 import { runLlmReviewProcess, REVIEW_FILE_NAME } from './precommit/precommit-llm';
 import * as llmReviewGenerator from './llm/llm-review-generator';
 import * as llmCheck from './llm/llm-check';
@@ -35,7 +34,7 @@ describe('precommit-llm', () => {
       expect(consoleSpy).toHaveBeenCalledWith(
         '⚡ LLM review disabled via SKIP_LLM_REVIEW environment variable'
       );
-      expect((llmReviewGenerator.generateLlmReviewComments as jest.Mock)).not.toHaveBeenCalled();
+      expect(llmReviewGenerator.generateLlmReviewComments as jest.Mock).not.toHaveBeenCalled();
 
       consoleSpy.mockRestore();
     });
@@ -50,10 +49,10 @@ describe('precommit-llm', () => {
       const result = await runLlmReviewProcess('/mock/project', 'output');
 
       expect(result).toBeNull();
-      expect((llmReviewGenerator.generateLlmReviewComments as jest.Mock)).toHaveBeenCalledWith(
+      expect(llmReviewGenerator.generateLlmReviewComments as jest.Mock).toHaveBeenCalledWith(
         '/mock/project'
       );
-      expect((llmCheck.checkLlmReview as jest.Mock)).toHaveBeenCalledWith(
+      expect(llmCheck.checkLlmReview as jest.Mock).toHaveBeenCalledWith(
         '/mock/project',
         REVIEW_FILE_NAME
       );
@@ -88,7 +87,7 @@ describe('precommit-llm', () => {
       expect(consoleSpy).toHaveBeenCalledWith(
         'LLM review generation failed: Failed to generate LLM review comments: Generation failed'
       );
-      expect((llmCheck.checkLlmReview as jest.Mock)).not.toHaveBeenCalled();
+      expect(llmCheck.checkLlmReview as jest.Mock).not.toHaveBeenCalled();
 
       consoleSpy.mockRestore();
     });
@@ -135,7 +134,7 @@ describe('precommit-llm', () => {
       const result = await runLlmReviewProcess('/mock/project', 'output');
 
       expect(result).toBeNull();
-      expect((llmReviewGenerator.generateLlmReviewComments as jest.Mock)).toHaveBeenCalled();
+      expect(llmReviewGenerator.generateLlmReviewComments as jest.Mock).toHaveBeenCalled();
     });
   });
 

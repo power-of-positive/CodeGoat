@@ -9,11 +9,21 @@ jest.mock('../runners/frontend-runners');
 jest.mock('../checks/check-runners');
 jest.mock('../checks/check-utils');
 
-const mockRunFrontendLinting = frontendRunners.runFrontendLinting as jest.MockedFunction<typeof frontendRunners.runFrontendLinting>;
-const mockRunFrontendTests = frontendRunners.runFrontendTests as jest.MockedFunction<typeof frontendRunners.runFrontendTests>;
-const mockRunPlaywrightTests = frontendRunners.runPlaywrightTests as jest.MockedFunction<typeof frontendRunners.runPlaywrightTests>;
-const mockRunApiE2eTests = checkRunners.runApiE2eTests as jest.MockedFunction<typeof checkRunners.runApiE2eTests>;
-const mockValidateStagedFiles = checkUtils.validateStagedFiles as jest.MockedFunction<typeof checkUtils.validateStagedFiles>;
+const mockRunFrontendLinting = frontendRunners.runFrontendLinting as jest.MockedFunction<
+  typeof frontendRunners.runFrontendLinting
+>;
+const mockRunFrontendTests = frontendRunners.runFrontendTests as jest.MockedFunction<
+  typeof frontendRunners.runFrontendTests
+>;
+const mockRunPlaywrightTests = frontendRunners.runPlaywrightTests as jest.MockedFunction<
+  typeof frontendRunners.runPlaywrightTests
+>;
+const mockRunApiE2eTests = checkRunners.runApiE2eTests as jest.MockedFunction<
+  typeof checkRunners.runApiE2eTests
+>;
+const mockValidateStagedFiles = checkUtils.validateStagedFiles as jest.MockedFunction<
+  typeof checkUtils.validateStagedFiles
+>;
 
 // Mock console.error to avoid test output noise
 const originalConsoleError = console.error;
@@ -26,7 +36,7 @@ describe('frontend-checks', () => {
     jest.clearAllMocks();
     mockConsoleError = jest.fn();
     console.error = mockConsoleError;
-    
+
     // Setup default mock implementations
     mockValidateStagedFiles.mockImplementation(() => {});
     mockRunFrontendLinting.mockReturnValue({ success: true, output: '' });
@@ -45,7 +55,7 @@ describe('frontend-checks', () => {
       frontendFiles,
       backendFiles: [],
       scriptFiles: [],
-      allFiles: frontendFiles
+      allFiles: frontendFiles,
     });
 
     it('should run all checks successfully when frontend files are staged', async () => {
@@ -70,7 +80,9 @@ describe('frontend-checks', () => {
 
       expect(result.failed).toBe(false);
       expect(mockRunApiE2eTests).not.toHaveBeenCalled();
-      expect(mockConsoleError).toHaveBeenCalledWith('⏭️ API E2E tests skipped (SKIP_API_E2E_TESTS=true)');
+      expect(mockConsoleError).toHaveBeenCalledWith(
+        '⏭️ API E2E tests skipped (SKIP_API_E2E_TESTS=true)'
+      );
       expect(mockRunFrontendLinting).toHaveBeenCalledWith(projectRoot);
     });
 
@@ -82,7 +94,9 @@ describe('frontend-checks', () => {
       expect(result.failed).toBe(false);
       expect(result.output).toBe('');
       expect(mockRunApiE2eTests).toHaveBeenCalledWith(projectRoot);
-      expect(mockConsoleError).toHaveBeenCalledWith('ℹ️ No frontend files to check (linting/unit tests)');
+      expect(mockConsoleError).toHaveBeenCalledWith(
+        'ℹ️ No frontend files to check (linting/unit tests)'
+      );
       expect(mockRunFrontendLinting).not.toHaveBeenCalled();
       expect(mockRunFrontendTests).not.toHaveBeenCalled();
       expect(mockRunPlaywrightTests).not.toHaveBeenCalled();
@@ -92,7 +106,7 @@ describe('frontend-checks', () => {
       const stagedFiles = createStagedFiles(['src/component.tsx']);
       mockRunApiE2eTests.mockResolvedValue({
         success: false,
-        output: 'API test failed: Connection timeout'
+        output: 'API test failed: Connection timeout',
       });
 
       const result = await runFrontendChecks(projectRoot, stagedFiles);
@@ -107,7 +121,7 @@ describe('frontend-checks', () => {
       const stagedFiles = createStagedFiles(['src/component.tsx']);
       mockRunFrontendLinting.mockReturnValue({
         success: false,
-        output: 'Linting errors: Missing semicolon'
+        output: 'Linting errors: Missing semicolon',
       });
 
       const result = await runFrontendChecks(projectRoot, stagedFiles);
@@ -122,7 +136,7 @@ describe('frontend-checks', () => {
       const stagedFiles = createStagedFiles(['src/component.tsx']);
       mockRunFrontendTests.mockReturnValue({
         success: false,
-        output: 'Test failed: Component should render'
+        output: 'Test failed: Component should render',
       });
 
       const result = await runFrontendChecks(projectRoot, stagedFiles);
@@ -138,13 +152,15 @@ describe('frontend-checks', () => {
       const stagedFiles = createStagedFiles(['src/component.tsx']);
       mockRunPlaywrightTests.mockReturnValue({
         success: false,
-        output: 'E2E test failed: Element not found'
+        output: 'E2E test failed: Element not found',
       });
 
       const result = await runFrontendChecks(projectRoot, stagedFiles);
 
       expect(result.failed).toBe(true);
-      expect(result.output).toBe('PLAYWRIGHT E2E TEST FAILURES:\nE2E test failed: Element not found');
+      expect(result.output).toBe(
+        'PLAYWRIGHT E2E TEST FAILURES:\nE2E test failed: Element not found'
+      );
       expect(mockConsoleError).toHaveBeenCalledWith('✅ Frontend Linting passed');
       expect(mockConsoleError).toHaveBeenCalledWith('✅ Frontend Unit Tests passed');
       expect(mockConsoleError).toHaveBeenCalledWith('❌ Playwright E2E Tests failed');
@@ -161,7 +177,9 @@ describe('frontend-checks', () => {
 
       expect(result.failed).toBe(true);
       expect(result.output).toBe('Frontend check error: Invalid staged files structure');
-      expect(mockConsoleError).toHaveBeenCalledWith('❌ Frontend check error: Invalid staged files structure');
+      expect(mockConsoleError).toHaveBeenCalledWith(
+        '❌ Frontend check error: Invalid staged files structure'
+      );
       expect(mockRunApiE2eTests).not.toHaveBeenCalled();
     });
 

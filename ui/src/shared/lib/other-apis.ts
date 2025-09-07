@@ -66,7 +66,10 @@ export const permissionApi = {
     });
   },
 
-  async testPermission(action: string, resource: string): Promise<{ allowed: boolean; reason?: string }> {
+  async testPermission(
+    action: string,
+    resource: string
+  ): Promise<{ allowed: boolean; reason?: string }> {
     return apiRequest<{ allowed: boolean; reason?: string }>('/permissions/test', {
       method: 'POST',
       body: { action, resource },

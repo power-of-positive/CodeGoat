@@ -1,6 +1,10 @@
 import { render, screen } from '@testing-library/react';
 import LogEntryRow from '../LogEntryRow';
-import type { UnifiedLogEntry, ProcessStartPayload, NormalizedEntry } from '../../../../shared/types/logs';
+import type {
+  UnifiedLogEntry,
+  ProcessStartPayload,
+  NormalizedEntry,
+} from '../../../../shared/types/logs';
 
 const mockSetRowHeight = jest.fn();
 
@@ -17,11 +21,11 @@ describe('LogEntryRow', () => {
         processId: 'proc-1',
         processName: 'test-process',
         channel: 'stdout',
-        payload: 'Test stdout message'
+        payload: 'Test stdout message',
       };
 
       render(<LogEntryRow entry={entry} index={0} setRowHeight={mockSetRowHeight} />);
-      
+
       expect(screen.getByText('Test stdout message')).toBeInTheDocument();
     });
 
@@ -32,11 +36,11 @@ describe('LogEntryRow', () => {
         processId: 'proc-1',
         processName: 'test-process',
         channel: 'stderr',
-        payload: 'Test error message'
+        payload: 'Test error message',
       };
 
       render(<LogEntryRow entry={entry} index={0} setRowHeight={mockSetRowHeight} />);
-      
+
       expect(screen.getByText('Test error message')).toBeInTheDocument();
     });
 
@@ -45,7 +49,7 @@ describe('LogEntryRow', () => {
         runReason: 'codingagent',
         startedAt: '2024-01-01T12:30:45Z',
         status: 'running',
-        processId: 'proc-1'
+        processId: 'proc-1',
       };
 
       const entry: UnifiedLogEntry = {
@@ -54,11 +58,11 @@ describe('LogEntryRow', () => {
         processId: 'proc-1',
         processName: 'test-process',
         channel: 'process_start',
-        payload
+        payload,
       };
 
       render(<LogEntryRow entry={entry} index={0} setRowHeight={mockSetRowHeight} />);
-      
+
       expect(screen.getByText('Coding Agent')).toBeInTheDocument();
       expect(screen.getByText('running')).toBeInTheDocument();
     });
@@ -67,7 +71,7 @@ describe('LogEntryRow', () => {
       const normalizedEntry: NormalizedEntry = {
         timestamp: '2024-01-01T12:30:45Z',
         entry_type: { type: 'user_message' },
-        content: 'Test normalized message'
+        content: 'Test normalized message',
       };
 
       const entry: UnifiedLogEntry = {
@@ -76,11 +80,11 @@ describe('LogEntryRow', () => {
         processId: 'proc-1',
         processName: 'test-process',
         channel: 'normalized',
-        payload: normalizedEntry
+        payload: normalizedEntry,
       };
 
       render(<LogEntryRow entry={entry} index={0} setRowHeight={mockSetRowHeight} />);
-      
+
       expect(screen.getByText('Test normalized message')).toBeInTheDocument();
     });
 
@@ -91,11 +95,11 @@ describe('LogEntryRow', () => {
         processId: 'proc-1',
         processName: 'test-process',
         channel: 'unknown' as any,
-        payload: 'Some payload'
+        payload: 'Some payload',
       };
 
       render(<LogEntryRow entry={entry} index={0} setRowHeight={mockSetRowHeight} />);
-      
+
       expect(screen.getByText('Unknown log channel: unknown')).toBeInTheDocument();
     });
   });
@@ -103,26 +107,26 @@ describe('LogEntryRow', () => {
   describe('String entry handling', () => {
     it('should parse simple string entry', () => {
       const entry = 'Simple log message';
-      
+
       render(<LogEntryRow entry={entry} index={0} setRowHeight={mockSetRowHeight} />);
-      
+
       expect(screen.getByText('Simple log message')).toBeInTheDocument();
     });
 
     it('should parse entry with timestamp', () => {
       const entry = '10:30:45 AM Log message with timestamp';
-      
+
       render(<LogEntryRow entry={entry} index={0} setRowHeight={mockSetRowHeight} />);
-      
+
       expect(screen.getByText('10:30:45 AM')).toBeInTheDocument();
       expect(screen.getByText('Log message with timestamp')).toBeInTheDocument();
     });
 
     it('should parse entry with level', () => {
       const entry = '10:30:45 AM [ERROR] Error message';
-      
+
       render(<LogEntryRow entry={entry} index={0} setRowHeight={mockSetRowHeight} />);
-      
+
       expect(screen.getByText('10:30:45 AM')).toBeInTheDocument();
       expect(screen.getByText('ERROR')).toBeInTheDocument();
       expect(screen.getByText('Error message')).toBeInTheDocument();
@@ -130,9 +134,9 @@ describe('LogEntryRow', () => {
 
     it('should parse entry with prefix', () => {
       const entry = '10:30:45 AM STDOUT: Output message';
-      
+
       render(<LogEntryRow entry={entry} index={0} setRowHeight={mockSetRowHeight} />);
-      
+
       expect(screen.getByText('10:30:45 AM')).toBeInTheDocument();
       expect(screen.getByText('STDOUT:')).toBeInTheDocument();
       expect(screen.getByText('Output message')).toBeInTheDocument();
@@ -140,35 +144,35 @@ describe('LogEntryRow', () => {
 
     it('should parse structured log without timestamp', () => {
       const entry = '[INFO] Information message';
-      
+
       render(<LogEntryRow entry={entry} index={0} setRowHeight={mockSetRowHeight} />);
-      
+
       expect(screen.getByText('INFO')).toBeInTheDocument();
       expect(screen.getByText('Information message')).toBeInTheDocument();
     });
 
     it('should parse prefixed content without timestamp', () => {
       const entry = 'STDERR: Error output';
-      
+
       render(<LogEntryRow entry={entry} index={0} setRowHeight={mockSetRowHeight} />);
-      
+
       expect(screen.getByText('STDERR:')).toBeInTheDocument();
       expect(screen.getByText('Error output')).toBeInTheDocument();
     });
 
     it('should clean HTML entities', () => {
       const entry = 'Message with &quot;quotes&quot; and &amp; symbols';
-      
+
       render(<LogEntryRow entry={entry} index={0} setRowHeight={mockSetRowHeight} />);
-      
+
       expect(screen.getByText('Message with "quotes" and & symbols')).toBeInTheDocument();
     });
 
     it('should handle escaped characters', () => {
       const entry = 'Message with \\n newlines and \\" quotes';
-      
+
       render(<LogEntryRow entry={entry} index={0} setRowHeight={mockSetRowHeight} />);
-      
+
       expect(screen.getByText(/Message with.*newlines and.*quotes/)).toBeInTheDocument();
     });
   });
@@ -181,15 +185,15 @@ describe('LogEntryRow', () => {
       { level: 'warning', expectedClass: 'bg-yellow-600' },
       { level: 'INFO', expectedClass: 'bg-blue-600' },
       { level: 'DEBUG', expectedClass: 'bg-gray-600' },
-      { level: 'OTHER', expectedClass: 'bg-green-600' }
+      { level: 'OTHER', expectedClass: 'bg-green-600' },
     ];
 
     levels.forEach(({ level, expectedClass }) => {
       it(`should apply correct color for ${level} level`, () => {
         const entry = `[${level}] Test message`;
-        
+
         render(<LogEntryRow entry={entry} index={0} setRowHeight={mockSetRowHeight} />);
-        
+
         const levelElement = screen.getByText(level);
         expect(levelElement).toHaveClass(expectedClass);
       });
@@ -199,9 +203,9 @@ describe('LogEntryRow', () => {
   describe('Prefix handling', () => {
     it('should render STDERR prefix correctly', () => {
       const entry = 'STDERR: Error message';
-      
+
       render(<LogEntryRow entry={entry} index={0} setRowHeight={mockSetRowHeight} />);
-      
+
       // Check individual parts since they're in separate spans
       expect(screen.getByText('STDERR:')).toBeInTheDocument();
       expect(screen.getByText('Error message')).toBeInTheDocument();
@@ -209,9 +213,9 @@ describe('LogEntryRow', () => {
 
     it('should render STDOUT prefix correctly', () => {
       const entry = 'STDOUT: Output message';
-      
+
       render(<LogEntryRow entry={entry} index={0} setRowHeight={mockSetRowHeight} />);
-      
+
       // Check individual parts since they're in separate spans
       expect(screen.getByText('STDOUT:')).toBeInTheDocument();
       expect(screen.getByText('Output message')).toBeInTheDocument();
@@ -224,11 +228,11 @@ describe('LogEntryRow', () => {
         id: 'log-1',
         channel: 'stdout' as const,
         payload: 'Stdout message',
-        timestamp: '2024-01-01T12:30:45Z'
+        timestamp: '2024-01-01T12:30:45Z',
       };
 
       render(<LogEntryRow entry={entry} index={0} setRowHeight={mockSetRowHeight} />);
-      
+
       expect(screen.getByText('Stdout message')).toBeInTheDocument();
     });
 
@@ -237,11 +241,11 @@ describe('LogEntryRow', () => {
         id: 'log-2',
         channel: 'stderr' as const,
         payload: 'Error message',
-        timestamp: '2024-01-01T12:30:45Z'
+        timestamp: '2024-01-01T12:30:45Z',
       };
 
       render(<LogEntryRow entry={entry} index={0} setRowHeight={mockSetRowHeight} />);
-      
+
       expect(screen.getByText('Error message')).toBeInTheDocument();
     });
 
@@ -253,13 +257,13 @@ describe('LogEntryRow', () => {
           runReason: 'worker',
           startedAt: '2024-01-01T12:30:45Z',
           status: 'completed' as const,
-          processId: 'proc-123'
+          processId: 'proc-123',
         },
-        timestamp: '2024-01-01T12:30:45Z'
+        timestamp: '2024-01-01T12:30:45Z',
       };
 
       render(<LogEntryRow entry={entry} index={0} setRowHeight={mockSetRowHeight} />);
-      
+
       expect(screen.getByText('Claude Worker')).toBeInTheDocument();
       expect(screen.getByText('completed')).toBeInTheDocument();
     });
@@ -269,11 +273,11 @@ describe('LogEntryRow', () => {
         id: 'log-4',
         channel: 'info' as const,
         payload: 'Information message',
-        timestamp: '2024-01-01T12:30:45Z'
+        timestamp: '2024-01-01T12:30:45Z',
       };
 
       render(<LogEntryRow entry={entry} index={0} setRowHeight={mockSetRowHeight} />);
-      
+
       expect(screen.getByText('[INFO] Information message')).toBeInTheDocument();
     });
 
@@ -282,11 +286,11 @@ describe('LogEntryRow', () => {
         id: 'log-5',
         channel: 'error' as const,
         payload: 'Error occurred',
-        timestamp: '2024-01-01T12:30:45Z'
+        timestamp: '2024-01-01T12:30:45Z',
       };
 
       render(<LogEntryRow entry={entry} index={0} setRowHeight={mockSetRowHeight} />);
-      
+
       expect(screen.getByText('[ERROR] Error occurred')).toBeInTheDocument();
     });
 
@@ -295,11 +299,11 @@ describe('LogEntryRow', () => {
         id: 'log-6',
         channel: 'warn' as const,
         payload: 'Warning message',
-        timestamp: '2024-01-01T12:30:45Z'
+        timestamp: '2024-01-01T12:30:45Z',
       };
 
       render(<LogEntryRow entry={entry} index={0} setRowHeight={mockSetRowHeight} />);
-      
+
       expect(screen.getByText('[WARN] Warning message')).toBeInTheDocument();
     });
 
@@ -308,11 +312,11 @@ describe('LogEntryRow', () => {
         id: 'log-7',
         channel: 'debug' as const,
         payload: 'Debug message',
-        timestamp: '2024-01-01T12:30:45Z'
+        timestamp: '2024-01-01T12:30:45Z',
       };
 
       render(<LogEntryRow entry={entry} index={0} setRowHeight={mockSetRowHeight} />);
-      
+
       expect(screen.getByText('[DEBUG] Debug message')).toBeInTheDocument();
     });
 
@@ -321,11 +325,11 @@ describe('LogEntryRow', () => {
         id: 'log-8',
         channel: 'unknown' as any,
         payload: 'Unknown message',
-        timestamp: '2024-01-01T12:30:45Z'
+        timestamp: '2024-01-01T12:30:45Z',
       };
 
       render(<LogEntryRow entry={entry} index={0} setRowHeight={mockSetRowHeight} />);
-      
+
       expect(screen.getByText('Unknown log type: unknown')).toBeInTheDocument();
     });
   });
@@ -333,18 +337,18 @@ describe('LogEntryRow', () => {
   describe('Content handling', () => {
     it('should display log content properly', () => {
       const entry = 'Simple log message';
-      
+
       render(<LogEntryRow entry={entry} index={0} setRowHeight={mockSetRowHeight} />);
-      
+
       expect(screen.getByText('Simple log message')).toBeInTheDocument();
     });
 
     it('should handle complex content gracefully', () => {
       const complexContent = 'Message with {"json": "content"} embedded';
       const entry = `Info: ${complexContent}`;
-      
+
       render(<LogEntryRow entry={entry} index={0} setRowHeight={mockSetRowHeight} />);
-      
+
       expect(screen.getByText(/Message with.*json.*content/)).toBeInTheDocument();
     });
   });
@@ -365,7 +369,9 @@ describe('LogEntryRow', () => {
     it('should detect assistant messages', () => {
       const entry = 'assistant: Hello, this is an assistant response';
       render(<LogEntryRow entry={entry} index={0} setRowHeight={mockSetRowHeight} />);
-      expect(screen.getByText('assistant: Hello, this is an assistant response')).toBeInTheDocument();
+      expect(
+        screen.getByText('assistant: Hello, this is an assistant response')
+      ).toBeInTheDocument();
     });
 
     it('should detect assistant messages with emoji', () => {
@@ -444,25 +450,33 @@ describe('LogEntryRow', () => {
   describe('Skip filtered entries', () => {
     it('should skip suggestion entries', () => {
       const entry = '💡 Suggestion: use better variable names';
-      const { container } = render(<LogEntryRow entry={entry} index={0} setRowHeight={mockSetRowHeight} />);
+      const { container } = render(
+        <LogEntryRow entry={entry} index={0} setRowHeight={mockSetRowHeight} />
+      );
       expect(container.firstChild).toBeNull();
     });
 
     it('should skip target entries', () => {
       const entry = 'Target: optimize performance';
-      const { container } = render(<LogEntryRow entry={entry} index={0} setRowHeight={mockSetRowHeight} />);
+      const { container } = render(
+        <LogEntryRow entry={entry} index={0} setRowHeight={mockSetRowHeight} />
+      );
       expect(container.firstChild).toBeNull();
     });
 
     it('should skip action entries', () => {
       const entry = 'Action: refactor code';
-      const { container } = render(<LogEntryRow entry={entry} index={0} setRowHeight={mockSetRowHeight} />);
+      const { container } = render(
+        <LogEntryRow entry={entry} index={0} setRowHeight={mockSetRowHeight} />
+      );
       expect(container.firstChild).toBeNull();
     });
 
     it('should skip command warning entries', () => {
       const entry = '⚠️  COMMAND WARNING: dangerous operation';
-      const { container } = render(<LogEntryRow entry={entry} index={0} setRowHeight={mockSetRowHeight} />);
+      const { container } = render(
+        <LogEntryRow entry={entry} index={0} setRowHeight={mockSetRowHeight} />
+      );
       expect(container.firstChild).toBeNull();
     });
   });
@@ -470,7 +484,7 @@ describe('LogEntryRow', () => {
   describe('JSON content extraction', () => {
     it('should extract content from JSON response object', () => {
       const jsonContent = JSON.stringify({
-        content: 'Extracted content from JSON'
+        content: 'Extracted content from JSON',
       });
       render(<LogEntryRow entry={jsonContent} index={0} setRowHeight={mockSetRowHeight} />);
       expect(screen.getByText('Extracted content from JSON')).toBeInTheDocument();
@@ -478,7 +492,7 @@ describe('LogEntryRow', () => {
 
     it('should extract content from array content', () => {
       const jsonContent = JSON.stringify({
-        content: [{ text: 'First item' }, { text: 'Second item' }]
+        content: [{ text: 'First item' }, { text: 'Second item' }],
       });
       render(<LogEntryRow entry={jsonContent} index={0} setRowHeight={mockSetRowHeight} />);
       expect(screen.getByText(/First item.*Second item/s)).toBeInTheDocument();
@@ -486,7 +500,7 @@ describe('LogEntryRow', () => {
 
     it('should extract from data.content field', () => {
       const jsonContent = JSON.stringify({
-        data: { content: 'Data content field' }
+        data: { content: 'Data content field' },
       });
       render(<LogEntryRow entry={jsonContent} index={0} setRowHeight={mockSetRowHeight} />);
       expect(screen.getByText('Data content field')).toBeInTheDocument();
@@ -495,7 +509,7 @@ describe('LogEntryRow', () => {
     it('should handle tool messages', () => {
       const jsonContent = JSON.stringify({
         tool_name: 'Read',
-        parameters: { file: 'test.txt' }
+        parameters: { file: 'test.txt' },
       });
       render(<LogEntryRow entry={jsonContent} index={0} setRowHeight={mockSetRowHeight} />);
       expect(screen.getByText(/🔧 Read:/)).toBeInTheDocument();
@@ -504,7 +518,7 @@ describe('LogEntryRow', () => {
     it('should handle status messages', () => {
       const jsonContent = JSON.stringify({
         status: 'completed',
-        message: 'Task finished'
+        message: 'Task finished',
       });
       render(<LogEntryRow entry={jsonContent} index={0} setRowHeight={mockSetRowHeight} />);
       expect(screen.getByText('completed: Task finished')).toBeInTheDocument();
@@ -512,7 +526,7 @@ describe('LogEntryRow', () => {
 
     it('should handle error objects with string error', () => {
       const jsonContent = JSON.stringify({
-        error: 'Something went wrong'
+        error: 'Something went wrong',
       });
       render(<LogEntryRow entry={jsonContent} index={0} setRowHeight={mockSetRowHeight} />);
       expect(screen.getByText('❌ Error: Something went wrong')).toBeInTheDocument();
@@ -520,7 +534,7 @@ describe('LogEntryRow', () => {
 
     it('should handle error objects with error.message', () => {
       const jsonContent = JSON.stringify({
-        error: { message: 'Detailed error message' }
+        error: { message: 'Detailed error message' },
       });
       render(<LogEntryRow entry={jsonContent} index={0} setRowHeight={mockSetRowHeight} />);
       expect(screen.getByText('❌ Error: Detailed error message')).toBeInTheDocument();
@@ -561,7 +575,7 @@ describe('LogEntryRow', () => {
         processId: 'proc-1',
         processName: 'test-process',
         channel: 'stdout',
-        payload: 'Message with ts field'
+        payload: 'Message with ts field',
       };
 
       render(<LogEntryRow entry={entry} index={0} setRowHeight={mockSetRowHeight} />);
@@ -573,11 +587,11 @@ describe('LogEntryRow', () => {
     it('should apply style when provided', () => {
       const entry = 'Test message';
       const style = { color: 'red', fontSize: '14px' };
-      
+
       const { container } = render(
         <LogEntryRow entry={entry} index={0} setRowHeight={mockSetRowHeight} style={style} />
       );
-      
+
       const styledDiv = container.firstChild as HTMLElement;
       expect(styledDiv.style.color).toBe('red');
       expect(styledDiv.style.fontSize).toBe('14px');
@@ -585,11 +599,11 @@ describe('LogEntryRow', () => {
 
     it('should not apply style wrapper when not provided', () => {
       const entry = 'Test message';
-      
+
       const { container } = render(
         <LogEntryRow entry={entry} index={0} setRowHeight={mockSetRowHeight} />
       );
-      
+
       // Should not have a wrapper div with inline styles
       expect(container.firstChild).toHaveClass('px-3');
     });
@@ -598,16 +612,14 @@ describe('LogEntryRow', () => {
   describe('Row height callback', () => {
     it('should call setRowHeight when component mounts', () => {
       const entry = 'Test message';
-      
+
       render(<LogEntryRow entry={entry} index={5} setRowHeight={mockSetRowHeight} />);
-      
+
       expect(mockSetRowHeight).toHaveBeenCalledWith(5, expect.any(Number));
     });
   });
 
-
   it('should be memoized for performance', () => {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const MemoizedLogEntryRow = require('../LogEntryRow').default;
     expect(MemoizedLogEntryRow.$$typeof).toBe(Symbol.for('react.memo'));
   });

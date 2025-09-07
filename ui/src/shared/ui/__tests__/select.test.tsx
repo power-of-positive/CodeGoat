@@ -86,11 +86,7 @@ describe('Select Components', () => {
 
     it('should apply custom className', () => {
       render(
-        <Select
-          value=""
-          onValueChange={mockOnValueChange}
-          className="custom-select"
-        >
+        <Select value="" onValueChange={mockOnValueChange} className="custom-select">
           <SelectTrigger>
             <SelectValue placeholder="Select" />
           </SelectTrigger>

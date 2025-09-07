@@ -5,6 +5,7 @@ module.exports = {
   testPathIgnorePatterns: [
     'node_modules',
     '<rootDir>/src/__tests__/payload-limits.test.ts', // Integration test, not unit test
+    '<rootDir>/src/__tests__/scripts/', // Script tests, not unit tests
   ],
   transform: {
     '^.+\\.ts$': 'ts-jest',

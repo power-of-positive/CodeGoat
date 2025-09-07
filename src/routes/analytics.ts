@@ -1,6 +1,8 @@
 import { Router, Request, Response } from 'express';
 import { ILogger } from '../logger-interface';
 import { AnalyticsService } from '../services/analytics.service';
+import { StageConsolidationService } from '../services/stage-consolidation.service';
+import { getDatabaseService } from '../services/database';
 
 // HTTP Status Code Constants
 const HTTP_STATUS_CREATED = 201;
@@ -117,7 +119,9 @@ function recordAttempt(analyticsService: AnalyticsService, logger: ILogger) {
         res.status(HTTP_STATUS_NOT_FOUND).json({ error: 'Session not found' });
       } else {
         logger.error('Failed to record validation attempt', error as Error);
-        res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).json({ error: 'Failed to record validation attempt' });
+        res
+          .status(HTTP_STATUS_INTERNAL_SERVER_ERROR)
+          .json({ error: 'Failed to record validation attempt' });
       }
     }
   };
@@ -164,7 +168,9 @@ function getStageStatistics(analyticsService: AnalyticsService, logger: ILogger)
       res.json({ stageId, statistics });
     } catch (error) {
       logger.error('Failed to get stage statistics', error as Error);
-      res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).json({ error: 'Failed to get stage statistics' });
+      res
+        .status(HTTP_STATUS_INTERNAL_SERVER_ERROR)
+        .json({ error: 'Failed to get stage statistics' });
     }
   };
 }
@@ -179,7 +185,9 @@ function getValidationRuns(analyticsService: AnalyticsService, logger: ILogger) 
       res.json({ validationRuns });
     } catch (error) {
       logger.error('Failed to get validation runs', error as Error);
-      res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).json({ error: 'Failed to get validation runs' });
+      res
+        .status(HTTP_STATUS_INTERNAL_SERVER_ERROR)
+        .json({ error: 'Failed to get validation runs' });
     }
   };
 }
@@ -193,7 +201,9 @@ function getValidationStatistics(analyticsService: AnalyticsService, logger: ILo
       res.json({ statistics });
     } catch (error) {
       logger.error('Failed to get validation statistics', error as Error);
-      res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).json({ error: 'Failed to get validation statistics' });
+      res
+        .status(HTTP_STATUS_INTERNAL_SERVER_ERROR)
+        .json({ error: 'Failed to get validation statistics' });
     }
   };
 }
@@ -217,6 +227,115 @@ export function createAnalyticsRoutes(logger: ILogger): Router {
   // Database-based validation runs and statistics
   router.get('/validation-runs', getValidationRuns(analyticsService, logger));
   router.get('/validation-statistics', getValidationStatistics(analyticsService, logger));
+
+  // Add validation-metrics endpoint for the Analytics page with stage consolidation
+  router.get('/validation-metrics', async (req: Request, res: Response) => {
+    try {
+      // Get validation runs from database (no limit to get all runs)
+      const runs = await analyticsService.getValidationRuns();
+
+      // Calculate statistics from runs
+      const totalRuns = runs.length;
+      const successfulRuns = runs.filter((r: any) => r.success).length;
+      const successRate = totalRuns > 0 ? (successfulRuns / totalRuns) * 100 : 0;
+
+      // Calculate average duration
+      const totalDuration = runs.reduce((sum: number, r: any) => sum + (r.totalTime || 0), 0);
+      const averageDuration = totalRuns > 0 ? totalDuration / totalRuns : 0;
+
+      // Initialize stage consolidation service
+      const stageConsolidationService = new StageConsolidationService();
+
+      // Get validation stage configurations to show all available stages
+      const dbStageConfigs = await getDatabaseService().validationStageConfig.findMany({
+        orderBy: { priority: 'asc' },
+      });
+
+      // Transform database results to match ValidationStageConfig type
+      const stageConfigs = dbStageConfigs.map(config => ({
+        stageId: config.stageId,
+        name: config.name,
+        enabled: config.enabled,
+        priority: config.priority,
+        command: config.command,
+        timeout: config.timeout,
+        continueOnFailure: config.continueOnFailure,
+        description: config.description || undefined,
+        environment: config.environment,
+        category: config.category,
+      }));
+
+      const consolidatedStageConfigs = stageConsolidationService.consolidateStages(stageConfigs);
+
+      // Collect historical stage statistics if any runs exist
+      const stageStatsMap = new Map();
+
+      if (runs.length > 0) {
+        runs.forEach((run: any) => {
+          if (run.stages) {
+            run.stages.forEach((stage: any) => {
+              const key = `${stage.stageName}_${stage.stageId || stage.name}`;
+              if (!stageStatsMap.has(key)) {
+                stageStatsMap.set(key, {
+                  stageName: stage.stageName || stage.name,
+                  stageId: stage.stageId || stage.name.toLowerCase().replace(/\s+/g, '-'),
+                  totalRuns: 0,
+                  successCount: 0,
+                  totalDuration: 0,
+                });
+              }
+              const stats = stageStatsMap.get(key);
+              stats.totalRuns++;
+              if (stage.success) stats.successCount++;
+              stats.totalDuration += stage.duration || 0;
+            });
+          }
+        });
+      }
+
+      // Convert historical stats to array and apply consolidation
+      const rawStats = Array.from(stageStatsMap.values());
+      const consolidatedHistoricalStats = stageConsolidationService.mergeStageStatistics(rawStats);
+
+      // Create a lookup map for historical stats
+      const historicalStatsMap = new Map();
+      consolidatedHistoricalStats.forEach(stat => {
+        historicalStatsMap.set(stat.stageName, stat);
+      });
+
+      // Build stages list showing all consolidated stages (with or without historical data)
+      const stages = consolidatedStageConfigs.map(stageConfig => {
+        const historical = historicalStatsMap.get(stageConfig.name);
+
+        return {
+          stageName: stageConfig.name,
+          totalRuns: historical?.totalRuns || 0,
+          successRate: historical?.successRate || 0,
+          averageDuration: historical?.averageDuration || 0,
+          recentTrend: 'stable' as const,
+          enabled: stageConfig.enabled,
+        };
+      });
+
+      const metrics = {
+        totalRuns,
+        successRate,
+        averageDuration,
+        stages,
+        recentRuns: runs.slice(0, 5),
+      };
+
+      logger.info(
+        `Validation metrics: ${totalRuns} runs, ${stages.length} consolidated stages (${consolidatedStageConfigs.length} available)`
+      );
+      res.json(metrics);
+    } catch (error) {
+      logger.error('Failed to get validation metrics', error as Error);
+      res
+        .status(HTTP_STATUS_INTERNAL_SERVER_ERROR)
+        .json({ error: 'Failed to get validation metrics' });
+    }
+  });
 
   return router;
 }

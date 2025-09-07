@@ -5,7 +5,9 @@ import { StatsCard } from './BDDStatsCard';
 
 // Mock icon component
 const MockIcon = ({ className }: { className?: string }) => (
-  <div className={className} data-testid="mock-icon">Icon</div>
+  <div className={className} data-testid="mock-icon">
+    Icon
+  </div>
 );
 
 describe('StatsCard', () => {
@@ -13,7 +15,7 @@ describe('StatsCard', () => {
     title: 'Test Title',
     count: 42,
     icon: MockIcon,
-    testId: 'test-count'
+    testId: 'test-count',
   };
 
   it('renders the title correctly', () => {
@@ -71,18 +73,20 @@ describe('StatsCard', () => {
 
   it('renders card structure correctly', () => {
     const { container } = render(<StatsCard {...defaultProps} />);
-    
+
     // Check for card elements
     const cardContent = container.querySelector('.p-4');
     expect(cardContent).toBeInTheDocument();
-    
+
     const flexContainer = container.querySelector('.flex.items-center.justify-between');
     expect(flexContainer).toBeInTheDocument();
   });
 
   it('renders with custom icon component', () => {
     const CustomIcon = ({ className }: { className?: string }) => (
-      <span className={className} data-testid="custom-icon">★</span>
+      <span className={className} data-testid="custom-icon">
+        ★
+      </span>
     );
 
     render(<StatsCard {...defaultProps} icon={CustomIcon} />);

@@ -2,7 +2,6 @@
  * Tests for precommit-handler.ts
  */
 
-
 import * as fs from 'fs';
 import * as path from 'path';
 import { runPrecommitChecks, PrecommitResult } from './precommit-handler';

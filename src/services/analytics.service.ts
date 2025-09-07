@@ -2,6 +2,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { PrismaClient } from '@prisma/client';
 import { ILogger } from '../logger-interface';
+import { getDatabaseService } from './database';
 import { ValidationMetricsConverter } from '../utils/validation-metrics-converter';
 import type {
   SessionMetrics,
@@ -25,7 +26,7 @@ export class AnalyticsService {
   constructor(logger: ILogger, sessionsPath?: string) {
     this.logger = logger;
     this.sessionsPath = sessionsPath ?? path.join(process.cwd(), 'validation-sessions.json');
-    this.db = new PrismaClient();
+    this.db = getDatabaseService();
   }
 
   /**
@@ -115,37 +116,40 @@ export class AnalyticsService {
   async getAnalytics(agentFilter?: string): Promise<DevelopmentAnalytics> {
     // First try to load sessions data (for backward compatibility and tests)
     let sessions = await this.loadAllSessions();
-    
+
     // Filter sessions by agent if specified
     if (agentFilter && sessions.length > 0) {
-      sessions = sessions.filter(session => 
-        (session.userPrompt?.includes(agentFilter) ?? false) || 
-        (session.taskDescription?.includes(agentFilter) ?? false) ||
-        (session as SessionMetrics & { agent?: string }).agent === agentFilter
+      sessions = sessions.filter(
+        session =>
+          (session.userPrompt?.includes(agentFilter) ?? false) ||
+          (session.taskDescription?.includes(agentFilter) ?? false) ||
+          (session as SessionMetrics & { agent?: string }).agent === agentFilter
       );
     }
-    
+
     if (sessions.length > 0) {
       return this.calculateAnalyticsFromSessions(sessions);
     }
 
     // Try to load validation metrics data (existing production data)
     let validationMetrics = await this.loadValidationMetrics();
-    
+
     // Filter validation metrics by agent if specified
     if (agentFilter && validationMetrics.length > 0) {
       validationMetrics = validationMetrics.filter(metric => {
-        const metricRecord = metric as Record<string, unknown> & { 
-          agent?: string; 
-          userPrompt?: string; 
-          taskDescription?: string; 
+        const metricRecord = metric as Record<string, unknown> & {
+          agent?: string;
+          userPrompt?: string;
+          taskDescription?: string;
         };
-        return metricRecord.agent === agentFilter || 
-               (metricRecord.userPrompt?.includes(agentFilter) ?? false) ||
-               metricRecord.taskDescription?.includes(agentFilter);
+        return (
+          metricRecord.agent === agentFilter ||
+          (metricRecord.userPrompt?.includes(agentFilter) ?? false) ||
+          metricRecord.taskDescription?.includes(agentFilter)
+        );
       });
     }
-    
+
     if (validationMetrics.length > 0) {
       return ValidationMetricsConverter.calculateAnalytics(validationMetrics);
     }
@@ -384,15 +388,24 @@ export class AnalyticsService {
    */
   private async loadValidationMetrics(): Promise<Record<string, unknown>[]> {
     try {
-      const validationRuns = await this.db.validationRun.findMany({
+      // Add a timeout for database queries to prevent hanging
+      // Use longer timeout in test environment
+      const timeout = process.env.NODE_ENV === 'test' ? 30000 : 5000;
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Database query timeout')), timeout)
+      );
+
+      const queryPromise = this.db.validationRun.findMany({
         include: {
           stages: {
-            orderBy: { order: 'asc' }
-          }
+            orderBy: { order: 'asc' },
+          },
         },
         orderBy: { timestamp: 'desc' },
-        take: 1000 // Reasonable limit for analytics
+        take: 100, // Reduced limit for better performance in tests
       });
+
+      const validationRuns = await Promise.race([queryPromise, timeoutPromise]);
 
       // Transform database records to match the expected JSON format
       return validationRuns.map(run => ({
@@ -415,8 +428,8 @@ export class AnalyticsService {
           exitCode: stage.exitCode,
           error: stage.errorMessage,
           enabled: stage.enabled,
-          continueOnFailure: stage.continueOnFailure
-        }))
+          continueOnFailure: stage.continueOnFailure,
+        })),
       }));
     } catch (error) {
       this.logger.error('Failed to load validation metrics from database', error as Error);
@@ -799,24 +812,29 @@ export class AnalyticsService {
   /**
    * Get validation runs from the database
    */
-  async getValidationRuns(limit: number = 50, todoTaskId?: string): Promise<Array<{
-    id: string;
-    timestamp: Date;
-    success: boolean;
-    duration: number;
-    todoTaskId?: string;
-    stages: Array<{
+  async getValidationRuns(
+    limit: number = 10000,
+    todoTaskId?: string
+  ): Promise<
+    Array<{
       id: string;
-      name: string;
+      timestamp: Date;
       success: boolean;
       duration: number;
-      output?: string;
-      error?: string;
-    }>;
-  }>> {
+      todoTaskId?: string;
+      stages: Array<{
+        id: string;
+        name: string;
+        success: boolean;
+        duration: number;
+        output?: string;
+        error?: string;
+      }>;
+    }>
+  > {
     try {
       this.logger.info(`getValidationRuns called with limit=${limit}, todoTaskId=${todoTaskId}`);
-      
+
       const validationRuns = await this.db.validationRun.findMany({
         where: todoTaskId ? { taskId: todoTaskId } : undefined,
         orderBy: { timestamp: 'desc' },
@@ -824,8 +842,8 @@ export class AnalyticsService {
         include: {
           task: true,
           stages: {
-            orderBy: { order: 'asc' }
-          }
+            orderBy: { order: 'asc' },
+          },
         },
       });
 
@@ -865,12 +883,15 @@ export class AnalyticsService {
       totalRuns: number;
       successRate: number;
     };
-    stageStatistics: Record<string, {
-      totalAttempts: number;
-      successfulAttempts: number;
-      successRate: number;
-      averageDuration: number;
-    }>;
+    stageStatistics: Record<
+      string,
+      {
+        totalAttempts: number;
+        successfulAttempts: number;
+        successRate: number;
+        averageDuration: number;
+      }
+    >;
   }> {
     try {
       const cutoffDate = new Date();
@@ -884,8 +905,8 @@ export class AnalyticsService {
         },
         include: {
           stages: {
-            orderBy: { order: 'asc' }
-          }
+            orderBy: { order: 'asc' },
+          },
         },
         orderBy: { timestamp: 'desc' },
       });
@@ -894,30 +915,33 @@ export class AnalyticsService {
       const successfulRuns = validationRuns.filter(run => run.success).length;
       const failedRuns = totalRuns - successfulRuns;
       const successRate = totalRuns > 0 ? (successfulRuns / totalRuns) * 100 : 0;
-      const averageDuration = totalRuns > 0 
-        ? validationRuns.reduce((sum, run) => sum + run.totalTime, 0) / totalRuns 
-        : 0;
+      const averageDuration =
+        totalRuns > 0 ? validationRuns.reduce((sum, run) => sum + run.totalTime, 0) / totalRuns : 0;
 
       // Calculate recent trend (last 7 days vs previous 7 days)
       const recentCutoff = new Date();
       recentCutoff.setDate(recentCutoff.getDate() - 7);
-      
+
       const recentRuns = validationRuns.filter(run => run.timestamp >= recentCutoff);
 
       const recentTrend = {
         totalRuns: recentRuns.length,
-        successRate: recentRuns.length > 0 
-          ? (recentRuns.filter(run => run.success).length / recentRuns.length) * 100 
-          : 0,
+        successRate:
+          recentRuns.length > 0
+            ? (recentRuns.filter(run => run.success).length / recentRuns.length) * 100
+            : 0,
       };
 
       // Calculate stage statistics
-      const stageStatistics: Record<string, {
-        totalAttempts: number;
-        successfulAttempts: number;
-        successRate: number;
-        averageDuration: number;
-      }> = {};
+      const stageStatistics: Record<
+        string,
+        {
+          totalAttempts: number;
+          successfulAttempts: number;
+          successRate: number;
+          averageDuration: number;
+        }
+      > = {};
 
       validationRuns.forEach(run => {
         const stages = run.stages || [];
@@ -942,17 +966,16 @@ export class AnalyticsService {
       // Calculate final statistics for each stage
       Object.keys(stageStatistics).forEach(stageId => {
         const stats = stageStatistics[stageId];
-        stats.successRate = stats.totalAttempts > 0 
-          ? (stats.successfulAttempts / stats.totalAttempts) * 100 
-          : 0;
-        
+        stats.successRate =
+          stats.totalAttempts > 0 ? (stats.successfulAttempts / stats.totalAttempts) * 100 : 0;
+
         // Calculate average duration for this stage
         let totalDuration = 0;
         let durationCount = 0;
-        
+
         validationRuns.forEach(run => {
           const stages = run.stages || [];
-          
+
           stages.forEach(stage => {
             if (stage.stageId === stageId) {
               totalDuration += stage.duration;

@@ -1,15 +1,7 @@
 import React from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  ArrowLeft,
-  CheckCircle,
-  Play,
-  AlertCircle,
-  Activity,
-  GitMerge,
-  Edit,
-} from 'lucide-react';
+import { ArrowLeft, CheckCircle, Play, AlertCircle, Activity, GitMerge, Edit } from 'lucide-react';
 import { Button } from '../../../shared/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../shared/ui/card';
 import { Badge } from '../../../shared/ui/badge';
@@ -66,29 +58,22 @@ function useTaskData(taskId: string | undefined) {
   });
 
   const createScenarioMutation = useMutation({
-    mutationFn: (scenario: Omit<BDDScenario, 'id'>) =>
-      taskApi.addScenario(taskId!, scenario),
+    mutationFn: (scenario: Omit<BDDScenario, 'id'>) => taskApi.addScenario(taskId!, scenario),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['task', taskId] });
     },
   });
 
   const updateScenarioMutation = useMutation({
-    mutationFn: ({
-      id,
-      scenario,
-    }: {
-      id: string;
-      scenario: Partial<BDDScenario>;
-    }) => taskApi.updateTaskScenario(taskId!, id, scenario),
+    mutationFn: ({ id, scenario }: { id: string; scenario: Partial<BDDScenario> }) =>
+      taskApi.updateTaskScenario(taskId!, id, scenario),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['task', taskId] });
     },
   });
 
   const deleteScenarioMutation = useMutation({
-    mutationFn: (scenarioId: string) =>
-      taskApi.deleteTaskScenario(taskId!, scenarioId),
+    mutationFn: (scenarioId: string) => taskApi.deleteTaskScenario(taskId!, scenarioId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['task', taskId] });
     },
@@ -122,7 +107,12 @@ function useMergeChanges(taskId: string | undefined, task: Task | undefined) {
 }
 
 // Task header component
-function TaskHeader({ navigate, task, mergeChangesMutation, completeTaskMutation }: {
+function TaskHeader({
+  navigate,
+  task,
+  mergeChangesMutation,
+  completeTaskMutation,
+}: {
   navigate: (path: string) => void;
   task: Task;
   mergeChangesMutation: {
@@ -137,11 +127,7 @@ function TaskHeader({ navigate, task, mergeChangesMutation, completeTaskMutation
   return (
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-3">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => navigate('/tasks')}
-        >
+        <Button variant="outline" size="sm" onClick={() => navigate('/tasks')}>
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Tasks
         </Button>
@@ -189,8 +175,7 @@ function TaskHeader({ navigate, task, mergeChangesMutation, completeTaskMutation
 
 // Task information component
 function TaskInformation({ task }: { task: Task }) {
-  const StatusIcon =
-    statusConfig[task.status as keyof typeof statusConfig]?.icon || AlertCircle;
+  const StatusIcon = statusConfig[task.status as keyof typeof statusConfig]?.icon || AlertCircle;
 
   return (
     <Card>
@@ -214,9 +199,7 @@ function TaskInformation({ task }: { task: Task }) {
       </CardHeader>
       <CardContent className="space-y-4">
         <div>
-          <div className="text-sm font-medium text-gray-700 mb-1">
-            Description
-          </div>
+          <div className="text-sm font-medium text-gray-700 mb-1">Description</div>
           <p className="text-gray-900 leading-relaxed">{task.content}</p>
         </div>
         <TaskMetadata task={task} />
@@ -237,28 +220,20 @@ function TaskMetadata({ task }: { task: Task }) {
       {task.startTime && (
         <div>
           <div className="text-sm font-medium text-gray-700">Started</div>
-          <div className="text-sm text-gray-600">
-            {new Date(task.startTime).toLocaleString()}
-          </div>
+          <div className="text-sm text-gray-600">{new Date(task.startTime).toLocaleString()}</div>
         </div>
       )}
 
       {task.endTime && (
         <div>
-          <div className="text-sm font-medium text-gray-700">
-            Completed
-          </div>
-          <div className="text-sm text-gray-600">
-            {new Date(task.endTime).toLocaleString()}
-          </div>
+          <div className="text-sm font-medium text-gray-700">Completed</div>
+          <div className="text-sm text-gray-600">{new Date(task.endTime).toLocaleString()}</div>
         </div>
       )}
 
       {task.duration && (
         <div>
-          <div className="text-sm font-medium text-gray-700">
-            Duration
-          </div>
+          <div className="text-sm font-medium text-gray-700">Duration</div>
           <div className="text-sm text-gray-600">{task.duration}</div>
         </div>
       )}
@@ -267,7 +242,11 @@ function TaskMetadata({ task }: { task: Task }) {
 }
 
 // BDD scenarios section component
-function BDDScenariosSection({ taskId, task, scenarioHandlers }: {
+function BDDScenariosSection({
+  taskId,
+  task,
+  scenarioHandlers,
+}: {
   taskId: string;
   task: Task;
   scenarioHandlers: {
@@ -293,9 +272,7 @@ function BDDScenariosSection({ taskId, task, scenarioHandlers }: {
 }
 
 // Validation runs section component
-function ValidationRunsSection({ validationRuns }: {
-  validationRuns: ValidationRunData[];
-}) {
+function ValidationRunsSection({ validationRuns }: { validationRuns: ValidationRunData[] }) {
   return (
     <Card>
       <CardHeader>
@@ -311,12 +288,10 @@ function ValidationRunsSection({ validationRuns }: {
         {validationRuns.length === 0 ? (
           <div className="text-center py-12">
             <Activity className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              No Validation Runs
-            </h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No Validation Runs</h3>
             <p className="text-gray-600">
-              This task hasn't had any validation runs yet. Validation runs
-              will appear here when the task is validated.
+              This task hasn't had any validation runs yet. Validation runs will appear here when
+              the task is validated.
             </p>
           </div>
         ) : (
@@ -337,9 +312,7 @@ function TaskNotFound({ navigate }: { navigate: (path: string) => void }) {
     <div className="flex items-center justify-center min-h-96">
       <div className="text-center">
         <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-        <h2 className="text-xl font-semibold text-gray-900 mb-2">
-          Task Not Found
-        </h2>
+        <h2 className="text-xl font-semibold text-gray-900 mb-2">Task Not Found</h2>
         <p className="text-gray-600 mb-4">
           The task you're looking for doesn't exist or has been deleted.
         </p>
@@ -374,7 +347,7 @@ export function TaskDetail() {
       queryClient.invalidateQueries({ queryKey: ['task', taskId] });
       alert('✅ Task marked as completed!');
     },
-    onError: (error) => {
+    onError: error => {
       console.error('Failed to complete task:', error);
       alert('❌ Failed to complete task. Please check the console for details.');
     },
@@ -405,12 +378,17 @@ export function TaskDetail() {
     success: run.success,
     duration: run.duration,
     timestamp: run.timestamp,
-    stages: run.stages?.map(s => s.name).join(', '),
+    stages: Array.isArray(run.stages) ? run.stages.map(s => s.name).join(', ') : run.stages,
   }));
 
   return (
     <div className="p-6 space-y-6">
-      <TaskHeader navigate={navigate} task={task} mergeChangesMutation={mergeChangesMutation} completeTaskMutation={completeTaskMutation} />
+      <TaskHeader
+        navigate={navigate}
+        task={task}
+        mergeChangesMutation={mergeChangesMutation}
+        completeTaskMutation={completeTaskMutation}
+      />
       <TaskInformation task={task} />
       <TaskLogs executorId={task.executorId} />
       {task.executorId && <WorkerInfo executorId={task.executorId} />}

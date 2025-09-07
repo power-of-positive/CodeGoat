@@ -2,6 +2,7 @@ import { SettingsService } from '../src/services/settings.service';
 import { AnalyticsService } from '../src/services/analytics.service';
 import { ValidationStage } from '../src/types/settings.types';
 import { ILogger } from '../src/logger-interface';
+import { createDatabaseService } from '../src/services/database';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -33,7 +34,11 @@ describe('Validation Analytics Integration Tests', () => {
       error: jest.fn(),
       warn: jest.fn(),
       debug: jest.fn(),
-    };
+      middleware: jest.fn().mockReturnValue((_req: any, _res: any, next: any) => next()),
+    } as any;
+
+    // Initialize database service
+    createDatabaseService(mockLogger as any);
 
     settingsService = new SettingsService(mockLogger, testSettingsPath);
     analyticsService = new AnalyticsService(mockLogger, testSessionsPath);

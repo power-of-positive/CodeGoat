@@ -15,7 +15,9 @@ const mockedFs = fs as jest.Mocked<typeof fs>;
 
 // Mock ValidationMetricsConverter
 jest.mock('../../utils/validation-metrics-converter');
-const mockValidationMetricsConverter = ValidationMetricsConverter as jest.Mocked<typeof ValidationMetricsConverter>;
+const mockValidationMetricsConverter = ValidationMetricsConverter as jest.Mocked<
+  typeof ValidationMetricsConverter
+>;
 
 // Mock PrismaClient
 jest.mock('@prisma/client');
@@ -25,6 +27,12 @@ const mockPrismaClient = {
   },
   $disconnect: jest.fn(),
 };
+
+// Mock database service
+jest.mock('../../services/database', () => ({
+  getDatabaseService: jest.fn().mockImplementation(() => mockPrismaClient),
+  createDatabaseService: jest.fn().mockImplementation(() => mockPrismaClient),
+}));
 
 describe('AnalyticsService', () => {
   let analyticsService: AnalyticsService;
@@ -545,18 +553,18 @@ describe('AnalyticsService', () => {
               duration: 2000,
               output: 'All good',
               errorMessage: null,
-              order: 1
-            }
-          ]
-        }
+              order: 1,
+            },
+          ],
+        },
       ];
 
       // Mock Prisma client
       const mockPrismaClient = {
         validationRun: {
-          findMany: jest.fn().mockResolvedValue(mockRuns)
+          findMany: jest.fn().mockResolvedValue(mockRuns),
         },
-        $disconnect: jest.fn()
+        $disconnect: jest.fn(),
       };
 
       // Replace the db instance
@@ -582,17 +590,17 @@ describe('AnalyticsService', () => {
               stageName: 'Lint',
               success: true,
               duration: 2000,
-              order: 1
-            }
-          ]
-        }
+              order: 1,
+            },
+          ],
+        },
       ];
 
       const mockPrismaClient = {
         validationRun: {
-          findMany: jest.fn().mockResolvedValue(mockRuns)
+          findMany: jest.fn().mockResolvedValue(mockRuns),
         },
-        $disconnect: jest.fn()
+        $disconnect: jest.fn(),
       };
 
       (analyticsService as any).db = mockPrismaClient;
@@ -607,9 +615,9 @@ describe('AnalyticsService', () => {
     it('should handle database errors gracefully', async () => {
       const mockPrismaClient = {
         validationRun: {
-          findMany: jest.fn().mockRejectedValue(new Error('Database error'))
+          findMany: jest.fn().mockRejectedValue(new Error('Database error')),
         },
-        $disconnect: jest.fn()
+        $disconnect: jest.fn(),
       };
 
       (analyticsService as any).db = mockPrismaClient;
@@ -638,15 +646,13 @@ describe('AnalyticsService', () => {
               passed: 1,
               failed: 0,
               success: true,
-              stages: [
-                { id: 'lint', name: 'Lint', success: true, duration: 1000, attempt: 1 }
-              ]
-            }
+              stages: [{ id: 'lint', name: 'Lint', success: true, duration: 1000, attempt: 1 }],
+            },
           ],
           finalSuccess: true,
           totalValidationTime: 2000,
-          averageStageTime: 1000
-        }
+          averageStageTime: 1000,
+        },
       ];
 
       mockedFs.readFile
@@ -687,22 +693,22 @@ describe('AnalyticsService', () => {
               failed: 0,
               success: true,
               stages: [
-                { 
-                  id: 'lint', 
-                  name: 'Lint', 
-                  success: true, 
-                  duration: 1000, 
+                {
+                  id: 'lint',
+                  name: 'Lint',
+                  success: true,
+                  duration: 1000,
                   attempt: 1,
                   output: 'All good',
-                  error: undefined
-                }
-              ]
-            }
+                  error: undefined,
+                },
+              ],
+            },
           ],
           finalSuccess: true,
           totalValidationTime: 2000,
-          averageStageTime: 1000
-        }
+          averageStageTime: 1000,
+        },
       ];
 
       mockedFs.readFile
@@ -724,7 +730,7 @@ describe('AnalyticsService', () => {
   describe('dispose', () => {
     it('should disconnect from database', async () => {
       const mockPrismaClient = {
-        $disconnect: jest.fn()
+        $disconnect: jest.fn(),
       };
 
       (analyticsService as any).db = mockPrismaClient;

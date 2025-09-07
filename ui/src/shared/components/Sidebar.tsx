@@ -95,41 +95,24 @@ const navItems: NavItem[] = [
 ];
 
 // Mobile overlay component
-function MobileOverlay({
-  isCollapsed,
-  onToggle,
-}: {
-  isCollapsed: boolean;
-  onToggle: () => void;
-}) {
+function MobileOverlay({ isCollapsed, onToggle }: { isCollapsed: boolean; onToggle: () => void }) {
   if (isCollapsed) {
     return null;
   }
 
   return (
-    <div
-      className="fixed inset-0 bg-gray-600 bg-opacity-50 z-40 md:hidden"
-      onClick={onToggle}
-    />
+    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 z-40 md:hidden" onClick={onToggle} />
   );
 }
 
 // Sidebar header component
-function SidebarHeader({
-  isCollapsed,
-  onToggle,
-}: {
-  isCollapsed: boolean;
-  onToggle: () => void;
-}) {
+function SidebarHeader({ isCollapsed, onToggle }: { isCollapsed: boolean; onToggle: () => void }) {
   return (
     <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
       {!isCollapsed && (
         <div className="flex items-center gap-2">
           <Activity className="h-6 w-6 text-blue-600" />
-          <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            CodeGoat
-          </h1>
+          <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">CodeGoat</h1>
         </div>
       )}
       <Button
@@ -137,7 +120,7 @@ function SidebarHeader({
         size="sm"
         onClick={onToggle}
         className="hidden md:flex h-8 w-8 p-0"
-        aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+        aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
       >
         {isCollapsed ? <Menu className="h-4 w-4" /> : <X className="h-4 w-4" />}
       </Button>
@@ -183,9 +166,7 @@ function NavigationItem({
         `}
         onClick={onMobileClick}
       >
-        <Icon
-          className={`h-5 w-5 flex-shrink-0 ${isActive ? 'text-blue-600' : ''}`}
-        />
+        <Icon className={`h-5 w-5 flex-shrink-0 ${isActive ? 'text-blue-600' : ''}`} />
         {!isCollapsed && (
           <div className="flex-1 min-w-0">
             <div className="font-medium text-sm">{item.label}</div>
@@ -212,7 +193,7 @@ function SidebarNavigation({
   return (
     <nav className="flex-1 p-4">
       <ul className="space-y-2">
-        {navItems.map((item) => {
+        {navItems.map(item => {
           const isActive = location.pathname === item.href;
 
           return (
@@ -296,10 +277,7 @@ export function Sidebar({ className = '' }: SidebarProps) {
       `}
       >
         <SidebarHeader isCollapsed={isCollapsed} onToggle={toggleSidebar} />
-        <SidebarNavigation
-          isCollapsed={isCollapsed}
-          onMobileNavigate={handleMobileNavigate}
-        />
+        <SidebarNavigation isCollapsed={isCollapsed} onMobileNavigate={handleMobileNavigate} />
         <SidebarFooter isCollapsed={isCollapsed} />
       </div>
 

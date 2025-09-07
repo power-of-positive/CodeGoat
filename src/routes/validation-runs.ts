@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import express, { Request, Response } from 'express';
 import { WinstonLogger } from '../logger-winston';
 import { getDatabaseService } from '../services/database';
@@ -70,14 +69,14 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
   router.get('/', async (req: Request, res: Response) => {
     try {
       const db = getDatabaseService();
-      const { 
-        page = '1', 
-        limit = '10', 
-        success, 
+      const {
+        page = '1',
+        limit = '10',
+        success,
         environment,
         taskId,
         startDate,
-        endDate 
+        endDate,
       } = req.query;
 
       const pageNum = parseInt(page as string);
@@ -86,19 +85,19 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
 
       // Build where clause based on filters
       const where: Record<string, unknown> = {};
-      
+
       if (success !== undefined) {
         where.success = success === 'true';
       }
-      
+
       if (environment) {
         where.environment = environment;
       }
-      
+
       if (taskId) {
         where.taskId = taskId;
       }
-      
+
       if (startDate || endDate) {
         const timestampFilter: { gte?: Date; lte?: Date } = {};
         if (startDate) {
@@ -118,15 +117,15 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
         where,
         include: {
           stages: {
-            orderBy: { order: 'asc' }
+            orderBy: { order: 'asc' },
           },
           task: {
             select: {
               id: true,
               title: true,
-              content: true
-            }
-          }
+              content: true,
+            },
+          },
         },
         orderBy: { timestamp: 'desc' },
         skip: offset,
@@ -177,12 +176,14 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
             totalPages: Math.ceil(totalRuns / limitNum),
             hasNext: offset + limitNum < totalRuns,
             hasPrev: pageNum > 1,
-          }
-        }
+          },
+        },
       });
     } catch (error) {
       logger.error('Error fetching validation runs:', error as Error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Failed to fetch validation runs' });
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json({ success: false, message: 'Failed to fetch validation runs' });
     }
   });
 
@@ -194,23 +195,25 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
         where: { id: req.params.id },
         include: {
           stages: {
-            orderBy: { order: 'asc' }
+            orderBy: { order: 'asc' },
           },
           logs: {
-            orderBy: { timestamp: 'asc' }
+            orderBy: { timestamp: 'asc' },
           },
           task: {
             select: {
               id: true,
               title: true,
-              content: true
-            }
-          }
-        }
+              content: true,
+            },
+          },
+        },
       });
 
       if (!dbRun) {
-        return res.status(HTTP_STATUS.NOT_FOUND).json({ success: false, message: 'Validation run not found' });
+        return res
+          .status(HTTP_STATUS.NOT_FOUND)
+          .json({ success: false, message: 'Validation run not found' });
       }
 
       const run: ValidationRunResponse & { logs: ValidationLogResponse[] } = {
@@ -249,13 +252,15 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
           message: log.message,
           timestamp: log.timestamp.toISOString(),
           metadata: log.metadata ? JSON.parse(log.metadata) : undefined,
-        }))
+        })),
       };
 
       res.json({ success: true, data: run });
     } catch (error) {
       logger.error('Error fetching validation run:', error as Error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Failed to fetch validation run' });
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json({ success: false, message: 'Failed to fetch validation run' });
     }
   });
 
@@ -264,22 +269,22 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
     try {
       const db = getDatabaseService();
       const { days = '30', environment } = req.query;
-      
+
       const daysAgo = new Date();
       daysAgo.setDate(daysAgo.getDate() - parseInt(days as string));
 
       const whereClause: Record<string, unknown> = {
-        timestamp: { gte: daysAgo }
+        timestamp: { gte: daysAgo },
       };
-      
+
       if (environment) {
         whereClause.environment = environment;
       }
 
       // Get overall statistics
       const totalRuns = await db.validationRun.count({ where: whereClause });
-      const successfulRuns = await db.validationRun.count({ 
-        where: { ...whereClause, success: true } 
+      const successfulRuns = await db.validationRun.count({
+        where: { ...whereClause, success: true },
       });
       const failedRuns = totalRuns - successfulRuns;
       const successRate = totalRuns > 0 ? (successfulRuns / totalRuns) * 100 : 0;
@@ -287,44 +292,46 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
       // Get average duration
       const avgDuration = await db.validationRun.aggregate({
         where: whereClause,
-        _avg: { totalTime: true }
+        _avg: { totalTime: true },
       });
 
       // Get stage statistics
       const stageStats = await db.validationStage.groupBy({
         by: ['stageId', 'stageName'],
         where: {
-          run: whereClause
+          run: whereClause,
         },
         _count: {
-          stageId: true
+          stageId: true,
         },
         _sum: {
-          duration: true
+          duration: true,
         },
         orderBy: {
           _count: {
-            stageId: 'desc'
-          }
-        }
+            stageId: 'desc',
+          },
+        },
       });
 
       const stageSuccessStats = await db.validationStage.groupBy({
         by: ['stageId'],
         where: {
           run: whereClause,
-          success: true
+          success: true,
         },
         _count: {
-          stageId: true
-        }
+          stageId: true,
+        },
       });
 
       // Combine stage statistics
       const enrichedStageStats = stageStats.map(stage => {
-        const successCount = stageSuccessStats.find(s => s.stageId === stage.stageId)?._count.stageId ?? 0;
-        const successRate = stage._count.stageId > 0 ? (successCount / stage._count.stageId) * 100 : 0;
-        
+        const successCount =
+          stageSuccessStats.find(s => s.stageId === stage.stageId)?._count.stageId ?? 0;
+        const successRate =
+          stage._count.stageId > 0 ? (successCount / stage._count.stageId) * 100 : 0;
+
         return {
           stageId: stage.stageId,
           stageName: stage.stageName,
@@ -333,9 +340,10 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
           failedRuns: stage._count.stageId - successCount,
           successRate: Math.round(successRate * 100) / 100,
           totalDuration: Number(stage._sum.duration) || 0,
-          avgDuration: stage._sum.duration && stage._count.stageId > 0 
-            ? Math.round((Number(stage._sum.duration) / stage._count.stageId) * 100) / 100 
-            : 0
+          avgDuration:
+            stage._sum.duration && stage._count.stageId > 0
+              ? Math.round((Number(stage._sum.duration) / stage._count.stageId) * 100) / 100
+              : 0,
         };
       });
 
@@ -344,30 +352,33 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
         where: whereClause,
         select: {
           timestamp: true,
-          success: true
+          success: true,
         },
-        orderBy: { timestamp: 'asc' }
+        orderBy: { timestamp: 'asc' },
       });
 
       // Group by day
-      const dailyGroups = dailyStats.reduce((acc, run) => {
-        const day = run.timestamp.toISOString().split('T')[0];
-        if (!acc[day]) {
-          acc[day] = { total: 0, successful: 0, failed: 0 };
-        }
-        acc[day].total++;
-        if (run.success) {
-          acc[day].successful++;
-        } else {
-          acc[day].failed++;
-        }
-        return acc;
-      }, {} as Record<string, { total: number; successful: number; failed: number }>);
+      const dailyGroups = dailyStats.reduce(
+        (acc, run) => {
+          const day = run.timestamp.toISOString().split('T')[0];
+          if (!acc[day]) {
+            acc[day] = { total: 0, successful: 0, failed: 0 };
+          }
+          acc[day].total++;
+          if (run.success) {
+            acc[day].successful++;
+          } else {
+            acc[day].failed++;
+          }
+          return acc;
+        },
+        {} as Record<string, { total: number; successful: number; failed: number }>
+      );
 
       const dailyStatsArray = Object.entries(dailyGroups).map(([date, stats]) => ({
         date,
         ...stats,
-        successRate: stats.total > 0 ? (stats.successful / stats.total) * 100 : 0
+        successRate: stats.total > 0 ? (stats.successful / stats.total) * 100 : 0,
       }));
 
       res.json({
@@ -383,11 +394,13 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
           },
           stageStatistics: enrichedStageStats,
           dailyTrends: dailyStatsArray.sort((a, b) => a.date.localeCompare(b.date)),
-        }
+        },
       });
     } catch (error) {
       logger.error('Error fetching validation analytics:', error as Error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Failed to fetch validation analytics' });
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json({ success: false, message: 'Failed to fetch validation analytics' });
     }
   });
 
@@ -403,13 +416,13 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
         triggerType = 'api',
         environment = 'development',
         gitCommit,
-        gitBranch
+        gitBranch,
       } = req.body;
 
       if (!stages || !Array.isArray(stages)) {
-        return res.status(HTTP_STATUS.BAD_REQUEST).json({ 
-          success: false, 
-          message: 'Stages array is required' 
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+          success: false,
+          message: 'Stages array is required',
         });
       }
 
@@ -419,7 +432,7 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
       const success = failedStages === 0;
 
       // Create validation run and stages atomically in a transaction
-      const result = await db.$transaction(async (tx) => {
+      const result = await db.$transaction(async tx => {
         // Create validation run
         const validationRun = await tx.validationRun.create({
           data: {
@@ -434,7 +447,7 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
             environment,
             gitCommit: gitCommit ?? null,
             gitBranch: gitBranch ?? null,
-          }
+          },
         });
 
         // Create validation stages in batch
@@ -462,25 +475,27 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
 
       const { validationRun } = result;
 
-      logger.info('Validation run created:', { 
-        runId: validationRun.id, 
-        stages: totalStages, 
-        success 
+      logger.info('Validation run created:', {
+        runId: validationRun.id,
+        stages: totalStages,
+        success,
       });
-      
-      res.status(HTTP_STATUS.CREATED).json({ 
-        success: true, 
+
+      res.status(HTTP_STATUS.CREATED).json({
+        success: true,
         data: {
           id: validationRun.id,
           success,
           totalStages,
           passedStages,
-          failedStages
-        }
+          failedStages,
+        },
       });
     } catch (error) {
       logger.error('Error creating validation run:', error as Error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Failed to create validation run' });
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json({ success: false, message: 'Failed to create validation run' });
     }
   });
 
@@ -488,28 +503,22 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
   router.get('/analytics/stages', async (req: Request, res: Response) => {
     try {
       const db = getDatabaseService();
-      const { 
-        days = '30', 
-        environment,
-        stageId,
-        startDate,
-        endDate
-      } = req.query;
-      
+      const { days = '30', environment, stageId, startDate, endDate } = req.query;
+
       // Build date filter
       let dateFilter: Record<string, unknown> = {};
       if (startDate && endDate) {
         dateFilter = {
           timestamp: {
             gte: new Date(startDate as string),
-            lte: new Date(endDate as string)
-          }
+            lte: new Date(endDate as string),
+          },
         };
       } else if (days) {
         const daysAgo = new Date();
         daysAgo.setDate(daysAgo.getDate() - parseInt(days as string));
         dateFilter = {
-          timestamp: { gte: daysAgo }
+          timestamp: { gte: daysAgo },
         };
       }
 
@@ -524,15 +533,12 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
         orderBy: Array<Record<string, unknown>>;
         include: Record<string, unknown>;
       }
-      
+
       const stageHistoryQuery: StageHistoryQuery = {
         where: {
-          run: whereClause
+          run: whereClause,
         },
-        orderBy: [
-          { run: { timestamp: 'asc' } },
-          { order: 'asc' }
-        ],
+        orderBy: [{ run: { timestamp: 'asc' } }, { order: 'asc' }],
         include: {
           run: {
             select: {
@@ -540,16 +546,16 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
               timestamp: true,
               success: true,
               environment: true,
-              gitBranch: true
-            }
-          }
-        }
+              gitBranch: true,
+            },
+          },
+        },
       };
 
       if (stageId) {
         stageHistoryQuery.where = {
           ...stageHistoryQuery.where,
-          stageId
+          stageId,
         };
       }
 
@@ -559,30 +565,32 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
       const stageStats = await db.validationStage.groupBy({
         by: ['stageId', 'stageName'],
         where: {
-          run: whereClause
+          run: whereClause,
         },
         _count: { stageId: true },
         _sum: { duration: true },
         _min: { duration: true },
         _max: { duration: true },
-        _avg: { duration: true }
+        _avg: { duration: true },
       });
 
       const stageSuccessStats = await db.validationStage.groupBy({
         by: ['stageId'],
         where: {
           run: whereClause,
-          success: true
+          success: true,
         },
-        _count: { stageId: true }
+        _count: { stageId: true },
       });
 
       // Calculate detailed metrics for each stage
       const enrichedStageStats = stageStats.map(stage => {
-        const successCount = stageSuccessStats.find(s => s.stageId === stage.stageId)?._count.stageId ?? 0;
+        const successCount =
+          stageSuccessStats.find(s => s.stageId === stage.stageId)?._count.stageId ?? 0;
         const failureCount = stage._count.stageId - successCount;
-        const successRate = stage._count.stageId > 0 ? (successCount / stage._count.stageId) * 100 : 0;
-        
+        const successRate =
+          stage._count.stageId > 0 ? (successCount / stage._count.stageId) * 100 : 0;
+
         return {
           stageId: stage.stageId,
           stageName: stage.stageName,
@@ -594,9 +602,14 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
           avgDuration: Math.round((Number(stage._avg.duration) || 0) * 100) / 100,
           minDuration: Number(stage._min.duration) || 0,
           maxDuration: Number(stage._max.duration) || 0,
-          reliability: successRate >= PERFORMANCE_CONSTANTS.EXCELLENT_THRESHOLD ? 'excellent' : 
-                      successRate >= PERFORMANCE_CONSTANTS.GOOD_THRESHOLD ? 'good' : 
-                      successRate >= PERFORMANCE_CONSTANTS.FAIR_THRESHOLD ? 'fair' : 'poor'
+          reliability:
+            successRate >= PERFORMANCE_CONSTANTS.EXCELLENT_THRESHOLD
+              ? 'excellent'
+              : successRate >= PERFORMANCE_CONSTANTS.GOOD_THRESHOLD
+                ? 'good'
+                : successRate >= PERFORMANCE_CONSTANTS.FAIR_THRESHOLD
+                  ? 'fair'
+                  : 'poor',
         };
       });
 
@@ -609,33 +622,36 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
         successCount: number;
         totalDuration: number;
       }
-      
-      const dailyStagePerformance = stageHistory.reduce((acc, stage) => {
-        const stageWithRun = stage as any;
-        const day = stageWithRun.run.timestamp.toISOString().split('T')[0];
-        const stageKey = `${day}-${stage.stageId}`;
-        
-        if (!acc[stageKey]) {
-          acc[stageKey] = {
-            date: day,
-            stageId: stage.stageId,
-            stageName: stage.stageName,
-            runs: [],
-            successCount: 0,
-            totalDuration: 0
-          };
-        }
-        
-        acc[stageKey].runs.push(stage);
-        if (stage.success) {
-          acc[stageKey].successCount++;
-        }
-        acc[stageKey].totalDuration += Number(stage.duration);
-        
-        return acc;
-      }, {} as Record<string, DailyStageData>);
 
-      const trendData = Object.values(dailyStagePerformance).map((data) => ({
+      const dailyStagePerformance = stageHistory.reduce(
+        (acc, stage) => {
+          const stageWithRun = stage as any;
+          const day = stageWithRun.run.timestamp.toISOString().split('T')[0];
+          const stageKey = `${day}-${stage.stageId}`;
+
+          if (!acc[stageKey]) {
+            acc[stageKey] = {
+              date: day,
+              stageId: stage.stageId,
+              stageName: stage.stageName,
+              runs: [],
+              successCount: 0,
+              totalDuration: 0,
+            };
+          }
+
+          acc[stageKey].runs.push(stage);
+          if (stage.success) {
+            acc[stageKey].successCount++;
+          }
+          acc[stageKey].totalDuration += Number(stage.duration);
+
+          return acc;
+        },
+        {} as Record<string, DailyStageData>
+      );
+
+      const trendData = Object.values(dailyStagePerformance).map(data => ({
         date: data.date,
         stageId: data.stageId,
         stageName: data.stageName,
@@ -643,7 +659,7 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
         successfulRuns: data.successCount,
         failedRuns: data.runs.length - data.successCount,
         successRate: data.runs.length > 0 ? (data.successCount / data.runs.length) * 100 : 0,
-        avgDuration: data.runs.length > 0 ? data.totalDuration / data.runs.length : 0
+        avgDuration: data.runs.length > 0 ? data.totalDuration / data.runs.length : 0,
       }));
 
       // Find most problematic stages (highest failure rates)
@@ -670,13 +686,13 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
               stageName: true,
               success: true,
               duration: true,
-              order: true
+              order: true,
             },
-            orderBy: { order: 'asc' }
-          }
+            orderBy: { order: 'asc' },
+          },
         },
         orderBy: { timestamp: 'desc' },
-        take: 100 // Latest 100 runs for pattern analysis
+        take: 100, // Latest 100 runs for pattern analysis
       });
 
       res.json({
@@ -684,13 +700,16 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
         data: {
           overview: {
             totalStages: enrichedStageStats.length,
-            period: startDate && endDate ? 
-              `${new Date(startDate as string).toLocaleDateString()} - ${new Date(endDate as string).toLocaleDateString()}` :
-              `Last ${days} days`,
-            totalStageExecutions: enrichedStageStats.reduce((sum, s) => sum + s.totalRuns, 0)
+            period:
+              startDate && endDate
+                ? `${new Date(startDate as string).toLocaleDateString()} - ${new Date(endDate as string).toLocaleDateString()}`
+                : `Last ${days} days`,
+            totalStageExecutions: enrichedStageStats.reduce((sum, s) => sum + s.totalRuns, 0),
           },
           stageStatistics: enrichedStageStats.sort((a, b) => b.totalRuns - a.totalRuns),
-          trends: trendData.sort((a, b) => `${a.date}-${a.stageId}`.localeCompare(`${b.date}-${b.stageId}`)),
+          trends: trendData.sort((a, b) =>
+            `${a.date}-${a.stageId}`.localeCompare(`${b.date}-${b.stageId}`)
+          ),
           insights: {
             problematicStages,
             topPerformingStages,
@@ -700,15 +719,17 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
               stageSequence: run.stages.map(s => ({
                 stageId: s.stageId,
                 success: s.success,
-                duration: s.duration
-              }))
-            }))
-          }
-        }
+                duration: s.duration,
+              })),
+            })),
+          },
+        },
       });
     } catch (error) {
       logger.error('Error fetching stage analytics:', error as Error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Failed to fetch stage analytics' });
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json({ success: false, message: 'Failed to fetch stage analytics' });
     }
   });
 
@@ -716,22 +737,17 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
   router.get('/analytics/history', async (req: Request, res: Response) => {
     try {
       const db = getDatabaseService();
-      const { 
-        days = '30', 
-        granularity = 'daily',
-        environment,
-        includeStages = 'true'
-      } = req.query;
-      
+      const { days = '30', granularity = 'daily', environment, includeStages = 'true' } = req.query;
+
       const daysAgo = new Date();
       daysAgo.setDate(daysAgo.getDate() - parseInt(days as string));
 
       const whereClause: Record<string, any> = {
-        timestamp: { 
-          gte: daysAgo 
-        }
+        timestamp: {
+          gte: daysAgo,
+        },
       };
-      
+
       if (environment) {
         whereClause.environment = environment;
       }
@@ -743,7 +759,7 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
         include?: Record<string, unknown>;
         select?: Record<string, boolean>;
       }
-      
+
       const runsQuery: RunsQuery = {
         where: whereClause,
         orderBy: { timestamp: 'asc' },
@@ -752,8 +768,8 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
       if (includeStages === 'true') {
         runsQuery.include = {
           stages: {
-            orderBy: { order: 'asc' }
-          }
+            orderBy: { order: 'asc' },
+          },
         };
       } else {
         runsQuery.select = {
@@ -766,7 +782,7 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
           failedStages: true,
           triggerType: true,
           environment: true,
-          gitBranch: true
+          gitBranch: true,
         };
       }
 
@@ -777,10 +793,12 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
         ...run,
         totalTime: Number(run.totalTime),
         startTime: run.startTime ? Number(run.startTime) : undefined,
-        stages: run.stages ? run.stages.map((stage: any) => ({
-          ...stage,
-          duration: Number(stage.duration)
-        })) : undefined
+        stages: run.stages
+          ? run.stages.map((stage: any) => ({
+              ...stage,
+              duration: Number(stage.duration),
+            }))
+          : undefined,
       }));
 
       // Group runs by time granularity
@@ -808,13 +826,17 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
         failedRuns: number;
         averageDuration: number;
         successRate: number;
-        stagePerformance: Record<string, { success: number; total: number; avgDuration: number; successRate: number }>;
+        stagePerformance: Record<
+          string,
+          { success: number; total: number; avgDuration: number; successRate: number }
+        >;
       };
 
-      const timelineData = convertedRuns.reduce((acc, run) => {
-        const timeKey = groupByGranularity(run.timestamp);
-        
-        acc[timeKey] ??= {
+      const timelineData = convertedRuns.reduce(
+        (acc, run) => {
+          const timeKey = groupByGranularity(run.timestamp);
+
+          acc[timeKey] ??= {
             timestamp: timeKey,
             runs: [],
             totalRuns: 0,
@@ -822,54 +844,67 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
             failedRuns: 0,
             averageDuration: 0,
             successRate: 0,
-            stagePerformance: {} as Record<string, { success: number; total: number; avgDuration: number; successRate: number }>
+            stagePerformance: {} as Record<
+              string,
+              { success: number; total: number; avgDuration: number; successRate: number }
+            >,
           };
 
-        acc[timeKey].runs.push(run);
-        acc[timeKey].totalRuns++;
-        if (run.success) {
-          acc[timeKey].successfulRuns++;
-        } else {
-          acc[timeKey].failedRuns++;
-        }
+          acc[timeKey].runs.push(run);
+          acc[timeKey].totalRuns++;
+          if (run.success) {
+            acc[timeKey].successfulRuns++;
+          } else {
+            acc[timeKey].failedRuns++;
+          }
 
-        // Calculate stage performance for this time period
-        const runWithStages = run as any;
-        if (runWithStages.stages) {
-          runWithStages.stages.forEach((stage: any) => {
-            const key = stage.stageId;
-            acc[timeKey].stagePerformance[key] ??= { success: 0, total: 0, avgDuration: 0, successRate: 0 };
-            acc[timeKey].stagePerformance[key].total++;
-            if (stage.success) {
-              acc[timeKey].stagePerformance[key].success++;
-            }
-            acc[timeKey].stagePerformance[key].avgDuration += Number(stage.duration);
-          });
-        }
+          // Calculate stage performance for this time period
+          const runWithStages = run as any;
+          if (runWithStages.stages) {
+            runWithStages.stages.forEach((stage: any) => {
+              const key = stage.stageId;
+              acc[timeKey].stagePerformance[key] ??= {
+                success: 0,
+                total: 0,
+                avgDuration: 0,
+                successRate: 0,
+              };
+              acc[timeKey].stagePerformance[key].total++;
+              if (stage.success) {
+                acc[timeKey].stagePerformance[key].success++;
+              }
+              acc[timeKey].stagePerformance[key].avgDuration += Number(stage.duration);
+            });
+          }
 
-        return acc;
-      }, {} as Record<string, TimelinePeriod>);
+          return acc;
+        },
+        {} as Record<string, TimelinePeriod>
+      );
 
       // Finalize calculations
-      const timeline = (Object.values(timelineData) as TimelinePeriod[]).map((period: TimelinePeriod) => {
-        // Calculate average duration for the period
-        const totalDuration = period.runs.reduce((sum: number, run: any) => {
-          return sum + Number(run.totalTime);
-        }, 0);
-        period.averageDuration = period.totalRuns > 0 ? totalDuration / period.totalRuns : 0;
+      const timeline = (Object.values(timelineData) as TimelinePeriod[])
+        .map((period: TimelinePeriod) => {
+          // Calculate average duration for the period
+          const totalDuration = period.runs.reduce((sum: number, run: any) => {
+            return sum + Number(run.totalTime);
+          }, 0);
+          period.averageDuration = period.totalRuns > 0 ? totalDuration / period.totalRuns : 0;
 
-        // Finalize stage performance calculations
-        Object.keys(period.stagePerformance).forEach(stageId => {
-          const perf = period.stagePerformance[stageId];
-          perf.avgDuration = perf.total > 0 ? perf.avgDuration / perf.total : 0;
-          perf.successRate = perf.total > 0 ? (perf.success / perf.total) * 100 : 0;
-        });
+          // Finalize stage performance calculations
+          Object.keys(period.stagePerformance).forEach(stageId => {
+            const perf = period.stagePerformance[stageId];
+            perf.avgDuration = perf.total > 0 ? perf.avgDuration / perf.total : 0;
+            perf.successRate = perf.total > 0 ? (perf.success / perf.total) * 100 : 0;
+          });
 
-        // Calculate success rate
-        period.successRate = period.totalRuns > 0 ? (period.successfulRuns / period.totalRuns) * 100 : 0;
+          // Calculate success rate
+          period.successRate =
+            period.totalRuns > 0 ? (period.successfulRuns / period.totalRuns) * 100 : 0;
 
-        return period;
-      }).sort((a: TimelinePeriod, b: TimelinePeriod) => a.timestamp.localeCompare(b.timestamp));
+          return period;
+        })
+        .sort((a: TimelinePeriod, b: TimelinePeriod) => a.timestamp.localeCompare(b.timestamp));
 
       res.json({
         success: true,
@@ -880,14 +915,16 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
             granularity,
             dateRange: {
               start: daysAgo.toISOString(),
-              end: new Date().toISOString()
-            }
-          }
-        }
+              end: new Date().toISOString(),
+            },
+          },
+        },
       });
     } catch (error) {
       logger.error('Error fetching historical data:', error as Error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Failed to fetch historical data' });
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json({ success: false, message: 'Failed to fetch historical data' });
     }
   });
 
@@ -895,18 +932,13 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
   router.get('/analytics/comparison', async (req: Request, res: Response) => {
     try {
       const db = getDatabaseService();
-      const { 
-        period1Start,
-        period1End,
-        period2Start,
-        period2End,
-        environment
-      } = req.query;
+      const { period1Start, period1End, period2Start, period2End, environment } = req.query;
 
       if (!period1Start || !period1End || !period2Start || !period2End) {
-        return res.status(HTTP_STATUS.BAD_REQUEST).json({ 
-          success: false, 
-          message: 'All period dates are required: period1Start, period1End, period2Start, period2End' 
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+          success: false,
+          message:
+            'All period dates are required: period1Start, period1End, period2Start, period2End',
         });
       }
 
@@ -914,8 +946,8 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
         const where: Record<string, unknown> = {
           timestamp: {
             gte: new Date(startDate),
-            lte: new Date(endDate)
-          }
+            lte: new Date(endDate),
+          },
         };
         if (environment) {
           where.environment = environment;
@@ -937,13 +969,13 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
             by: ['stageId', 'stageName'],
             where: { run: period1Where },
             _count: { stageId: true },
-            _avg: { duration: true }
+            _avg: { duration: true },
           }),
           db.validationStage.groupBy({
             by: ['stageId'],
             where: { run: period1Where, success: true },
-            _count: { stageId: true }
-          })
+            _count: { stageId: true },
+          }),
         ]),
         // Period 2 analytics
         Promise.all([
@@ -954,14 +986,14 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
             by: ['stageId', 'stageName'],
             where: { run: period2Where },
             _count: { stageId: true },
-            _avg: { duration: true }
+            _avg: { duration: true },
           }),
           db.validationStage.groupBy({
             by: ['stageId'],
             where: { run: period2Where, success: true },
-            _count: { stageId: true }
-          })
-        ])
+            _count: { stageId: true },
+          }),
+        ]),
       ]);
 
       interface StageStats {
@@ -970,12 +1002,12 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
         _count: { stageId: number };
         _avg: { duration: number | null };
       }
-      
+
       interface StageSuccesses {
         stageId: string;
         _count: { stageId: number };
       }
-      
+
       const buildPeriodSummary = (
         totalRuns: number,
         successRuns: number,
@@ -984,18 +1016,20 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
         stageSuccesses: StageSuccesses[]
       ) => {
         const successRate = totalRuns > 0 ? (successRuns / totalRuns) * 100 : 0;
-        
+
         const enrichedStages = stageStats.map(stage => {
-          const successCount = stageSuccesses.find(s => s.stageId === stage.stageId)?._count.stageId ?? 0;
-          const stageSuccessRate = stage._count.stageId > 0 ? (successCount / stage._count.stageId) * 100 : 0;
-          
+          const successCount =
+            stageSuccesses.find(s => s.stageId === stage.stageId)?._count.stageId ?? 0;
+          const stageSuccessRate =
+            stage._count.stageId > 0 ? (successCount / stage._count.stageId) * 100 : 0;
+
           return {
             stageId: stage.stageId,
             stageName: stage.stageName,
             totalRuns: stage._count.stageId,
             successfulRuns: successCount,
             successRate: Math.round(stageSuccessRate * 100) / 100,
-            avgDuration: Math.round((Number(stage._avg.duration) || 0) * 100) / 100
+            avgDuration: Math.round((Number(stage._avg.duration) || 0) * 100) / 100,
           };
         });
 
@@ -1005,7 +1039,7 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
           failedRuns: totalRuns - successRuns,
           successRate: Math.round(successRate * 100) / 100,
           avgDuration: Math.round((Number(avgDuration._avg.totalTime) || 0) * 100) / 100,
-          stages: enrichedStages
+          stages: enrichedStages,
         };
       };
 
@@ -1013,33 +1047,36 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
       const period2Summary = buildPeriodSummary(...period2Stats);
 
       // Calculate comparison metrics
-      const calculateChange = (current: number, previous: number): { value: number; percentage: number; trend: 'up' | 'down' | 'stable' } => {
+      const calculateChange = (
+        current: number,
+        previous: number
+      ): { value: number; percentage: number; trend: 'up' | 'down' | 'stable' } => {
         const change = current - previous;
         const percentage = previous > 0 ? (change / previous) * 100 : 0;
         const trend = Math.abs(percentage) < 1 ? 'stable' : percentage > 0 ? 'up' : 'down';
-        
+
         return {
           value: Math.round(change * 100) / 100,
           percentage: Math.round(percentage * 100) / 100,
-          trend
+          trend,
         };
       };
 
       const comparison = {
         successRate: calculateChange(period2Summary.successRate, period1Summary.successRate),
         avgDuration: calculateChange(period2Summary.avgDuration, period1Summary.avgDuration),
-        totalRuns: calculateChange(period2Summary.totalRuns, period1Summary.totalRuns)
+        totalRuns: calculateChange(period2Summary.totalRuns, period1Summary.totalRuns),
       };
 
       // Compare stage performance
       const stageComparisons = period1Summary.stages.map(p1Stage => {
         const p2Stage = period2Summary.stages.find(s => s.stageId === p1Stage.stageId);
-        
+
         if (!p2Stage) {
           return {
             stageId: p1Stage.stageId,
             stageName: p1Stage.stageName,
-            status: 'removed_in_period2' as const
+            status: 'removed_in_period2' as const,
           };
         }
 
@@ -1049,7 +1086,7 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
           status: 'compared' as const,
           successRateChange: calculateChange(p2Stage.successRate, p1Stage.successRate),
           durationChange: calculateChange(p2Stage.avgDuration, p1Stage.avgDuration),
-          runsChange: calculateChange(p2Stage.totalRuns, p1Stage.totalRuns)
+          runsChange: calculateChange(p2Stage.totalRuns, p1Stage.totalRuns),
         };
       });
 
@@ -1059,7 +1096,7 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
         .map(stage => ({
           stageId: stage.stageId,
           stageName: stage.stageName,
-          status: 'new_in_period2' as const
+          status: 'new_in_period2' as const,
         }));
 
       res.json({
@@ -1068,29 +1105,37 @@ export function createValidationRunRoutes(logger: WinstonLogger) {
           periods: {
             period1: {
               label: `${new Date(period1Start as string).toLocaleDateString()} - ${new Date(period1End as string).toLocaleDateString()}`,
-              ...period1Summary
+              ...period1Summary,
             },
             period2: {
               label: `${new Date(period2Start as string).toLocaleDateString()} - ${new Date(period2End as string).toLocaleDateString()}`,
-              ...period2Summary
-            }
+              ...period2Summary,
+            },
           },
           comparison: {
             overall: comparison,
-            stages: [...stageComparisons, ...newStages]
+            stages: [...stageComparisons, ...newStages],
           },
           insights: {
-            improved: stageComparisons.filter(s => s.status === 'compared' && s.successRateChange.trend === 'up').length,
-            degraded: stageComparisons.filter(s => s.status === 'compared' && s.successRateChange.trend === 'down').length,
-            stable: stageComparisons.filter(s => s.status === 'compared' && s.successRateChange.trend === 'stable').length,
+            improved: stageComparisons.filter(
+              s => s.status === 'compared' && s.successRateChange.trend === 'up'
+            ).length,
+            degraded: stageComparisons.filter(
+              s => s.status === 'compared' && s.successRateChange.trend === 'down'
+            ).length,
+            stable: stageComparisons.filter(
+              s => s.status === 'compared' && s.successRateChange.trend === 'stable'
+            ).length,
             newStages: newStages.length,
-            removedStages: stageComparisons.filter(s => s.status === 'removed_in_period2').length
-          }
-        }
+            removedStages: stageComparisons.filter(s => s.status === 'removed_in_period2').length,
+          },
+        },
       });
     } catch (error) {
       logger.error('Error fetching comparison data:', error as Error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Failed to fetch comparison data' });
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json({ success: false, message: 'Failed to fetch comparison data' });
     }
   });
 

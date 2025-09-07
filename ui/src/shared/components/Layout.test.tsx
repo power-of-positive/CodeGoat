@@ -28,11 +28,7 @@ describe('Layout', () => {
     const { container } = renderLayout(<div>Content</div>);
 
     const layoutDiv = container.firstChild;
-    expect(layoutDiv).toHaveClass(
-      'min-h-screen',
-      'bg-gray-50',
-      'dark:bg-gray-900'
-    );
+    expect(layoutDiv).toHaveClass('min-h-screen', 'bg-gray-50', 'dark:bg-gray-900');
 
     const mainContent = container.querySelector('.md\\:ml-64');
     expect(mainContent).toBeInTheDocument();

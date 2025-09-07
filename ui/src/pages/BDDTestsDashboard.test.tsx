@@ -33,24 +33,24 @@ describe('BDDTestsDashboard', () => {
   it('should have the correct component structure', () => {
     const { container } = render(<BDDTestsDashboard />);
     const dashboard = container.firstChild;
-    
+
     expect(dashboard).toBeInTheDocument();
   });
 
   it('should render BDDScenariosDashboard as the only child', () => {
     const { container } = render(<BDDTestsDashboard />);
-    
+
     expect(container.children).toHaveLength(1);
     expect(screen.getByTestId('bdd-scenarios-dashboard')).toBeInTheDocument();
   });
 
   it('should maintain component identity across re-renders', () => {
     const { rerender } = render(<BDDTestsDashboard />);
-    
+
     expect(screen.getByTestId('bdd-scenarios-dashboard')).toBeInTheDocument();
-    
+
     rerender(<BDDTestsDashboard />);
-    
+
     expect(screen.getByTestId('bdd-scenarios-dashboard')).toBeInTheDocument();
     expect(screen.getByText('BDD Scenarios Dashboard')).toBeInTheDocument();
   });
@@ -86,7 +86,7 @@ describe('BDDTestsDashboard', () => {
 
   it('should properly delegate rendering to BDDScenariosDashboard', () => {
     render(<BDDTestsDashboard />);
-    
+
     // Verify that the mock component's content is actually rendered
     expect(screen.getByTestId('bdd-scenarios-dashboard')).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('BDD Scenarios Dashboard');
@@ -95,7 +95,7 @@ describe('BDDTestsDashboard', () => {
   describe('Component Props and Interface', () => {
     it('should not pass any props to BDDScenariosDashboard', () => {
       render(<BDDTestsDashboard />);
-      
+
       // The mock component should render without any props
       expect(screen.getByTestId('bdd-scenarios-dashboard')).toBeInTheDocument();
     });
@@ -109,14 +109,14 @@ describe('BDDTestsDashboard', () => {
   describe('Integration Behavior', () => {
     it('should act as a proper wrapper component', () => {
       const { container } = render(<BDDTestsDashboard />);
-      
+
       // Check that it's rendering exactly what we expect - the child component
       expect(container.firstChild).toHaveAttribute('data-testid', 'bdd-scenarios-dashboard');
     });
 
     it('should not add any additional DOM elements', () => {
       const { container } = render(<BDDTestsDashboard />);
-      
+
       // Should render only the child component, no wrapper divs or anything else
       expect(container.children).toHaveLength(1);
       expect(container.firstChild?.nodeName).toBe('DIV');
@@ -124,7 +124,7 @@ describe('BDDTestsDashboard', () => {
 
     it('should handle React lifecycle methods correctly', () => {
       const { unmount } = render(<BDDTestsDashboard />);
-      
+
       // Should unmount without errors
       expect(() => unmount()).not.toThrow();
     });

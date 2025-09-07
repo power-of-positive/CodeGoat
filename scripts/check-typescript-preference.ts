@@ -142,7 +142,9 @@ class TypeScriptPreferenceChecker {
       } else {
         this.warnings.push(filePath);
         console.error(`${colors.yellow}⚠️  ${filePath}${colors.reset}`);
-        console.error(`   ${colors.yellow}Pure JavaScript file in TypeScript project${colors.reset}`);
+        console.error(
+          `   ${colors.yellow}Pure JavaScript file in TypeScript project${colors.reset}`
+        );
         console.error(
           `   ${colors.cyan}💡 Consider migrating to TypeScript for better type safety${colors.reset}\n`
         );

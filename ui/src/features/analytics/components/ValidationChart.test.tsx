@@ -1,11 +1,5 @@
 import React from 'react';
-import {
-  render,
-  screen,
-  fireEvent,
-  waitFor,
-  act,
-} from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { ValidationChart } from './ValidationChart';
 import { ValidationMetrics } from '../../../shared/types/index';
 import { settingsApi } from '../../../shared/lib/api';
@@ -81,9 +75,7 @@ describe('ValidationChart', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    (settingsApi.getValidationStages as jest.Mock).mockResolvedValue(
-      mockStages
-    );
+    (settingsApi.getValidationStages as jest.Mock).mockResolvedValue(mockStages);
   });
 
   it('renders stage performance overview', async () => {
@@ -111,12 +103,8 @@ describe('ValidationChart', () => {
       render(<ValidationChart metrics={mockMetrics} />);
     });
 
-    expect(
-      screen.getByText(/10 total runs • 9 successes • 1 failures/)
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/8 total runs • 6 successes • 2 failures/)
-    ).toBeInTheDocument();
+    expect(screen.getByText(/10 total runs • 9 successes • 1 failures/)).toBeInTheDocument();
+    expect(screen.getByText(/8 total runs • 6 successes • 2 failures/)).toBeInTheDocument();
   });
 
   it('shows disabled stages with proper indicators', async () => {

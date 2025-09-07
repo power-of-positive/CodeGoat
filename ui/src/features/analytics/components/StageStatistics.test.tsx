@@ -13,7 +13,9 @@ jest.mock('../../../shared/lib/api', () => ({
 
 // Mock recharts components
 jest.mock('recharts', () => ({
-  ResponsiveContainer: ({ children }: any) => <div data-testid="responsive-container">{children}</div>,
+  ResponsiveContainer: ({ children }: any) => (
+    <div data-testid="responsive-container">{children}</div>
+  ),
   BarChart: ({ children }: any) => <div data-testid="bar-chart">{children}</div>,
   LineChart: ({ children }: any) => <div data-testid="line-chart">{children}</div>,
   PieChart: ({ children }: any) => <div data-testid="pie-chart">{children}</div>,
@@ -74,7 +76,7 @@ const mockStageStatisticsData = {
     },
     failureReasons: {
       'Test Failure': 3,
-      'Timeout': 1,
+      Timeout: 1,
       'Compilation Error': 1,
     },
   },
@@ -91,11 +93,7 @@ const createQueryClient = () =>
 
 const renderWithQueryClient = (component: React.ReactElement) => {
   const queryClient = createQueryClient();
-  return render(
-    <QueryClientProvider client={queryClient}>
-      {component}
-    </QueryClientProvider>
-  );
+  return render(<QueryClientProvider client={queryClient}>{component}</QueryClientProvider>);
 };
 
 describe('StageStatistics', () => {
@@ -129,7 +127,9 @@ describe('StageStatistics', () => {
   });
 
   it('renders stage statistics when data is loaded', async () => {
-    (analyticsApi.getStageStatistics as jest.MockedFunction<any>).mockResolvedValue(mockStageStatisticsData);
+    (analyticsApi.getStageStatistics as jest.MockedFunction<any>).mockResolvedValue(
+      mockStageStatisticsData
+    );
 
     renderWithQueryClient(<StageStatistics />);
 
@@ -150,7 +150,9 @@ describe('StageStatistics', () => {
   });
 
   it('handles filter changes', async () => {
-    (analyticsApi.getStageStatistics as jest.MockedFunction<any>).mockResolvedValue(mockStageStatisticsData);
+    (analyticsApi.getStageStatistics as jest.MockedFunction<any>).mockResolvedValue(
+      mockStageStatisticsData
+    );
 
     renderWithQueryClient(<StageStatistics />);
 
@@ -171,7 +173,9 @@ describe('StageStatistics', () => {
   });
 
   it('handles refresh functionality', async () => {
-    (analyticsApi.getStageStatistics as jest.MockedFunction<any>).mockResolvedValue(mockStageStatisticsData);
+    (analyticsApi.getStageStatistics as jest.MockedFunction<any>).mockResolvedValue(
+      mockStageStatisticsData
+    );
 
     renderWithQueryClient(<StageStatistics />);
 
@@ -195,11 +199,15 @@ describe('StageStatistics', () => {
       expect(screen.getByText('No Statistics Available')).toBeInTheDocument();
     });
 
-    expect(screen.getByText('No stage performance data found for the selected time period.')).toBeInTheDocument();
+    expect(
+      screen.getByText('No stage performance data found for the selected time period.')
+    ).toBeInTheDocument();
   });
 
   it('handles stage filter selection', async () => {
-    (analyticsApi.getStageStatistics as jest.MockedFunction<any>).mockResolvedValue(mockStageStatisticsData);
+    (analyticsApi.getStageStatistics as jest.MockedFunction<any>).mockResolvedValue(
+      mockStageStatisticsData
+    );
 
     renderWithQueryClient(<StageStatistics stageId="specific-stage" />);
 
@@ -211,7 +219,9 @@ describe('StageStatistics', () => {
   });
 
   it('displays performance metrics correctly', async () => {
-    (analyticsApi.getStageStatistics as jest.MockedFunction<any>).mockResolvedValue(mockStageStatisticsData);
+    (analyticsApi.getStageStatistics as jest.MockedFunction<any>).mockResolvedValue(
+      mockStageStatisticsData
+    );
 
     renderWithQueryClient(<StageStatistics />);
 
@@ -225,7 +235,9 @@ describe('StageStatistics', () => {
   });
 
   it('handles environment filter changes', async () => {
-    (analyticsApi.getStageStatistics as jest.MockedFunction<any>).mockResolvedValue(mockStageStatisticsData);
+    (analyticsApi.getStageStatistics as jest.MockedFunction<any>).mockResolvedValue(
+      mockStageStatisticsData
+    );
 
     renderWithQueryClient(<StageStatistics stageId="prod-stage" />);
 
@@ -237,7 +249,9 @@ describe('StageStatistics', () => {
   });
 
   it('displays charts correctly', async () => {
-    (analyticsApi.getStageStatistics as jest.MockedFunction<any>).mockResolvedValue(mockStageStatisticsData);
+    (analyticsApi.getStageStatistics as jest.MockedFunction<any>).mockResolvedValue(
+      mockStageStatisticsData
+    );
 
     renderWithQueryClient(<StageStatistics />);
 
@@ -248,7 +262,7 @@ describe('StageStatistics', () => {
     // Check for chart containers - the component shows charts based on data
     const responsiveContainers = screen.getAllByTestId('responsive-container');
     expect(responsiveContainers.length).toBeGreaterThanOrEqual(1); // At least one chart
-    
+
     const barCharts = screen.getAllByTestId('bar-chart');
     expect(barCharts.length).toBeGreaterThanOrEqual(1); // At least one bar chart
   });
@@ -280,10 +294,12 @@ describe('StageStatistics', () => {
       stageComparisons: [
         { stageName: 'Lint', avgDuration: 25.5, successRate: 98.5, executions: 50 },
         { stageName: 'Test', avgDuration: 120.3, successRate: 92.1, executions: 45 },
-      ]
+      ],
     };
 
-    (analyticsApi.getStageStatistics as jest.MockedFunction<any>).mockResolvedValue(mockDataWithComparison);
+    (analyticsApi.getStageStatistics as jest.MockedFunction<any>).mockResolvedValue(
+      mockDataWithComparison
+    );
 
     renderWithQueryClient(<StageStatistics />);
 
@@ -297,15 +313,17 @@ describe('StageStatistics', () => {
   });
 
   it('handles date range filter correctly', async () => {
-    (analyticsApi.getStageStatistics as jest.MockedFunction<any>).mockResolvedValue(mockStageStatisticsData);
+    (analyticsApi.getStageStatistics as jest.MockedFunction<any>).mockResolvedValue(
+      mockStageStatisticsData
+    );
 
     renderWithQueryClient(<StageStatistics defaultDays={30} />);
 
     await waitFor(() => {
       expect(analyticsApi.getStageStatistics).toHaveBeenCalledWith(
-        expect.objectContaining({ 
+        expect.objectContaining({
           days: 30,
-          stage: 'lint' // Default stage
+          stage: 'lint', // Default stage
         })
       );
     });
@@ -325,7 +343,7 @@ describe('StageStatistics', () => {
   it('handles empty stage list gracefully', async () => {
     const emptyData = {
       ...mockStageStatisticsData,
-      stageStatistics: [] // Correct property name
+      stageStatistics: [], // Correct property name
     };
 
     (analyticsApi.getStageStatistics as jest.MockedFunction<any>).mockResolvedValue(emptyData);
@@ -349,9 +367,9 @@ describe('StageStatistics', () => {
           current: 30500,
           previous: 29000,
           change: 5.2,
-          trend: 'up' as const
-        }
-      ]
+          trend: 'up' as const,
+        },
+      ],
     };
 
     (analyticsApi.getStageStatistics as jest.MockedFunction<any>).mockResolvedValue(dataWithTrends);

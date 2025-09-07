@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -131,29 +130,39 @@ const QUICK_PERIOD_OPTIONS = [
   { label: 'Last 60 vs Previous 60 days', days: DEFAULT_PREVIOUS_PERIOD_DAYS },
 ];
 
-function TrendIndicator({ trend, value, percentage, suffix = '', isPositive = true }: TrendIndicatorProps) {
+function TrendIndicator({
+  trend,
+  value,
+  percentage,
+  suffix = '',
+  isPositive = true,
+}: TrendIndicatorProps) {
   const isUp = trend === 'up';
   const isPositiveTrend = isPositive ? isUp : !isUp;
   const TrendIcon = trend === 'stable' ? Minus : isUp ? TrendingUp : TrendingDown;
-  const colorClass = trend === 'stable' ? 'text-gray-600' : 
-                     isPositiveTrend ? 'text-green-600' : 'text-red-600';
-  const bgClass = trend === 'stable' ? 'bg-gray-50' : 
-                  isPositiveTrend ? 'bg-green-50' : 'bg-red-50';
+  const colorClass =
+    trend === 'stable' ? 'text-gray-600' : isPositiveTrend ? 'text-green-600' : 'text-red-600';
+  const bgClass = trend === 'stable' ? 'bg-gray-50' : isPositiveTrend ? 'bg-green-50' : 'bg-red-50';
 
   return (
     <div className={`inline-flex items-center px-2 py-1 rounded-full ${bgClass}`}>
       <TrendIcon className={`w-3 h-3 mr-1 ${colorClass}`} />
       <span className={`text-sm font-medium ${colorClass}`}>
-        {Math.abs(value).toFixed(1)}{suffix}
-        {trend !== 'stable' && (
-          <span className="ml-1">({Math.abs(percentage).toFixed(1)}%)</span>
-        )}
+        {Math.abs(value).toFixed(1)}
+        {suffix}
+        {trend !== 'stable' && <span className="ml-1">({Math.abs(percentage).toFixed(1)}%)</span>}
       </span>
     </div>
   );
 }
 
-function PeriodSelector({ label, startDate, endDate, onStartDateChange, onEndDateChange }: PeriodSelectorProps) {
+function PeriodSelector({
+  label,
+  startDate,
+  endDate,
+  onStartDateChange,
+  onEndDateChange,
+}: PeriodSelectorProps) {
   return (
     <div className="space-y-2">
       <label className="block text-sm font-medium text-gray-700">{label}</label>
@@ -162,14 +171,14 @@ function PeriodSelector({ label, startDate, endDate, onStartDateChange, onEndDat
         <input
           type="date"
           value={startDate}
-          onChange={(e) => onStartDateChange(e.target.value)}
+          onChange={e => onStartDateChange(e.target.value)}
           className="px-2 py-1 border rounded text-sm flex-1"
         />
         <ArrowRight className="w-4 h-4 text-gray-400" />
         <input
           type="date"
           value={endDate}
-          onChange={(e) => onEndDateChange(e.target.value)}
+          onChange={e => onEndDateChange(e.target.value)}
           className="px-2 py-1 border rounded text-sm flex-1"
         />
       </div>
@@ -177,14 +186,28 @@ function PeriodSelector({ label, startDate, endDate, onStartDateChange, onEndDat
   );
 }
 
-export function PerformanceComparison({ 
+export function PerformanceComparison({
   defaultPeriod1,
-  defaultPeriod2
+  defaultPeriod2,
 }: PerformanceComparisonProps) {
   // Calculate default periods if not provided
   const now = new Date();
-  const thirtyDaysAgo = new Date(now.getTime() - DEFAULT_RECENT_PERIOD_DAYS * HOURS_PER_DAY * MINUTES_PER_HOUR * SECONDS_PER_MINUTE * MILLISECONDS_PER_SECOND);
-  const sixtyDaysAgo = new Date(now.getTime() - DEFAULT_PREVIOUS_PERIOD_DAYS * HOURS_PER_DAY * MINUTES_PER_HOUR * SECONDS_PER_MINUTE * MILLISECONDS_PER_SECOND);
+  const thirtyDaysAgo = new Date(
+    now.getTime() -
+      DEFAULT_RECENT_PERIOD_DAYS *
+        HOURS_PER_DAY *
+        MINUTES_PER_HOUR *
+        SECONDS_PER_MINUTE *
+        MILLISECONDS_PER_SECOND
+  );
+  const sixtyDaysAgo = new Date(
+    now.getTime() -
+      DEFAULT_PREVIOUS_PERIOD_DAYS *
+        HOURS_PER_DAY *
+        MINUTES_PER_HOUR *
+        SECONDS_PER_MINUTE *
+        MILLISECONDS_PER_SECOND
+  );
 
   const [period1Start, setPeriod1Start] = useState(
     defaultPeriod1?.start || thirtyDaysAgo.toISOString().split('T')[0]
@@ -199,7 +222,9 @@ export function PerformanceComparison({
     defaultPeriod2?.end || thirtyDaysAgo.toISOString().split('T')[0]
   );
   const [environment, setEnvironment] = useState('');
-  const [viewMode, setViewMode] = useState<'overview' | 'stages' | 'radar' | 'bar' | 'line' | 'area'>('overview');
+  const [viewMode, setViewMode] = useState<
+    'overview' | 'stages' | 'radar' | 'bar' | 'line' | 'area'
+  >('overview');
 
   const {
     data: comparisonData,
@@ -207,7 +232,14 @@ export function PerformanceComparison({
     error,
     refetch,
   } = useQuery({
-    queryKey: ['performance-comparison', period1Start, period1End, period2Start, period2End, environment],
+    queryKey: [
+      'performance-comparison',
+      period1Start,
+      period1End,
+      period2Start,
+      period2End,
+      environment,
+    ],
     queryFn: () =>
       analyticsApi.getPerformanceComparison({
         days: 30, // Default comparison period
@@ -220,9 +252,18 @@ export function PerformanceComparison({
 
   const handleQuickPeriodSelect = (days: number) => {
     const end1 = new Date();
-    const start1 = new Date(end1.getTime() - days * HOURS_PER_DAY * MINUTES_PER_HOUR * SECONDS_PER_MINUTE * MILLISECONDS_PER_SECOND);
-    const end2 = new Date(start1.getTime() - HOURS_PER_DAY * MINUTES_PER_HOUR * SECONDS_PER_MINUTE * MILLISECONDS_PER_SECOND); // 1 day gap
-    const start2 = new Date(end2.getTime() - days * HOURS_PER_DAY * MINUTES_PER_HOUR * SECONDS_PER_MINUTE * MILLISECONDS_PER_SECOND);
+    const start1 = new Date(
+      end1.getTime() -
+        days * HOURS_PER_DAY * MINUTES_PER_HOUR * SECONDS_PER_MINUTE * MILLISECONDS_PER_SECOND
+    );
+    const end2 = new Date(
+      start1.getTime() -
+        HOURS_PER_DAY * MINUTES_PER_HOUR * SECONDS_PER_MINUTE * MILLISECONDS_PER_SECOND
+    ); // 1 day gap
+    const start2 = new Date(
+      end2.getTime() -
+        days * HOURS_PER_DAY * MINUTES_PER_HOUR * SECONDS_PER_MINUTE * MILLISECONDS_PER_SECOND
+    );
 
     setPeriod1Start(start1.toISOString().split('T')[0]);
     setPeriod1End(end1.toISOString().split('T')[0]);
@@ -237,17 +278,31 @@ export function PerformanceComparison({
     }
 
     const data = (comparisonData as ComparisonData) || {
-      periods: { 
-        period1: { successRate: 0, averageTime: 0, avgDuration: 0, totalRuns: 0, label: 'Period 1', stages: [] }, 
-        period2: { successRate: 0, averageTime: 0, avgDuration: 0, totalRuns: 0, label: 'Period 2', stages: [] } 
-      }, 
-      comparison: { 
-        overall: { successRate: 0, averageTime: 0, avgDuration: 0, totalRuns: 0 }, 
-        stages: [] 
+      periods: {
+        period1: {
+          successRate: 0,
+          averageTime: 0,
+          avgDuration: 0,
+          totalRuns: 0,
+          label: 'Period 1',
+          stages: [],
+        },
+        period2: {
+          successRate: 0,
+          averageTime: 0,
+          avgDuration: 0,
+          totalRuns: 0,
+          label: 'Period 2',
+          stages: [],
+        },
       },
-      insights: { improved: 0, degraded: 0, stable: 0, newStages: 0, removedStages: 0 }
+      comparison: {
+        overall: { successRate: 0, averageTime: 0, avgDuration: 0, totalRuns: 0 },
+        stages: [],
+      },
+      insights: { improved: 0, degraded: 0, stable: 0, newStages: 0, removedStages: 0 },
     };
-    
+
     const { periods, comparison, insights } = data;
 
     // Overall metrics comparison
@@ -259,7 +314,12 @@ export function PerformanceComparison({
         change: {
           value: comparison.overall.successRate || 0,
           percentage: Math.abs(comparison.overall.successRate || 0),
-          trend: (comparison.overall.successRate || 0) > 0 ? 'up' : (comparison.overall.successRate || 0) < 0 ? 'down' : 'stable'
+          trend:
+            (comparison.overall.successRate || 0) > 0
+              ? 'up'
+              : (comparison.overall.successRate || 0) < 0
+                ? 'down'
+                : 'stable',
         },
         suffix: '%',
         isPositive: true,
@@ -271,7 +331,12 @@ export function PerformanceComparison({
         change: {
           value: comparison.overall.avgDuration || 0,
           percentage: Math.abs(comparison.overall.avgDuration || 0),
-          trend: (comparison.overall.avgDuration || 0) > 0 ? 'up' : (comparison.overall.avgDuration || 0) < 0 ? 'down' : 'stable'
+          trend:
+            (comparison.overall.avgDuration || 0) > 0
+              ? 'up'
+              : (comparison.overall.avgDuration || 0) < 0
+                ? 'down'
+                : 'stable',
         },
         suffix: 'ms',
         isPositive: false, // Lower is better for duration
@@ -283,7 +348,12 @@ export function PerformanceComparison({
         change: {
           value: comparison.overall.totalRuns || 0,
           percentage: Math.abs(comparison.overall.totalRuns || 0),
-          trend: (comparison.overall.totalRuns || 0) > 0 ? 'up' : (comparison.overall.totalRuns || 0) < 0 ? 'down' : 'stable'
+          trend:
+            (comparison.overall.totalRuns || 0) > 0
+              ? 'up'
+              : (comparison.overall.totalRuns || 0) < 0
+                ? 'down'
+                : 'stable',
         },
         suffix: '',
         isPositive: true,
@@ -295,10 +365,14 @@ export function PerformanceComparison({
       .filter(stage => stage.status === 'compared')
       .map(stage => ({
         stageName: stage.stageName,
-        period1SuccessRate: periods.period1.stages.find(s => s.stageId === stage.stageId)?.successRate || 0,
-        period2SuccessRate: periods.period2.stages.find(s => s.stageId === stage.stageId)?.successRate || 0,
-        period1Duration: periods.period1.stages.find(s => s.stageId === stage.stageId)?.avgDuration || 0,
-        period2Duration: periods.period2.stages.find(s => s.stageId === stage.stageId)?.avgDuration || 0,
+        period1SuccessRate:
+          periods.period1.stages.find(s => s.stageId === stage.stageId)?.successRate || 0,
+        period2SuccessRate:
+          periods.period2.stages.find(s => s.stageId === stage.stageId)?.successRate || 0,
+        period1Duration:
+          periods.period1.stages.find(s => s.stageId === stage.stageId)?.avgDuration || 0,
+        period2Duration:
+          periods.period2.stages.find(s => s.stageId === stage.stageId)?.avgDuration || 0,
         successRateChange: stage.successRateChange?.percentage || 0,
         durationChange: stage.durationChange?.percentage || 0,
       }));
@@ -310,9 +384,12 @@ export function PerformanceComparison({
       .map(stage => {
         const p1Stage = periods.period1.stages.find(s => s.stageId === stage.stageId);
         const p2Stage = periods.period2.stages.find(s => s.stageId === stage.stageId);
-        
+
         return {
-          stage: stage.stageName.length > STAGE_NAME_TRUNCATE_LENGTH ? stage.stageName.slice(0, STAGE_NAME_TRUNCATE_LENGTH) + '...' : stage.stageName,
+          stage:
+            stage.stageName.length > STAGE_NAME_TRUNCATE_LENGTH
+              ? stage.stageName.slice(0, STAGE_NAME_TRUNCATE_LENGTH) + '...'
+              : stage.stageName,
           period1: p1Stage?.successRate || 0,
           period2: p2Stage?.successRate || 0,
         };
@@ -363,7 +440,8 @@ export function PerformanceComparison({
     );
   }
 
-  const { overallMetrics, stageComparisonData, radarData, insights, periods, comparison } = chartData;
+  const { overallMetrics, stageComparisonData, radarData, insights, periods, comparison } =
+    chartData;
 
   return (
     <div className="space-y-6">
@@ -371,11 +449,9 @@ export function PerformanceComparison({
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Performance Comparison</h2>
-          <p className="text-gray-600">
-            Compare validation performance between two time periods
-          </p>
+          <p className="text-gray-600">Compare validation performance between two time periods</p>
         </div>
-        
+
         <div className="flex items-center gap-2">
           <Button onClick={() => refetch()} size="sm">
             Refresh
@@ -422,7 +498,7 @@ export function PerformanceComparison({
                 onStartDateChange={setPeriod1Start}
                 onEndDateChange={setPeriod1End}
               />
-              
+
               <PeriodSelector
                 label="Period 2 (Previous)"
                 startDate={period2Start}
@@ -435,7 +511,7 @@ export function PerformanceComparison({
                 <label className="block text-sm font-medium text-gray-700">Environment</label>
                 <Select
                   value={environment}
-                  onChange={(e) => setEnvironment(e.target.value)}
+                  onChange={e => setEnvironment(e.target.value)}
                   className="w-full"
                 >
                   <Option value="">All Environments</Option>
@@ -459,7 +535,9 @@ export function PerformanceComparison({
                     key={key}
                     variant={viewMode === key ? 'default' : 'outline'}
                     size="sm"
-                    onClick={() => setViewMode(key as 'overview' | 'stages' | 'radar' | 'bar' | 'line' | 'area')}
+                    onClick={() =>
+                      setViewMode(key as 'overview' | 'stages' | 'radar' | 'bar' | 'line' | 'area')
+                    }
                     className="flex items-center gap-2"
                   >
                     <Icon className="w-4 h-4" />
@@ -486,16 +564,22 @@ export function PerformanceComparison({
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="text-center p-3 bg-blue-50 rounded">
-                  <div className="text-2xl font-bold text-blue-600">{periods.period1.totalRuns}</div>
+                  <div className="text-2xl font-bold text-blue-600">
+                    {periods.period1.totalRuns}
+                  </div>
                   <div className="text-sm text-gray-600">Total Runs</div>
                 </div>
                 <div className="text-center p-3 bg-green-50 rounded">
-                  <div className="text-2xl font-bold text-green-600">{periods.period1.successRate.toFixed(1)}%</div>
+                  <div className="text-2xl font-bold text-green-600">
+                    {periods.period1.successRate.toFixed(1)}%
+                  </div>
                   <div className="text-sm text-gray-600">Success Rate</div>
                 </div>
               </div>
               <div className="text-center p-3 bg-gray-50 rounded">
-                <div className="text-lg font-bold text-gray-900">{periods.period1.avgDuration.toFixed(1)}ms</div>
+                <div className="text-lg font-bold text-gray-900">
+                  {periods.period1.avgDuration.toFixed(1)}ms
+                </div>
                 <div className="text-sm text-gray-600">Average Duration</div>
               </div>
             </div>
@@ -514,16 +598,22 @@ export function PerformanceComparison({
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="text-center p-3 bg-purple-50 rounded">
-                  <div className="text-2xl font-bold text-purple-600">{periods.period2.totalRuns}</div>
+                  <div className="text-2xl font-bold text-purple-600">
+                    {periods.period2.totalRuns}
+                  </div>
                   <div className="text-sm text-gray-600">Total Runs</div>
                 </div>
                 <div className="text-center p-3 bg-green-50 rounded">
-                  <div className="text-2xl font-bold text-green-600">{periods.period2.successRate.toFixed(1)}%</div>
+                  <div className="text-2xl font-bold text-green-600">
+                    {periods.period2.successRate.toFixed(1)}%
+                  </div>
                   <div className="text-sm text-gray-600">Success Rate</div>
                 </div>
               </div>
               <div className="text-center p-3 bg-gray-50 rounded">
-                <div className="text-lg font-bold text-gray-900">{periods.period2.avgDuration.toFixed(1)}ms</div>
+                <div className="text-lg font-bold text-gray-900">
+                  {periods.period2.avgDuration.toFixed(1)}ms
+                </div>
                 <div className="text-sm text-gray-600">Average Duration</div>
               </div>
             </div>
@@ -535,18 +625,17 @@ export function PerformanceComparison({
       <Card>
         <CardHeader>
           <CardTitle>Overall Performance Changes</CardTitle>
-          <p className="text-sm text-gray-600">
-            Key metrics comparison between the two periods
-          </p>
+          <p className="text-sm text-gray-600">Key metrics comparison between the two periods</p>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {overallMetrics.map((metric) => (
+            {overallMetrics.map(metric => (
               <div key={metric.label} className="text-center">
                 <h4 className="text-sm font-medium text-gray-700 mb-2">{metric.label}</h4>
                 <div className="space-y-2">
                   <div className="text-2xl font-bold text-gray-900">
-                    {metric.period1Value.toFixed(1)}{metric.suffix}
+                    {metric.period1Value.toFixed(1)}
+                    {metric.suffix}
                   </div>
                   <div className="flex items-center justify-center">
                     <TrendIndicator
@@ -558,7 +647,8 @@ export function PerformanceComparison({
                     />
                   </div>
                   <div className="text-sm text-gray-500">
-                    vs {metric.period2Value.toFixed(1)}{metric.suffix}
+                    vs {metric.period2Value.toFixed(1)}
+                    {metric.suffix}
                   </div>
                 </div>
               </div>
@@ -576,7 +666,7 @@ export function PerformanceComparison({
             <div className="text-sm text-gray-600">Improved Stages</div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="p-4 text-center">
             <AlertTriangle className="w-8 h-8 text-red-500 mx-auto mb-2" />
@@ -584,7 +674,7 @@ export function PerformanceComparison({
             <div className="text-sm text-gray-600">Degraded Stages</div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="p-4 text-center">
             <Minus className="w-8 h-8 text-gray-500 mx-auto mb-2" />
@@ -592,7 +682,7 @@ export function PerformanceComparison({
             <div className="text-sm text-gray-600">Stable Stages</div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="p-4 text-center">
             <TrendingUp className="w-8 h-8 text-blue-500 mx-auto mb-2" />
@@ -600,7 +690,7 @@ export function PerformanceComparison({
             <div className="text-sm text-gray-600">New Stages</div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="p-4 text-center">
             <TrendingDown className="w-8 h-8 text-gray-500 mx-auto mb-2" />
@@ -622,19 +712,19 @@ export function PerformanceComparison({
               <ResponsiveContainer width="100%" height={BAR_CHART_HEIGHT}>
                 <BarChart data={stageComparisonData.slice(0, OVERVIEW_CHART_SLICE_LIMIT)}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                  <XAxis 
-                    dataKey="stageName" 
-                    stroke="#6b7280" 
+                  <XAxis
+                    dataKey="stageName"
+                    stroke="#6b7280"
                     fontSize={12}
                     angle={-45}
                     textAnchor="end"
                     height={80}
                   />
-                  <YAxis 
-                    stroke="#6b7280" 
+                  <YAxis
+                    stroke="#6b7280"
                     fontSize={12}
                     domain={[0, 100]}
-                    tickFormatter={(value) => `${value}%`}
+                    tickFormatter={value => `${value}%`}
                   />
                   <Tooltip
                     contentStyle={{
@@ -660,19 +750,15 @@ export function PerformanceComparison({
               <ResponsiveContainer width="100%" height={BAR_CHART_HEIGHT}>
                 <BarChart data={stageComparisonData.slice(0, OVERVIEW_CHART_SLICE_LIMIT)}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                  <XAxis 
-                    dataKey="stageName" 
-                    stroke="#6b7280" 
+                  <XAxis
+                    dataKey="stageName"
+                    stroke="#6b7280"
                     fontSize={12}
                     angle={-45}
                     textAnchor="end"
                     height={80}
                   />
-                  <YAxis 
-                    stroke="#6b7280" 
-                    fontSize={12}
-                    tickFormatter={(value) => `${value}ms`}
-                  />
+                  <YAxis stroke="#6b7280" fontSize={12} tickFormatter={value => `${value}ms`} />
                   <Tooltip
                     contentStyle={{
                       backgroundColor: '#ffffff',
@@ -724,16 +810,14 @@ export function PerformanceComparison({
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {comparison.stages.map((stage) => {
+                  {comparison.stages.map(stage => {
                     const p1Stage = periods.period1.stages.find(s => s.stageId === stage.stageId);
                     const p2Stage = periods.period2.stages.find(s => s.stageId === stage.stageId);
 
                     return (
                       <tr key={stage.stageId} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">
-                            {stage.stageName}
-                          </div>
+                          <div className="text-sm font-medium text-gray-900">{stage.stageName}</div>
                           <div className="text-sm text-gray-500">{stage.stageId}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -769,13 +853,20 @@ export function PerformanceComparison({
                           )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            stage.status === 'compared' ? 'bg-blue-100 text-blue-800' :
-                            stage.status === 'new_in_period2' ? 'bg-green-100 text-green-800' :
-                            'bg-red-100 text-red-800'
-                          }`}>
-                            {stage.status === 'compared' ? 'Compared' :
-                             stage.status === 'new_in_period2' ? 'New' : 'Removed'}
+                          <span
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              stage.status === 'compared'
+                                ? 'bg-blue-100 text-blue-800'
+                                : stage.status === 'new_in_period2'
+                                  ? 'bg-green-100 text-green-800'
+                                  : 'bg-red-100 text-red-800'
+                            }`}
+                          >
+                            {stage.status === 'compared'
+                              ? 'Compared'
+                              : stage.status === 'new_in_period2'
+                                ? 'New'
+                                : 'Removed'}
                           </span>
                         </td>
                       </tr>
@@ -805,7 +896,7 @@ export function PerformanceComparison({
                   angle={90}
                   domain={[0, 100]}
                   tick={{ fontSize: 10 }}
-                  tickFormatter={(value) => `${value}%`}
+                  tickFormatter={value => `${value}%`}
                 />
                 <Radar
                   name="Period 1 (Recent)"

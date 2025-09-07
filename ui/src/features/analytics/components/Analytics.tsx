@@ -30,20 +30,27 @@ function transformAnalyticsData(data?: AnalyticsData): ValidationMetrics | undef
   const failedRuns = data.totalRuns - successfulRuns;
 
   // Transform stages data to stageMetrics format
-  const stageMetrics = (data.stages || []).reduce((acc, stage) => {
-    const successfulStageRuns = Math.floor((stage.successRate / 100) * stage.totalRuns);
-    acc[stage.stageName.toLowerCase().replace(/\s+/g, '-')] = {
-      id: stage.stageName.toLowerCase().replace(/\s+/g, '-'),
-      name: stage.stageName,
-      enabled: true,
-      attempts: stage.totalRuns,
-      successes: successfulStageRuns,
-      successRate: stage.successRate / 100,
-      averageDuration: stage.averageDuration,
-      totalRuns: stage.totalRuns,
-    };
-    return acc;
-  }, {} as ValidationMetrics['stageMetrics']);
+  const stageMetrics = (data.stages || []).reduce(
+    (acc, stage, index) => {
+      // Handle missing stageName field gracefully
+      const stageName = stage.stageName || `Stage ${index + 1}` || 'Unknown Stage';
+      const stageKey = stageName.toLowerCase().replace(/\s+/g, '-');
+      const successfulStageRuns = Math.floor((stage.successRate / 100) * stage.totalRuns);
+
+      acc[stageKey] = {
+        id: stageKey,
+        name: stageName,
+        enabled: true,
+        attempts: stage.totalRuns,
+        successes: successfulStageRuns,
+        successRate: stage.successRate / 100,
+        averageDuration: stage.averageDuration,
+        totalRuns: stage.totalRuns,
+      };
+      return acc;
+    },
+    {} as ValidationMetrics['stageMetrics']
+  );
 
   return {
     totalRuns: data.totalRuns,
@@ -82,9 +89,17 @@ function useAnalyticsData(agentFilter?: string) {
 
 export function Analytics() {
   const [selectedAgent, setSelectedAgent] = useState<string>('');
-  const { metrics, runs, isLoading, error, refetch } = useAnalyticsData(
-    selectedAgent || undefined
-  );
+  const { metrics, runs, isLoading, error, refetch } = useAnalyticsData(selectedAgent || undefined);
+
+  // Debug logging
+  console.log('🔍 Analytics component debug:', {
+    metrics: !!metrics,
+    metricsData: metrics,
+    runs: runs?.length || 0,
+    isLoading,
+    error: !!error,
+    errorMessage: error?.message,
+  });
 
   // Extract unique agent IDs from runs for filter options
   const agentIds = React.useMemo(() => {
@@ -101,9 +116,7 @@ export function Analytics() {
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Failed to load analytics
-            </h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Failed to load analytics</h3>
             <p className="text-gray-600 mb-4">
               There was an error loading the validation analytics data.
             </p>
@@ -121,17 +134,15 @@ export function Analytics() {
       {/* Agent Filter */}
       <div className="mb-6">
         <div className="flex items-center gap-4">
-          <label className="text-sm font-medium text-gray-700">
-            Filter by Agent:
-          </label>
+          <label className="text-sm font-medium text-gray-700">Filter by Agent:</label>
           <Select
             value={selectedAgent}
-            onChange={(e) => setSelectedAgent(e.target.value)}
+            onChange={e => setSelectedAgent(e.target.value)}
             className="w-48"
             data-testid="agent-filter"
           >
             <Option value="">All Agents</Option>
-            {agentIds.map((agentId) => (
+            {agentIds.map(agentId => (
               <Option key={agentId} value={agentId}>
                 {agentId}
               </Option>
@@ -141,13 +152,16 @@ export function Analytics() {
       </div>
 
       {metrics && (
-        <div data-testid={selectedAgent ? "filtered-metrics" : "metrics-summary"}>
+        <div data-testid={selectedAgent ? 'filtered-metrics' : 'metrics-summary'}>
           <MetricsSummary metrics={metrics} />
         </div>
       )}
 
       {/* Time Series Charts */}
-      <div className="mb-6" data-testid={selectedAgent ? "agent-specific-charts" : "time-series-charts"}>
+      <div
+        className="mb-6"
+        data-testid={selectedAgent ? 'agent-specific-charts' : 'time-series-charts'}
+      >
         <TimeSeriesCharts runs={runs} />
       </div>
 
@@ -172,10 +186,10 @@ export function Analytics() {
         </CardHeader>
         <CardContent>
           <p className="text-blue-800 mb-4">
-            Get deeper insights into your validation pipeline performance with advanced stage analytics,
-            historical trends, and comparative analysis across different time periods.
+            Get deeper insights into your validation pipeline performance with advanced stage
+            analytics, historical trends, and comparative analysis across different time periods.
           </p>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Link to="/stage-history?view=statistics" className="block">
               <div className="p-4 bg-white rounded-lg border border-blue-200 hover:border-blue-300 transition-colors group">
@@ -187,7 +201,8 @@ export function Analytics() {
                   <ExternalLink className="w-3 h-3 text-gray-400 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>
                 <p className="text-sm text-gray-600">
-                  Detailed performance metrics, reliability analysis, and success rate trends for each stage.
+                  Detailed performance metrics, reliability analysis, and success rate trends for
+                  each stage.
                 </p>
               </div>
             </Link>
@@ -202,7 +217,8 @@ export function Analytics() {
                   <ExternalLink className="w-3 h-3 text-gray-400 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>
                 <p className="text-sm text-gray-600">
-                  Interactive timeline view with animation, trends visualization, and real-time monitoring.
+                  Interactive timeline view with animation, trends visualization, and real-time
+                  monitoring.
                 </p>
               </div>
             </Link>

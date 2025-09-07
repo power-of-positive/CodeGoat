@@ -69,15 +69,17 @@ export function PermissionEditor() {
     queryKey: ['permission-config'],
     queryFn: permissionApi.getPermissionConfig,
   });
-  
-  const config = configData as { defaultAllow?: boolean; enableLogging?: boolean; strictMode?: boolean } | undefined;
+
+  const config = configData as
+    | { defaultAllow?: boolean; enableLogging?: boolean; strictMode?: boolean }
+    | undefined;
 
   // Fetch permission rules
   const { data: rulesData = [], isLoading: rulesLoading } = useQuery({
     queryKey: ['permission-rules'],
     queryFn: permissionApi.getPermissionRules,
   });
-  
+
   const rules = rulesData as PermissionRule[];
 
   // Fetch default configurations
@@ -88,7 +90,8 @@ export function PermissionEditor() {
 
   // Create rule mutation
   const createRuleMutation = useMutation({
-    mutationFn: (data: PermissionFormData) => permissionApi.createPermissionRule(data as unknown as Record<string, unknown>),
+    mutationFn: (data: PermissionFormData) =>
+      permissionApi.createPermissionRule(data as unknown as Record<string, unknown>),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['permission-rules'] });
       setShowCreateForm(false);
@@ -98,13 +101,8 @@ export function PermissionEditor() {
 
   // Update rule mutation
   const updateRuleMutation = useMutation({
-    mutationFn: ({
-      id,
-      updates,
-    }: {
-      id: string;
-      updates: Partial<PermissionRule>;
-    }) => permissionApi.updatePermissionRule(id, updates),
+    mutationFn: ({ id, updates }: { id: string; updates: Partial<PermissionRule> }) =>
+      permissionApi.updatePermissionRule(id, updates),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['permission-rules'] });
       setEditingRule(null);
@@ -122,7 +120,8 @@ export function PermissionEditor() {
 
   // Update config mutation
   const updateConfigMutation = useMutation({
-    mutationFn: (data: Partial<PermissionConfig>) => permissionApi.updatePermissionConfig(data as Record<string, unknown>),
+    mutationFn: (data: Partial<PermissionConfig>) =>
+      permissionApi.updatePermissionConfig(data as Record<string, unknown>),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['permission-config'] });
     },
@@ -130,9 +129,9 @@ export function PermissionEditor() {
 
   // Test permission mutation
   const testPermissionMutation = useMutation({
-    mutationFn: ({ action, resource }: { action: string; resource: string }) => 
+    mutationFn: ({ action, resource }: { action: string; resource: string }) =>
       permissionApi.testPermission(action, resource),
-    onSuccess: (result) => {
+    onSuccess: result => {
       setTestResult({
         allowed: result.allowed,
         reason: result.reason || '',
@@ -146,9 +145,7 @@ export function PermissionEditor() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['permission-rules'] });
       queryClient.invalidateQueries({ queryKey: ['permission-config'] });
-      alert(
-        'Successfully imported permission rules from .claude/settings.json'
-      );
+      alert('Successfully imported permission rules from .claude/settings.json');
     },
     onError: (error: Error) => {
       const errorMessage = error?.message || 'Failed to import Claude settings';
@@ -207,11 +204,7 @@ export function PermissionEditor() {
   };
 
   const handleLoadDefaultConfig = (configName: string) => {
-    if (
-      confirm(
-        `Load ${configName} configuration? This will replace current settings.`
-      )
-    ) {
+    if (confirm(`Load ${configName} configuration? This will replace current settings.`)) {
       const defaultConfig = defaultConfigs[configName];
       if (defaultConfig) {
         updateConfigMutation.mutate(defaultConfig);
@@ -270,9 +263,7 @@ export function PermissionEditor() {
   if (configLoading || rulesLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">
-          Loading permissions configuration...
-        </div>
+        <div className="text-gray-500">Loading permissions configuration...</div>
       </div>
     );
   }
@@ -302,10 +293,7 @@ export function PermissionEditor() {
               <TestTube className="h-4 w-4" />
               Test Permission
             </Button>
-            <Button
-              onClick={() => setShowCreateForm(true)}
-              className="flex items-center gap-2"
-            >
+            <Button onClick={() => setShowCreateForm(true)} className="flex items-center gap-2">
               <Plus className="h-4 w-4" />
               Add Rule
             </Button>
@@ -327,9 +315,7 @@ export function PermissionEditor() {
                 id="defaultAllow"
                 type="checkbox"
                 checked={config?.defaultAllow || false}
-                onChange={(e) =>
-                  handleConfigUpdate({ defaultAllow: e.target.checked })
-                }
+                onChange={e => handleConfigUpdate({ defaultAllow: e.target.checked })}
                 className="h-4 w-4 text-blue-600 rounded"
               />
             </div>
@@ -339,9 +325,7 @@ export function PermissionEditor() {
                 id="enableLogging"
                 type="checkbox"
                 checked={config?.enableLogging || false}
-                onChange={(e) =>
-                  handleConfigUpdate({ enableLogging: e.target.checked })
-                }
+                onChange={e => handleConfigUpdate({ enableLogging: e.target.checked })}
                 className="h-4 w-4 text-blue-600 rounded"
               />
             </div>
@@ -351,9 +335,7 @@ export function PermissionEditor() {
                 id="strictMode"
                 type="checkbox"
                 checked={config?.strictMode || false}
-                onChange={(e) =>
-                  handleConfigUpdate({ strictMode: e.target.checked })
-                }
+                onChange={e => handleConfigUpdate({ strictMode: e.target.checked })}
                 className="h-4 w-4 text-blue-600 rounded"
               />
             </div>
@@ -365,7 +347,7 @@ export function PermissionEditor() {
               Load Default Configuration:
             </h3>
             <div className="flex gap-2 flex-wrap">
-              {Object.keys(defaultConfigs).map((configName) => (
+              {Object.keys(defaultConfigs).map(configName => (
                 <Button
                   key={configName}
                   variant="outline"
@@ -398,8 +380,7 @@ export function PermissionEditor() {
                 : 'Import .claude/settings.json'}
             </Button>
             <p className="text-xs text-gray-500 mt-1">
-              Import deny patterns from .claude/settings.json as permission
-              rules
+              Import deny patterns from .claude/settings.json as permission rules
             </p>
           </div>
         </Card>
@@ -419,14 +400,14 @@ export function PermissionEditor() {
                 <Select
                   id="testAction"
                   value={testData.action}
-                  onChange={(e) =>
+                  onChange={e =>
                     setTestData({
                       ...testData,
                       action: e.target.value as PermissionActionType,
                     })
                   }
                 >
-                  {Object.values(PermissionActionType).map((action) => (
+                  {Object.values(PermissionActionType).map(action => (
                     <Option key={action} value={action}>
                       {getActionIcon(action)} {action.replace('_', ' ')}
                     </Option>
@@ -438,9 +419,7 @@ export function PermissionEditor() {
                 <Input
                   id="testTarget"
                   value={testData.target || ''}
-                  onChange={(e) =>
-                    setTestData({ ...testData, target: e.target.value })
-                  }
+                  onChange={e => setTestData({ ...testData, target: e.target.value })}
                   placeholder="e.g., /path/to/file or git status"
                 />
               </div>
@@ -449,9 +428,7 @@ export function PermissionEditor() {
                 <Input
                   id="testWorktree"
                   value={testData.worktreeDir || ''}
-                  onChange={(e) =>
-                    setTestData({ ...testData, worktreeDir: e.target.value })
-                  }
+                  onChange={e => setTestData({ ...testData, worktreeDir: e.target.value })}
                   placeholder="e.g., /tmp/workspace"
                 />
               </div>
@@ -464,9 +441,7 @@ export function PermissionEditor() {
                 data-testid="test-permission-submit"
               >
                 <TestTube className="h-4 w-4" />
-                {testPermissionMutation.isPending
-                  ? 'Testing...'
-                  : 'Test Permission'}
+                {testPermissionMutation.isPending ? 'Testing...' : 'Test Permission'}
               </Button>
               {testResult && (
                 <div
@@ -482,8 +457,7 @@ export function PermissionEditor() {
                     <AlertCircle className="h-4 w-4" />
                   )}
                   <span className="text-sm">
-                    {testResult.allowed ? 'Allowed' : 'Denied'}:{' '}
-                    {testResult.reason}
+                    {testResult.allowed ? 'Allowed' : 'Denied'}: {testResult.reason}
                   </span>
                 </div>
               )}
@@ -516,14 +490,14 @@ export function PermissionEditor() {
                 <Select
                   id="action"
                   value={formData.action}
-                  onChange={(e) =>
+                  onChange={e =>
                     setFormData({
                       ...formData,
                       action: e.target.value as PermissionActionType,
                     })
                   }
                 >
-                  {Object.values(PermissionActionType).map((action) => (
+                  {Object.values(PermissionActionType).map(action => (
                     <Option key={action} value={action}>
                       {getActionIcon(action)} {action.replace('_', ' ')}
                     </Option>
@@ -536,14 +510,14 @@ export function PermissionEditor() {
                 <Select
                   id="scope"
                   value={formData.scope}
-                  onChange={(e) =>
+                  onChange={e =>
                     setFormData({
                       ...formData,
                       scope: e.target.value as PermissionScope,
                     })
                   }
                 >
-                  {Object.values(PermissionScope).map((scope) => (
+                  {Object.values(PermissionScope).map(scope => (
                     <Option key={scope} value={scope}>
                       {scope.replace('_', ' ')}
                     </Option>
@@ -558,9 +532,7 @@ export function PermissionEditor() {
                   <Input
                     id="resource"
                     value={formData.resource || ''}
-                    onChange={(e) =>
-                      setFormData({ ...formData, resource: e.target.value })
-                    }
+                    onChange={e => setFormData({ ...formData, resource: e.target.value })}
                     placeholder={
                       formData.scope === PermissionScope.SPECIFIC_PATH
                         ? 'e.g., /tmp/allowed'
@@ -576,7 +548,7 @@ export function PermissionEditor() {
                   id="priority"
                   type="number"
                   value={formData.priority}
-                  onChange={(e) =>
+                  onChange={e =>
                     setFormData({
                       ...formData,
                       priority: parseInt(e.target.value),
@@ -607,9 +579,7 @@ export function PermissionEditor() {
                     type="radio"
                     name="permission"
                     checked={!formData.allowed}
-                    onChange={() =>
-                      setFormData({ ...formData, allowed: false })
-                    }
+                    onChange={() => setFormData({ ...formData, allowed: false })}
                     className="h-4 w-4 text-red-600"
                   />
                   <Label htmlFor="denied" className="text-red-600">
@@ -623,9 +593,7 @@ export function PermissionEditor() {
                 <Textarea
                   id="description"
                   value={formData.description || ''}
-                  onChange={(e) =>
-                    setFormData({ ...formData, description: e.target.value })
-                  }
+                  onChange={e => setFormData({ ...formData, description: e.target.value })}
                   placeholder="Explain why this rule exists..."
                   rows={3}
                 />
@@ -634,9 +602,7 @@ export function PermissionEditor() {
 
             <Button
               onClick={editingRule ? handleUpdateRule : handleCreateRule}
-              disabled={
-                createRuleMutation.isPending || updateRuleMutation.isPending
-              }
+              disabled={createRuleMutation.isPending || updateRuleMutation.isPending}
               className="w-full"
             >
               {editingRule ? 'Update Rule' : 'Create Rule'}
@@ -663,31 +629,23 @@ export function PermissionEditor() {
             <div className="space-y-3">
               {rules
                 .sort((a, b) => b.priority - a.priority)
-                .map((rule) => (
+                .map(rule => (
                   <div
                     key={rule.id}
                     className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800"
                   >
                     <div className="flex items-center gap-4 flex-1">
-                      <div className="text-2xl">
-                        {getActionIcon(rule.action)}
-                      </div>
+                      <div className="text-2xl">{getActionIcon(rule.action)}</div>
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
                           <span className="font-medium text-gray-900 dark:text-gray-100">
                             {rule.action.replace('_', ' ')}
                           </span>
-                          <Badge className={getScopeColor(rule.scope)}>
-                            {rule.scope}
-                          </Badge>
-                          <Badge
-                            variant={rule.allowed ? 'default' : 'destructive'}
-                          >
+                          <Badge className={getScopeColor(rule.scope)}>{rule.scope}</Badge>
+                          <Badge variant={rule.allowed ? 'default' : 'destructive'}>
                             {rule.allowed ? 'Allow' : 'Deny'}
                           </Badge>
-                          <span className="text-sm text-gray-500">
-                            Priority: {rule.priority}
-                          </span>
+                          <span className="text-sm text-gray-500">Priority: {rule.priority}</span>
                         </div>
                         {rule.target && (
                           <div className="text-sm text-gray-600 dark:text-gray-400">

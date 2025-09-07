@@ -26,7 +26,8 @@ const HOURS_PER_DAY = 24;
 const MINUTES_PER_HOUR = 60;
 const SECONDS_PER_MINUTE = 60;
 const MILLISECONDS_PER_SECOND = 1000;
-const MILLISECONDS_PER_DAY = HOURS_PER_DAY * MINUTES_PER_HOUR * SECONDS_PER_MINUTE * MILLISECONDS_PER_SECOND;
+const MILLISECONDS_PER_DAY =
+  HOURS_PER_DAY * MINUTES_PER_HOUR * SECONDS_PER_MINUTE * MILLISECONDS_PER_SECOND;
 const DEFAULT_REFRESH_INTERVAL_MS = MINUTES_PER_HOUR * SECONDS_PER_MINUTE * MILLISECONDS_PER_SECOND; // 1 minute
 const QUICK_SELECT_PRESET_LIMIT = 4;
 
@@ -87,16 +88,18 @@ const REFRESH_INTERVALS = [
   { label: '15 minutes', value: 900000 },
 ];
 
-export function StageHistoryDashboard({ 
+export function StageHistoryDashboard({
   initialView = 'statistics',
-  stageId: initialStageId = ''
+  stageId: initialStageId = '',
 }: StageHistoryDashboardProps) {
   const [searchParams, setSearchParams] = useSearchParams();
   // const navigate = useNavigate(); // Commented out - not currently used
 
   // Parse initial state from URL parameters
   const viewFromURL = searchParams.get('view');
-  const currentView = (viewFromURL && viewFromURL in VIEW_CONFIG ? viewFromURL : initialView) as keyof typeof VIEW_CONFIG;
+  const currentView = (
+    viewFromURL && viewFromURL in VIEW_CONFIG ? viewFromURL : initialView
+  ) as keyof typeof VIEW_CONFIG;
   const urlDateRange = searchParams.get('dateRange');
   const urlEnvironment = searchParams.get('environment') || '';
   const urlStageId = searchParams.get('stageId') || initialStageId;
@@ -114,7 +117,7 @@ export function StageHistoryDashboard({
   const [filters, setFilters] = useState<FilterState>(() => {
     const defaultRange = getDefaultDateRange();
     let dateRange = defaultRange;
-    
+
     if (urlDateRange) {
       try {
         dateRange = JSON.parse(urlDateRange);
@@ -138,15 +141,15 @@ export function StageHistoryDashboard({
   // Update URL when filters change
   const updateURL = (newFilters: Partial<FilterState>, newView?: keyof typeof VIEW_CONFIG) => {
     const params = new URLSearchParams(searchParams);
-    
+
     if (newView) {
       params.set('view', newView);
     }
-    
+
     if (newFilters.dateRange) {
       params.set('dateRange', JSON.stringify(newFilters.dateRange));
     }
-    
+
     if (newFilters.environment !== undefined) {
       if (newFilters.environment) {
         params.set('environment', newFilters.environment);
@@ -154,7 +157,7 @@ export function StageHistoryDashboard({
         params.delete('environment');
       }
     }
-    
+
     if (newFilters.stageId !== undefined) {
       if (newFilters.stageId) {
         params.set('stageId', newFilters.stageId);
@@ -183,7 +186,7 @@ export function StageHistoryDashboard({
       start: start.toISOString().split('T')[0],
       end: end.toISOString().split('T')[0],
     };
-    
+
     handleFilterChange({ dateRange: newRange });
   };
 
@@ -207,29 +210,31 @@ export function StageHistoryDashboard({
   };
 
   const currentViewConfig = VIEW_CONFIG[currentView];
-  
+
   // Component mapping to avoid circular reference issues
   const componentMap = {
     StageStatistics,
     HistoricalTimeline,
     PerformanceComparison,
   };
-  
-  const CurrentViewComponent = currentViewConfig ? componentMap[currentViewConfig.component as keyof typeof componentMap] : null;
+
+  const CurrentViewComponent = currentViewConfig
+    ? componentMap[currentViewConfig.component as keyof typeof componentMap]
+    : null;
 
   const componentProps = useMemo(() => {
     // Calculate days for components that need it
     const startDate = new Date(filters.dateRange.start);
     const endDate = new Date(filters.dateRange.end);
     const days = Math.ceil((endDate.getTime() - startDate.getTime()) / MILLISECONDS_PER_DAY);
-    
+
     // Base props that all components might need for testing
     const baseProps = {
       stageId: filters.stageId || undefined,
       dateRange: filters.dateRange,
       environment: filters.environment || 'all', // Default to 'all' for tests
     };
-    
+
     switch (currentView) {
       case 'statistics':
         return {
@@ -249,33 +254,36 @@ export function StageHistoryDashboard({
           ...baseProps,
           defaultPeriod1: filters.dateRange,
           defaultPeriod2: {
-            start: new Date(startDate.getTime() - days * MILLISECONDS_PER_DAY).toISOString().split('T')[0],
+            start: new Date(startDate.getTime() - days * MILLISECONDS_PER_DAY)
+              .toISOString()
+              .split('T')[0],
             end: filters.dateRange.start,
           },
         };
     }
-    
+
     return baseProps;
   }, [currentView, filters]);
 
   return (
-    <div className={`space-y-6 ${expandedView ? 'fixed inset-0 z-50 bg-white p-6 overflow-auto' : 'p-6'}`}>
+    <div
+      className={`space-y-6 ${expandedView ? 'fixed inset-0 z-50 bg-white p-6 overflow-auto' : 'p-6'}`}
+    >
       {/* Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
           <div className="flex items-center gap-3">
-            {currentViewConfig && React.createElement(currentViewConfig.icon, { className: "w-8 h-8 text-blue-600" })}
+            {currentViewConfig &&
+              React.createElement(currentViewConfig.icon, { className: 'w-8 h-8 text-blue-600' })}
             <div>
               <h1 className="text-3xl font-bold text-gray-900">
                 Stage History & Performance Analytics
               </h1>
-              <p className="text-gray-600 mt-1">
-                {currentViewConfig?.description}
-              </p>
+              <p className="text-gray-600 mt-1">{currentViewConfig?.description}</p>
             </div>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-2">
           {expandedView && (
             <Button
@@ -288,7 +296,7 @@ export function StageHistoryDashboard({
               Exit Fullscreen
             </Button>
           )}
-          
+
           {!expandedView && (
             <Button
               variant="outline"
@@ -300,7 +308,7 @@ export function StageHistoryDashboard({
               Fullscreen
             </Button>
           )}
-          
+
           <Button
             variant="outline"
             size="sm"
@@ -310,7 +318,7 @@ export function StageHistoryDashboard({
             <Download className="w-4 h-4" />
             Export
           </Button>
-          
+
           <Button
             variant="outline"
             size="sm"
@@ -350,11 +358,7 @@ export function StageHistoryDashboard({
                 <Filter className="w-5 h-5" />
                 Global Filters & Settings
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowSettings(false)}
-              >
+              <Button variant="ghost" size="sm" onClick={() => setShowSettings(false)}>
                 <X className="w-4 h-4" />
               </Button>
             </CardTitle>
@@ -363,29 +367,31 @@ export function StageHistoryDashboard({
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Date Range */}
               <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">
-                  Date Range
-                </label>
+                <label className="block text-sm font-medium text-gray-700">Date Range</label>
                 <div className="space-y-2">
                   <div className="flex gap-2">
                     <input
                       type="date"
                       value={filters.dateRange.start}
-                      onChange={(e) => handleFilterChange({
-                        dateRange: { ...filters.dateRange, start: e.target.value }
-                      })}
+                      onChange={e =>
+                        handleFilterChange({
+                          dateRange: { ...filters.dateRange, start: e.target.value },
+                        })
+                      }
                       className="px-2 py-1 border rounded text-sm flex-1"
                     />
                     <input
                       type="date"
                       value={filters.dateRange.end}
-                      onChange={(e) => handleFilterChange({
-                        dateRange: { ...filters.dateRange, end: e.target.value }
-                      })}
+                      onChange={e =>
+                        handleFilterChange({
+                          dateRange: { ...filters.dateRange, end: e.target.value },
+                        })
+                      }
                       className="px-2 py-1 border rounded text-sm flex-1"
                     />
                   </div>
-                  
+
                   {/* Preset Ranges */}
                   <div>
                     <label className="block text-xs text-gray-500 mb-1">Quick Select:</label>
@@ -408,12 +414,10 @@ export function StageHistoryDashboard({
 
               {/* Environment Filter */}
               <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">
-                  Environment
-                </label>
+                <label className="block text-sm font-medium text-gray-700">Environment</label>
                 <Select
                   value={filters.environment}
-                  onChange={(e) => handleFilterChange({ environment: e.target.value })}
+                  onChange={e => handleFilterChange({ environment: e.target.value })}
                   className="w-full"
                   data-testid="environment-select"
                 >
@@ -426,12 +430,10 @@ export function StageHistoryDashboard({
 
               {/* Stage Filter */}
               <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">
-                  Specific Stage
-                </label>
+                <label className="block text-sm font-medium text-gray-700">Specific Stage</label>
                 <Select
                   value={filters.stageId}
-                  onChange={(e) => handleFilterChange({ stageId: e.target.value })}
+                  onChange={e => handleFilterChange({ stageId: e.target.value })}
                   className="w-full"
                   data-testid="stage-select"
                 >
@@ -448,29 +450,29 @@ export function StageHistoryDashboard({
 
               {/* Auto Refresh Settings */}
               <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">
-                  Auto Refresh
-                </label>
+                <label className="block text-sm font-medium text-gray-700">Auto Refresh</label>
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <input
                       type="checkbox"
                       id="autoRefresh"
                       checked={filters.autoRefresh}
-                      onChange={(e) => handleFilterChange({ autoRefresh: e.target.checked })}
+                      onChange={e => handleFilterChange({ autoRefresh: e.target.checked })}
                       className="rounded"
                     />
                     <label htmlFor="autoRefresh" className="text-sm text-gray-700">
                       Enable auto refresh
                     </label>
                   </div>
-                  
+
                   {filters.autoRefresh && (
                     <Select
                       value={filters.refreshInterval.toString()}
-                      onChange={(e) => handleFilterChange({ 
-                        refreshInterval: parseInt(e.target.value) 
-                      })}
+                      onChange={e =>
+                        handleFilterChange({
+                          refreshInterval: parseInt(e.target.value),
+                        })
+                      }
                       className="w-full"
                     >
                       {REFRESH_INTERVALS.slice(1).map(interval => (
@@ -524,14 +526,11 @@ export function StageHistoryDashboard({
             <div className="flex items-center justify-between text-sm text-gray-600">
               <div className="flex items-center gap-4">
                 <span>
-                  Period: {new Date(filters.dateRange.start).toLocaleDateString()} - {new Date(filters.dateRange.end).toLocaleDateString()}
+                  Period: {new Date(filters.dateRange.start).toLocaleDateString()} -{' '}
+                  {new Date(filters.dateRange.end).toLocaleDateString()}
                 </span>
-                {filters.environment && (
-                  <span>Environment: {filters.environment}</span>
-                )}
-                {filters.stageId && (
-                  <span>Stage: {filters.stageId}</span>
-                )}
+                {filters.environment && <span>Environment: {filters.environment}</span>}
+                {filters.stageId && <span>Stage: {filters.stageId}</span>}
               </div>
               <div className="flex items-center gap-2">
                 {filters.autoRefresh && (
@@ -540,9 +539,7 @@ export function StageHistoryDashboard({
                     <span className="text-xs">Auto-refreshing</span>
                   </div>
                 )}
-                <span className="text-xs">
-                  Last updated: {new Date().toLocaleTimeString()}
-                </span>
+                <span className="text-xs">Last updated: {new Date().toLocaleTimeString()}</span>
               </div>
             </div>
           </CardContent>

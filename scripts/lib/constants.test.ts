@@ -57,16 +57,16 @@ describe('constants', () => {
   describe('getMaxLinesConfig', () => {
     it('should return configuration object with current values', () => {
       const config = getMaxLinesConfig();
-      
+
       expect(config).toEqual({
         maxFileLines: expect.any(Number),
-        maxFunctionLines: expect.any(Number)
+        maxFunctionLines: expect.any(Number),
       });
     });
 
     it('should return current MAX_FILE_LINES and MAX_FUNCTION_LINES values', () => {
       const config = getMaxLinesConfig();
-      
+
       expect(config.maxFileLines).toBe(MAX_FILE_LINES);
       expect(config.maxFunctionLines).toBe(MAX_FUNCTION_LINES);
     });
@@ -75,10 +75,10 @@ describe('constants', () => {
       process.env.MAX_FILE_LINES = '300';
       process.env.MAX_FUNCTION_LINES = '100';
       jest.resetModules();
-      
+
       const { getMaxLinesConfig: getConfig } = require('./constants');
       const config = getConfig();
-      
+
       expect(config.maxFileLines).toBe(300);
       expect(config.maxFunctionLines).toBe(100);
     });

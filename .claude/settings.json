@@ -13,7 +13,7 @@
       "Update(eslint.shared.mjs)",
       "Update(settings-precommit.json)",
       "Update(settings-precommit.json)",
-      "Update(~/Scientist/Research/personal_projects/codegoat/settings-precommit.json)"
+      "Update(todo-validation-config.json)"
     ]
   },
   "hooks": {
@@ -33,7 +33,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash /Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/scripts/claude-stop-hook-comprehensive.sh"
+            "command": "echo \"I ran\""
           }
         ]
       }

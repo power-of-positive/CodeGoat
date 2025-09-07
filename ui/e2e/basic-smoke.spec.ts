@@ -48,7 +48,7 @@ test.describe('Basic Smoke Tests', () => {
     // Just verify we can access browser info and create page
     expect(browserName).toBeTruthy();
     expect(page).toBeTruthy();
-    
+
     await page.setContent('<html><body><h1>Config Test</h1></body></html>');
     await expect(page.locator('h1')).toContainText('Config Test');
   });

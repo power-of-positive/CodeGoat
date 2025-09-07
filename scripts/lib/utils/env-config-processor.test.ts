@@ -19,7 +19,9 @@ jest.mock('./env-config-helpers');
 const mockConfig = config as jest.MockedFunction<typeof config>;
 const mockFileExists = fileExists as jest.MockedFunction<typeof fileExists>;
 const mockProcessVariables = processVariables as jest.MockedFunction<typeof processVariables>;
-const mockApplyVariablesToEnv = applyVariablesToEnv as jest.MockedFunction<typeof applyVariablesToEnv>;
+const mockApplyVariablesToEnv = applyVariablesToEnv as jest.MockedFunction<
+  typeof applyVariablesToEnv
+>;
 const mockLogSuccess = logSuccess as jest.MockedFunction<typeof logSuccess>;
 const mockLogNoFileFound = logNoFileFound as jest.MockedFunction<typeof logNoFileFound>;
 
@@ -46,7 +48,7 @@ describe('env-config-processor', () => {
 
       expect(result).toEqual({
         success: true,
-        variablesLoaded: 2
+        variablesLoaded: 2,
       });
       expect(mockConfig).toHaveBeenCalledWith({ path: envPath, processEnv: {} });
       expect(mockProcessVariables).toHaveBeenCalledWith(parsed, mergedVariables, envPath);
@@ -127,7 +129,7 @@ describe('env-config-processor', () => {
 
       expect(result).toEqual({
         success: true,
-        variablesLoaded: 0
+        variablesLoaded: 0,
       });
     });
   });
@@ -153,10 +155,8 @@ describe('env-config-processor', () => {
       mockConfig
         .mockReturnValueOnce({ parsed: { VAR1: 'value1' } })
         .mockReturnValueOnce({ parsed: { VAR2: 'value2' } });
-      
-      mockProcessVariables
-        .mockReturnValueOnce(1)
-        .mockReturnValueOnce(1);
+
+      mockProcessVariables.mockReturnValueOnce(1).mockReturnValueOnce(1);
 
       const result = await loadFromMultipleFiles(envPaths, projectRoot);
 
@@ -164,7 +164,7 @@ describe('env-config-processor', () => {
         success: true,
         envPath: '/test/.env',
         variablesLoaded: 2,
-        mergedFrom: ['/test/.env', '/test/.env.local']
+        mergedFrom: ['/test/.env', '/test/.env.local'],
       });
       expect(mockApplyVariablesToEnv).toHaveBeenCalled();
       expect(mockLogSuccess).toHaveBeenCalledWith(2);
@@ -177,7 +177,7 @@ describe('env-config-processor', () => {
 
       expect(result).toEqual({
         success: false,
-        error: 'No .env file found in expected locations'
+        error: 'No .env file found in expected locations',
       });
       expect(mockLogNoFileFound).toHaveBeenCalledWith(projectRoot, envPaths);
     });
@@ -194,7 +194,7 @@ describe('env-config-processor', () => {
 
       expect(result).toEqual({
         success: false,
-        error: 'No .env file found in expected locations'
+        error: 'No .env file found in expected locations',
       });
       expect(mockLogNoFileFound).toHaveBeenCalledWith(projectRoot, envPaths);
     });
@@ -208,7 +208,7 @@ describe('env-config-processor', () => {
       mockConfig
         .mockReturnValueOnce({ parsed: { VAR1: 'value1' } })
         .mockReturnValueOnce({ error: new Error('Parse error') });
-      
+
       mockProcessVariables.mockReturnValueOnce(1);
 
       const result = await loadFromMultipleFiles(envPaths, projectRoot);
@@ -217,7 +217,7 @@ describe('env-config-processor', () => {
         success: true,
         envPath: '/test/.env',
         variablesLoaded: 1,
-        mergedFrom: ['/test/.env']
+        mergedFrom: ['/test/.env'],
       });
       expect(mockLogSuccess).toHaveBeenCalledWith(1);
     });
@@ -233,7 +233,7 @@ describe('env-config-processor', () => {
         success: true,
         envPath: '/test/.env',
         variablesLoaded: 0,
-        mergedFrom: ['/test/.env']
+        mergedFrom: ['/test/.env'],
       });
       expect(mockLogSuccess).toHaveBeenCalledWith(0);
     });
@@ -241,10 +241,7 @@ describe('env-config-processor', () => {
     it('should accumulate variables from multiple files', async () => {
       mockFileExists.mockResolvedValue(true);
       mockConfig.mockReturnValue({ parsed: { VAR: 'value' } });
-      mockProcessVariables
-        .mockReturnValueOnce(3)
-        .mockReturnValueOnce(2)
-        .mockReturnValueOnce(1);
+      mockProcessVariables.mockReturnValueOnce(3).mockReturnValueOnce(2).mockReturnValueOnce(1);
 
       const result = await loadFromMultipleFiles(envPaths, projectRoot);
 
@@ -252,7 +249,7 @@ describe('env-config-processor', () => {
         success: true,
         envPath: '/test/.env',
         variablesLoaded: 6,
-        mergedFrom: envPaths
+        mergedFrom: envPaths,
       });
       expect(mockLogSuccess).toHaveBeenCalledWith(6);
     });
@@ -268,7 +265,7 @@ describe('env-config-processor', () => {
         success: true,
         envPath: '/test/.env',
         variablesLoaded: 0,
-        mergedFrom: ['/test/.env']
+        mergedFrom: ['/test/.env'],
       });
     });
   });

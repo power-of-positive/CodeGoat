@@ -66,99 +66,106 @@ export function TaskGrid({
               isSelected ? 'ring-2 ring-blue-500 bg-blue-50' : ''
             }`}
             onClick={() => onTaskSelect(task.id, !isSelected)}
+            data-testid="task-card"
           >
             <Card>
-            <CardContent className="p-4">
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex gap-1 flex-wrap">
-                  <Badge className={`text-xs ${priorityColors[task.priority]}`}>
-                    {task.priority}
-                  </Badge>
-                  <Badge
-                    variant="outline"
-                    className={`text-xs ${
-                      task.taskType === 'story'
-                        ? 'border-blue-300 text-blue-700 bg-blue-50'
-                        : 'border-gray-300 text-gray-600 bg-gray-50'
-                    }`}
-                  >
-                    {task.taskType === 'story' ? 'Story' : 'Task'}
-                  </Badge>
-                </div>
-                <div className="flex items-center gap-1">
-                  <input
-                    type="checkbox"
-                    checked={isSelected}
-                    onChange={(e) => {
-                      e.stopPropagation();
-                      onTaskSelect(task.id, e.target.checked);
-                    }}
-                    className="rounded border-gray-300"
-                  />
-                </div>
-              </div>
-
-              <div className="mb-3">
-                <p className="text-sm font-mono text-blue-600 mb-1">{task.id}</p>
-                <p className="text-sm text-gray-900 leading-relaxed line-clamp-3">
-                  {task.content}
-                </p>
-              </div>
-
-              <div className="flex items-center justify-between mb-4">
-                <Badge className={`${statusConfig[task.status].color} flex items-center gap-1`}>
-                  <StatusIcon className="w-3 h-3" />
-                  {statusConfig[task.status].label}
-                </Badge>
-                {task.duration && (
-                  <div className="flex items-center gap-1 text-xs text-gray-500">
-                    <Clock className="w-3 h-3" />
-                    {task.duration}
+              <CardContent className="p-4">
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex gap-1 flex-wrap">
+                    <Badge
+                      className={`text-xs ${priorityColors[task.priority]}`}
+                    >
+                      {task.priority}
+                    </Badge>
+                    <Badge
+                      variant="outline"
+                      className={`text-xs ${
+                        task.taskType === 'story'
+                          ? 'border-blue-300 text-blue-700 bg-blue-50'
+                          : 'border-gray-300 text-gray-600 bg-gray-50'
+                      }`}
+                    >
+                      {task.taskType === 'story' ? 'Story' : 'Task'}
+                    </Badge>
                   </div>
-                )}
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onEdit(task);
-                    }}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity"
-                    aria-label={`Edit task ${task.id}`}
-                  >
-                    <Edit className="w-3 h-3" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onStartWorker(task);
-                    }}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity"
-                    aria-label={`Start worker for task ${task.id}`}
-                  >
-                    <Play className="w-3 h-3" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDelete(task.id);
-                    }}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity"
-                    aria-label={`Delete task ${task.id}`}
-                  >
-                    <Trash2 className="w-3 h-3" />
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        onTaskSelect(task.id, e.target.checked);
+                      }}
+                      className="rounded border-gray-300"
+                    />
+                  </div>
                 </div>
-              </div>
-            </CardContent>
+
+                <div className="mb-3">
+                  <p className="text-sm font-mono text-blue-600 mb-1">
+                    {task.id}
+                  </p>
+                  <p className="text-sm text-gray-900 leading-relaxed line-clamp-3">
+                    {task.content}
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-between mb-4">
+                  <Badge
+                    className={`${statusConfig[task.status].color} flex items-center gap-1`}
+                  >
+                    <StatusIcon className="w-3 h-3" />
+                    {statusConfig[task.status].label}
+                  </Badge>
+                  {task.duration && (
+                    <div className="flex items-center gap-1 text-xs text-gray-500">
+                      <Clock className="w-3 h-3" />
+                      {task.duration}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onEdit(task);
+                      }}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity"
+                      aria-label={`Edit task ${task.id}`}
+                    >
+                      <Edit className="w-3 h-3" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onStartWorker(task);
+                      }}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity"
+                      aria-label={`Start worker for task ${task.id}`}
+                    >
+                      <Play className="w-3 h-3" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDelete(task.id);
+                      }}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity"
+                      aria-label={`Delete task ${task.id}`}
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
             </Card>
           </div>
         );

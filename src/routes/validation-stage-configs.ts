@@ -4,11 +4,17 @@
  */
 
 import { Router, Request, Response } from 'express';
-import { PrismaClient } from '@prisma/client';
 import { body, param, query, validationResult } from 'express-validator';
+import { getDatabaseService } from '../services/database';
 
 const router = Router();
-const prisma = new PrismaClient();
+let prisma: ReturnType<typeof getDatabaseService> | null = null;
+
+// Lazy initialization of database connection
+function getDatabase() {
+  prisma ??= getDatabaseService();
+  return prisma;
+}
 
 /**
  * Input validation schemas
@@ -31,17 +37,12 @@ const createValidationStageSchema = [
     .optional()
     .isInt({ min: 1000, max: 3600000 })
     .withMessage('Timeout must be between 1000ms and 1 hour'),
-  body('enabled')
-    .optional()
-    .isBoolean()
-    .withMessage('Enabled must be a boolean'),
+  body('enabled').optional().isBoolean().withMessage('Enabled must be a boolean'),
   body('continueOnFailure')
     .optional()
     .isBoolean()
     .withMessage('Continue on failure must be a boolean'),
-  body('priority')
-    .isInt({ min: 1, max: 999 })
-    .withMessage('Priority must be between 1 and 999'),
+  body('priority').isInt({ min: 1, max: 999 }).withMessage('Priority must be between 1 and 999'),
   body('description')
     .optional()
     .isString()
@@ -69,10 +70,7 @@ const updateValidationStageSchema = [
     .optional()
     .isInt({ min: 1000, max: 3600000 })
     .withMessage('Timeout must be between 1000ms and 1 hour'),
-  body('enabled')
-    .optional()
-    .isBoolean()
-    .withMessage('Enabled must be a boolean'),
+  body('enabled').optional().isBoolean().withMessage('Enabled must be a boolean'),
   body('continueOnFailure')
     .optional()
     .isBoolean()
@@ -102,7 +100,7 @@ function handleValidationErrors(req: Request, res: Response): boolean {
     res.status(400).json({
       success: false,
       message: 'Validation failed',
-      errors: errors.array()
+      errors: errors.array(),
     });
     return true;
   }
@@ -113,7 +111,8 @@ function handleValidationErrors(req: Request, res: Response): boolean {
  * GET /api/validation-stage-configs
  * List all validation stage configurations
  */
-router.get('/', 
+router.get(
+  '/',
   query('category').optional().isString(),
   query('enabled').optional().isBoolean(),
   async (req: Request, res: Response) => {
@@ -124,20 +123,20 @@ router.get('/',
 
       const { category, enabled } = req.query;
       const where: Record<string, unknown> = {};
-      
+
       if (category) {
         where.category = category as string;
       }
-      
+
       if (enabled !== undefined) {
         where.enabled = enabled === 'true';
       }
 
-      const stages = await prisma.validationStageConfig.findMany({
+      const stages = await getDatabase().validationStageConfig.findMany({
         where,
         orderBy: {
-          priority: 'asc'
-        }
+          priority: 'asc',
+        },
       });
 
       res.json({
@@ -146,14 +145,14 @@ router.get('/',
         meta: {
           total: stages.length,
           enabled: stages.filter(s => s.enabled).length,
-          disabled: stages.filter(s => !s.enabled).length
-        }
+          disabled: stages.filter(s => !s.enabled).length,
+        },
       });
     } catch (error) {
       console.error('Error fetching validation stage configs:', error);
       res.status(500).json({
         success: false,
-        message: 'Failed to fetch validation stage configurations'
+        message: 'Failed to fetch validation stage configurations',
       });
     }
   }
@@ -163,7 +162,8 @@ router.get('/',
  * GET /api/validation-stage-configs/:stageId
  * Get a specific validation stage configuration
  */
-router.get('/:stageId',
+router.get(
+  '/:stageId',
   param('stageId').isString().isLength({ min: 1 }),
   async (req: Request, res: Response) => {
     try {
@@ -172,27 +172,27 @@ router.get('/:stageId',
       }
 
       const { stageId } = req.params;
-      
-      const stage = await prisma.validationStageConfig.findUnique({
-        where: { stageId }
+
+      const stage = await getDatabase().validationStageConfig.findUnique({
+        where: { stageId },
       });
 
       if (!stage) {
         return res.status(404).json({
           success: false,
-          message: 'Validation stage configuration not found'
+          message: 'Validation stage configuration not found',
         });
       }
 
       res.json({
         success: true,
-        data: stage
+        data: stage,
       });
     } catch (error) {
       console.error('Error fetching validation stage config:', error);
       res.status(500).json({
         success: false,
-        message: 'Failed to fetch validation stage configuration'
+        message: 'Failed to fetch validation stage configuration',
       });
     }
   }
@@ -202,72 +202,70 @@ router.get('/:stageId',
  * POST /api/validation-stage-configs
  * Create a new validation stage configuration
  */
-router.post('/',
-  ...createValidationStageSchema,
-  async (req: Request, res: Response) => {
-    try {
-      if (handleValidationErrors(req, res)) {
-        return;
-      }
+router.post('/', ...createValidationStageSchema, async (req: Request, res: Response) => {
+  try {
+    if (handleValidationErrors(req, res)) {
+      return;
+    }
 
-      const {
+    const {
+      stageId,
+      name,
+      command,
+      timeout = 60000,
+      enabled = true,
+      continueOnFailure = false,
+      priority,
+      description,
+      category = 'other',
+    } = req.body;
+
+    // Check if stageId already exists
+    const existing = await getDatabase().validationStageConfig.findUnique({
+      where: { stageId },
+    });
+
+    if (existing) {
+      return res.status(409).json({
+        success: false,
+        message: 'A validation stage with this ID already exists',
+      });
+    }
+
+    const stage = await getDatabase().validationStageConfig.create({
+      data: {
         stageId,
         name,
         command,
-        timeout = 60000,
-        enabled = true,
-        continueOnFailure = false,
+        timeout,
+        enabled,
+        continueOnFailure,
         priority,
         description,
-        category = 'other'
-      } = req.body;
+        category,
+      },
+    });
 
-      // Check if stageId already exists
-      const existing = await prisma.validationStageConfig.findUnique({
-        where: { stageId }
-      });
-
-      if (existing) {
-        return res.status(409).json({
-          success: false,
-          message: 'A validation stage with this ID already exists'
-        });
-      }
-
-      const stage = await prisma.validationStageConfig.create({
-        data: {
-          stageId,
-          name,
-          command,
-          timeout,
-          enabled,
-          continueOnFailure,
-          priority,
-          description,
-          category
-        }
-      });
-
-      res.status(201).json({
-        success: true,
-        data: stage,
-        message: 'Validation stage configuration created successfully'
-      });
-    } catch (error) {
-      console.error('Error creating validation stage config:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to create validation stage configuration'
-      });
-    }
+    res.status(201).json({
+      success: true,
+      data: stage,
+      message: 'Validation stage configuration created successfully',
+    });
+  } catch (error) {
+    console.error('Error creating validation stage config:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create validation stage configuration',
+    });
   }
-);
+});
 
 /**
  * PUT /api/validation-stage-configs/:stageId
  * Update a validation stage configuration
  */
-router.put('/:stageId',
+router.put(
+  '/:stageId',
   param('stageId').isString().isLength({ min: 1 }),
   ...updateValidationStageSchema,
   async (req: Request, res: Response) => {
@@ -280,32 +278,32 @@ router.put('/:stageId',
       const updateData = req.body;
 
       // Check if stage exists
-      const existing = await prisma.validationStageConfig.findUnique({
-        where: { stageId }
+      const existing = await getDatabase().validationStageConfig.findUnique({
+        where: { stageId },
       });
 
       if (!existing) {
         return res.status(404).json({
           success: false,
-          message: 'Validation stage configuration not found'
+          message: 'Validation stage configuration not found',
         });
       }
 
-      const stage = await prisma.validationStageConfig.update({
+      const stage = await getDatabase().validationStageConfig.update({
         where: { stageId },
-        data: updateData
+        data: updateData,
       });
 
       res.json({
         success: true,
         data: stage,
-        message: 'Validation stage configuration updated successfully'
+        message: 'Validation stage configuration updated successfully',
       });
     } catch (error) {
       console.error('Error updating validation stage config:', error);
       res.status(500).json({
         success: false,
-        message: 'Failed to update validation stage configuration'
+        message: 'Failed to update validation stage configuration',
       });
     }
   }
@@ -315,7 +313,8 @@ router.put('/:stageId',
  * DELETE /api/validation-stage-configs/:stageId
  * Delete a validation stage configuration
  */
-router.delete('/:stageId',
+router.delete(
+  '/:stageId',
   param('stageId').isString().isLength({ min: 1 }),
   async (req: Request, res: Response) => {
     try {
@@ -326,30 +325,30 @@ router.delete('/:stageId',
       const { stageId } = req.params;
 
       // Check if stage exists
-      const existing = await prisma.validationStageConfig.findUnique({
-        where: { stageId }
+      const existing = await getDatabase().validationStageConfig.findUnique({
+        where: { stageId },
       });
 
       if (!existing) {
         return res.status(404).json({
           success: false,
-          message: 'Validation stage configuration not found'
+          message: 'Validation stage configuration not found',
         });
       }
 
-      await prisma.validationStageConfig.delete({
-        where: { stageId }
+      await getDatabase().validationStageConfig.delete({
+        where: { stageId },
       });
 
       res.json({
         success: true,
-        message: 'Validation stage configuration deleted successfully'
+        message: 'Validation stage configuration deleted successfully',
       });
     } catch (error) {
       console.error('Error deleting validation stage config:', error);
       res.status(500).json({
         success: false,
-        message: 'Failed to delete validation stage configuration'
+        message: 'Failed to delete validation stage configuration',
       });
     }
   }
@@ -359,7 +358,8 @@ router.delete('/:stageId',
  * POST /api/validation-stage-configs/:stageId/toggle
  * Toggle enabled status of a validation stage
  */
-router.post('/:stageId/toggle',
+router.post(
+  '/:stageId/toggle',
   param('stageId').isString().isLength({ min: 1 }),
   async (req: Request, res: Response) => {
     try {
@@ -370,32 +370,32 @@ router.post('/:stageId/toggle',
       const { stageId } = req.params;
 
       // Check if stage exists
-      const existing = await prisma.validationStageConfig.findUnique({
-        where: { stageId }
+      const existing = await getDatabase().validationStageConfig.findUnique({
+        where: { stageId },
       });
 
       if (!existing) {
         return res.status(404).json({
           success: false,
-          message: 'Validation stage configuration not found'
+          message: 'Validation stage configuration not found',
         });
       }
 
-      const stage = await prisma.validationStageConfig.update({
+      const stage = await getDatabase().validationStageConfig.update({
         where: { stageId },
-        data: { enabled: !existing.enabled }
+        data: { enabled: !existing.enabled },
       });
 
       res.json({
         success: true,
         data: stage,
-        message: `Validation stage ${stage.enabled ? 'enabled' : 'disabled'} successfully`
+        message: `Validation stage ${stage.enabled ? 'enabled' : 'disabled'} successfully`,
       });
     } catch (error) {
       console.error('Error toggling validation stage config:', error);
       res.status(500).json({
         success: false,
-        message: 'Failed to toggle validation stage configuration'
+        message: 'Failed to toggle validation stage configuration',
       });
     }
   }
@@ -405,13 +405,10 @@ router.post('/:stageId/toggle',
  * POST /api/validation-stage-configs/reorder
  * Reorder validation stages by updating priorities
  */
-router.post('/reorder',
-  body('stages')
-    .isArray()
-    .withMessage('Stages must be an array'),
-  body('stages.*.stageId')
-    .isString()
-    .withMessage('Each stage must have a stageId'),
+router.post(
+  '/reorder',
+  body('stages').isArray().withMessage('Stages must be an array'),
+  body('stages.*.stageId').isString().withMessage('Each stage must have a stageId'),
   body('stages.*.priority')
     .isInt({ min: 1, max: 999 })
     .withMessage('Each stage must have a valid priority'),
@@ -424,29 +421,29 @@ router.post('/reorder',
       const { stages } = req.body;
 
       // Update priorities in a transaction
-      await prisma.$transaction(async (tx) => {
+      await getDatabase().$transaction(async tx => {
         for (const stage of stages) {
           await tx.validationStageConfig.update({
             where: { stageId: stage.stageId },
-            data: { priority: stage.priority }
+            data: { priority: stage.priority },
           });
         }
       });
 
-      const updatedStages = await prisma.validationStageConfig.findMany({
-        orderBy: { priority: 'asc' }
+      const updatedStages = await getDatabase().validationStageConfig.findMany({
+        orderBy: { priority: 'asc' },
       });
 
       res.json({
         success: true,
         data: updatedStages,
-        message: 'Validation stages reordered successfully'
+        message: 'Validation stages reordered successfully',
       });
     } catch (error) {
       console.error('Error reordering validation stage configs:', error);
       res.status(500).json({
         success: false,
-        message: 'Failed to reorder validation stage configurations'
+        message: 'Failed to reorder validation stage configurations',
       });
     }
   }

@@ -16,26 +16,33 @@ describe('MarkdownRenderer', () => {
 
   it('renders inline code with backticks', () => {
     render(<MarkdownRenderer content="Use the `console.log()` function" />);
-    
+
     const codeElement = screen.getByText('console.log()');
     expect(codeElement.tagName).toBe('CODE');
-    expect(codeElement).toHaveClass('bg-gray-100', 'dark:bg-gray-800', 'px-1', 'rounded', 'text-sm');
+    expect(codeElement).toHaveClass(
+      'bg-gray-100',
+      'dark:bg-gray-800',
+      'px-1',
+      'rounded',
+      'text-sm'
+    );
   });
 
   it('renders multiple inline code blocks', () => {
     render(<MarkdownRenderer content="Use `npm install` and `npm start`" />);
-    
+
     const npmInstall = screen.getByText('npm install');
     const npmStart = screen.getByText('npm start');
-    
+
     expect(npmInstall.tagName).toBe('CODE');
     expect(npmStart.tagName).toBe('CODE');
   });
 
   it('renders code blocks with triple backticks', () => {
-    const content = 'Here is some code:\n```\nfunction test() {\n  return true;\n}\n```\nEnd of example.';
+    const content =
+      'Here is some code:\n```\nfunction test() {\n  return true;\n}\n```\nEnd of example.';
     const { container } = render(<MarkdownRenderer content={content} />);
-    
+
     const preElements = container.querySelectorAll('pre');
     expect(preElements).toHaveLength(1);
     expect(preElements[0]).toHaveClass(
@@ -51,18 +58,19 @@ describe('MarkdownRenderer', () => {
   it('renders multiple code blocks', () => {
     const content = '```\nfirst block\n```\nSome text\n```\nsecond block\n```';
     const { container } = render(<MarkdownRenderer content={content} />);
-    
+
     const preElements = container.querySelectorAll('pre');
     expect(preElements).toHaveLength(2);
   });
 
   it('handles mixed inline code and code blocks', () => {
-    const content = 'Use `npm install` first:\n```\nnpm install\nnpm start\n```\nThen run `npm test`';
+    const content =
+      'Use `npm install` first:\n```\nnpm install\nnpm start\n```\nThen run `npm test`';
     const { container } = render(<MarkdownRenderer content={content} />);
-    
+
     // Should have inline code elements
     expect(screen.getByText('npm test')).toBeInTheDocument();
-    
+
     // Should have a pre element for the code block
     const preElements = container.querySelectorAll('pre');
     expect(preElements).toHaveLength(1);
@@ -76,7 +84,7 @@ describe('MarkdownRenderer', () => {
   it('handles content with only backticks', () => {
     const { container } = render(<MarkdownRenderer content="```" />);
     expect(container.firstChild).toBeInTheDocument();
-    
+
     // Should create a pre element for the code block (even if empty)
     const preElements = container.querySelectorAll('pre');
     expect(preElements).toHaveLength(1);
@@ -96,15 +104,17 @@ describe('MarkdownRenderer', () => {
   it('handles code blocks with language indicators', () => {
     const content = '```javascript\nfunction test() {\n  return true;\n}\n```';
     const { container } = render(<MarkdownRenderer content={content} />);
-    
+
     const preElements = container.querySelectorAll('pre');
     expect(preElements).toHaveLength(1);
     expect(screen.getByText(/javascript/)).toBeInTheDocument();
   });
 
   it('handles nested backticks by splitting on every backtick', () => {
-    render(<MarkdownRenderer content="Use `console.log(\`Hello \${name}\`)` for template literals" />);
-    
+    render(
+      <MarkdownRenderer content="Use `console.log(\`Hello \${name}\`)` for template literals" />
+    );
+
     // The component splits on every backtick, so we should have multiple parts
     const { container } = render(<MarkdownRenderer content="Use `test` code" />);
     const codeElements = container.querySelectorAll('code');
@@ -114,14 +124,14 @@ describe('MarkdownRenderer', () => {
   it('handles code blocks with empty lines', () => {
     const content = '```\nfirst line\n\nsecond line\n```';
     const { container } = render(<MarkdownRenderer content={content} />);
-    
+
     const preElements = container.querySelectorAll('pre');
     expect(preElements).toHaveLength(1);
   });
 
   it('applies correct CSS classes to code elements', () => {
     render(<MarkdownRenderer content="Test `code` here" />);
-    
+
     const codeElement = screen.getByText('code');
     expect(codeElement).toHaveClass('bg-gray-100');
     expect(codeElement).toHaveClass('dark:bg-gray-800');
@@ -133,7 +143,7 @@ describe('MarkdownRenderer', () => {
   it('applies correct CSS classes to pre elements', () => {
     const content = '```\ntest code\n```';
     const { container } = render(<MarkdownRenderer content={content} />);
-    
+
     const preElement = container.querySelector('pre');
     expect(preElement).toHaveClass('bg-gray-100');
     expect(preElement).toHaveClass('dark:bg-gray-800');

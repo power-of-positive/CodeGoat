@@ -72,20 +72,14 @@ describe('TimeSeriesCharts Component', () => {
 
     expect(screen.getByText('Success Rate Over Time')).toBeInTheDocument();
     expect(screen.getByText('Average Duration Over Time')).toBeInTheDocument();
-    expect(
-      screen.getByText(/Percentage of successful validation runs by/)
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/Average validation pipeline duration by/)
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Percentage of successful validation runs by/)).toBeInTheDocument();
+    expect(screen.getByText(/Average validation pipeline duration by/)).toBeInTheDocument();
   });
 
   it('renders no data message when runs array is empty', () => {
     render(<TimeSeriesCharts runs={[]} />);
 
-    expect(
-      screen.getAllByText('No data available for last 7 days')
-    ).toHaveLength(2);
+    expect(screen.getAllByText('No data available for last 7 days')).toHaveLength(2);
   });
 
   it('renders chart components when data is available', () => {
@@ -168,9 +162,7 @@ describe('TimeSeriesCharts Component', () => {
   it('handles undefined runs gracefully', () => {
     render(<TimeSeriesCharts runs={undefined as any} />);
 
-    expect(
-      screen.getAllByText('No data available for last 7 days')
-    ).toHaveLength(2);
+    expect(screen.getAllByText('No data available for last 7 days')).toHaveLength(2);
   });
 
   it('groups runs by day correctly', () => {

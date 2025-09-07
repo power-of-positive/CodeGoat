@@ -46,19 +46,10 @@ export default function LogsViewer({
   const itemContent = useCallback(
     (index: number, entry: UnifiedLogEntry) => {
       if (useVibeLogComponent) {
-        return (
-          <VibeLogs
-            entry={entry}
-            index={index}
-          />
-        );
+        return <VibeLogs entry={entry} index={index} />;
       } else {
         return (
-          <LogEntryRow
-            entry={entry}
-            index={index}
-            setRowHeight={setRowHeight || (() => {})}
-          />
+          <LogEntryRow entry={entry} index={index} setRowHeight={setRowHeight || (() => {})} />
         );
       }
     },

@@ -9,37 +9,73 @@ const mockFetch = jest.fn();
 global.fetch = mockFetch;
 
 // Mock child components
-jest.mock('./BDDScenarioCard', () => ({ ScenarioCard: ({ scenario, onExecute }: any) => (
-  <div data-testid="scenario-card">
-    <span data-testid="scenario-title">{scenario.title}</span>
-    <span data-testid="scenario-status">{scenario.status}</span>
-    <button onClick={() => onExecute(scenario.id)} data-testid="execute-scenario">Execute</button>
-  </div>
-)}));
+jest.mock('./BDDScenarioCard', () => ({
+  ScenarioCard: ({ scenario, onExecute }: any) => (
+    <div data-testid="scenario-card">
+      <span data-testid="scenario-title">{scenario.title}</span>
+      <span data-testid="scenario-status">{scenario.status}</span>
+      <button onClick={() => onExecute(scenario.id)} data-testid="execute-scenario">
+        Execute
+      </button>
+    </div>
+  ),
+}));
 
-jest.mock('./BDDStatsCard', () => ({ StatsCard: ({ title, count, testId }: any) => (
-  <div data-testid={testId}><span>{title}: {count}</span></div>
-)}));
+jest.mock('./BDDStatsCard', () => ({
+  StatsCard: ({ title, count, testId }: any) => (
+    <div data-testid={testId}>
+      <span>
+        {title}: {count}
+      </span>
+    </div>
+  ),
+}));
 
 // Test data - using uppercase status values to match API response
 const mockScenarios = [
-  { id: '1', todoTaskId: 'task-1', title: 'User Login Scenario', feature: 'Authentication', 
-    description: 'Test user login flow', gherkinContent: 'Given user is on login page...', 
-    status: 'PENDING' as const, createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-01T00:00:00Z' },
-  { id: '2', todoTaskId: 'task-2', title: 'Password Reset', feature: 'Authentication',
-    description: 'Test password reset', gherkinContent: 'Given user forgot password...',
-    status: 'PASSED' as const, executedAt: '2024-01-02T00:00:00Z', executionDuration: 1500,
-    createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-02T00:00:00Z' },
-  { id: '3', todoTaskId: 'task-3', title: 'Failed Scenario', feature: 'Orders',
-    description: 'Test order creation', gherkinContent: 'Given user has items in cart...',
-    status: 'FAILED' as const, errorMessage: 'Test failed due to network error',
-    createdAt: '2024-01-01T00:00:00Z', updatedAt: '2024-01-01T00:00:00Z' }
+  {
+    id: '1',
+    todoTaskId: 'task-1',
+    title: 'User Login Scenario',
+    feature: 'Authentication',
+    description: 'Test user login flow',
+    gherkinContent: 'Given user is on login page...',
+    status: 'PENDING' as const,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z',
+  },
+  {
+    id: '2',
+    todoTaskId: 'task-2',
+    title: 'Password Reset',
+    feature: 'Authentication',
+    description: 'Test password reset',
+    gherkinContent: 'Given user forgot password...',
+    status: 'PASSED' as const,
+    executedAt: '2024-01-02T00:00:00Z',
+    executionDuration: 1500,
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-02T00:00:00Z',
+  },
+  {
+    id: '3',
+    todoTaskId: 'task-3',
+    title: 'Failed Scenario',
+    feature: 'Orders',
+    description: 'Test order creation',
+    gherkinContent: 'Given user has items in cart...',
+    status: 'FAILED' as const,
+    errorMessage: 'Test failed due to network error',
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z',
+  },
 ];
 
 const mockStats = { total: 3, passed: 1, failed: 1, pending: 1, skipped: 0, passRate: 33.3 };
 
 // Test utilities
-const createTestQueryClient = () => new QueryClient({ defaultOptions: { queries: { retry: false } } });
+const createTestQueryClient = () =>
+  new QueryClient({ defaultOptions: { queries: { retry: false } } });
 const renderWithQueryClient = (component: React.ReactElement) => {
   const queryClient = createTestQueryClient();
   return render(<QueryClientProvider client={queryClient}>{component}</QueryClientProvider>);
@@ -62,7 +98,9 @@ describe('BDDScenariosDashboard', () => {
       renderWithQueryClient(<BDDScenariosDashboard />);
       await waitFor(() => {
         expect(screen.getByText('Error Loading BDD Scenarios')).toBeInTheDocument();
-        expect(screen.getByText('Failed to load BDD scenarios. Please try again later.')).toBeInTheDocument();
+        expect(
+          screen.getByText('Failed to load BDD scenarios. Please try again later.')
+        ).toBeInTheDocument();
       });
     });
 
@@ -72,7 +110,7 @@ describe('BDDScenariosDashboard', () => {
         .mockResolvedValueOnce(mockSuccessResponse(mockStats));
 
       renderWithQueryClient(<BDDScenariosDashboard />);
-      
+
       await waitFor(() => {
         expect(screen.getByText('BDD Test Scenarios')).toBeInTheDocument();
         expect(screen.getAllByTestId('scenario-card')).toHaveLength(3);
@@ -85,7 +123,7 @@ describe('BDDScenariosDashboard', () => {
         .mockResolvedValueOnce(mockSuccessResponse({ ...mockStats, total: 0 }));
 
       renderWithQueryClient(<BDDScenariosDashboard />);
-      
+
       await waitFor(() => {
         expect(screen.getByText('No BDD Scenarios Found')).toBeInTheDocument();
       });
@@ -97,7 +135,7 @@ describe('BDDScenariosDashboard', () => {
         .mockResolvedValueOnce(mockSuccessResponse(mockStats));
 
       renderWithQueryClient(<BDDScenariosDashboard />);
-      
+
       await waitFor(() => {
         expect(screen.getAllByTestId('scenario-card')).toHaveLength(3);
       });
@@ -117,7 +155,7 @@ describe('BDDScenariosDashboard', () => {
         .mockResolvedValueOnce(mockSuccessResponse(mockStats));
 
       renderWithQueryClient(<BDDScenariosDashboard />);
-      
+
       await waitFor(() => {
         expect(screen.getAllByTestId('scenario-card')).toHaveLength(3);
       });
@@ -137,7 +175,7 @@ describe('BDDScenariosDashboard', () => {
         .mockResolvedValueOnce(mockSuccessResponse(mockStats));
 
       renderWithQueryClient(<BDDScenariosDashboard />);
-      
+
       await waitFor(() => {
         expect(screen.getByText('Create Comprehensive Scenarios')).toBeInTheDocument();
         expect(screen.getByText('Execute All Scenarios')).toBeInTheDocument();
@@ -146,10 +184,12 @@ describe('BDDScenariosDashboard', () => {
       // Test create scenarios API call - mock the response first
       mockFetch.mockResolvedValueOnce(mockSuccessResponse({ success: true }));
       fireEvent.click(screen.getByText('Create Comprehensive Scenarios'));
-      
+
       // Wait for the API call to be made and check it was called correctly
       await waitFor(() => {
-        expect(mockFetch).toHaveBeenCalledWith('/api/bdd-scenarios/comprehensive', { method: 'POST' });
+        expect(mockFetch).toHaveBeenCalledWith('/api/bdd-scenarios/comprehensive', {
+          method: 'POST',
+        });
       });
     });
   });

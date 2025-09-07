@@ -30,7 +30,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('Error boundary caught an error:', error, errorInfo);
-    
+
     this.setState({
       error,
       errorInfo,
@@ -54,10 +54,10 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-gray-700">
-                {this.props.fallbackDescription || 
+                {this.props.fallbackDescription ||
                   'An unexpected error occurred. Please try refreshing the page or contact support if the problem persists.'}
               </p>
-              
+
               {process.env.NODE_ENV === 'development' && this.state.error && (
                 <details className="bg-gray-100 p-3 rounded border">
                   <summary className="cursor-pointer font-semibold text-sm text-gray-700 mb-2">
@@ -84,16 +84,13 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
                   </div>
                 </details>
               )}
-              
+
               <div className="flex gap-3">
                 <Button onClick={this.handleReset} className="flex items-center gap-2">
                   <RefreshCw className="w-4 h-4" />
                   Try Again
                 </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => window.location.reload()}
-                >
+                <Button variant="outline" onClick={() => window.location.reload()}>
                   Refresh Page
                 </Button>
               </div>

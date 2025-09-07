@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orchestrator Stream Test</title>
+    <style>
+        body {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .header {
+            background-color: #2d2d2d;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+        
+        .status.connected {
+            background-color: #1e5f3f;
+            color: #4ade80;
+        }
+        
+        .status.disconnected {
+            background-color: #7c1d1d;
+            color: #ef4444;
+        }
+        
+        .controls {
+            margin-bottom: 20px;
+        }
+        
+        .controls button {
+            background-color: #3b82f6;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            margin-right: 10px;
+            cursor: pointer;
+        }
+        
+        .controls button:hover {
+            background-color: #2563eb;
+        }
+        
+        .controls button:disabled {
+            background-color: #6b7280;
+            cursor: not-allowed;
+        }
+        
+        .log-container {
+            background-color: #0f0f0f;
+            border: 1px solid #333;
+            border-radius: 8px;
+            height: 400px;
+            overflow-y: auto;
+            padding: 10px;
+        }
+        
+        .log-entry {
+            margin-bottom: 8px;
+            padding: 4px 8px;
+            border-left: 3px solid #333;
+        }
+        
+        .log-entry.orchestrator_start { border-left-color: #10b981; }
+        .log-entry.orchestrator_stop { border-left-color: #ef4444; }
+        .log-entry.task_start { border-left-color: #06b6d4; }
+        .log-entry.task_complete { border-left-color: #10b981; }
+        .log-entry.task_failed { border-left-color: #ef4444; }
+        .log-entry.claude_start { border-left-color: #3b82f6; }
+        .log-entry.claude_output { border-left-color: #e5e7eb; }
+        .log-entry.claude_error { border-left-color: #ef4444; }
+        .log-entry.claude_complete { border-left-color: #3b82f6; }
+        .log-entry.validation_start { border-left-color: #f59e0b; }
+        .log-entry.validation_stage { border-left-color: #f59e0b; }
+        .log-entry.validation_complete { border-left-color: #10b981; }
+        .log-entry.validation_failed { border-left-color: #ef4444; }
+        .log-entry.info { border-left-color: #06b6d4; }
+        .log-entry.error { border-left-color: #ef4444; }
+        
+        .timestamp {
+            color: #6b7280;
+            font-size: 12px;
+        }
+        
+        .event-type {
+            color: #fbbf24;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        
+        .session-id {
+            color: #9ca3af;
+            font-size: 11px;
+        }
+        
+        .event-data {
+            margin-top: 4px;
+            color: #d1d5db;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🚀 Orchestrator Stream Viewer</h1>
+        <span>Connection Status: <span id="status" class="status disconnected">Disconnected</span></span>
+        <span>Events Received: <span id="eventCount">0</span></span>
+    </div>
+
+    <div class="controls">
+        <button onclick="connect()" id="connectBtn">Connect</button>
+        <button onclick="disconnect()" id="disconnectBtn" disabled>Disconnect</button>
+        <button onclick="clearLog()">Clear Log</button>
+        <button onclick="testOrchestrator()">Start Test Orchestrator</button>
+        <input type="text" id="sessionFilter" placeholder="Session ID filter (optional)" style="padding: 8px; background: #2d2d2d; color: white; border: 1px solid #555; border-radius: 4px;">
+    </div>
+
+    <div class="log-container" id="logContainer">
+        <div style="color: #6b7280; text-align: center; margin-top: 150px;">
+            Click "Connect" to start streaming orchestrator events...
+        </div>
+    </div>
+
+    <script>
+        let eventSource = null;
+        let eventCount = 0;
+
+        function updateStatus(connected) {
+            const status = document.getElementById('status');
+            const connectBtn = document.getElementById('connectBtn');
+            const disconnectBtn = document.getElementById('disconnectBtn');
+            
+            if (connected) {
+                status.textContent = 'Connected';
+                status.className = 'status connected';
+                connectBtn.disabled = true;
+                disconnectBtn.disabled = false;
+            } else {
+                status.textContent = 'Disconnected';
+                status.className = 'status disconnected';
+                connectBtn.disabled = false;
+                disconnectBtn.disabled = true;
+            }
+        }
+
+        function connect() {
+            const sessionId = document.getElementById('sessionFilter').value.trim();
+            const url = `http://localhost:3001/api/orchestrator/stream${sessionId ? '?sessionId=' + encodeURIComponent(sessionId) : ''}`;
+            
+            addLogEntry('info', 'system', { message: `Connecting to ${url}...` });
+            
+            eventSource = new EventSource(url);
+            
+            eventSource.onopen = function(event) {
+                updateStatus(true);
+                addLogEntry('info', 'system', { message: 'Connected to orchestrator stream' });
+            };
+            
+            eventSource.onmessage = function(event) {
+                try {
+                    const eventData = JSON.parse(event.data);
+                    eventCount++;
+                    document.getElementById('eventCount').textContent = eventCount;
+                    addLogEntry(eventData.type, eventData.sessionId, eventData.data, eventData.timestamp);
+                } catch (error) {
+                    addLogEntry('error', 'system', { message: 'Failed to parse event: ' + error.message });
+                }
+            };
+            
+            eventSource.onerror = function(event) {
+                updateStatus(false);
+                addLogEntry('error', 'system', { message: 'Stream connection error' });
+            };
+        }
+
+        function disconnect() {
+            if (eventSource) {
+                eventSource.close();
+                eventSource = null;
+                updateStatus(false);
+                addLogEntry('info', 'system', { message: 'Disconnected from stream' });
+            }
+        }
+
+        function clearLog() {
+            document.getElementById('logContainer').innerHTML = '';
+            eventCount = 0;
+            document.getElementById('eventCount').textContent = eventCount;
+        }
+
+        function addLogEntry(type, sessionId, data, timestamp) {
+            const container = document.getElementById('logContainer');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            
+            const time = timestamp ? new Date(timestamp).toLocaleTimeString() : new Date().toLocaleTimeString();
+            
+            let content = `<span class="timestamp">[${time}]</span> `;
+            content += `<span class="event-type">${type}</span> `;
+            content += `<span class="session-id">(${sessionId})</span>`;
+            
+            if (data) {
+                const formattedData = formatEventData(type, data);
+                if (formattedData) {
+                    content += `<div class="event-data">${formattedData}</div>`;
+                }
+            }
+            
+            entry.innerHTML = content;
+            container.appendChild(entry);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function formatEventData(type, data) {
+            switch (type) {
+                case 'orchestrator_start':
+                    return `Started with validation: ${data.options?.enableValidation}, retries: ${data.options?.maxTaskRetries}`;
+                
+                case 'task_start':
+                    return `Task ${data.taskId}: ${data.taskContent}`;
+                
+                case 'task_complete':
+                    return `Task ${data.taskId} completed in ${data.duration}ms (${data.attempts} attempts)`;
+                
+                case 'task_failed':
+                    return `Task ${data.taskId} failed: ${data.error}`;
+                
+                case 'claude_start':
+                    return `Claude execution started for ${data.taskId} (attempt ${data.attempt})\\nPrompt: ${data.promptPreview}`;
+                
+                case 'claude_output':
+                    return data.output;
+                
+                case 'claude_complete':
+                    return `Claude completed for ${data.taskId} (exit: ${data.exitCode}, ${data.duration}ms)`;
+                
+                case 'validation_start':
+                    return `Starting validation for ${data.taskId}`;
+                
+                case 'validation_complete':
+                    return `Validation ${data.success ? 'PASSED' : 'FAILED'} (${data.passed}/${data.totalStages} stages, ${data.totalDuration}ms)`;
+                
+                case 'info':
+                    return data.message;
+                
+                case 'error':
+                    return data.error || data.message;
+                
+                default:
+                    return JSON.stringify(data, null, 2);
+            }
+        }
+
+        async function testOrchestrator() {
+            try {
+                const response = await fetch('http://localhost:3001/api/orchestrator/execute', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        prompt: 'Create a simple test file called hello.txt with "Hello, World!" content',
+                        options: {
+                            maxTaskRetries: 1,
+                            validationTimeout: 10000,
+                            enableValidation: false
+                        }
+                    })
+                });
+                
+                const result = await response.json();
+                addLogEntry('info', 'test', { message: 'Test orchestrator request sent' });
+            } catch (error) {
+                addLogEntry('error', 'test', { message: 'Failed to start test: ' + error.message });
+            }
+        }
+
+        // Auto-connect on page load
+        window.onload = function() {
+            // Small delay to ensure page is ready
+            setTimeout(connect, 500);
+        };
+        
+        // Cleanup on page unload
+        window.onbeforeunload = function() {
+            disconnect();
+        };
+    </script>
+</body>
+</html>

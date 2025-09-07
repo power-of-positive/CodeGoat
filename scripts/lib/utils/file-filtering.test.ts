@@ -13,7 +13,7 @@ jest.mock('path', () => ({
   normalize: jest.fn(),
   relative: jest.fn(),
   join: jest.fn(),
-  sep: '/'
+  sep: '/',
 }));
 
 describe('file-filtering', () => {

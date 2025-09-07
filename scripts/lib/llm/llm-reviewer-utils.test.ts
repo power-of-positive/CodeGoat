@@ -2,11 +2,7 @@
  * Tests for llm-reviewer-utils.ts
  */
 
-import {
-  generateReport,
-  generateStructuredData,
-  shouldBlockCommit
-} from './llm-reviewer-utils';
+import { generateReport, generateStructuredData, shouldBlockCommit } from './llm-reviewer-utils';
 import type { ReviewedFile, ReviewResult } from './llm-reviewer-types';
 
 describe('llm-reviewer-utils', () => {
@@ -17,12 +13,15 @@ describe('llm-reviewer-utils', () => {
     summary: 'No issues found',
     hasBlockingIssues: false,
     confidence: 0.8,
-    ...overrides
+    ...overrides,
   });
 
-  const createMockReviewedFile = (file: string, overrides: Partial<ReviewResult> = {}): ReviewedFile => ({
+  const createMockReviewedFile = (
+    file: string,
+    overrides: Partial<ReviewResult> = {}
+  ): ReviewedFile => ({
     file,
-    result: createMockReviewResult(overrides)
+    result: createMockReviewResult(overrides),
   });
 
   describe('generateReport', () => {
@@ -33,9 +32,7 @@ describe('llm-reviewer-utils', () => {
     });
 
     it('should generate basic report with no issues', () => {
-      const reviews = [
-        { file: 'src/utils.ts', result: createMockReviewResult() }
-      ];
+      const reviews = [{ file: 'src/utils.ts', result: createMockReviewResult() }];
 
       const result = generateReport(reviews);
 
@@ -55,9 +52,12 @@ describe('llm-reviewer-utils', () => {
           result: createMockReviewResult({
             severity: 'high',
             issues: ['SQL injection vulnerability', 'Hardcoded credentials'],
-            suggestions: ['Use parameterized queries', 'Store credentials in environment variables'],
-            summary: 'Critical security issues found'
-          })
+            suggestions: [
+              'Use parameterized queries',
+              'Store credentials in environment variables',
+            ],
+            summary: 'Critical security issues found',
+          }),
         },
         {
           file: 'src/utils.ts',
@@ -65,9 +65,9 @@ describe('llm-reviewer-utils', () => {
             severity: 'high',
             issues: ['Memory leak in loop'],
             suggestions: ['Fix resource cleanup'],
-            summary: 'Performance issue detected'
-          })
-        }
+            summary: 'Performance issue detected',
+          }),
+        },
       ];
 
       const result = generateReport(reviews);
@@ -75,7 +75,9 @@ describe('llm-reviewer-utils', () => {
       expect(result).toContain('## 🚨 HIGH SEVERITY ISSUES (2)');
       expect(result).toContain('### src/security.ts');
       expect(result).toContain('**Issues:** SQL injection vulnerability, Hardcoded credentials');
-      expect(result).toContain('**Suggestions:** Use parameterized queries, Store credentials in environment variables');
+      expect(result).toContain(
+        '**Suggestions:** Use parameterized queries, Store credentials in environment variables'
+      );
       expect(result).toContain('**Summary:** Critical security issues found');
       expect(result).toContain('### src/utils.ts');
       expect(result).toContain('**Issues:** Memory leak in loop');
@@ -93,9 +95,9 @@ describe('llm-reviewer-utils', () => {
           result: createMockReviewResult({
             severity: 'medium',
             issues: ['Missing prop validation', 'Unused import'],
-            suggestions: ['Add PropTypes', 'Remove unused imports']
-          })
-        }
+            suggestions: ['Add PropTypes', 'Remove unused imports'],
+          }),
+        },
       ];
 
       const result = generateReport(reviews);
@@ -118,25 +120,25 @@ describe('llm-reviewer-utils', () => {
             severity: 'high',
             issues: ['Weak password hashing'],
             suggestions: ['Use bcrypt with proper salt'],
-            summary: 'Security vulnerability detected'
-          })
+            summary: 'Security vulnerability detected',
+          }),
         },
         {
           file: 'src/validation.ts',
           result: createMockReviewResult({
             severity: 'medium',
             issues: ['Missing error handling'],
-            suggestions: ['Add try-catch blocks']
-          })
+            suggestions: ['Add try-catch blocks'],
+          }),
         },
         {
           file: 'src/constants.ts',
           result: createMockReviewResult({
             severity: 'low',
             issues: [],
-            suggestions: ['Consider using enum instead of constants']
-          })
-        }
+            suggestions: ['Consider using enum instead of constants'],
+          }),
+        },
       ];
 
       const result = generateReport(reviews);
@@ -157,9 +159,9 @@ describe('llm-reviewer-utils', () => {
           result: createMockReviewResult({
             severity: 'medium',
             issues: [],
-            suggestions: []
-          })
-        }
+            suggestions: [],
+          }),
+        },
       ];
 
       const result = generateReport(reviews);
@@ -179,9 +181,9 @@ describe('llm-reviewer-utils', () => {
             severity: 'high',
             issues: ['Single critical issue'],
             suggestions: ['Single suggestion'],
-            summary: 'One problem found'
-          })
-        }
+            summary: 'One problem found',
+          }),
+        },
       ];
 
       const result = generateReport(reviews);
@@ -198,9 +200,9 @@ describe('llm-reviewer-utils', () => {
           result: createMockReviewResult({
             severity: 'low',
             issues: ['Minor style issue'],
-            suggestions: ['Fix formatting']
-          })
-        }
+            suggestions: ['Fix formatting'],
+          }),
+        },
       ];
 
       const result = generateReport(reviews);
@@ -218,21 +220,21 @@ describe('llm-reviewer-utils', () => {
         {
           file: 'file1.ts',
           result: createMockReviewResult({
-            issues: ['issue1', 'issue2', 'issue3'] // 3 issues
-          })
+            issues: ['issue1', 'issue2', 'issue3'], // 3 issues
+          }),
         },
         {
           file: 'file2.ts',
           result: createMockReviewResult({
-            issues: ['issue4', 'issue5'] // 2 issues
-          })
+            issues: ['issue4', 'issue5'], // 2 issues
+          }),
         },
         {
           file: 'file3.ts',
           result: createMockReviewResult({
-            issues: [] // 0 issues
-          })
-        }
+            issues: [], // 0 issues
+          }),
+        },
       ];
 
       const result = generateReport(reviews);
@@ -252,8 +254,8 @@ describe('llm-reviewer-utils', () => {
           totalFiles: 0,
           highSeverity: 0,
           mediumSeverity: 0,
-          totalIssues: 0
-        }
+          totalIssues: 0,
+        },
       });
     });
 
@@ -261,24 +263,24 @@ describe('llm-reviewer-utils', () => {
       const reviews: ReviewedFile[] = [
         createMockReviewedFile('file1.ts', {
           severity: 'high',
-          issues: ['critical1', 'critical2'] // 2 issues
+          issues: ['critical1', 'critical2'], // 2 issues
         }),
         createMockReviewedFile('file2.ts', {
           severity: 'high',
-          issues: ['critical3'] // 1 issue
+          issues: ['critical3'], // 1 issue
         }),
         createMockReviewedFile('file3.ts', {
           severity: 'medium',
-          issues: ['medium1', 'medium2', 'medium3'] // 3 issues
+          issues: ['medium1', 'medium2', 'medium3'], // 3 issues
         }),
         createMockReviewedFile('file4.ts', {
           severity: 'low',
-          issues: ['low1'] // 1 issue
+          issues: ['low1'], // 1 issue
         }),
         createMockReviewedFile('file5.ts', {
           severity: 'low',
-          issues: [] // 0 issues
-        })
+          issues: [], // 0 issues
+        }),
       ];
 
       const result = generateStructuredData(reviews);
@@ -289,15 +291,15 @@ describe('llm-reviewer-utils', () => {
           totalFiles: 5,
           highSeverity: 2,
           mediumSeverity: 1,
-          totalIssues: 7 // 2 + 1 + 3 + 1 + 0 = 7
-        }
+          totalIssues: 7, // 2 + 1 + 3 + 1 + 0 = 7
+        },
       });
     });
 
     it('should include original files in structured data', () => {
       const reviews: ReviewedFile[] = [
         createMockReviewedFile('src/component.ts'),
-        createMockReviewedFile('src/utils.ts')
+        createMockReviewedFile('src/utils.ts'),
       ];
 
       const result = generateStructuredData(reviews);
@@ -312,12 +314,12 @@ describe('llm-reviewer-utils', () => {
       const reviews: ReviewedFile[] = [
         createMockReviewedFile('file1.ts', {
           severity: 'medium',
-          issues: []
+          issues: [],
         }),
         createMockReviewedFile('file2.ts', {
           severity: 'high',
-          issues: []
-        })
+          issues: [],
+        }),
       ];
 
       const result = generateStructuredData(reviews);
@@ -326,7 +328,7 @@ describe('llm-reviewer-utils', () => {
         totalFiles: 2,
         highSeverity: 1,
         mediumSeverity: 1,
-        totalIssues: 0
+        totalIssues: 0,
       });
     });
   });
@@ -342,12 +344,12 @@ describe('llm-reviewer-utils', () => {
       const reviews: ReviewedFile[] = [
         createMockReviewedFile('file1.ts', {
           severity: 'low',
-          hasBlockingIssues: false
+          hasBlockingIssues: false,
         }),
         createMockReviewedFile('file2.ts', {
           severity: 'low',
-          hasBlockingIssues: false
-        })
+          hasBlockingIssues: false,
+        }),
       ];
 
       const result = shouldBlockCommit(reviews);
@@ -359,12 +361,12 @@ describe('llm-reviewer-utils', () => {
       const reviews: ReviewedFile[] = [
         createMockReviewedFile('file1.ts', {
           severity: 'low',
-          hasBlockingIssues: false
+          hasBlockingIssues: false,
         }),
         createMockReviewedFile('file2.ts', {
           severity: 'high',
-          hasBlockingIssues: false
-        })
+          hasBlockingIssues: false,
+        }),
       ];
 
       const result = shouldBlockCommit(reviews);
@@ -376,8 +378,8 @@ describe('llm-reviewer-utils', () => {
       const reviews: ReviewedFile[] = [
         createMockReviewedFile('file1.ts', {
           severity: 'medium',
-          hasBlockingIssues: false
-        })
+          hasBlockingIssues: false,
+        }),
       ];
 
       const result = shouldBlockCommit(reviews);
@@ -389,8 +391,8 @@ describe('llm-reviewer-utils', () => {
       const reviews: ReviewedFile[] = [
         createMockReviewedFile('file1.ts', {
           severity: 'low',
-          hasBlockingIssues: true
-        })
+          hasBlockingIssues: true,
+        }),
       ];
 
       const result = shouldBlockCommit(reviews);
@@ -402,20 +404,20 @@ describe('llm-reviewer-utils', () => {
       const reviews: ReviewedFile[] = [
         createMockReviewedFile('file1.ts', {
           severity: 'low',
-          hasBlockingIssues: false
+          hasBlockingIssues: false,
         }),
         createMockReviewedFile('file2.ts', {
           severity: 'low',
-          hasBlockingIssues: false
+          hasBlockingIssues: false,
         }),
         createMockReviewedFile('file3.ts', {
           severity: 'low',
-          hasBlockingIssues: false
+          hasBlockingIssues: false,
         }),
         createMockReviewedFile('file4.ts', {
           severity: 'medium', // This should block
-          hasBlockingIssues: false
-        })
+          hasBlockingIssues: false,
+        }),
       ];
 
       const result = shouldBlockCommit(reviews);
@@ -430,12 +432,12 @@ describe('llm-reviewer-utils', () => {
         { severity: 'medium' as const, hasBlockingIssues: false, expected: true },
         { severity: 'medium' as const, hasBlockingIssues: true, expected: true },
         { severity: 'high' as const, hasBlockingIssues: false, expected: true },
-        { severity: 'high' as const, hasBlockingIssues: true, expected: true }
+        { severity: 'high' as const, hasBlockingIssues: true, expected: true },
       ];
 
       testCases.forEach(({ severity, hasBlockingIssues, expected }) => {
         const reviews: ReviewedFile[] = [
-          createMockReviewedFile('test.ts', { severity, hasBlockingIssues })
+          createMockReviewedFile('test.ts', { severity, hasBlockingIssues }),
         ];
 
         const result = shouldBlockCommit(reviews);
@@ -448,12 +450,12 @@ describe('llm-reviewer-utils', () => {
       const reviews: ReviewedFile[] = [
         createMockReviewedFile('file1.ts', {
           severity: 'high', // This blocks
-          hasBlockingIssues: false
+          hasBlockingIssues: false,
         }),
         createMockReviewedFile('file2.ts', {
           severity: 'low',
-          hasBlockingIssues: false
-        })
+          hasBlockingIssues: false,
+        }),
       ];
 
       const result = shouldBlockCommit(reviews);
@@ -465,16 +467,16 @@ describe('llm-reviewer-utils', () => {
       const reviews: ReviewedFile[] = [
         createMockReviewedFile('file1.ts', {
           severity: 'low',
-          hasBlockingIssues: false
+          hasBlockingIssues: false,
         }),
         createMockReviewedFile('file2.ts', {
           severity: 'low',
-          hasBlockingIssues: false
+          hasBlockingIssues: false,
         }),
         createMockReviewedFile('file3.ts', {
           severity: 'medium', // This blocks
-          hasBlockingIssues: false
-        })
+          hasBlockingIssues: false,
+        }),
       ];
 
       const result = shouldBlockCommit(reviews);

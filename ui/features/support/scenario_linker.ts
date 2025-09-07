@@ -66,11 +66,11 @@ export class ScenarioLinker {
    */
   private parsePlaywrightTests(content: string, filePath: string): PlaywrightTest[] {
     const tests: PlaywrightTest[] = [];
-    
+
     // Regular expressions to match test definitions
     const testRegex = /test\s*\(\s*['"](.*?)['"],?\s*async/g;
     const describeRegex = /test\.describe\s*\(\s*['"](.*?)['"],?\s*\(\)/g;
-    
+
     let match;
     let currentDescribe = '';
 
@@ -85,12 +85,12 @@ export class ScenarioLinker {
     // Extract individual tests
     while ((match = testRegex.exec(content)) !== null) {
       const testName = match[1];
-      
+
       tests.push({
         file: filePath,
         testName,
         description: currentDescribe ? `${currentDescribe} - ${testName}` : testName,
-        tags: this.extractTags(content, testName)
+        tags: this.extractTags(content, testName),
       });
     }
 
@@ -102,7 +102,7 @@ export class ScenarioLinker {
    */
   private extractTags(content: string, testName: string): string[] {
     const tags: string[] = [];
-    
+
     // Look for @tag annotations before the test
     const testIndex = content.indexOf(testName);
     if (testIndex > -1) {
@@ -136,7 +136,7 @@ export class ScenarioLinker {
         suggestions.push({
           scenario,
           suggestedTests: matches,
-          confidence: this.calculateConfidence(scenario, matches[0])
+          confidence: this.calculateConfidence(scenario, matches[0]),
         });
       }
     }
@@ -152,14 +152,15 @@ export class ScenarioLinker {
 
     for (const test of this.playwrightTests) {
       const score = this.calculateMatchScore(scenario, test);
-      if (score > 0.3) { // Minimum threshold
+      if (score > 0.3) {
+        // Minimum threshold
         matches.push({ test, score });
       }
     }
 
     // Sort by score descending
     matches.sort((a, b) => b.score - a.score);
-    
+
     return matches.map(m => m.test);
   }
 
@@ -172,23 +173,25 @@ export class ScenarioLinker {
     // Keyword matching in titles
     const scenarioWords = this.extractKeywords(scenario.title);
     const testWords = this.extractKeywords(test.testName);
-    
+
     const commonWords = scenarioWords.filter(word => testWords.includes(word));
     score += commonWords.length / Math.max(scenarioWords.length, testWords.length);
 
     // Feature matching
     const featureWords = this.extractKeywords(scenario.feature);
     const testFileWords = this.extractKeywords(path.basename(test.file, '.spec.ts'));
-    
+
     const commonFeatureWords = featureWords.filter(word => testFileWords.includes(word));
-    score += commonFeatureWords.length / Math.max(featureWords.length, testFileWords.length) * 0.5;
+    score +=
+      (commonFeatureWords.length / Math.max(featureWords.length, testFileWords.length)) * 0.5;
 
     // Gherkin content analysis
     const gherkinKeywords = this.extractGherkinKeywords(scenario.gherkinContent);
     const testKeywords = this.extractKeywords(test.description || test.testName);
-    
+
     const commonGherkinWords = gherkinKeywords.filter(word => testKeywords.includes(word));
-    score += commonGherkinWords.length / Math.max(gherkinKeywords.length, testKeywords.length) * 0.3;
+    score +=
+      (commonGherkinWords.length / Math.max(gherkinKeywords.length, testKeywords.length)) * 0.3;
 
     return Math.min(score, 1); // Cap at 1.0
   }
@@ -197,8 +200,30 @@ export class ScenarioLinker {
    * Extract meaningful keywords from text
    */
   private extractKeywords(text: string): string[] {
-    const stopWords = new Set(['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'should', 'can', 'will', 'is', 'are', 'was', 'were']);
-    
+    const stopWords = new Set([
+      'the',
+      'a',
+      'an',
+      'and',
+      'or',
+      'but',
+      'in',
+      'on',
+      'at',
+      'to',
+      'for',
+      'of',
+      'with',
+      'by',
+      'should',
+      'can',
+      'will',
+      'is',
+      'are',
+      'was',
+      'were',
+    ]);
+
     return text
       .toLowerCase()
       .replace(/[^\w\s]/g, ' ')
@@ -214,7 +239,7 @@ export class ScenarioLinker {
     const cleanContent = gherkinContent
       .replace(/^\s*(Given|When|Then|And|But|Feature|Scenario|Background):/gm, '')
       .replace(/^\s*(Given|When|Then|And|But)\s+/gm, '');
-    
+
     return this.extractKeywords(cleanContent);
   }
 
@@ -242,7 +267,7 @@ export class ScenarioLinker {
         includeSource: false,
         includeGherkinDocument: true,
         includePickles: true,
-        newId: uuidFn
+        newId: uuidFn,
       });
 
       return gherkinDocument;
@@ -257,7 +282,7 @@ export class ScenarioLinker {
    */
   public validateGherkinSyntax(gherkinContent: string): { valid: boolean; errors: string[] } {
     const errors: string[] = [];
-    
+
     try {
       const parsed = this.parseGherkinScenario(gherkinContent);
       if (!parsed) {
@@ -283,7 +308,7 @@ export class ScenarioLinker {
 
     return {
       valid: errors.length === 0,
-      errors
+      errors,
     };
   }
 
@@ -296,16 +321,16 @@ export class ScenarioLinker {
 
     for (const line of lines) {
       const trimmedLine = line.trim();
-      
+
       // Match Gherkin steps
       const stepMatch = trimmedLine.match(/^(Given|When|Then|And|But)\s+(.+)$/);
       if (stepMatch) {
         const stepType = stepMatch[1] === 'And' || stepMatch[1] === 'But' ? 'Given' : stepMatch[1];
         const stepText = stepMatch[2];
-        
+
         // Convert step text to cucumber expression
         const expression = this.convertToRegex(stepText);
-        
+
         const stepDef = `${stepType}('${expression}', async function() {
   // TODO: Implement this step
   throw new Error('Step not implemented');

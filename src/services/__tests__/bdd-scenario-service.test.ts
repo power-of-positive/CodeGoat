@@ -227,10 +227,10 @@ Feature: CodeGoat Test Scenarios
     it('should return correct execution statistics', async () => {
       mockPrismaClient.bDDScenario.count
         .mockResolvedValueOnce(100) // total
-        .mockResolvedValueOnce(70)  // passed
-        .mockResolvedValueOnce(20)  // failed
-        .mockResolvedValueOnce(5)   // pending
-        .mockResolvedValueOnce(5);  // skipped
+        .mockResolvedValueOnce(70) // passed
+        .mockResolvedValueOnce(20) // failed
+        .mockResolvedValueOnce(5) // pending
+        .mockResolvedValueOnce(5); // skipped
 
       const stats = await service.getExecutionStats();
 
@@ -378,9 +378,7 @@ Feature: Test Feature
     it('should handle scenario not found', async () => {
       mockPrismaClient.bDDScenario.findUnique.mockResolvedValue(null);
 
-      await expect(service.executeScenario('non-existent')).rejects.toThrow(
-        'Scenario not found'
-      );
+      await expect(service.executeScenario('non-existent')).rejects.toThrow('Scenario not found');
     });
 
     it('should handle execution errors', async () => {

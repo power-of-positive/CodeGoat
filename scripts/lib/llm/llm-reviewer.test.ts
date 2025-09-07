@@ -22,22 +22,28 @@ describe('LLMReviewer', () => {
   let mockCore: jest.Mocked<LLMReviewerCore>;
 
   const mockGenerateReport = generateReport as jest.MockedFunction<typeof generateReport>;
-  const mockGenerateStructuredData = generateStructuredData as jest.MockedFunction<typeof generateStructuredData>;
+  const mockGenerateStructuredData = generateStructuredData as jest.MockedFunction<
+    typeof generateStructuredData
+  >;
   const mockShouldBlockCommit = shouldBlockCommit as jest.MockedFunction<typeof shouldBlockCommit>;
   const mockGetChangedFiles = getChangedFiles as jest.MockedFunction<typeof getChangedFiles>;
   const mockCreateEmptyResult = createEmptyResult as jest.MockedFunction<typeof createEmptyResult>;
   const mockCreateErrorResult = createErrorResult as jest.MockedFunction<typeof createErrorResult>;
   const mockProcessFiles = processFiles as jest.MockedFunction<typeof processFiles>;
-  const mockLoadProjectEnvSync = loadProjectEnvSync as jest.MockedFunction<typeof loadProjectEnvSync>;
+  const mockLoadProjectEnvSync = loadProjectEnvSync as jest.MockedFunction<
+    typeof loadProjectEnvSync
+  >;
 
   beforeEach(() => {
     jest.clearAllMocks();
 
     // Mock LLMReviewerCore
     mockCore = {
-      reviewCode: jest.fn()
+      reviewCode: jest.fn(),
     } as any;
-    (LLMReviewerCore as jest.MockedClass<typeof LLMReviewerCore>).mockImplementation(() => mockCore);
+    (LLMReviewerCore as jest.MockedClass<typeof LLMReviewerCore>).mockImplementation(
+      () => mockCore
+    );
 
     // Mock loadProjectEnvSync to do nothing
     mockLoadProjectEnvSync.mockImplementation(() => ({ success: true, loaded: [] }));
@@ -64,7 +70,7 @@ describe('LLMReviewer', () => {
       suggestions: ['Test suggestion'],
       summary: 'Test summary',
       hasBlockingIssues: false,
-      confidence: 0.8
+      confidence: 0.8,
     };
 
     beforeEach(() => {
@@ -79,14 +85,7 @@ describe('LLMReviewer', () => {
     });
 
     it('should validate filePath parameter', async () => {
-      const invalidFilePaths = [
-        null,
-        undefined,
-        '',
-        123,
-        [],
-        {}
-      ];
+      const invalidFilePaths = [null, undefined, '', 123, [], {}];
 
       for (const invalidPath of invalidFilePaths) {
         await expect(reviewer.reviewCode(invalidPath as any, 'code')).rejects.toThrow(
@@ -98,13 +97,7 @@ describe('LLMReviewer', () => {
     });
 
     it('should validate content parameter', async () => {
-      const invalidContents = [
-        null,
-        undefined,
-        123,
-        [],
-        {}
-      ];
+      const invalidContents = [null, undefined, 123, [], {}];
 
       for (const invalidContent of invalidContents) {
         await expect(reviewer.reviewCode('test.ts', invalidContent as any)).rejects.toThrow(
@@ -137,7 +130,7 @@ describe('LLMReviewer', () => {
         '../parent/file.ts',
         'file-with-dashes.ts',
         'file_with_underscores.ts',
-        'file.with.dots.ts'
+        'file.with.dots.ts',
       ];
 
       for (const path of validPaths) {
@@ -157,8 +150,8 @@ describe('LLMReviewer', () => {
           suggestions: ['Suggestion 1'],
           summary: 'Summary 1',
           hasBlockingIssues: false,
-          confidence: 0.8
-        }
+          confidence: 0.8,
+        },
       },
       {
         file: 'src/test2.ts',
@@ -168,9 +161,9 @@ describe('LLMReviewer', () => {
           suggestions: ['Suggestion 2'],
           summary: 'Summary 2',
           hasBlockingIssues: true,
-          confidence: 0.9
-        }
-      }
+          confidence: 0.9,
+        },
+      },
     ];
 
     const mockStructuredData = {
@@ -179,8 +172,8 @@ describe('LLMReviewer', () => {
         totalFiles: 2,
         highSeverity: 1,
         mediumSeverity: 1,
-        totalIssues: 2
-      }
+        totalIssues: 2,
+      },
     };
 
     const mockTextReport = 'Mock text report';
@@ -197,24 +190,20 @@ describe('LLMReviewer', () => {
 
       expect(result).toEqual({
         structuredData: mockStructuredData,
-        textReport: mockTextReport
+        textReport: mockTextReport,
       });
 
       expect(mockGetChangedFiles).toHaveBeenCalledWith('/project/root');
-      expect(mockProcessFiles).toHaveBeenCalledWith(mockCore, '/project/root', ['src/test1.ts', 'src/test2.ts']);
+      expect(mockProcessFiles).toHaveBeenCalledWith(mockCore, '/project/root', [
+        'src/test1.ts',
+        'src/test2.ts',
+      ]);
       expect(mockGenerateStructuredData).toHaveBeenCalledWith(mockReviewedFiles);
       expect(mockGenerateReport).toHaveBeenCalledWith(mockReviewedFiles);
     });
 
     it('should validate projectRoot parameter', async () => {
-      const invalidRoots = [
-        null,
-        undefined,
-        '',
-        123,
-        [],
-        {}
-      ];
+      const invalidRoots = [null, undefined, '', 123, [], {}];
 
       for (const invalidRoot of invalidRoots) {
         await expect(reviewer.reviewChangedFiles(invalidRoot as any)).rejects.toThrow(
@@ -233,10 +222,10 @@ describe('LLMReviewer', () => {
             totalFiles: 0,
             highSeverity: 0,
             mediumSeverity: 0,
-            totalIssues: 0
-          }
+            totalIssues: 0,
+          },
         },
-        textReport: 'No files to review'
+        textReport: 'No files to review',
       };
 
       mockGetChangedFiles.mockReturnValue([]);
@@ -260,10 +249,10 @@ describe('LLMReviewer', () => {
             totalFiles: 0,
             highSeverity: 0,
             mediumSeverity: 0,
-            totalIssues: 0
-          }
+            totalIssues: 0,
+          },
         },
-        textReport: 'Review failed: Failed to process files'
+        textReport: 'Review failed: Failed to process files',
       };
 
       mockGetChangedFiles.mockReturnValue(['src/test.ts']);
@@ -285,10 +274,10 @@ describe('LLMReviewer', () => {
             totalFiles: 0,
             highSeverity: 0,
             mediumSeverity: 0,
-            totalIssues: 0
-          }
+            totalIssues: 0,
+          },
         },
-        textReport: 'Review failed: Git command failed'
+        textReport: 'Review failed: Git command failed',
       };
 
       mockGetChangedFiles.mockImplementation(() => {
@@ -311,10 +300,10 @@ describe('LLMReviewer', () => {
             totalFiles: 0,
             highSeverity: 0,
             mediumSeverity: 0,
-            totalIssues: 0
-          }
+            totalIssues: 0,
+          },
         },
-        textReport: 'Review failed: Report generation failed'
+        textReport: 'Review failed: Report generation failed',
       };
 
       mockGetChangedFiles.mockReturnValue(['src/test.ts']);
@@ -339,10 +328,10 @@ describe('LLMReviewer', () => {
             totalFiles: 0,
             highSeverity: 0,
             mediumSeverity: 0,
-            totalIssues: 0
-          }
+            totalIssues: 0,
+          },
         },
-        textReport: 'Review failed: Unknown error'
+        textReport: 'Review failed: Unknown error',
       };
 
       mockGetChangedFiles.mockImplementation(() => {
@@ -361,7 +350,7 @@ describe('LLMReviewer', () => {
         '/absolute/path/to/project',
         './relative/path',
         '../parent/directory',
-        '~/home/directory'
+        '~/home/directory',
       ];
 
       for (const projectPath of testPaths) {
@@ -375,7 +364,7 @@ describe('LLMReviewer', () => {
       mockProcessFiles.mockResolvedValue([]);
       mockGenerateStructuredData.mockReturnValue({
         files: [],
-        summary: { totalFiles: 0, highSeverity: 0, mediumSeverity: 0, totalIssues: 0 }
+        summary: { totalFiles: 0, highSeverity: 0, mediumSeverity: 0, totalIssues: 0 },
       });
       mockGenerateReport.mockReturnValue('No issues found');
 
@@ -397,9 +386,9 @@ describe('LLMReviewer', () => {
           suggestions: ['Suggestion'],
           summary: 'Summary',
           hasBlockingIssues: true,
-          confidence: 0.8
-        }
-      }
+          confidence: 0.8,
+        },
+      },
     ];
 
     it('should delegate to shouldBlockCommit utility function', () => {
@@ -451,8 +440,8 @@ describe('LLMReviewer', () => {
             suggestions: ['Fix auth issue'],
             summary: 'Critical security problem',
             hasBlockingIssues: true,
-            confidence: 0.95
-          }
+            confidence: 0.95,
+          },
         },
         {
           file: 'src/utils.ts',
@@ -462,16 +451,16 @@ describe('LLMReviewer', () => {
             suggestions: ['Optimize function'],
             summary: 'Minor performance concern',
             hasBlockingIssues: false,
-            confidence: 0.75
-          }
-        }
+            confidence: 0.75,
+          },
+        },
       ];
 
       mockGetChangedFiles.mockReturnValue(changedFiles);
       mockProcessFiles.mockResolvedValue(reviewedFiles);
       mockGenerateStructuredData.mockReturnValue({
         files: reviewedFiles,
-        summary: { totalFiles: 2, highSeverity: 1, mediumSeverity: 1, totalIssues: 2 }
+        summary: { totalFiles: 2, highSeverity: 1, mediumSeverity: 1, totalIssues: 2 },
       });
       mockGenerateReport.mockReturnValue('Detailed report with high and medium issues');
 
@@ -489,10 +478,13 @@ describe('LLMReviewer', () => {
       mockGenerateStructuredData.mockImplementation(() => {
         throw new Error('Structured data failed');
       });
-      
+
       const mockErrorResult: LLMReviewOutput = {
-        structuredData: { files: [], summary: { totalFiles: 0, highSeverity: 0, mediumSeverity: 0, totalIssues: 0 } },
-        textReport: 'Error occurred'
+        structuredData: {
+          files: [],
+          summary: { totalFiles: 0, highSeverity: 0, mediumSeverity: 0, totalIssues: 0 },
+        },
+        textReport: 'Error occurred',
       };
       mockCreateErrorResult.mockReturnValue(mockErrorResult);
 

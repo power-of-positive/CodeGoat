@@ -9,20 +9,21 @@ test.describe('Permissions and Tasks Integration', () => {
 
   test('should navigate between permissions and tasks pages', async ({ page }) => {
     await page.waitForLoadState('domcontentloaded');
-    
+
     // Navigate to permissions
     await page.goto('/permissions');
     await page.waitForLoadState('domcontentloaded');
     await expect(page).toHaveURL('/permissions');
-    
-    const permissionEditor = page.locator('text=Permission Editor');
-    await expect(permissionEditor).toBeVisible();
+
+    // Wait for the permission editor page to load
+    const permissionEditor = page.locator('h1').filter({ hasText: 'Permission Editor' });
+    await expect(permissionEditor).toBeVisible({ timeout: 15000 });
 
     // Navigate to tasks
     await page.goto('/tasks');
     await page.waitForLoadState('domcontentloaded');
     await expect(page).toHaveURL('/tasks');
-    
+
     // Should show tasks page (check for any heading)
     const heading = page.getByRole('heading').first();
     await expect(heading).toBeVisible();
@@ -31,29 +32,33 @@ test.describe('Permissions and Tasks Integration', () => {
     await page.goto('/permissions');
     await page.waitForLoadState('domcontentloaded');
     await expect(page).toHaveURL('/permissions');
-    
-    await expect(page.locator('text=Permission Editor')).toBeVisible();
+
+    await expect(page.locator('h1').filter({ hasText: 'Permission Editor' })).toBeVisible({
+      timeout: 10000,
+    });
   });
 
   test('should maintain layout consistency across pages', async ({ page }) => {
     // Check permissions page
     await page.goto('/permissions');
     await page.waitForLoadState('domcontentloaded');
-    
+
     // Should have main content area
     const mainContent = page.locator('main, .container, #root > div').first();
     await expect(mainContent).toBeVisible();
-    
+
     // Should have the permission editor heading
-    await expect(page.locator('text=Permission Editor')).toBeVisible();
+    await expect(page.locator('h1').filter({ hasText: 'Permission Editor' })).toBeVisible({
+      timeout: 10000,
+    });
 
     // Check tasks page
     await page.goto('/tasks');
     await page.waitForLoadState('domcontentloaded');
-    
+
     // Should have main content area
     await expect(mainContent).toBeVisible();
-    
+
     // Should have some heading
     const heading = page.getByRole('heading').first();
     await expect(heading).toBeVisible();
@@ -63,12 +68,14 @@ test.describe('Permissions and Tasks Integration', () => {
     // Direct navigation to permissions
     await page.goto('/permissions');
     await page.waitForLoadState('domcontentloaded');
-    await expect(page.locator('text=Permission Editor')).toBeVisible();
+    await expect(page.locator('h1').filter({ hasText: 'Permission Editor' })).toBeVisible({
+      timeout: 15000,
+    });
 
     // Direct navigation to tasks
     await page.goto('/tasks');
     await page.waitForLoadState('domcontentloaded');
-    
+
     // Should load tasks page successfully
     const heading = page.getByRole('heading').first();
     await expect(heading).toBeVisible();
@@ -88,12 +95,14 @@ test.describe('Permissions and Tasks Integration', () => {
     // Use browser back button
     await page.goBack();
     await expect(page).toHaveURL('/permissions');
-    await expect(page.locator('text=Permission Editor')).toBeVisible();
+    await expect(page.locator('h1').filter({ hasText: 'Permission Editor' })).toBeVisible({
+      timeout: 10000,
+    });
 
     // Use browser forward button
     await page.goForward();
     await expect(page).toHaveURL('/tasks');
-    
+
     const heading = page.getByRole('heading').first();
     await expect(heading).toBeVisible();
   });
@@ -103,7 +112,7 @@ test.describe('Permissions and Tasks Integration', () => {
     await page.goto('/analytics');
     await page.waitForLoadState('domcontentloaded');
     await expect(page).toHaveURL('/analytics');
-    
+
     // Should show analytics content
     const content = page.locator('main, .container, #root > div').first();
     await expect(content).toBeVisible();
@@ -113,7 +122,7 @@ test.describe('Permissions and Tasks Integration', () => {
     // Go to root path
     await page.goto('/');
     await page.waitForLoadState('domcontentloaded');
-    
+
     // Should redirect to analytics
     await expect(page).toHaveURL('/analytics');
   });
@@ -121,19 +130,21 @@ test.describe('Permissions and Tasks Integration', () => {
   test('should maintain responsive design across pages', async ({ page }) => {
     // Test mobile viewport
     await page.setViewportSize({ width: 375, height: 667 });
-    
+
     // Check permissions page on mobile
     await page.goto('/permissions');
     await page.waitForLoadState('domcontentloaded');
-    await expect(page.locator('text=Permission Editor')).toBeVisible();
-    
+    await expect(page.locator('h1').filter({ hasText: 'Permission Editor' })).toBeVisible({
+      timeout: 15000,
+    });
+
     // Check tasks page on mobile
     await page.goto('/tasks');
     await page.waitForLoadState('domcontentloaded');
-    
+
     const heading = page.getByRole('heading').first();
     await expect(heading).toBeVisible();
-    
+
     // Reset to desktop
     await page.setViewportSize({ width: 1280, height: 720 });
   });
@@ -142,18 +153,20 @@ test.describe('Permissions and Tasks Integration', () => {
     // Test permissions page reload
     await page.goto('/permissions');
     await page.waitForLoadState('domcontentloaded');
-    
+
     await page.reload();
     await page.waitForLoadState('domcontentloaded');
-    await expect(page.locator('text=Permission Editor')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('h1').filter({ hasText: 'Permission Editor' })).toBeVisible({
+      timeout: 15000,
+    });
 
     // Test tasks page reload
     await page.goto('/tasks');
     await page.waitForLoadState('domcontentloaded');
-    
+
     await page.reload();
     await page.waitForLoadState('domcontentloaded');
-    
+
     const heading = page.getByRole('heading').first();
     await expect(heading).toBeVisible({ timeout: 10000 });
   });

@@ -8,13 +8,7 @@ describe('Label Component', () => {
     const label = screen.getByTestId('test-label');
 
     expect(label).toBeInTheDocument();
-    expect(label).toHaveClass(
-      'block',
-      'text-sm',
-      'font-medium',
-      'text-gray-700',
-      'mb-1'
-    );
+    expect(label).toHaveClass('block', 'text-sm', 'font-medium', 'text-gray-700', 'mb-1');
     expect(label).toHaveTextContent('Test Label');
   });
 

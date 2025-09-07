@@ -1,7 +1,12 @@
 import React from 'react';
 import { Card, CardContent } from '../../../shared/ui/card';
 
-export function StatsCard({ title, count, icon: Icon, testId }: {
+export function StatsCard({
+  title,
+  count,
+  icon: Icon,
+  testId,
+}: {
   title: string;
   count: number;
   icon: React.ComponentType<{ className?: string }>;

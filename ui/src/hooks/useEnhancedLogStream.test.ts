@@ -126,15 +126,15 @@ describe('useEnhancedLogStream', () => {
     });
 
     expect(result.current.entries).toHaveLength(4); // 1 start + 3 patches
-    
+
     const [startEntry, stdoutEntry, stderrEntry, normalizedEntry] = result.current.entries;
-    
+
     expect(stdoutEntry.channel).toBe('stdout');
     expect(stdoutEntry.payload).toBe('Hello world');
-    
+
     expect(stderrEntry.channel).toBe('stderr');
     expect(stderrEntry.payload).toBe('Error message');
-    
+
     expect(normalizedEntry.channel).toBe('normalized');
     expect(normalizedEntry.payload).toEqual({ type: 'info', message: 'Normalized log' });
   });

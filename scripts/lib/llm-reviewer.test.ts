@@ -7,14 +7,14 @@ import LLMReviewerDefault, { LLMReviewer } from './llm-reviewer';
 jest.mock('./llm/llm-reviewer', () => {
   class MockLLMReviewer {
     constructor() {}
-    
+
     async reviewCode(_filePath: string, _content: string) {
       return { success: true, comments: 'Mock review' };
     }
   }
-  
+
   return {
-    LLMReviewer: MockLLMReviewer
+    LLMReviewer: MockLLMReviewer,
   };
 });
 
@@ -77,7 +77,7 @@ describe('llm-reviewer compatibility wrapper', () => {
     it('should create instances of the same type', () => {
       const defaultInstance = new LLMReviewerDefault();
       const namedInstance = new LLMReviewer();
-      
+
       expect(defaultInstance.constructor).toBe(namedInstance.constructor);
     });
   });
@@ -85,10 +85,10 @@ describe('llm-reviewer compatibility wrapper', () => {
   describe('backward compatibility', () => {
     it('should maintain interface compatibility', async () => {
       const reviewer = new LLMReviewer();
-      
+
       // Test that the basic interface is maintained
       expect(typeof reviewer.reviewCode).toBe('function');
-      
+
       const result = await reviewer.reviewCode('test.ts', 'test content');
       expect(result).toBeDefined();
     });
@@ -99,7 +99,7 @@ describe('llm-reviewer compatibility wrapper', () => {
       const reviewer2 = new LLMReviewerDefault();
       const reviewer3 = new (require('./llm-reviewer').default)();
       const reviewer4 = new (require('./llm-reviewer').LLMReviewer)();
-      
+
       expect(reviewer1).toBeInstanceOf(LLMReviewer);
       expect(reviewer2).toBeInstanceOf(LLMReviewer);
       expect(reviewer3).toBeInstanceOf(LLMReviewer);

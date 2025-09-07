@@ -151,7 +151,9 @@ function calculateDuration(startTime?: string, endTime?: string): string | undef
   const diffMs = end.getTime() - start.getTime();
 
   const hours = Math.floor(diffMs / TIME_CALC_CONSTANTS.MS_PER_HOUR);
-  const minutes = Math.floor((diffMs % TIME_CALC_CONSTANTS.MS_PER_HOUR) / TIME_CALC_CONSTANTS.MS_PER_MINUTE);
+  const minutes = Math.floor(
+    (diffMs % TIME_CALC_CONSTANTS.MS_PER_HOUR) / TIME_CALC_CONSTANTS.MS_PER_MINUTE
+  );
 
   if (hours > 0) {
     return `${hours}h ${minutes}m`;
@@ -170,10 +172,7 @@ export function createTaskRoutes(logger: ILogger) {
       const dbTasks = await db.task.findMany({
         where: {
           // Only fetch todo tasks (tasks without projectId or with CODEGOAT- ids)
-          OR: [
-            { projectId: null },
-            { id: { startsWith: 'CODEGOAT-' } },
-          ],
+          OR: [{ projectId: null }, { id: { startsWith: 'CODEGOAT-' } }],
         },
         orderBy: [{ priority: 'desc' }, { createdAt: 'desc' }],
       });
@@ -182,7 +181,9 @@ export function createTaskRoutes(logger: ILogger) {
       res.json({ success: true, data: tasks });
     } catch (error) {
       logger.error('Error fetching tasks:', error as Error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Failed to fetch tasks' });
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json({ success: false, message: 'Failed to fetch tasks' });
     }
   });
 
@@ -193,10 +194,7 @@ export function createTaskRoutes(logger: ILogger) {
 
       // Define filter for todo tasks
       const todoTasksFilter = {
-        OR: [
-          { projectId: null },
-          { id: { startsWith: 'CODEGOAT-' } },
-        ],
+        OR: [{ projectId: null }, { id: { startsWith: 'CODEGOAT-' } }],
       };
 
       // Get overall statistics
@@ -214,13 +212,17 @@ export function createTaskRoutes(logger: ILogger) {
       // Get completion rate by priority
       const priorityStats = await Promise.all([
         db.task.count({ where: { ...todoTasksFilter, priority: Priority.HIGH } }),
-        db.task.count({ where: { ...todoTasksFilter, priority: Priority.HIGH, status: TaskStatus.COMPLETED } }),
+        db.task.count({
+          where: { ...todoTasksFilter, priority: Priority.HIGH, status: TaskStatus.COMPLETED },
+        }),
         db.task.count({ where: { ...todoTasksFilter, priority: Priority.MEDIUM } }),
         db.task.count({
           where: { ...todoTasksFilter, priority: Priority.MEDIUM, status: TaskStatus.COMPLETED },
         }),
         db.task.count({ where: { ...todoTasksFilter, priority: Priority.LOW } }),
-        db.task.count({ where: { ...todoTasksFilter, priority: Priority.LOW, status: TaskStatus.COMPLETED } }),
+        db.task.count({
+          where: { ...todoTasksFilter, priority: Priority.LOW, status: TaskStatus.COMPLETED },
+        }),
       ]);
 
       // Get average completion time for completed tasks with valid durations
@@ -238,7 +240,10 @@ export function createTaskRoutes(logger: ILogger) {
         .map(task => {
           const start = task.startTime!.getTime();
           const end = task.endTime!.getTime();
-          return (end - start) / (TIME_CALC_CONSTANTS.MS_PER_SECOND * TIME_CALC_CONSTANTS.SECONDS_PER_MINUTE); // Convert to minutes
+          return (
+            (end - start) /
+            (TIME_CALC_CONSTANTS.MS_PER_SECOND * TIME_CALC_CONSTANTS.SECONDS_PER_MINUTE)
+          ); // Convert to minutes
         });
 
       const averageCompletionTime =
@@ -330,7 +335,9 @@ export function createTaskRoutes(logger: ILogger) {
       });
     } catch (error) {
       logger.error('Error fetching task analytics:', error as Error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Failed to fetch task analytics' });
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json({ success: false, message: 'Failed to fetch task analytics' });
     }
   });
 
@@ -352,7 +359,9 @@ export function createTaskRoutes(logger: ILogger) {
       });
 
       if (!dbTask) {
-        return res.status(HTTP_STATUS.NOT_FOUND).json({ success: false, message: 'Task not found' });
+        return res
+          .status(HTTP_STATUS.NOT_FOUND)
+          .json({ success: false, message: 'Task not found' });
       }
 
       const task = dbTaskToApiTask(dbTask);
@@ -380,7 +389,9 @@ export function createTaskRoutes(logger: ILogger) {
       });
     } catch (error) {
       logger.error('Error fetching task:', error as Error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Failed to fetch task' });
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json({ success: false, message: 'Failed to fetch task' });
     }
   });
 
@@ -396,7 +407,9 @@ export function createTaskRoutes(logger: ILogger) {
       } = req.body;
 
       if (!content?.trim()) {
-        return res.status(HTTP_STATUS.BAD_REQUEST).json({ success: false, message: 'Task content is required' });
+        return res
+          .status(HTTP_STATUS.BAD_REQUEST)
+          .json({ success: false, message: 'Task content is required' });
       }
 
       const db = getDatabaseService();
@@ -446,7 +459,9 @@ export function createTaskRoutes(logger: ILogger) {
       res.status(HTTP_STATUS.CREATED).json({ success: true, data: newTask });
     } catch (error) {
       logger.error('Error creating task:', error as Error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Failed to create task' });
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json({ success: false, message: 'Failed to create task' });
     }
   });
 
@@ -459,7 +474,9 @@ export function createTaskRoutes(logger: ILogger) {
       });
 
       if (!existingTask) {
-        return res.status(HTTP_STATUS.NOT_FOUND).json({ success: false, message: 'Task not found' });
+        return res
+          .status(HTTP_STATUS.NOT_FOUND)
+          .json({ success: false, message: 'Task not found' });
       }
 
       const updates = req.body;
@@ -586,7 +603,9 @@ export function createTaskRoutes(logger: ILogger) {
       res.json({ success: true, data: updatedTask });
     } catch (error) {
       logger.error('Error updating task:', error as Error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Failed to update task' });
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json({ success: false, message: 'Failed to update task' });
     }
   });
 
@@ -599,7 +618,9 @@ export function createTaskRoutes(logger: ILogger) {
       });
 
       if (!existingTask) {
-        return res.status(HTTP_STATUS.NOT_FOUND).json({ success: false, message: 'Task not found' });
+        return res
+          .status(HTTP_STATUS.NOT_FOUND)
+          .json({ success: false, message: 'Task not found' });
       }
 
       await db.task.delete({
@@ -610,7 +631,9 @@ export function createTaskRoutes(logger: ILogger) {
       res.json({ success: true, message: 'Task deleted successfully' });
     } catch (error) {
       logger.error('Error deleting task:', error as Error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Failed to delete task' });
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json({ success: false, message: 'Failed to delete task' });
     }
   });
 
@@ -621,11 +644,7 @@ export function createTaskRoutes(logger: ILogger) {
     try {
       const { title, feature, description, gherkinContent, status = 'pending' } = req.body;
 
-      if (
-        !title?.trim() ||
-        !feature?.trim() ||
-        !gherkinContent?.trim()
-      ) {
+      if (!title?.trim() || !feature?.trim() || !gherkinContent?.trim()) {
         return res.status(HTTP_STATUS.BAD_REQUEST).json({
           success: false,
           message: 'Title, feature, and gherkin content are required',
@@ -640,7 +659,9 @@ export function createTaskRoutes(logger: ILogger) {
       });
 
       if (!existingTask) {
-        return res.status(HTTP_STATUS.NOT_FOUND).json({ success: false, message: 'Task not found' });
+        return res
+          .status(HTTP_STATUS.NOT_FOUND)
+          .json({ success: false, message: 'Task not found' });
       }
 
       const dbStatus = bddStatusMapping[status] || BDDScenarioStatus.PENDING;
@@ -674,7 +695,9 @@ export function createTaskRoutes(logger: ILogger) {
       });
     } catch (error) {
       logger.error('Error creating BDD scenario:', error as Error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Failed to create BDD scenario' });
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json({ success: false, message: 'Failed to create BDD scenario' });
     }
   });
 
@@ -689,7 +712,9 @@ export function createTaskRoutes(logger: ILogger) {
       });
 
       if (!existingTask) {
-        return res.status(HTTP_STATUS.NOT_FOUND).json({ success: false, message: 'Task not found' });
+        return res
+          .status(HTTP_STATUS.NOT_FOUND)
+          .json({ success: false, message: 'Task not found' });
       }
 
       // Verify scenario exists and belongs to task
@@ -701,7 +726,9 @@ export function createTaskRoutes(logger: ILogger) {
       });
 
       if (!existingScenario) {
-        return res.status(HTTP_STATUS.NOT_FOUND).json({ success: false, message: 'Scenario not found' });
+        return res
+          .status(HTTP_STATUS.NOT_FOUND)
+          .json({ success: false, message: 'Scenario not found' });
       }
 
       const updates = req.body;
@@ -778,7 +805,9 @@ export function createTaskRoutes(logger: ILogger) {
       });
     } catch (error) {
       logger.error('Error updating BDD scenario:', error as Error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Failed to update BDD scenario' });
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json({ success: false, message: 'Failed to update BDD scenario' });
     }
   });
 
@@ -796,7 +825,9 @@ export function createTaskRoutes(logger: ILogger) {
       });
 
       if (!existingScenario) {
-        return res.status(HTTP_STATUS.NOT_FOUND).json({ success: false, message: 'Scenario not found' });
+        return res
+          .status(HTTP_STATUS.NOT_FOUND)
+          .json({ success: false, message: 'Scenario not found' });
       }
 
       await db.bDDScenario.delete({
@@ -810,7 +841,9 @@ export function createTaskRoutes(logger: ILogger) {
       res.json({ success: true, message: 'BDD scenario deleted successfully' });
     } catch (error) {
       logger.error('Error deleting BDD scenario:', error as Error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Failed to delete BDD scenario' });
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json({ success: false, message: 'Failed to delete BDD scenario' });
     }
   });
 
@@ -831,7 +864,9 @@ export function createTaskRoutes(logger: ILogger) {
       });
 
       if (!existingScenario) {
-        return res.status(HTTP_STATUS.NOT_FOUND).json({ success: false, message: 'Scenario not found' });
+        return res
+          .status(HTTP_STATUS.NOT_FOUND)
+          .json({ success: false, message: 'Scenario not found' });
       }
 
       const executions = await db.bDDScenarioExecution.findMany({
@@ -857,7 +892,9 @@ export function createTaskRoutes(logger: ILogger) {
       res.json({ success: true, data: executionsResponse });
     } catch (error) {
       logger.error('Error fetching execution history:', error as Error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Failed to fetch execution history' });
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json({ success: false, message: 'Failed to fetch execution history' });
     }
   });
 
@@ -891,7 +928,9 @@ export function createTaskRoutes(logger: ILogger) {
       });
 
       if (!existingScenario) {
-        return res.status(HTTP_STATUS.NOT_FOUND).json({ success: false, message: 'Scenario not found' });
+        return res
+          .status(HTTP_STATUS.NOT_FOUND)
+          .json({ success: false, message: 'Scenario not found' });
       }
 
       const dbStatus = bddStatusMapping[status] || BDDScenarioStatus.PENDING;
@@ -944,7 +983,9 @@ export function createTaskRoutes(logger: ILogger) {
       });
     } catch (error) {
       logger.error('Error creating execution record:', error as Error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Failed to create execution record' });
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json({ success: false, message: 'Failed to create execution record' });
     }
   });
 
@@ -963,7 +1004,9 @@ export function createTaskRoutes(logger: ILogger) {
       });
 
       if (!existingScenario) {
-        return res.status(HTTP_STATUS.NOT_FOUND).json({ success: false, message: 'Scenario not found' });
+        return res
+          .status(HTTP_STATUS.NOT_FOUND)
+          .json({ success: false, message: 'Scenario not found' });
       }
 
       const daysAgo = new Date();
@@ -1048,7 +1091,9 @@ export function createTaskRoutes(logger: ILogger) {
       });
     } catch (error) {
       logger.error('Error fetching execution analytics:', error as Error);
-      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ success: false, message: 'Failed to fetch execution analytics' });
+      res
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+        .json({ success: false, message: 'Failed to fetch execution analytics' });
     }
   });
 

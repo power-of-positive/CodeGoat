@@ -38,10 +38,7 @@ describe('Button Component', () => {
     const button = screen.getByRole('button', { name: 'Disabled' });
 
     expect(button).toBeDisabled();
-    expect(button).toHaveClass(
-      'disabled:opacity-50',
-      'disabled:pointer-events-none'
-    );
+    expect(button).toHaveClass('disabled:opacity-50', 'disabled:pointer-events-none');
   });
 
   it('applies custom className', () => {

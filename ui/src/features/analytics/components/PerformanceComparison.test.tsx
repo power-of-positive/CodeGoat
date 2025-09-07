@@ -13,7 +13,9 @@ jest.mock('../../../shared/lib/api', () => ({
 
 // Mock recharts
 jest.mock('recharts', () => ({
-  ResponsiveContainer: ({ children }: any) => <div data-testid="responsive-container">{children}</div>,
+  ResponsiveContainer: ({ children }: any) => (
+    <div data-testid="responsive-container">{children}</div>
+  ),
   BarChart: ({ children }: any) => <div data-testid="bar-chart">{children}</div>,
   RadarChart: ({ children }: any) => <div data-testid="radar-chart">{children}</div>,
   Bar: () => <div data-testid="bar" />,
@@ -76,11 +78,7 @@ const createQueryClient = () =>
 
 const renderWithQueryClient = (component: React.ReactElement) => {
   const queryClient = createQueryClient();
-  return render(
-    <QueryClientProvider client={queryClient}>
-      {component}
-    </QueryClientProvider>
-  );
+  return render(<QueryClientProvider client={queryClient}>{component}</QueryClientProvider>);
 };
 
 describe('PerformanceComparison', () => {
@@ -114,7 +112,9 @@ describe('PerformanceComparison', () => {
   });
 
   it('renders comparison data when loaded', async () => {
-    (analyticsApi.getPerformanceComparison as jest.MockedFunction<any>).mockResolvedValue(mockComparisonData);
+    (analyticsApi.getPerformanceComparison as jest.MockedFunction<any>).mockResolvedValue(
+      mockComparisonData
+    );
 
     renderWithQueryClient(<PerformanceComparison />);
 
@@ -130,7 +130,7 @@ describe('PerformanceComparison', () => {
 
     // Check overall metrics
     expect(screen.getByText('Overall Performance Changes')).toBeInTheDocument();
-    
+
     // Check that the insights section cards are rendered
     expect(screen.getByText('Improved Stages')).toBeInTheDocument();
     expect(screen.getByText('Degraded Stages')).toBeInTheDocument();
@@ -138,7 +138,9 @@ describe('PerformanceComparison', () => {
   });
 
   it('handles refresh functionality', async () => {
-    (analyticsApi.getPerformanceComparison as jest.MockedFunction<any>).mockResolvedValue(mockComparisonData);
+    (analyticsApi.getPerformanceComparison as jest.MockedFunction<any>).mockResolvedValue(
+      mockComparisonData
+    );
 
     renderWithQueryClient(<PerformanceComparison />);
 
@@ -162,11 +164,15 @@ describe('PerformanceComparison', () => {
       expect(screen.getByText('No Comparison Data')).toBeInTheDocument();
     });
 
-    expect(screen.getByText('Configure date ranges to compare validation performance across periods.')).toBeInTheDocument();
+    expect(
+      screen.getByText('Configure date ranges to compare validation performance across periods.')
+    ).toBeInTheDocument();
   });
 
   it('shows insights summary correctly', async () => {
-    (analyticsApi.getPerformanceComparison as jest.MockedFunction<any>).mockResolvedValue(mockComparisonData);
+    (analyticsApi.getPerformanceComparison as jest.MockedFunction<any>).mockResolvedValue(
+      mockComparisonData
+    );
 
     renderWithQueryClient(<PerformanceComparison />);
 

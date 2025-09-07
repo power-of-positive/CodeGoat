@@ -49,15 +49,7 @@ function formatTrendValue(value: number, unit: string): string {
   return `${sign}${absValue.toFixed(1)}${unit}`;
 }
 
-function TrendIndicator({
-  value,
-  unit,
-  label,
-}: {
-  value: number;
-  unit: string;
-  label: string;
-}) {
+function TrendIndicator({ value, unit, label }: { value: number; unit: string; label: string }) {
   const isPositive = value >= 0;
   const Icon = isPositive ? TrendingUp : TrendingDown;
   const colorClass = isPositive ? 'text-green-600' : 'text-red-600';
@@ -65,9 +57,7 @@ function TrendIndicator({
   return (
     <div className="flex items-center gap-2">
       <Icon className={`h-4 w-4 ${colorClass}`} />
-      <span className={`text-sm font-medium ${colorClass}`}>
-        {formatTrendValue(value, unit)}
-      </span>
+      <span className={`text-sm font-medium ${colorClass}`}>{formatTrendValue(value, unit)}</span>
       <span className="text-xs text-gray-500">{label}</span>
     </div>
   );
@@ -100,10 +90,7 @@ interface StageStatistics {
       p95: number;
       p99: number;
     };
-    successRateByTimeOfDay: Record<
-      string,
-      { attempts: number; successes: number; rate: number }
-    >;
+    successRateByTimeOfDay: Record<string, { attempts: number; successes: number; rate: number }>;
     failureReasons: Record<string, number>;
   };
 }
@@ -135,13 +122,9 @@ function OverviewStats({ statistics }: { statistics: StageStatistics }) {
         <CardContent className="pt-4">
           <div className="flex items-center gap-2 mb-1">
             <Activity className="h-4 w-4 text-blue-600" />
-            <span className="text-sm font-medium text-gray-600">
-              Total Attempts
-            </span>
+            <span className="text-sm font-medium text-gray-600">Total Attempts</span>
           </div>
-          <div className="text-2xl font-bold text-gray-900">
-            {overview.totalAttempts}
-          </div>
+          <div className="text-2xl font-bold text-gray-900">{overview.totalAttempts}</div>
         </CardContent>
       </Card>
 
@@ -149,9 +132,7 @@ function OverviewStats({ statistics }: { statistics: StageStatistics }) {
         <CardContent className="pt-4">
           <div className="flex items-center gap-2 mb-1">
             <CheckCircle className="h-4 w-4 text-green-600" />
-            <span className="text-sm font-medium text-gray-600">
-              Success Rate
-            </span>
+            <span className="text-sm font-medium text-gray-600">Success Rate</span>
           </div>
           <div className="text-2xl font-bold text-green-600">
             {overview.successRate.toFixed(1)}%
@@ -163,9 +144,7 @@ function OverviewStats({ statistics }: { statistics: StageStatistics }) {
         <CardContent className="pt-4">
           <div className="flex items-center gap-2 mb-1">
             <Timer className="h-4 w-4 text-orange-600" />
-            <span className="text-sm font-medium text-gray-600">
-              Avg Duration
-            </span>
+            <span className="text-sm font-medium text-gray-600">Avg Duration</span>
           </div>
           <div className="text-2xl font-bold text-orange-600">
             {formatDuration(overview.averageDuration)}
@@ -177,9 +156,7 @@ function OverviewStats({ statistics }: { statistics: StageStatistics }) {
         <CardContent className="pt-4">
           <div className="flex items-center gap-2 mb-1">
             <Zap className="h-4 w-4 text-purple-600" />
-            <span className="text-sm font-medium text-gray-600">
-              Median Duration
-            </span>
+            <span className="text-sm font-medium text-gray-600">Median Duration</span>
           </div>
           <div className="text-2xl font-bold text-purple-600">
             {formatDuration(overview.medianDuration)}
@@ -210,30 +187,20 @@ function PerformanceMetrics({ statistics }: { statistics: StageStatistics }) {
         <CardContent>
           <div className="space-y-3">
             <div className="flex justify-between">
-              <span className="text-sm text-gray-600">
-                50th percentile (median)
-              </span>
-              <span className="font-medium">
-                {formatDuration(durationsPercentiles.p50)}
-              </span>
+              <span className="text-sm text-gray-600">50th percentile (median)</span>
+              <span className="font-medium">{formatDuration(durationsPercentiles.p50)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-gray-600">90th percentile</span>
-              <span className="font-medium">
-                {formatDuration(durationsPercentiles.p90)}
-              </span>
+              <span className="font-medium">{formatDuration(durationsPercentiles.p90)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-gray-600">95th percentile</span>
-              <span className="font-medium">
-                {formatDuration(durationsPercentiles.p95)}
-              </span>
+              <span className="font-medium">{formatDuration(durationsPercentiles.p95)}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-gray-600">99th percentile</span>
-              <span className="font-medium">
-                {formatDuration(durationsPercentiles.p99)}
-              </span>
+              <span className="font-medium">{formatDuration(durationsPercentiles.p99)}</span>
             </div>
           </div>
         </CardContent>
@@ -256,9 +223,7 @@ function PerformanceMetrics({ statistics }: { statistics: StageStatistics }) {
                 </div>
               ))
             ) : (
-              <div className="text-sm text-gray-500 italic">
-                No failure data available
-              </div>
+              <div className="text-sm text-gray-500 italic">No failure data available</div>
             )}
           </div>
         </CardContent>
@@ -306,16 +271,12 @@ function RecentRuns({ statistics }: { statistics: StageStatistics }) {
                 <Badge variant={run.success ? 'default' : 'destructive'}>
                   {run.success ? 'PASS' : 'FAIL'}
                 </Badge>
-                <span className="text-sm text-gray-600">
-                  {formatDuration(run.duration)}
-                </span>
+                <span className="text-sm text-gray-600">{formatDuration(run.duration)}</span>
               </div>
             </div>
           ))}
           {recentRuns.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
-              No recent runs available
-            </div>
+            <div className="text-center py-8 text-gray-500">No recent runs available</div>
           )}
         </div>
       </CardContent>
@@ -337,33 +298,21 @@ function HistoryTrends({ history }: { history: StageHistory }) {
       <CardContent>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="text-center">
-            <div className="text-2xl font-bold text-blue-600 mb-1">
-              {trends.totalAttempts}
-            </div>
+            <div className="text-2xl font-bold text-blue-600 mb-1">{trends.totalAttempts}</div>
             <div className="text-sm text-gray-600">Total Attempts</div>
           </div>
 
           <div className="text-center">
-            <div className="text-2xl font-bold text-green-600 mb-1">
-              {trends.totalSuccesses}
-            </div>
+            <div className="text-2xl font-bold text-green-600 mb-1">{trends.totalSuccesses}</div>
             <div className="text-sm text-gray-600">Total Successes</div>
           </div>
 
           <div className="text-center">
-            <TrendIndicator
-              value={trends.successRateTrend}
-              unit="%"
-              label="Success Rate Trend"
-            />
+            <TrendIndicator value={trends.successRateTrend} unit="%" label="Success Rate Trend" />
           </div>
 
           <div className="text-center">
-            <TrendIndicator
-              value={trends.durationTrend}
-              unit="ms"
-              label="Duration Trend"
-            />
+            <TrendIndicator value={trends.durationTrend} unit="ms" label="Duration Trend" />
           </div>
         </div>
       </CardContent>
@@ -371,11 +320,7 @@ function HistoryTrends({ history }: { history: StageHistory }) {
   );
 }
 
-export function StageHistoryView({
-  stageId,
-  stageName,
-  onBack,
-}: StageHistoryViewProps) {
+export function StageHistoryView({ stageId, stageName, onBack }: StageHistoryViewProps) {
   const [timeRange, setTimeRange] = useState(DEFAULT_TIME_RANGE_DAYS);
 
   const { data: historyData, isLoading: historyLoading } = useQuery({
@@ -419,9 +364,7 @@ export function StageHistoryView({
           </Button>
           <div>
             <h2 className="text-2xl font-bold text-gray-900">{stageName}</h2>
-            <p className="text-gray-600">
-              Detailed stage analytics and history
-            </p>
+            <p className="text-gray-600">Detailed stage analytics and history</p>
           </div>
         </div>
 
@@ -429,7 +372,7 @@ export function StageHistoryView({
           <Calendar className="h-4 w-4 text-gray-500" />
           <select
             value={timeRange}
-            onChange={(e) => setTimeRange(Number(e.target.value))}
+            onChange={e => setTimeRange(Number(e.target.value))}
             className="border border-gray-300 rounded px-3 py-1 text-sm"
           >
             <option value={7}>Last 7 days</option>
@@ -440,16 +383,24 @@ export function StageHistoryView({
       </div>
 
       {statisticsData && (statisticsData as { statistics?: StageStatistics })?.statistics && (
-        <OverviewStats statistics={(statisticsData as { statistics: StageStatistics }).statistics} />
+        <OverviewStats
+          statistics={(statisticsData as { statistics: StageStatistics }).statistics}
+        />
       )}
 
-      {historyData && (historyData as unknown as { history?: StageHistory })?.history && <HistoryTrends history={(historyData as unknown as { history: StageHistory }).history} />}
+      {historyData && (historyData as unknown as { history?: StageHistory })?.history && (
+        <HistoryTrends history={(historyData as unknown as { history: StageHistory }).history} />
+      )}
 
       {statisticsData && (statisticsData as { statistics?: StageStatistics })?.statistics && (
-        <PerformanceMetrics statistics={(statisticsData as { statistics: StageStatistics }).statistics} />
+        <PerformanceMetrics
+          statistics={(statisticsData as { statistics: StageStatistics }).statistics}
+        />
       )}
 
-      {statisticsData && (statisticsData as { statistics?: StageStatistics })?.statistics && <RecentRuns statistics={(statisticsData as { statistics: StageStatistics }).statistics} />}
+      {statisticsData && (statisticsData as { statistics?: StageStatistics })?.statistics && (
+        <RecentRuns statistics={(statisticsData as { statistics: StageStatistics }).statistics} />
+      )}
     </div>
   );
 }

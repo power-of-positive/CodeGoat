@@ -1,6 +1,5 @@
-import type { Config } from 'jest';
-
-const config: Config = {
+/** @type {import('jest').Config} */
+module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'jsdom',
   roots: ['<rootDir>/src'],
@@ -18,7 +17,7 @@ const config: Config = {
     '^.+\\.(ts|tsx)$': [
       'ts-jest',
       {
-        tsconfig: 'tsconfig.app.json',
+        tsconfig: 'tsconfig.test.json',
       },
     ],
   },
@@ -53,6 +52,7 @@ const config: Config = {
   restoreMocks: true,
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
+    '^fancy-ansi/react$': '<rootDir>/node_modules/fancy-ansi/dist/react.cjs',
   },
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   // Set NODE_ENV for tests
@@ -61,5 +61,3 @@ const config: Config = {
   },
   setupFiles: ['<rootDir>/src/test/jest-setup.ts'],
 };
-
-export default config;

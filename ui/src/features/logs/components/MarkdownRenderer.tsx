@@ -16,7 +16,10 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, className 
           if (index % 2 === 1) {
             // This is a code block
             return (
-              <pre key={index} className="bg-gray-100 dark:bg-gray-800 rounded p-2 my-2 overflow-x-auto">
+              <pre
+                key={index}
+                className="bg-gray-100 dark:bg-gray-800 rounded p-2 my-2 overflow-x-auto"
+              >
                 <code className="text-sm">{part}</code>
               </pre>
             );
@@ -27,7 +30,10 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, className 
                 {part.split('`').map((textPart, textIndex) => {
                   if (textIndex % 2 === 1) {
                     return (
-                      <code key={textIndex} className="bg-gray-100 dark:bg-gray-800 px-1 rounded text-sm">
+                      <code
+                        key={textIndex}
+                        className="bg-gray-100 dark:bg-gray-800 px-1 rounded text-sm"
+                      >
                         {textPart}
                       </code>
                     );

@@ -1,4 +1,3 @@
-
 import { getProjectMetrics } from './project-metrics';
 import * as reviewUtils from './review-utils';
 

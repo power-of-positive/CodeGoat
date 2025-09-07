@@ -13,7 +13,9 @@ jest.mock('../../../shared/lib/api', () => ({
 
 // Mock recharts
 jest.mock('recharts', () => ({
-  ResponsiveContainer: ({ children }: any) => <div data-testid="responsive-container">{children}</div>,
+  ResponsiveContainer: ({ children }: any) => (
+    <div data-testid="responsive-container">{children}</div>
+  ),
   LineChart: ({ children }: any) => <div data-testid="line-chart">{children}</div>,
   AreaChart: ({ children }: any) => <div data-testid="area-chart">{children}</div>,
   BarChart: ({ children }: any) => <div data-testid="bar-chart">{children}</div>,
@@ -61,11 +63,7 @@ const createQueryClient = () =>
 
 const renderWithQueryClient = (component: React.ReactElement) => {
   const queryClient = createQueryClient();
-  return render(
-    <QueryClientProvider client={queryClient}>
-      {component}
-    </QueryClientProvider>
-  );
+  return render(<QueryClientProvider client={queryClient}>{component}</QueryClientProvider>);
 };
 
 describe('HistoricalTimeline', () => {
@@ -104,7 +102,9 @@ describe('HistoricalTimeline', () => {
   });
 
   it('renders timeline when data is loaded', async () => {
-    (analyticsApi.getHistoricalTimeline as jest.MockedFunction<any>).mockResolvedValue(mockTimelineData);
+    (analyticsApi.getHistoricalTimeline as jest.MockedFunction<any>).mockResolvedValue(
+      mockTimelineData
+    );
 
     renderWithQueryClient(<HistoricalTimeline />);
 
@@ -120,7 +120,9 @@ describe('HistoricalTimeline', () => {
   });
 
   it('handles refresh functionality', async () => {
-    (analyticsApi.getHistoricalTimeline as jest.MockedFunction<any>).mockResolvedValue(mockTimelineData);
+    (analyticsApi.getHistoricalTimeline as jest.MockedFunction<any>).mockResolvedValue(
+      mockTimelineData
+    );
 
     renderWithQueryClient(<HistoricalTimeline />);
 
@@ -147,18 +149,18 @@ describe('HistoricalTimeline', () => {
       expect(screen.getByText('No Timeline Data')).toBeInTheDocument();
     });
 
-    expect(screen.getByText('No validation run data found for the selected time period.')).toBeInTheDocument();
+    expect(
+      screen.getByText('No validation run data found for the selected time period.')
+    ).toBeInTheDocument();
   });
 
   it('accepts initial props correctly', async () => {
-    (analyticsApi.getHistoricalTimeline as jest.MockedFunction<any>).mockResolvedValue(mockTimelineData);
+    (analyticsApi.getHistoricalTimeline as jest.MockedFunction<any>).mockResolvedValue(
+      mockTimelineData
+    );
 
     renderWithQueryClient(
-      <HistoricalTimeline 
-        defaultDays={7} 
-        autoRefresh={true} 
-        refreshInterval={10000} 
-      />
+      <HistoricalTimeline defaultDays={7} autoRefresh={true} refreshInterval={10000} />
     );
 
     await waitFor(() => {
@@ -171,7 +173,9 @@ describe('HistoricalTimeline', () => {
   });
 
   it('handles settings panel toggle', async () => {
-    (analyticsApi.getHistoricalTimeline as jest.MockedFunction<any>).mockResolvedValue(mockTimelineData);
+    (analyticsApi.getHistoricalTimeline as jest.MockedFunction<any>).mockResolvedValue(
+      mockTimelineData
+    );
 
     renderWithQueryClient(<HistoricalTimeline />);
 
@@ -191,7 +195,9 @@ describe('HistoricalTimeline', () => {
   });
 
   it('handles time period changes', async () => {
-    (analyticsApi.getHistoricalTimeline as jest.MockedFunction<any>).mockResolvedValue(mockTimelineData);
+    (analyticsApi.getHistoricalTimeline as jest.MockedFunction<any>).mockResolvedValue(
+      mockTimelineData
+    );
 
     renderWithQueryClient(<HistoricalTimeline />);
 
@@ -221,7 +227,9 @@ describe('HistoricalTimeline', () => {
   });
 
   it('handles granularity changes', async () => {
-    (analyticsApi.getHistoricalTimeline as jest.MockedFunction<any>).mockResolvedValue(mockTimelineData);
+    (analyticsApi.getHistoricalTimeline as jest.MockedFunction<any>).mockResolvedValue(
+      mockTimelineData
+    );
 
     renderWithQueryClient(<HistoricalTimeline />);
 
@@ -251,7 +259,9 @@ describe('HistoricalTimeline', () => {
   });
 
   it('handles stage filter changes', async () => {
-    (analyticsApi.getHistoricalTimeline as jest.MockedFunction<any>).mockResolvedValue(mockTimelineData);
+    (analyticsApi.getHistoricalTimeline as jest.MockedFunction<any>).mockResolvedValue(
+      mockTimelineData
+    );
 
     renderWithQueryClient(<HistoricalTimeline />);
 
@@ -271,16 +281,18 @@ describe('HistoricalTimeline', () => {
     // Check that API is called with correct parameters (without environment)
     await waitFor(() => {
       expect(analyticsApi.getHistoricalTimeline).toHaveBeenCalledWith(
-        expect.objectContaining({ 
-          days: 30, 
-          granularity: 'day'
+        expect.objectContaining({
+          days: 30,
+          granularity: 'day',
         })
       );
     });
   });
 
   it('handles chart type changes', async () => {
-    (analyticsApi.getHistoricalTimeline as jest.MockedFunction<any>).mockResolvedValue(mockTimelineData);
+    (analyticsApi.getHistoricalTimeline as jest.MockedFunction<any>).mockResolvedValue(
+      mockTimelineData
+    );
 
     renderWithQueryClient(<HistoricalTimeline />);
 
@@ -309,7 +321,9 @@ describe('HistoricalTimeline', () => {
   });
 
   it('renders different chart types correctly', async () => {
-    (analyticsApi.getHistoricalTimeline as jest.MockedFunction<any>).mockResolvedValue(mockTimelineData);
+    (analyticsApi.getHistoricalTimeline as jest.MockedFunction<any>).mockResolvedValue(
+      mockTimelineData
+    );
 
     const { rerender } = renderWithQueryClient(<HistoricalTimeline />);
 
@@ -319,10 +333,12 @@ describe('HistoricalTimeline', () => {
 
     // Test duration chart type by re-rendering with different props
     jest.clearAllMocks();
-    (analyticsApi.getHistoricalTimeline as jest.MockedFunction<any>).mockResolvedValue(mockTimelineData);
-    
+    (analyticsApi.getHistoricalTimeline as jest.MockedFunction<any>).mockResolvedValue(
+      mockTimelineData
+    );
+
     renderWithQueryClient(<HistoricalTimeline />);
-    
+
     await waitFor(() => {
       expect(screen.getByText('Historical Timeline')).toBeInTheDocument();
     });
@@ -332,12 +348,12 @@ describe('HistoricalTimeline', () => {
     const settingsButton = settingsButtons[0];
     expect(settingsButton).toBeInTheDocument();
     fireEvent.click(settingsButton);
-    
+
     // Wait for settings panel to appear
     await waitFor(() => {
       expect(screen.getByText('Timeline Settings')).toBeInTheDocument();
     });
-    
+
     const selectElements = screen.getAllByRole('combobox');
     const chartTypeSelect = selectElements[3]; // Chart Type select (fourth select)
     fireEvent.change(chartTypeSelect, { target: { value: 'duration' } });
@@ -364,8 +380,10 @@ describe('HistoricalTimeline', () => {
         { ...mockTimelineData.timeline[0], timestamp: '2024-01-03' },
       ],
     };
-    
-    (analyticsApi.getHistoricalTimeline as jest.MockedFunction<any>).mockResolvedValue(timelineDataWithMultiplePoints);
+
+    (analyticsApi.getHistoricalTimeline as jest.MockedFunction<any>).mockResolvedValue(
+      timelineDataWithMultiplePoints
+    );
 
     renderWithQueryClient(<HistoricalTimeline />);
 
@@ -374,11 +392,9 @@ describe('HistoricalTimeline', () => {
     });
 
     // Test play button - look for button with Play icon
-    const playButton = screen.getAllByRole('button').find(button => 
-      button.querySelector('svg')
-    );
+    const playButton = screen.getAllByRole('button').find(button => button.querySelector('svg'));
     expect(playButton).toBeInTheDocument();
-    
+
     // Click the play button and use act to ensure state update
     act(() => {
       fireEvent.click(playButton!);
@@ -391,10 +407,8 @@ describe('HistoricalTimeline', () => {
       expect(cards.length).toBeGreaterThan(0);
     });
 
-    // Test skip controls - look for buttons with skip icons  
-    const skipButtons = screen.getAllByRole('button').filter(button => 
-      button.querySelector('svg')
-    );
+    // Test skip controls - look for buttons with skip icons
+    const skipButtons = screen.getAllByRole('button').filter(button => button.querySelector('svg'));
     expect(skipButtons.length).toBeGreaterThan(0);
 
     // Animation controls work - component should be interactive
@@ -414,7 +428,9 @@ describe('HistoricalTimeline', () => {
     ];
 
     for (const testCase of testCases) {
-      (analyticsApi.getHistoricalTimeline as jest.MockedFunction<any>).mockResolvedValue(mockTimelineData);
+      (analyticsApi.getHistoricalTimeline as jest.MockedFunction<any>).mockResolvedValue(
+        mockTimelineData
+      );
 
       const { unmount } = renderWithQueryClient(<HistoricalTimeline />);
 
@@ -454,7 +470,9 @@ describe('HistoricalTimeline', () => {
       ],
     };
 
-    (analyticsApi.getHistoricalTimeline as jest.MockedFunction<any>).mockResolvedValue(dataWithStages);
+    (analyticsApi.getHistoricalTimeline as jest.MockedFunction<any>).mockResolvedValue(
+      dataWithStages
+    );
 
     renderWithQueryClient(<HistoricalTimeline />);
 
@@ -475,7 +493,7 @@ describe('HistoricalTimeline', () => {
     // Toggle stage visibility
     const lintStageButton = screen.getByRole('button', { name: /lint/ });
     fireEvent.click(lintStageButton);
-    
+
     // Should still be there (toggle behavior)
     expect(screen.getByRole('button', { name: /lint/ })).toBeInTheDocument();
   });
@@ -501,7 +519,9 @@ describe('HistoricalTimeline', () => {
       ],
     };
 
-    (analyticsApi.getHistoricalTimeline as jest.MockedFunction<any>).mockResolvedValue(dataWithDetails);
+    (analyticsApi.getHistoricalTimeline as jest.MockedFunction<any>).mockResolvedValue(
+      dataWithDetails
+    );
 
     renderWithQueryClient(<HistoricalTimeline />);
 
@@ -510,10 +530,8 @@ describe('HistoricalTimeline', () => {
     });
 
     // Start animation - look for play button by icon
-    const playButton = screen.getAllByRole('button').find(button => 
-      button.querySelector('svg')
-    );
-    
+    const playButton = screen.getAllByRole('button').find(button => button.querySelector('svg'));
+
     // Use act to ensure state updates are processed
     act(() => {
       fireEvent.click(playButton!);
@@ -590,7 +608,9 @@ describe('HistoricalTimeline', () => {
       },
     };
 
-    (analyticsApi.getHistoricalTimeline as jest.MockedFunction<any>).mockResolvedValue(dataWithMultipleRuns);
+    (analyticsApi.getHistoricalTimeline as jest.MockedFunction<any>).mockResolvedValue(
+      dataWithMultipleRuns
+    );
 
     renderWithQueryClient(<HistoricalTimeline />);
 
@@ -605,12 +625,12 @@ describe('HistoricalTimeline', () => {
 
   it('handles auto refresh functionality', async () => {
     jest.useFakeTimers();
-    
-    (analyticsApi.getHistoricalTimeline as jest.MockedFunction<any>).mockResolvedValue(mockTimelineData);
 
-    renderWithQueryClient(
-      <HistoricalTimeline autoRefresh={true} refreshInterval={5000} />
+    (analyticsApi.getHistoricalTimeline as jest.MockedFunction<any>).mockResolvedValue(
+      mockTimelineData
     );
+
+    renderWithQueryClient(<HistoricalTimeline autoRefresh={true} refreshInterval={5000} />);
 
     await waitFor(() => {
       expect(screen.getByText('Historical Timeline')).toBeInTheDocument();

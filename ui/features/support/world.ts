@@ -20,24 +20,24 @@ export class CustomWorld extends World {
     const browsers = {
       chromium,
       firefox,
-      webkit
+      webkit,
     };
 
     this.browser = await browsers[browserName as keyof typeof browsers].launch({
       headless: process.env.HEADLESS !== 'false',
-      slowMo: process.env.SLOW_MO ? parseInt(process.env.SLOW_MO) : 0
+      slowMo: process.env.SLOW_MO ? parseInt(process.env.SLOW_MO) : 0,
     });
 
     this.context = await this.browser.newContext({
       viewport: { width: 1280, height: 720 },
-      ignoreHTTPSErrors: true
+      ignoreHTTPSErrors: true,
     });
 
     this.page = await this.context.newPage();
-    
+
     // Add any global page setup here
     await this.page.setExtraHTTPHeaders({
-      'Accept-Language': 'en-US,en;q=0.9'
+      'Accept-Language': 'en-US,en;q=0.9',
     });
   }
 
@@ -66,7 +66,7 @@ export class CustomWorld extends World {
     if (!this.page) return;
     const screenshot = await this.page.screenshot({
       path: `reports/screenshots/${name}-${Date.now()}.png`,
-      fullPage: true
+      fullPage: true,
     });
     return screenshot;
   }

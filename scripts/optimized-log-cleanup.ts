@@ -21,14 +21,14 @@ const PERCENTAGE_DECIMAL_PLACES = 1;
 // Performance thresholds
 const PERFORMANCE_THRESHOLDS_MS = {
   EXCELLENT: 5000,
-  GOOD: 15000
+  GOOD: 15000,
 };
 
-// Recommendation thresholds  
+// Recommendation thresholds
 const RECOMMENDATION_THRESHOLDS = {
   MAX_FILES_WARNING: 30,
   MAX_SIZE_MB_WARNING: 50,
-  MIN_FILES_FOR_COMPRESSION_RECOMMENDATION: 10
+  MIN_FILES_FOR_COMPRESSION_RECOMMENDATION: 10,
 };
 
 interface LogStats {
@@ -51,7 +51,9 @@ function displayPreCleanupStats(stats: LogStats): void {
   console.error('📊 Log directory statistics (before cleanup):');
   console.error(`  Total files: ${stats.totalFiles}`);
   console.error(`  Total size: ${(stats.totalSize / BYTES_PER_MB).toFixed(DECIMAL_PLACES)} MB`);
-  console.error(`  Average file size: ${(stats.averageFileSize / BYTES_PER_KB).toFixed(DECIMAL_PLACES)} KB`);
+  console.error(
+    `  Average file size: ${(stats.averageFileSize / BYTES_PER_KB).toFixed(DECIMAL_PLACES)} KB`
+  );
 
   if (stats.oldestFile && stats.newestFile) {
     console.error(`  Oldest file: ${stats.oldestFile.toLocaleDateString()}`);
@@ -77,16 +79,23 @@ function displayCleanupResults(result: CleanupResult): void {
 function displayPostCleanupStats(statsBefore: LogStats, statsAfter: LogStats): void {
   console.error('\n📊 Log directory statistics (after cleanup):');
   console.error(`  Total files: ${statsAfter.totalFiles}`);
-  console.error(`  Total size: ${(statsAfter.totalSize / BYTES_PER_MB).toFixed(DECIMAL_PLACES)} MB`);
+  console.error(
+    `  Total size: ${(statsAfter.totalSize / BYTES_PER_MB).toFixed(DECIMAL_PLACES)} MB`
+  );
 
   const spaceSaved = statsBefore.totalSize - statsAfter.totalSize;
-  const percentageSaved = ((spaceSaved / statsBefore.totalSize) * 100).toFixed(PERCENTAGE_DECIMAL_PLACES);
-  console.error(`  Space saved: ${(spaceSaved / BYTES_PER_MB).toFixed(DECIMAL_PLACES)} MB (${percentageSaved}%)`);
+  const percentageSaved = ((spaceSaved / statsBefore.totalSize) * 100).toFixed(
+    PERCENTAGE_DECIMAL_PLACES
+  );
+  console.error(
+    `  Space saved: ${(spaceSaved / BYTES_PER_MB).toFixed(DECIMAL_PLACES)} MB (${percentageSaved}%)`
+  );
 }
 
 function assessPerformance(statsBefore: LogStats, result: CleanupResult): void {
   console.error('\n⚡ Performance Assessment:');
-  const processingSpeed = statsBefore.totalSize / BYTES_PER_MB / (result.processingTime / MS_PER_SECOND);
+  const processingSpeed =
+    statsBefore.totalSize / BYTES_PER_MB / (result.processingTime / MS_PER_SECOND);
   console.error(`  Processing speed: ${processingSpeed.toFixed(2)} MB/s`);
 
   if (result.processingTime < PERFORMANCE_THRESHOLDS_MS.EXCELLENT) {
@@ -110,11 +119,16 @@ function displayOptimizationRecommendations(
   if (statsAfter.totalSize > RECOMMENDATION_THRESHOLDS.MAX_SIZE_MB_WARNING * BYTES_PER_MB) {
     console.error('  - Consider reducing maxLogAge for active development');
   }
-  if (result.compressedFiles === 0 && statsBefore.totalFiles > RECOMMENDATION_THRESHOLDS.MIN_FILES_FOR_COMPRESSION_RECOMMENDATION) {
+  if (
+    result.compressedFiles === 0 &&
+    statsBefore.totalFiles > RECOMMENDATION_THRESHOLDS.MIN_FILES_FOR_COMPRESSION_RECOMMENDATION
+  ) {
     console.error('  - Consider enabling log compression to save space');
   }
   if (result.compressedFiles > 0) {
-    console.error(`  - Log compression is working well (${result.compressedFiles} files compressed)`);
+    console.error(
+      `  - Log compression is working well (${result.compressedFiles} files compressed)`
+    );
   }
 }
 

@@ -2,7 +2,6 @@
  * Tests for rust-runners.ts
  */
 
-
 import { runRustFormatting, runRustLinting } from './rust-runners';
 import { execCommand } from '../utils/command-utils';
 import { validateDirectoryExists } from '../utils/validation-utils';

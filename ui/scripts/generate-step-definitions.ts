@@ -17,7 +17,8 @@ async function generateStepDefinitions() {
   console.error('🔍 Generating step definitions from Gherkin features...');
 
   const scenarioLinker = new ScenarioLinker(E2E_TESTS_DIR);
-  const featureFiles = fs.readdirSync(FEATURES_DIR)
+  const featureFiles = fs
+    .readdirSync(FEATURES_DIR)
     .filter(file => file.endsWith('.feature'))
     .map(file => path.join(FEATURES_DIR, file));
 
@@ -25,10 +26,10 @@ async function generateStepDefinitions() {
 
   for (const featureFile of featureFiles) {
     console.error(`\n📄 Processing ${path.basename(featureFile)}...`);
-    
+
     try {
       const gherkinContent = fs.readFileSync(featureFile, 'utf-8');
-      
+
       // Validate Gherkin syntax
       const validation = scenarioLinker.validateGherkinSyntax(gherkinContent);
       if (!validation.valid) {
@@ -40,9 +41,8 @@ async function generateStepDefinitions() {
       // Generate step definitions
       const stepDefinitions = scenarioLinker.generateStepDefinitions(gherkinContent);
       stepDefinitions.forEach(stepDef => allStepDefinitions.add(stepDef));
-      
-      console.error(`   ✅ Generated ${stepDefinitions.length} step definitions`);
 
+      console.error(`   ✅ Generated ${stepDefinitions.length} step definitions`);
     } catch (error) {
       console.error(`❌ Error processing ${featureFile}:`, error);
     }
@@ -73,11 +73,11 @@ async function analyzeTestCoverage(scenarioLinker: ScenarioLinker) {
 
   const availableTests = scenarioLinker.getAvailableTests();
   console.error(`📋 Found ${availableTests.length} Playwright tests:`);
-  
+
   availableTests.slice(0, 10).forEach(test => {
     console.error(`   - ${path.basename(test.file)}: "${test.testName}"`);
   });
-  
+
   if (availableTests.length > 10) {
     console.error(`   ... and ${availableTests.length - 10} more tests`);
   }
@@ -95,10 +95,10 @@ Feature: BDD Scenario Audit and Linking
     When I navigate to the BDD Tests Dashboard
     Then I should see a list of all BDD scenarios
       `,
-      status: 'pending' as const
+      status: 'pending' as const,
     },
     {
-      id: 'scenario-2', 
+      id: 'scenario-2',
       title: 'Switch to Claude CLI agent data',
       feature: 'Agent Analytics Data Filtering',
       gherkinContent: `
@@ -108,12 +108,12 @@ Feature: Agent Analytics Data Filtering
     When I select "claude_cli" from the agent dropdown
     Then the analytics data should update to show only Claude CLI results
       `,
-      status: 'pending' as const
-    }
+      status: 'pending' as const,
+    },
   ];
 
   const suggestions = scenarioLinker.suggestLinks(mockScenarios);
-  
+
   if (suggestions.length > 0) {
     console.error('\n💡 Suggested scenario-to-test mappings:');
     suggestions.forEach(suggestion => {
@@ -130,10 +130,10 @@ Feature: Agent Analytics Data Filtering
 
 async function linkExistingScenarios() {
   console.error('\n🔗 Linking existing BDD scenarios to tests...');
-  
+
   // This would typically read from the database
   // For now, we'll demonstrate the linking functionality
-  
+
   console.error('   ℹ️  Database scenarios would be linked here');
   console.error('   📝 Use the BDD Tests Dashboard to manually link scenarios');
   console.error('   🌐 Available at: http://localhost:5173/bdd-tests');

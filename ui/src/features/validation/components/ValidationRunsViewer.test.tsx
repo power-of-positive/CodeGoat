@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -16,7 +15,9 @@ jest.mock('../../../shared/lib/api', () => ({
 // Mock Lucide React icons
 jest.mock('lucide-react', () => ({
   FileCheck: ({ className }: { className?: string }) => (
-    <div data-testid="file-check-icon" className={className}>FileCheck</div>
+    <div data-testid="file-check-icon" className={className}>
+      FileCheck
+    </div>
   ),
 }));
 
@@ -33,82 +34,80 @@ const createWrapper = () => {
   });
 
   return ({ children }: { children: React.ReactNode }) => (
-    <QueryClientProvider client={queryClient}>
-      {children}
-    </QueryClientProvider>
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   );
 };
 
 const mockValidationData = [
-    {
-      id: 'run-abc-def-123',
-      timestamp: '2023-01-01T10:00:00Z',
-      overallStatus: 'passed' as const,
-      success: true,
-      duration: 17500,
-      stages: [
-        {
-          name: 'lint',
-          command: 'npm run lint',
-          status: 'passed' as const,
-          duration: 2500,
-        } as any,
-        {
-          name: 'test',
-          command: 'npm test',
-          status: 'passed' as const,
-          duration: 15000,
-        },
-      ],
-      metricsFile: 'metrics-123.json',
-    },
-    {
-      id: 'run-def-ghi-456',
-      timestamp: '2023-01-01T09:00:00Z',
-      overallStatus: 'failed' as const,
-      success: false,
-      duration: 10000,
-      stages: [
-        {
-          name: 'lint',
-          command: 'npm run lint',
-          status: 'passed' as const,
-          duration: 2000,
-        },
-        {
-          name: 'test',
-          command: 'npm test',
-          status: 'failed' as const,
-          duration: 8000,
-        },
-        {
-          name: 'build',
-          command: 'npm run build',
-          status: 'skipped' as const,
-          duration: 0,
-        },
-      ],
-    },
-    {
-      id: 'run-ghi-jkl-789',
-      timestamp: '2023-01-01T08:00:00Z',
-      overallStatus: 'running' as const,
-      success: false,
-      duration: 0,
-      stages: [
-        {
-          name: 'lint',
-          command: 'npm run lint',
-          status: 'passed' as const,
-          duration: 1800,
-        },
-        {
-          name: 'test',
-          command: 'npm test',
-          status: 'running' as const,
-        },
-      ],
-    },
+  {
+    id: 'run-abc-def-123',
+    timestamp: '2023-01-01T10:00:00Z',
+    overallStatus: 'passed' as const,
+    success: true,
+    duration: 17500,
+    stages: [
+      {
+        name: 'lint',
+        command: 'npm run lint',
+        status: 'passed' as const,
+        duration: 2500,
+      } as any,
+      {
+        name: 'test',
+        command: 'npm test',
+        status: 'passed' as const,
+        duration: 15000,
+      },
+    ],
+    metricsFile: 'metrics-123.json',
+  },
+  {
+    id: 'run-def-ghi-456',
+    timestamp: '2023-01-01T09:00:00Z',
+    overallStatus: 'failed' as const,
+    success: false,
+    duration: 10000,
+    stages: [
+      {
+        name: 'lint',
+        command: 'npm run lint',
+        status: 'passed' as const,
+        duration: 2000,
+      },
+      {
+        name: 'test',
+        command: 'npm test',
+        status: 'failed' as const,
+        duration: 8000,
+      },
+      {
+        name: 'build',
+        command: 'npm run build',
+        status: 'skipped' as const,
+        duration: 0,
+      },
+    ],
+  },
+  {
+    id: 'run-ghi-jkl-789',
+    timestamp: '2023-01-01T08:00:00Z',
+    overallStatus: 'running' as const,
+    success: false,
+    duration: 0,
+    stages: [
+      {
+        name: 'lint',
+        command: 'npm run lint',
+        status: 'passed' as const,
+        duration: 1800,
+      },
+      {
+        name: 'test',
+        command: 'npm test',
+        status: 'running' as const,
+      },
+    ],
+  },
 ];
 
 describe('ValidationRunsViewer', () => {
@@ -138,8 +137,8 @@ describe('ValidationRunsViewer', () => {
     });
 
     it('should display loading state initially', async () => {
-      mockClaudeWorkersApi.getValidationRuns.mockImplementation(() => 
-        new Promise(resolve => setTimeout(() => resolve(mockValidationData as any), 100))
+      mockClaudeWorkersApi.getValidationRuns.mockImplementation(
+        () => new Promise(resolve => setTimeout(() => resolve(mockValidationData as any), 100))
       );
       const Wrapper = createWrapper();
 
@@ -202,9 +201,7 @@ describe('ValidationRunsViewer', () => {
       );
 
       await waitFor(() => {
-        const timestamp = screen.getByText(
-          new Date('2023-01-01T10:00:00Z').toLocaleString()
-        );
+        const timestamp = screen.getByText(new Date('2023-01-01T10:00:00Z').toLocaleString());
         expect(timestamp).toBeInTheDocument();
       });
     });
@@ -237,7 +234,9 @@ describe('ValidationRunsViewer', () => {
 
       await waitFor(() => {
         expect(screen.getByText('No validation runs yet')).toBeInTheDocument();
-        expect(screen.getByText('Validation runs will appear here when a worker completes')).toBeInTheDocument();
+        expect(
+          screen.getByText('Validation runs will appear here when a worker completes')
+        ).toBeInTheDocument();
       });
     });
   });
@@ -317,7 +316,7 @@ describe('ValidationRunsViewer', () => {
 
         // Check that the skipped stage is shown with yellow indicator
         const stageIndicators = document.querySelectorAll('.w-2.h-2.rounded-full');
-        const yellowIndicator = Array.from(stageIndicators).find(el => 
+        const yellowIndicator = Array.from(stageIndicators).find(el =>
           el.classList.contains('bg-yellow-500')
         );
         expect(yellowIndicator).toBeInTheDocument();
@@ -339,12 +338,12 @@ describe('ValidationRunsViewer', () => {
       await waitFor(() => {
         // Check that stages sections are displayed for multiple runs
         expect(screen.getAllByText('Stages:')).toHaveLength(3); // One for each validation run
-        
+
         // Check that stage names are displayed
         expect(screen.getAllByText('lint')).toHaveLength(3); // Appears in 3 validation runs
         expect(screen.getAllByText('test')).toHaveLength(3); // Appears in 3 validation runs
         expect(screen.getByText('build')).toBeInTheDocument();
-        
+
         // Verify status indicators exist with different colors
         const indicators = document.querySelectorAll('.w-2.h-2.rounded-full');
         expect(indicators.length).toBeGreaterThan(0);
@@ -416,18 +415,18 @@ describe('ValidationRunsViewer', () => {
         // Check that stage indicators exist
         const indicators = document.querySelectorAll('.w-2.h-2.rounded-full');
         expect(indicators.length).toBeGreaterThan(0);
-        
+
         // Verify different status colors exist
-        const greenIndicators = Array.from(indicators).filter(el => 
+        const greenIndicators = Array.from(indicators).filter(el =>
           el.classList.contains('bg-green-500')
         );
-        const redIndicators = Array.from(indicators).filter(el => 
+        const redIndicators = Array.from(indicators).filter(el =>
           el.classList.contains('bg-red-500')
         );
-        const blueIndicators = Array.from(indicators).filter(el => 
+        const blueIndicators = Array.from(indicators).filter(el =>
           el.classList.contains('bg-blue-500')
         );
-        
+
         // Should have multiple indicators for different stages/runs
         expect(greenIndicators.length).toBeGreaterThan(0); // passed stages
         expect(redIndicators.length).toBeGreaterThan(0); // failed stages
@@ -595,9 +594,12 @@ describe('ValidationRunsViewer', () => {
       jest.advanceTimersByTime(5000);
 
       // Wait for the refetch to complete
-      await waitFor(() => {
-        expect(mockClaudeWorkersApi.getValidationRuns).toHaveBeenCalledTimes(2);
-      }, { timeout: 1000 });
+      await waitFor(
+        () => {
+          expect(mockClaudeWorkersApi.getValidationRuns).toHaveBeenCalledTimes(2);
+        },
+        { timeout: 1000 }
+      );
 
       jest.useRealTimers();
     });

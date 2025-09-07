@@ -13,8 +13,12 @@ jest.mock('./env-config-processor');
 
 const mockConfig = config as jest.MockedFunction<typeof config>;
 const mockExistsSync = fs.existsSync as jest.MockedFunction<typeof fs.existsSync>;
-const mockHandleLoadError = envConfigHelpers.handleLoadError as jest.MockedFunction<typeof envConfigHelpers.handleLoadError>;
-const mockLoadFromMultipleFiles = envConfigProcessor.loadFromMultipleFiles as jest.MockedFunction<typeof envConfigProcessor.loadFromMultipleFiles>;
+const mockHandleLoadError = envConfigHelpers.handleLoadError as jest.MockedFunction<
+  typeof envConfigHelpers.handleLoadError
+>;
+const mockLoadFromMultipleFiles = envConfigProcessor.loadFromMultipleFiles as jest.MockedFunction<
+  typeof envConfigProcessor.loadFromMultipleFiles
+>;
 
 describe('env-config', () => {
   beforeEach(() => {
@@ -32,7 +36,7 @@ describe('env-config', () => {
         success: true,
         envPath: '/project/.env',
         variablesLoaded: 3,
-        filesLoaded: ['.env', '.env.local']
+        filesLoaded: ['.env', '.env.local'],
       };
 
       mockLoadFromMultipleFiles.mockResolvedValue(expectedResult);
@@ -44,7 +48,7 @@ describe('env-config', () => {
         expect.arrayContaining([
           expect.stringContaining('.env'),
           expect.stringContaining('.env.local'),
-          expect.stringContaining('.env.development')
+          expect.stringContaining('.env.development'),
         ]),
         expect.any(String)
       );
@@ -56,16 +60,13 @@ describe('env-config', () => {
 
       await loadProjectEnv(3);
 
-      expect(mockLoadFromMultipleFiles).toHaveBeenCalledWith(
-        expect.any(Array),
-        expect.any(String)
-      );
+      expect(mockLoadFromMultipleFiles).toHaveBeenCalledWith(expect.any(Array), expect.any(String));
     });
 
     it('should handle errors by calling handleLoadError', async () => {
       const error = new Error('File system error');
       const expectedResult = { success: false, error: 'File system error' };
-      
+
       mockLoadFromMultipleFiles.mockRejectedValue(error);
       mockHandleLoadError.mockReturnValue(expectedResult);
 
@@ -93,7 +94,7 @@ describe('env-config', () => {
   describe('loadProjectEnvSync', () => {
     it('should successfully load environment variables when .env file exists', () => {
       const mockParsed = { TEST_VAR: 'test_value', ANOTHER_VAR: 'another_value' };
-      
+
       mockExistsSync.mockReturnValue(true);
       mockConfig.mockReturnValue({ parsed: mockParsed });
 
@@ -106,7 +107,7 @@ describe('env-config', () => {
 
     it('should handle dotenv config errors', () => {
       const error = new Error('Parse error');
-      
+
       mockExistsSync.mockReturnValue(true);
       mockConfig.mockReturnValue({ error });
 
@@ -194,7 +195,9 @@ describe('env-config', () => {
       process.env.EMPTY_VAR = '';
       process.env.WHITESPACE_VAR = '   ';
 
-      const result = validateRequiredEnvVars(['EMPTY_VAR', 'WHITESPACE_VAR'], { allowEmpty: false });
+      const result = validateRequiredEnvVars(['EMPTY_VAR', 'WHITESPACE_VAR'], {
+        allowEmpty: false,
+      });
 
       expect(result.valid).toBe(false);
       expect(result.missing).toContain('EMPTY_VAR');
@@ -217,7 +220,7 @@ describe('env-config', () => {
 
       const validateFormat = {
         EMAIL_VAR: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-        URL_VAR: /^https?:\/\/.+$/
+        URL_VAR: /^https?:\/\/.+$/,
       };
 
       const result = validateRequiredEnvVars(['EMAIL_VAR', 'URL_VAR'], { validateFormat });
@@ -235,10 +238,12 @@ describe('env-config', () => {
 
       const validateFormat = {
         VALID_VAR: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-        INVALID_FORMAT: /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+        INVALID_FORMAT: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
       };
 
-      const result = validateRequiredEnvVars(['VALID_VAR', 'INVALID_FORMAT', 'MISSING_VAR'], { validateFormat });
+      const result = validateRequiredEnvVars(['VALID_VAR', 'INVALID_FORMAT', 'MISSING_VAR'], {
+        validateFormat,
+      });
 
       expect(result.valid).toBe(false);
       expect(result.missing).toContain('MISSING_VAR');
@@ -250,7 +255,7 @@ describe('env-config', () => {
       process.env.EMPTY_VAR = '';
 
       const validateFormat = {
-        EMPTY_VAR: /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+        EMPTY_VAR: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
       };
 
       const result = validateRequiredEnvVars(['EMPTY_VAR'], { allowEmpty: true, validateFormat });

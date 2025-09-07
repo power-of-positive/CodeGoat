@@ -114,37 +114,43 @@ export function BDDScenariosDashboard() {
   const [lastExecutionResult, setLastExecutionResult] = useState<ExecutionResult | null>(null);
   const queryClient = useQueryClient();
 
-  const { 
-    data: scenarios = [], 
+  const {
+    data: scenarios = [],
     isLoading: scenariosLoading,
-    error: scenariosError
+    error: scenariosError,
   } = useQuery({
     queryKey: ['bdd-scenarios'],
     queryFn: bddApi.getScenarios,
     retry: false,
   });
 
-  const { 
+  const {
     data: stats,
     isLoading: statsLoading,
-    error: statsError
+    error: statsError,
   } = useQuery({
     queryKey: ['bdd-stats'],
     queryFn: bddApi.getStats,
     retry: false,
   });
 
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
   const createScenariosMutation = useMutation({
     mutationFn: bddApi.createComprehensiveScenarios,
-    onSuccess: () => {
+    onSuccess: data => {
       queryClient.invalidateQueries({ queryKey: ['bdd-scenarios'] });
       queryClient.invalidateQueries({ queryKey: ['bdd-stats'] });
+      // Show success message
+      const count = data?.count || data?.scenarios?.length || 'several';
+      setSuccessMessage(`Created ${count} comprehensive BDD scenarios`);
+      setTimeout(() => setSuccessMessage(null), 5000);
     },
   });
 
   const executeScenarioMutation = useMutation({
     mutationFn: bddApi.executeScenario,
-    onSuccess: (result) => {
+    onSuccess: result => {
       setLastExecutionResult(result);
       queryClient.invalidateQueries({ queryKey: ['bdd-scenarios'] });
       queryClient.invalidateQueries({ queryKey: ['bdd-stats'] });
@@ -160,8 +166,9 @@ export function BDDScenariosDashboard() {
   });
 
   const filteredScenarios = (scenarios || []).filter(scenario => {
-    const matchesSearch = scenario.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         scenario.feature.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch =
+      scenario.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      scenario.feature.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || scenario.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -230,6 +237,13 @@ export function BDDScenariosDashboard() {
         </div>
       </div>
 
+      {/* Success Message */}
+      {successMessage && (
+        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
+          {successMessage}
+        </div>
+      )}
+
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <StatsCard
@@ -278,7 +292,7 @@ export function BDDScenariosDashboard() {
           <Input
             placeholder="Search scenarios..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={e => setSearchTerm(e.target.value)}
             className="pl-10"
             data-testid="search-scenarios"
           />
@@ -287,7 +301,7 @@ export function BDDScenariosDashboard() {
           <Filter className="h-4 w-4 text-gray-500" />
           <select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+            onChange={e => setStatusFilter(e.target.value)}
             className="px-3 py-2 border border-gray-300 rounded-md text-sm"
             data-testid="status-filter"
           >
@@ -306,14 +320,11 @@ export function BDDScenariosDashboard() {
           <Card>
             <CardContent className="p-8 text-center">
               <AlertCircle className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                No BDD Scenarios Found
-              </h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No BDD Scenarios Found</h3>
               <p className="text-gray-600 mb-4">
                 {scenarios.length === 0
                   ? 'Create comprehensive BDD scenarios to get started with behavioral testing.'
-                  : 'No scenarios match your current search and filter criteria.'
-                }
+                  : 'No scenarios match your current search and filter criteria.'}
               </p>
               {scenarios.length === 0 && (
                 <Button
@@ -327,7 +338,7 @@ export function BDDScenariosDashboard() {
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredScenarios.map((scenario) => (
+            {filteredScenarios.map(scenario => (
               <ScenarioCard
                 key={scenario.id}
                 scenario={scenario}
@@ -363,11 +374,7 @@ export function BDDScenariosDashboard() {
                   </p>
                 )}
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setLastExecutionResult(null)}
-              >
+              <Button variant="outline" size="sm" onClick={() => setLastExecutionResult(null)}>
                 Dismiss
               </Button>
             </div>
@@ -376,7 +383,9 @@ export function BDDScenariosDashboard() {
       )}
 
       {/* Execution Status */}
-      {(createScenariosMutation.isPending || executeScenarioMutation.isPending || executeAllMutation.isPending) && (
+      {(createScenariosMutation.isPending ||
+        executeScenarioMutation.isPending ||
+        executeAllMutation.isPending) && (
         <div className="fixed bottom-4 right-4 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg">
           <div className="flex items-center gap-2">
             <RotateCcw className="h-4 w-4 animate-spin" />
@@ -395,7 +404,7 @@ export function BDDScenariosDashboard() {
           Created comprehensive BDD scenarios successfully!
         </div>
       )}
-      
+
       {executeAllMutation.isSuccess && (
         <div className="fixed bottom-4 right-4 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg">
           Executed all scenarios successfully!

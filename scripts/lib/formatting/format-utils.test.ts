@@ -18,7 +18,7 @@ describe('format-utils', () => {
 
       expect(result.success).toBe(true);
       expect(result.output).toBe('No files to re-stage');
-      expect((commandUtils.execCommand as jest.Mock)).not.toHaveBeenCalled();
+      expect(commandUtils.execCommand as jest.Mock).not.toHaveBeenCalled();
     });
 
     it('should execute git add command for single file', () => {
@@ -27,7 +27,7 @@ describe('format-utils', () => {
 
       const result = restageFiles('/mock/project', ['test.ts']);
 
-      expect((commandUtils.execCommand as jest.Mock)).toHaveBeenCalledWith(
+      expect(commandUtils.execCommand as jest.Mock).toHaveBeenCalledWith(
         'git add "test.ts"',
         '/mock/project'
       );
@@ -40,7 +40,7 @@ describe('format-utils', () => {
 
       const result = restageFiles('/mock/project', ['test1.ts', 'test2.js', 'test3.tsx']);
 
-      expect((commandUtils.execCommand as jest.Mock)).toHaveBeenCalledWith(
+      expect(commandUtils.execCommand as jest.Mock).toHaveBeenCalledWith(
         'git add "test1.ts" "test2.js" "test3.tsx"',
         '/mock/project'
       );
@@ -53,7 +53,7 @@ describe('format-utils', () => {
 
       const result = restageFiles('/mock/project', ['file with spaces.ts', 'normal-file.js']);
 
-      expect((commandUtils.execCommand as jest.Mock)).toHaveBeenCalledWith(
+      expect(commandUtils.execCommand as jest.Mock).toHaveBeenCalledWith(
         'git add "file with spaces.ts" "normal-file.js"',
         '/mock/project'
       );

@@ -69,9 +69,11 @@ export function TaskTable({
     if (sortConfig.field !== field) {
       return <SortAsc className="h-4 w-4 opacity-0 group-hover:opacity-50" />;
     }
-    return sortConfig.direction === 'asc'
-      ? <SortAsc className="h-4 w-4 text-blue-600" />
-      : <SortDesc className="h-4 w-4 text-blue-600" />;
+    return sortConfig.direction === 'asc' ? (
+      <SortAsc className="h-4 w-4 text-blue-600" />
+    ) : (
+      <SortDesc className="h-4 w-4 text-blue-600" />
+    );
   };
 
   const allSelected = tasks.length > 0 && selectedTasks.length === tasks.length;
@@ -145,15 +147,18 @@ export function TaskTable({
               {tasks.map((task) => {
                 const StatusIcon = statusConfig[task.status].icon;
                 return (
-                  <tr 
-                    key={task.id} 
+                  <tr
+                    key={task.id}
                     className={`hover:bg-gray-50 ${selectedTasks.includes(task.id) ? 'bg-blue-50' : ''}`}
+                    data-testid="task-card"
                   >
                     <td className="p-3">
                       <input
                         type="checkbox"
                         checked={selectedTasks.includes(task.id)}
-                        onChange={(e) => onTaskSelect(task.id, e.target.checked)}
+                        onChange={(e) =>
+                          onTaskSelect(task.id, e.target.checked)
+                        }
                         className="rounded border-gray-300"
                       />
                     </td>
@@ -170,7 +175,9 @@ export function TaskTable({
                       </div>
                     </td>
                     <td className="p-3">
-                      <Badge className={`${statusConfig[task.status].color} flex items-center gap-1 w-fit`}>
+                      <Badge
+                        className={`${statusConfig[task.status].color} flex items-center gap-1 w-fit`}
+                      >
                         <StatusIcon className="w-3 h-3" />
                         {statusConfig[task.status].label}
                       </Badge>

@@ -25,10 +25,7 @@ interface SelectContentProps {
 }
 
 interface SelectItemProps
-  extends Omit<
-    React.ButtonHTMLAttributes<HTMLButtonElement>,
-    'onClick' | 'type' | 'onSelect'
-  > {
+  extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'onClick' | 'type' | 'onSelect'> {
   children: React.ReactNode;
   value: string;
   className?: string;
@@ -42,17 +39,12 @@ interface SelectValueProps {
   value?: string;
 }
 
-export function Select({
-  children,
-  value,
-  onValueChange,
-  className = '',
-}: SelectProps) {
+export function Select({ children, value, onValueChange, className = '' }: SelectProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
     <div className={`relative ${className}`}>
-      {React.Children.map(children, (child) => {
+      {React.Children.map(children, child => {
         if (React.isValidElement(child)) {
           return React.cloneElement(
             child as React.ReactElement<{
@@ -77,12 +69,7 @@ export function Select({
   );
 }
 
-export function SelectTrigger({
-  children,
-  className = '',
-  isOpen,
-  setIsOpen,
-}: SelectTriggerProps) {
+export function SelectTrigger({ children, className = '', isOpen, setIsOpen }: SelectTriggerProps) {
   return (
     <button
       type="button"
@@ -122,7 +109,7 @@ export function SelectContent({
       ${className}
     `}
     >
-      {React.Children.map(children, (child) => {
+      {React.Children.map(children, child => {
         if (React.isValidElement(child)) {
           // Only pass select props to SelectItem components
           if (
@@ -148,36 +135,28 @@ export function SelectContent({
             );
           } else {
             // For other elements, recursively process their children
-            const childElement = child as React.ReactElement<
-              Record<string, unknown>
-            >;
+            const childElement = child as React.ReactElement<Record<string, unknown>>;
             return React.cloneElement(childElement, {
               ...childElement.props,
-              children: React.Children.map(
-                childElement.props.children,
-                (nestedChild) => {
-                  if (
-                    React.isValidElement(nestedChild) &&
-                    (nestedChild.type === SelectItem ||
-                      (nestedChild.type as React.ComponentType)?.displayName ===
-                        'SelectItem')
-                  ) {
-                    return React.cloneElement(
-                      nestedChild as React.ReactElement<
-                        Record<string, unknown>
-                      >,
-                      {
-                        currentValue: value,
-                        onSelect: (selectedValue: string) => {
-                          onValueChange?.(selectedValue);
-                          setIsOpen?.(false);
-                        },
-                      }
-                    );
-                  }
-                  return nestedChild;
+              children: React.Children.map(childElement.props.children, nestedChild => {
+                if (
+                  React.isValidElement(nestedChild) &&
+                  (nestedChild.type === SelectItem ||
+                    (nestedChild.type as React.ComponentType)?.displayName === 'SelectItem')
+                ) {
+                  return React.cloneElement(
+                    nestedChild as React.ReactElement<Record<string, unknown>>,
+                    {
+                      currentValue: value,
+                      onSelect: (selectedValue: string) => {
+                        onValueChange?.(selectedValue);
+                        setIsOpen?.(false);
+                      },
+                    }
+                  );
                 }
-              ),
+                return nestedChild;
+              }),
             });
           }
         }
@@ -223,8 +202,7 @@ export function SelectValue({ placeholder, value }: SelectValueProps) {
 }
 
 // Keep the original simple components for backward compatibility
-interface SimpleSelectProps
-  extends React.SelectHTMLAttributes<HTMLSelectElement> {
+interface SimpleSelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
   children: React.ReactNode;
 }
 

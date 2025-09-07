@@ -28,7 +28,9 @@ describe('playwright-coverage UI analysis', () => {
       (fs.existsSync as jest.Mock).mockReturnValue(true);
 
       // Test various React component patterns - use frontend paths
-      (fs.readFileSync as jest.Mock).mockReturnValue('export const Modal = () => <div>Modal</div>;');
+      (fs.readFileSync as jest.Mock).mockReturnValue(
+        'export const Modal = () => <div>Modal</div>;'
+      );
       expect(isUiComponentFile('frontend/src/components/Modal.tsx')).toBe(true);
       (fs.readFileSync as jest.Mock).mockReturnValue('const Input: React.FC = () => <input />;');
       expect(isUiComponentFile('frontend/src/pages/Input.tsx')).toBe(true);

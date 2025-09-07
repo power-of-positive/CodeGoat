@@ -1,10 +1,10 @@
 import React, { memo, useEffect, useRef } from 'react';
-import { 
-  User, 
-  Bot, 
-  Brain, 
-  Settings, 
-  AlertCircle, 
+import {
+  User,
+  Bot,
+  Brain,
+  Settings,
+  AlertCircle,
   CheckSquare,
   Eye,
   Edit,
@@ -12,7 +12,7 @@ import {
   Search,
   Globe,
   Plus,
-  Play
+  Play,
 } from 'lucide-react';
 import { Badge } from '../../../shared/ui/badge';
 import MarkdownRenderer from './MarkdownRenderer';
@@ -25,7 +25,11 @@ interface EnhancedLogEntryRowProps {
   setRowHeight?: (index: number, height: number) => void;
 }
 
-const getEntryIcon = (entryType: { type: string; tool_name?: string; action_type?: { action: string } }) => {
+const getEntryIcon = (entryType: {
+  type: string;
+  tool_name?: string;
+  action_type?: { action: string };
+}) => {
   if (entryType.type === 'user_message') {
     return <User className="h-4 w-4 text-blue-600" />;
   }
@@ -77,13 +81,14 @@ const getEntryIcon = (entryType: { type: string; tool_name?: string; action_type
   return <Settings className="h-4 w-4 text-gray-400" />;
 };
 
-const getContentClassName = (entryType: { type: string; tool_name?: string; action_type?: { action: string } }) => {
+const getContentClassName = (entryType: {
+  type: string;
+  tool_name?: string;
+  action_type?: { action: string };
+}) => {
   const baseClasses = 'text-sm whitespace-pre-wrap break-words';
 
-  if (
-    entryType.type === 'tool_use' &&
-    entryType.action_type?.action === 'command_run'
-  ) {
+  if (entryType.type === 'tool_use' && entryType.action_type?.action === 'command_run') {
     return `${baseClasses} font-mono`;
   }
 
@@ -106,10 +111,7 @@ const getContentClassName = (entryType: { type: string; tool_name?: string; acti
   }
 
   // Special styling for plan presentations
-  if (
-    entryType.type === 'tool_use' &&
-    entryType.action_type?.action === 'plan_presentation'
-  ) {
+  if (entryType.type === 'tool_use' && entryType.action_type?.action === 'plan_presentation') {
     return `${baseClasses} text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/20 px-3 py-2 rounded-md border-l-4 border-blue-400`;
   }
 
@@ -141,7 +143,9 @@ const ProcessStartCard: React.FC<{ payload: ProcessStartPayload }> = ({ payload 
         <div className="flex-1">
           <div className="flex items-center gap-2">
             <span className="font-semibold text-sm">Process Started</span>
-            <Badge className={`text-xs ${statusColors[payload.status as keyof typeof statusColors] || statusColors.running}`}>
+            <Badge
+              className={`text-xs ${statusColors[payload.status as keyof typeof statusColors] || statusColors.running}`}
+            >
               {payload.status.toUpperCase()}
             </Badge>
           </div>
@@ -170,9 +174,11 @@ const StderrEntry: React.FC<{ content: string }> = ({ content }) => (
 const DisplayConversationEntry: React.FC<{ entry: NormalizedEntry }> = ({ entry }) => {
   // For tool use with command run, extract and display the actual command
   const getDisplayContent = () => {
-    if (entry.entry_type.type === 'tool_use' && 
-        entry.entry_type.action_type && 
-        entry.entry_type.action_type.action === 'command_run') {
+    if (
+      entry.entry_type.type === 'tool_use' &&
+      entry.entry_type.action_type &&
+      entry.entry_type.action_type.action === 'command_run'
+    ) {
       // Type guard to ensure we have a command_run action with command field
       const actionType = entry.entry_type.action_type as { action: 'command_run'; command: string };
       if (actionType.command) {
@@ -187,9 +193,7 @@ const DisplayConversationEntry: React.FC<{ entry: NormalizedEntry }> = ({ entry 
   return (
     <div className="px-4 py-1">
       <div className="flex items-start gap-3">
-        <div className="flex-shrink-0 mt-1">
-          {getEntryIcon(entry.entry_type)}
-        </div>
+        <div className="flex-shrink-0 mt-1">{getEntryIcon(entry.entry_type)}</div>
         <div className="flex-1 min-w-0">
           <div className={getContentClassName(entry.entry_type)}>
             {shouldRenderMarkdown(entry.entry_type) ? (
@@ -207,12 +211,7 @@ const DisplayConversationEntry: React.FC<{ entry: NormalizedEntry }> = ({ entry 
   );
 };
 
-function EnhancedLogEntryRow({
-  entry,
-  index,
-  style,
-  setRowHeight,
-}: EnhancedLogEntryRowProps) {
+function EnhancedLogEntryRow({ entry, index, style, setRowHeight }: EnhancedLogEntryRowProps) {
   const rowRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -231,23 +230,11 @@ function EnhancedLogEntryRow({
           case 'stderr':
             return <StderrEntry content={entry.payload as string} />;
           case 'normalized':
-            return (
-              <DisplayConversationEntry
-                entry={entry.payload as NormalizedEntry}
-              />
-            );
+            return <DisplayConversationEntry entry={entry.payload as NormalizedEntry} />;
           case 'process_start':
-            return (
-              <ProcessStartCard
-                payload={entry.payload as ProcessStartPayload}
-              />
-            );
+            return <ProcessStartCard payload={entry.payload as ProcessStartPayload} />;
           default:
-            return (
-              <div className="text-red-500 text-xs">
-                Unknown log type: {entry.channel}
-              </div>
-            );
+            return <div className="text-red-500 text-xs">Unknown log type: {entry.channel}</div>;
         }
       })()}
     </div>

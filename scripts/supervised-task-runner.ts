@@ -44,29 +44,29 @@ class SupervisedTaskRunner {
   async runTask(taskId: string): Promise<boolean> {
     const todos = await this.loadTodos();
     const task = todos.find(t => t.id === taskId);
-    
+
     if (!task) {
       console.error(`❌ Task ${taskId} not found`);
       return false;
     }
-    
+
     if (task.status === 'completed') {
       console.error(`✅ Task ${taskId} already completed`);
       return true;
     }
 
     console.error(`🎯 Starting supervised execution of task: ${task.content}`);
-    
+
     // Mark task as in progress
     task.status = 'in_progress';
     await this.saveTodos(todos);
 
     // Generate comprehensive prompt for the task
     const prompt = this.generateTaskPrompt(task, todos);
-    
+
     try {
       const result = await this.supervisor.runSession(prompt);
-      
+
       if (result.success) {
         task.status = 'completed';
         console.error(`🎉 Task ${taskId} completed successfully!`);
@@ -74,10 +74,9 @@ class SupervisedTaskRunner {
         task.status = 'pending';
         console.error(`❌ Task ${taskId} failed after ${result.attempts} attempts`);
       }
-      
+
       await this.saveTodos(todos);
       return result.success;
-      
     } catch (error) {
       console.error(`💥 Error running task ${taskId}:`, error);
       task.status = 'pending';
@@ -89,7 +88,7 @@ class SupervisedTaskRunner {
   private generateTaskPrompt(task: TodoTask, allTodos: TodoTask[]): string {
     const pendingTasks = allTodos.filter(t => t.status === 'pending');
     const inProgressTasks = allTodos.filter(t => t.status === 'in_progress');
-    
+
     let prompt = `🎯 SUPERVISED TASK EXECUTION
 
 PRIMARY TASK: ${task.content}
@@ -116,15 +115,14 @@ VALIDATION REQUIREMENTS:
 RELATED TASKS (for context):`;
 
     // Show related tasks for context
-    const relatedTasks = allTodos.filter(t => 
-      t.id !== task.id && 
-      (t.status === 'pending' || t.status === 'in_progress')
-    ).slice(0, 5);
-    
+    const relatedTasks = allTodos
+      .filter(t => t.id !== task.id && (t.status === 'pending' || t.status === 'in_progress'))
+      .slice(0, 5);
+
     for (const relatedTask of relatedTasks) {
       prompt += `\n- [${relatedTask.status.toUpperCase()}] ${relatedTask.content}`;
     }
-    
+
     prompt += `\n\nIMPORTANT: This is a supervised session. If validation fails, you will be automatically restarted with feedback about the failures. Focus on robust, complete implementation that passes all validation stages.
 
 Begin working on the primary task now.`;
@@ -132,29 +130,29 @@ Begin working on the primary task now.`;
     return prompt;
   }
 
-  async runAllPendingTasks(): Promise<{completed: number, failed: number}> {
+  async runAllPendingTasks(): Promise<{ completed: number; failed: number }> {
     const todos = await this.loadTodos();
     const pendingTasks = todos.filter(t => t.status === 'pending');
-    
+
     console.error(`🎯 Starting supervised execution of ${pendingTasks.length} pending tasks`);
-    
+
     let completed = 0;
     let failed = 0;
-    
+
     for (const task of pendingTasks) {
       console.error(`\n${'='.repeat(SEPARATOR_LINE_LENGTH)}`);
       console.error(`📋 Task ${task.id}: ${task.content}`);
       console.error(`${'='.repeat(SEPARATOR_LINE_LENGTH)}\n`);
-      
+
       const success = await this.runTask(task.id);
-      
+
       if (success) {
         completed++;
         console.error(`✅ Task ${task.id} completed (${completed}/${pendingTasks.length})`);
       } else {
         failed++;
         console.error(`❌ Task ${task.id} failed (${failed} failures so far)`);
-        
+
         // Ask user if they want to continue
         const continueAnswer = await this.askUser(`Continue with remaining tasks? (y/n): `);
         if (continueAnswer.toLowerCase() !== 'y') {
@@ -163,12 +161,12 @@ Begin working on the primary task now.`;
         }
       }
     }
-    
+
     console.error(`\n📊 Task Execution Summary:`);
     console.error(`  Completed: ${completed}`);
     console.error(`  Failed: ${failed}`);
     console.error(`  Success Rate: ${((completed / (completed + failed)) * 100).toFixed(1)}%`);
-    
+
     return { completed, failed };
   }
 
@@ -176,10 +174,10 @@ Begin working on the primary task now.`;
     const readline = require('readline');
     const rl = readline.createInterface({
       input: process.stdin,
-      output: process.stdout
+      output: process.stdout,
     });
-    
-    return new Promise((resolve) => {
+
+    return new Promise(resolve => {
       rl.question(question, (answer: string) => {
         rl.close();
         resolve(answer);
@@ -196,7 +194,7 @@ Begin working on the primary task now.`;
 async function main() {
   const args = process.argv.slice(2);
   const command = args[0];
-  
+
   if (!command) {
     console.error(`
 🎯 Supervised Task Runner
@@ -219,7 +217,7 @@ Examples:
 
   const runner = new SupervisedTaskRunner();
   runner.start();
-  
+
   try {
     switch (command) {
       case 'run': {
@@ -232,13 +230,13 @@ Examples:
         process.exit(success ? 0 : 1);
         break;
       }
-        
+
       case 'run-all': {
         const results = await runner.runAllPendingTasks();
         process.exit(results.failed === 0 ? 0 : 1);
         break;
       }
-        
+
       case 'status': {
         const todos = await runner.loadTodos();
         console.error(`📊 Task Status:`);
@@ -248,7 +246,7 @@ Examples:
         console.error(`  Completed: ${todos.filter(t => t.status === 'completed').length}`);
         break;
       }
-        
+
       default:
         console.error(`❌ Unknown command: ${command}`);
         process.exit(1);

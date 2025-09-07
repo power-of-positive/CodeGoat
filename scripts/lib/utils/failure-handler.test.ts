@@ -6,14 +6,14 @@ import {
   createFailureHandler,
   handleStructuredFailure,
   type CheckFailure,
-  type FailureReport
+  type FailureReport,
 } from './failure-handler';
 
 describe('failure-handler', () => {
   describe('createFailureHandler', () => {
     it('should create a failure handler with empty failures initially', () => {
       const handler = createFailureHandler();
-      
+
       expect(handler.hasFailures()).toBe(false);
       expect(handler.hasCriticalFailures()).toBe(false);
       expect(handler.getReport().failures).toEqual([]);
@@ -24,14 +24,14 @@ describe('failure-handler', () => {
       const failure: CheckFailure = {
         category: 'test',
         message: 'Test failure message',
-        critical: true
+        critical: true,
       };
-      
+
       handler.addFailure(failure);
-      
+
       expect(handler.hasFailures()).toBe(true);
       expect(handler.hasCriticalFailures()).toBe(true);
-      
+
       const report = handler.getReport();
       expect(report.failures).toHaveLength(1);
       expect(report.failures[0]).toEqual(failure);
@@ -39,25 +39,25 @@ describe('failure-handler', () => {
 
     it('should handle multiple failures', () => {
       const handler = createFailureHandler();
-      
+
       const failure1: CheckFailure = {
         category: 'lint',
         message: 'Linting error',
-        critical: false
+        critical: false,
       };
-      
+
       const failure2: CheckFailure = {
         category: 'security',
         message: 'Security issue',
-        critical: true
+        critical: true,
       };
-      
+
       handler.addFailure(failure1);
       handler.addFailure(failure2);
-      
+
       expect(handler.hasFailures()).toBe(true);
       expect(handler.hasCriticalFailures()).toBe(true);
-      
+
       const report = handler.getReport();
       expect(report.failures).toHaveLength(2);
       expect(report.failures).toContain(failure1);
@@ -68,12 +68,12 @@ describe('failure-handler', () => {
       const handler = createFailureHandler();
       const failure: CheckFailure = {
         category: 'other',
-        message: 'Some failure'
+        message: 'Some failure',
         // critical is undefined, should default to true
       };
-      
+
       handler.addFailure(failure);
-      
+
       expect(handler.hasCriticalFailures()).toBe(true);
     });
 
@@ -82,11 +82,11 @@ describe('failure-handler', () => {
       const failure: CheckFailure = {
         category: 'lint',
         message: 'Non-critical lint warning',
-        critical: false
+        critical: false,
       };
-      
+
       handler.addFailure(failure);
-      
+
       expect(handler.hasFailures()).toBe(true);
       expect(handler.hasCriticalFailures()).toBe(false);
     });
@@ -95,14 +95,14 @@ describe('failure-handler', () => {
       const handler = createFailureHandler();
       const failure: CheckFailure = {
         category: 'test',
-        message: 'Test failure'
+        message: 'Test failure',
       };
-      
+
       handler.addFailure(failure);
-      
+
       const report1 = handler.getReport();
       const report2 = handler.getReport();
-      
+
       expect(report1.failures).not.toBe(report2.failures);
       expect(report1.failures).toEqual(report2.failures);
     });
@@ -112,7 +112,7 @@ describe('failure-handler', () => {
     it('should approve when no failures', () => {
       const report: FailureReport = { failures: [] };
       const result = handleStructuredFailure(report);
-      
+
       expect(result.decision).toBe('approve');
       expect(result.feedback).toContain('All checks passed!');
       expect(result.feedback).toContain('code-review-comments.tmp');
@@ -121,7 +121,7 @@ describe('failure-handler', () => {
     it('should approve when failures is undefined', () => {
       const report: FailureReport = { failures: undefined as any };
       const result = handleStructuredFailure(report);
-      
+
       expect(result.decision).toBe('approve');
       expect(result.feedback).toContain('All checks passed!');
     });
@@ -132,13 +132,13 @@ describe('failure-handler', () => {
           {
             category: 'api-e2e',
             message: 'API test failed',
-            critical: true
-          }
-        ]
+            critical: true,
+          },
+        ],
       };
-      
+
       const result = handleStructuredFailure(report);
-      
+
       expect(result.decision).toBe('block');
       expect(result.reason).toContain('Pre-commit checks completed with issues');
       expect(result.reason).toContain('API E2E TEST FAILURES (CRITICAL)');
@@ -152,13 +152,13 @@ describe('failure-handler', () => {
           {
             category: 'lint',
             message: 'Minor linting issue',
-            critical: false
-          }
-        ]
+            critical: false,
+          },
+        ],
       };
-      
+
       const result = handleStructuredFailure(report);
-      
+
       expect(result.decision).toBe('approve');
       expect(result.feedback).toContain('Pre-commit checks completed with issues');
       expect(result.feedback).toContain('LINT ISSUES');
@@ -171,13 +171,13 @@ describe('failure-handler', () => {
           {
             category: 'test',
             message: 'Unit test failed',
-            critical: false
-          }
-        ]
+            critical: false,
+          },
+        ],
       };
-      
+
       const result = handleStructuredFailure(report);
-      
+
       expect(result.feedback).toContain('FAILING TESTS:');
       expect(result.feedback).toContain('Unit test failed');
     });
@@ -188,13 +188,13 @@ describe('failure-handler', () => {
           {
             category: 'playwright',
             message: 'E2E test failed',
-            critical: false
-          }
-        ]
+            critical: false,
+          },
+        ],
       };
-      
+
       const result = handleStructuredFailure(report);
-      
+
       expect(result.feedback).toContain('PLAYWRIGHT E2E TEST FAILURES:');
       expect(result.feedback).toContain('E2E test failed');
     });
@@ -205,13 +205,13 @@ describe('failure-handler', () => {
           {
             category: 'security',
             message: 'Vulnerability found',
-            critical: false
-          }
-        ]
+            critical: false,
+          },
+        ],
       };
-      
+
       const result = handleStructuredFailure(report);
-      
+
       expect(result.feedback).toContain('SECURITY ISSUES:');
       expect(result.feedback).toContain('Vulnerability found');
     });
@@ -222,13 +222,13 @@ describe('failure-handler', () => {
           {
             category: 'other',
             message: 'Unknown issue',
-            critical: false
-          }
-        ]
+            critical: false,
+          },
+        ],
       };
-      
+
       const result = handleStructuredFailure(report);
-      
+
       expect(result.feedback).toContain('OTHER ISSUES:');
       expect(result.feedback).toContain('Unknown issue');
     });
@@ -239,23 +239,23 @@ describe('failure-handler', () => {
           {
             category: 'test',
             message: 'Test 1 failed',
-            critical: false
+            critical: false,
           },
           {
             category: 'test',
             message: 'Test 2 failed',
-            critical: false
+            critical: false,
           },
           {
             category: 'lint',
             message: 'Lint issue',
-            critical: false
-          }
-        ]
+            critical: false,
+          },
+        ],
       };
-      
+
       const result = handleStructuredFailure(report);
-      
+
       expect(result.feedback).toContain('FAILING TESTS:');
       expect(result.feedback).toContain('Test 1 failed');
       expect(result.feedback).toContain('Test 2 failed');
@@ -269,13 +269,13 @@ describe('failure-handler', () => {
           {
             category: 'test',
             message: 'Test failed',
-            critical: false
-          }
-        ]
+            critical: false,
+          },
+        ],
       };
-      
+
       const result = handleStructuredFailure(report);
-      
+
       expect(result.feedback).toContain('./scripts/run-api-e2e-vitest.sh');
       expect(result.feedback).toContain('npm run frontend:test');
       expect(result.feedback).toContain('npm run frontend:lint');
@@ -288,18 +288,18 @@ describe('failure-handler', () => {
           {
             category: 'lint',
             message: 'Non-critical lint issue',
-            critical: false
+            critical: false,
           },
           {
             category: 'api-e2e',
             message: 'Critical API test failure',
-            critical: true
-          }
-        ]
+            critical: true,
+          },
+        ],
       };
-      
+
       const result = handleStructuredFailure(report);
-      
+
       expect(result.decision).toBe('block');
       expect(result.reason).toContain('LINT ISSUES:');
       expect(result.reason).toContain('Non-critical lint issue');
@@ -312,14 +312,14 @@ describe('failure-handler', () => {
         failures: [
           {
             category: 'other',
-            message: 'Unknown failure'
+            message: 'Unknown failure',
             // critical is undefined - should be treated as critical
-          }
-        ]
+          },
+        ],
       };
-      
+
       const result = handleStructuredFailure(report);
-      
+
       expect(result.decision).toBe('block');
       expect(result.reason).toContain('OTHER ISSUES:');
       expect(result.reason).toContain('Unknown failure');
@@ -327,11 +327,11 @@ describe('failure-handler', () => {
 
     it('should handle empty failure message arrays gracefully', () => {
       const report: FailureReport = {
-        failures: []
+        failures: [],
       };
-      
+
       const result = handleStructuredFailure(report);
-      
+
       expect(result.decision).toBe('approve');
       expect(result.feedback).toContain('All checks passed!');
     });

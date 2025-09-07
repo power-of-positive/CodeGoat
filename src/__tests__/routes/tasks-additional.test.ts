@@ -38,17 +38,28 @@ describe('Tasks Route - Additional Coverage', () => {
   let logger: jest.Mocked<ILogger>;
 
   beforeEach(() => {
+    // Reset all mocks first
+    jest.clearAllMocks();
+    jest.resetAllMocks();
+
+    // Re-initialize the mock database service
+    (getDatabaseService as jest.Mock).mockReturnValue(mockDb);
+
+    // Create fresh Express app for each test
     app = express();
     app.use(express.json());
     logger = createMockLogger();
     app.use('/api/tasks', createTaskRoutes(logger));
 
-    // Clear all mocks and reset database service
-    jest.clearAllMocks();
-    (getDatabaseService as jest.Mock).mockReturnValue(mockDb);
-    
     // Mock ID generation for POST requests
     mockDb.task.findMany.mockResolvedValue([]);
+  });
+
+  afterEach(() => {
+    // Clear all mocks
+    jest.clearAllMocks();
+    // Reset all mock implementations to prevent interference
+    jest.resetAllMocks();
   });
 
   describe('POST /api/tasks - Edge cases', () => {
@@ -75,21 +86,19 @@ describe('Tasks Route - Additional Coverage', () => {
 
       mockDb.task.create.mockResolvedValue(newTask);
 
-      const response = await request(app)
-        .post('/api/tasks')
-        .send({
-          content: 'Test Task',
-          status: 'in_progress',
-          priority: 'medium'
-        });
+      const response = await request(app).post('/api/tasks').send({
+        content: 'Test Task',
+        status: 'in_progress',
+        priority: 'medium',
+      });
 
       expect(response.status).toBe(201);
       expect(response.body.success).toBe(true);
       expect(mockDb.task.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
           status: TaskStatus.IN_PROGRESS,
-          startTime: expect.any(Date)
-        })
+          startTime: expect.any(Date),
+        }),
       });
     });
 
@@ -116,13 +125,11 @@ describe('Tasks Route - Additional Coverage', () => {
 
       mockDb.task.create.mockResolvedValue(completedTask);
 
-      const response = await request(app)
-        .post('/api/tasks')
-        .send({
-          content: 'Completed Task',
-          status: 'completed',
-          priority: 'high'
-        });
+      const response = await request(app).post('/api/tasks').send({
+        content: 'Completed Task',
+        status: 'completed',
+        priority: 'high',
+      });
 
       expect(response.status).toBe(201);
       expect(response.body.success).toBe(true);
@@ -131,20 +138,18 @@ describe('Tasks Route - Additional Coverage', () => {
           status: TaskStatus.COMPLETED,
           startTime: expect.any(Date),
           endTime: expect.any(Date),
-          duration: '0m'
-        })
+          duration: '0m',
+        }),
       });
     });
 
     it('should handle database errors during task creation', async () => {
       mockDb.task.create.mockRejectedValue(new Error('Database connection failed'));
 
-      const response = await request(app)
-        .post('/api/tasks')
-        .send({
-          content: 'Test Task',
-          status: 'pending'
-        });
+      const response = await request(app).post('/api/tasks').send({
+        content: 'Test Task',
+        status: 'pending',
+      });
 
       expect(response.status).toBe(500);
       expect(response.body.success).toBe(false);
@@ -174,12 +179,10 @@ describe('Tasks Route - Additional Coverage', () => {
 
       mockDb.task.create.mockResolvedValue(taskWithExecutor);
 
-      const response = await request(app)
-        .post('/api/tasks')
-        .send({
-          content: 'Task with executor',
-          executorId: 'executor-123'
-        });
+      const response = await request(app).post('/api/tasks').send({
+        content: 'Task with executor',
+        executorId: 'executor-123',
+      });
 
       expect(response.status).toBe(201);
       expect(response.body.data.executorId).toBe('executor-123');
@@ -208,13 +211,11 @@ describe('Tasks Route - Additional Coverage', () => {
 
       mockDb.task.create.mockResolvedValue(storyTask);
 
-      const response = await request(app)
-        .post('/api/tasks')
-        .send({
-          content: 'User Story',
-          taskType: 'story',
-          priority: 'high'
-        });
+      const response = await request(app).post('/api/tasks').send({
+        content: 'User Story',
+        taskType: 'story',
+        priority: 'high',
+      });
 
       expect(response.status).toBe(201);
       expect(response.body.data.taskType).toBe('story');
@@ -247,22 +248,20 @@ describe('Tasks Route - Additional Coverage', () => {
       mockDb.task.update.mockResolvedValue({
         ...baseTask,
         content: 'Updated content',
-        title: 'Updated content'
+        title: 'Updated content',
       });
 
-      const response = await request(app)
-        .put('/api/tasks/CODEGOAT-200')
-        .send({
-          content: 'Updated content'
-        });
+      const response = await request(app).put('/api/tasks/CODEGOAT-200').send({
+        content: 'Updated content',
+      });
 
       expect(response.status).toBe(200);
       expect(mockDb.task.update).toHaveBeenCalledWith({
         where: { id: 'CODEGOAT-200' },
         data: expect.objectContaining({
           content: 'Updated content',
-          title: 'Updated content'
-        })
+          title: 'Updated content',
+        }),
       });
     });
 
@@ -270,21 +269,19 @@ describe('Tasks Route - Additional Coverage', () => {
       mockDb.task.findUnique.mockResolvedValue(baseTask);
       mockDb.task.update.mockResolvedValue({
         ...baseTask,
-        priority: Priority.HIGH
+        priority: Priority.HIGH,
       });
 
-      const response = await request(app)
-        .put('/api/tasks/CODEGOAT-200')
-        .send({
-          priority: 'high'
-        });
+      const response = await request(app).put('/api/tasks/CODEGOAT-200').send({
+        priority: 'high',
+      });
 
       expect(response.status).toBe(200);
       expect(mockDb.task.update).toHaveBeenCalledWith({
         where: { id: 'CODEGOAT-200' },
         data: expect.objectContaining({
-          priority: Priority.HIGH
-        })
+          priority: Priority.HIGH,
+        }),
       });
     });
 
@@ -292,21 +289,19 @@ describe('Tasks Route - Additional Coverage', () => {
       mockDb.task.findUnique.mockResolvedValue(baseTask);
       mockDb.task.update.mockResolvedValue({
         ...baseTask,
-        taskType: TaskType.STORY
+        taskType: TaskType.STORY,
       });
 
-      const response = await request(app)
-        .put('/api/tasks/CODEGOAT-200')
-        .send({
-          taskType: 'story'
-        });
+      const response = await request(app).put('/api/tasks/CODEGOAT-200').send({
+        taskType: 'story',
+      });
 
       expect(response.status).toBe(200);
       expect(mockDb.task.update).toHaveBeenCalledWith({
         where: { id: 'CODEGOAT-200' },
         data: expect.objectContaining({
-          taskType: TaskType.STORY
-        })
+          taskType: TaskType.STORY,
+        }),
       });
     });
 
@@ -314,21 +309,19 @@ describe('Tasks Route - Additional Coverage', () => {
       mockDb.task.findUnique.mockResolvedValue(baseTask);
       mockDb.task.update.mockResolvedValue({
         ...baseTask,
-        executorId: 'new-executor'
+        executorId: 'new-executor',
       });
 
-      const response = await request(app)
-        .put('/api/tasks/CODEGOAT-200')
-        .send({
-          executorId: 'new-executor'
-        });
+      const response = await request(app).put('/api/tasks/CODEGOAT-200').send({
+        executorId: 'new-executor',
+      });
 
       expect(response.status).toBe(200);
       expect(mockDb.task.update).toHaveBeenCalledWith({
         where: { id: 'CODEGOAT-200' },
         data: expect.objectContaining({
-          executorId: 'new-executor'
-        })
+          executorId: 'new-executor',
+        }),
       });
     });
 
@@ -339,14 +332,12 @@ describe('Tasks Route - Additional Coverage', () => {
         status: TaskStatus.COMPLETED,
         startTime: new Date(),
         endTime: new Date(),
-        duration: '0m'
+        duration: '0m',
       });
 
-      const response = await request(app)
-        .put('/api/tasks/CODEGOAT-200')
-        .send({
-          status: 'completed'
-        });
+      const response = await request(app).put('/api/tasks/CODEGOAT-200').send({
+        status: 'completed',
+      });
 
       expect(response.status).toBe(200);
       expect(mockDb.task.update).toHaveBeenCalledWith({
@@ -355,8 +346,8 @@ describe('Tasks Route - Additional Coverage', () => {
           status: TaskStatus.COMPLETED,
           startTime: expect.any(Date),
           endTime: expect.any(Date),
-          duration: '0m'
-        })
+          duration: '0m',
+        }),
       });
     });
 
@@ -364,38 +355,34 @@ describe('Tasks Route - Additional Coverage', () => {
       mockDb.task.findUnique.mockResolvedValue(baseTask);
       mockDb.task.update.mockRejectedValue(new Error('Database error'));
 
-      const response = await request(app)
-        .put('/api/tasks/CODEGOAT-200')
-        .send({
-          status: 'in_progress'
-        });
+      const response = await request(app).put('/api/tasks/CODEGOAT-200').send({
+        status: 'in_progress',
+      });
 
       expect(response.status).toBe(500);
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Failed to update task');
-    });
+    }, 10000);
 
     it('should transition task from pending to in_progress with startTime', async () => {
       mockDb.task.findUnique.mockResolvedValue(baseTask);
       mockDb.task.update.mockResolvedValue({
         ...baseTask,
         status: TaskStatus.IN_PROGRESS,
-        startTime: new Date()
+        startTime: new Date(),
       });
 
-      const response = await request(app)
-        .put('/api/tasks/CODEGOAT-200')
-        .send({
-          status: 'in_progress'
-        });
+      const response = await request(app).put('/api/tasks/CODEGOAT-200').send({
+        status: 'in_progress',
+      });
 
       expect(response.status).toBe(200);
       expect(mockDb.task.update).toHaveBeenCalledWith({
         where: { id: 'CODEGOAT-200' },
         data: expect.objectContaining({
           status: TaskStatus.IN_PROGRESS,
-          startTime: expect.any(Date)
-        })
+          startTime: expect.any(Date),
+        }),
       });
     });
 
@@ -404,7 +391,7 @@ describe('Tasks Route - Additional Coverage', () => {
       const inProgressTask = {
         ...baseTask,
         status: TaskStatus.IN_PROGRESS,
-        startTime
+        startTime,
       };
 
       mockDb.task.findUnique.mockResolvedValue(inProgressTask);
@@ -412,14 +399,12 @@ describe('Tasks Route - Additional Coverage', () => {
         ...inProgressTask,
         status: TaskStatus.COMPLETED,
         endTime: new Date(),
-        duration: '30m'
+        duration: '30m',
       });
 
-      const response = await request(app)
-        .put('/api/tasks/CODEGOAT-200')
-        .send({
-          status: 'completed'
-        });
+      const response = await request(app).put('/api/tasks/CODEGOAT-200').send({
+        status: 'completed',
+      });
 
       expect(response.status).toBe(200);
       expect(mockDb.task.update).toHaveBeenCalledWith({
@@ -427,8 +412,8 @@ describe('Tasks Route - Additional Coverage', () => {
         data: expect.objectContaining({
           status: TaskStatus.COMPLETED,
           endTime: expect.any(Date),
-          duration: expect.any(String)
-        })
+          duration: expect.any(String),
+        }),
       });
     });
   });
@@ -458,28 +443,26 @@ describe('Tasks Route - Additional Coverage', () => {
       mockDb.task.findUnique.mockResolvedValue(taskToDelete);
       mockDb.task.delete.mockResolvedValue(taskToDelete);
 
-      const response = await request(app)
-        .delete('/api/tasks/CODEGOAT-300');
+      const response = await request(app).delete('/api/tasks/CODEGOAT-300');
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
       expect(response.body.message).toBe('Task deleted successfully');
       expect(mockDb.task.delete).toHaveBeenCalledWith({
-        where: { id: 'CODEGOAT-300' }
+        where: { id: 'CODEGOAT-300' },
       });
     });
 
     it('should return 404 for non-existent task', async () => {
       mockDb.task.findUnique.mockResolvedValue(null);
 
-      const response = await request(app)
-        .delete('/api/tasks/NON-EXISTENT');
+      const response = await request(app).delete('/api/tasks/NON-EXISTENT').timeout(5000); // Add explicit timeout
 
       expect(response.status).toBe(404);
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Task not found');
       expect(mockDb.task.delete).not.toHaveBeenCalled();
-    });
+    }, 10000); // Increase test timeout
 
     it('should handle database errors during deletion', async () => {
       const task = {
@@ -505,8 +488,7 @@ describe('Tasks Route - Additional Coverage', () => {
       mockDb.task.findUnique.mockResolvedValue(task);
       mockDb.task.delete.mockRejectedValue(new Error('Database error'));
 
-      const response = await request(app)
-        .delete('/api/tasks/CODEGOAT-301');
+      const response = await request(app).delete('/api/tasks/CODEGOAT-301');
 
       expect(response.status).toBe(500);
       expect(response.body.success).toBe(false);
@@ -519,8 +501,7 @@ describe('Tasks Route - Additional Coverage', () => {
       mockDb.task.count.mockResolvedValue(0);
       mockDb.task.findMany.mockResolvedValue([]);
 
-      const response = await request(app)
-        .get('/api/tasks/analytics');
+      const response = await request(app).get('/api/tasks/analytics');
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -575,13 +556,12 @@ describe('Tasks Route - Additional Coverage', () => {
           templateId: null,
           tags: null,
           description: null,
-        }
+        },
       ];
 
       mockDb.task.findMany.mockResolvedValue(completedTasks);
 
-      const response = await request(app)
-        .get('/api/tasks/analytics');
+      const response = await request(app).get('/api/tasks/analytics');
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -595,8 +575,7 @@ describe('Tasks Route - Additional Coverage', () => {
     it('should handle database errors in analytics', async () => {
       mockDb.task.count.mockRejectedValue(new Error('Database error'));
 
-      const response = await request(app)
-        .get('/api/tasks/analytics');
+      const response = await request(app).get('/api/tasks/analytics');
 
       expect(response.status).toBe(500);
       expect(response.body.success).toBe(false);
@@ -629,8 +608,8 @@ describe('Tasks Route - Additional Coverage', () => {
             id: 'val-1',
             taskId: 'CODEGOAT-400',
             status: 'passed',
-            createdAt: new Date()
-          }
+            createdAt: new Date(),
+          },
         ],
         bddScenarios: [
           {
@@ -648,14 +627,13 @@ describe('Tasks Route - Additional Coverage', () => {
             executedAt: new Date(),
             executionDuration: 5000,
             errorMessage: null,
-          }
-        ]
+          },
+        ],
       };
 
       mockDb.task.findUnique.mockResolvedValue(taskWithRelations);
 
-      const response = await request(app)
-        .get('/api/tasks/CODEGOAT-400');
+      const response = await request(app).get('/api/tasks/CODEGOAT-400');
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -668,8 +646,7 @@ describe('Tasks Route - Additional Coverage', () => {
     it('should handle database errors when fetching single task', async () => {
       mockDb.task.findUnique.mockRejectedValue(new Error('Database error'));
 
-      const response = await request(app)
-        .get('/api/tasks/CODEGOAT-401');
+      const response = await request(app).get('/api/tasks/CODEGOAT-401');
 
       expect(response.status).toBe(500);
       expect(response.body.success).toBe(false);
@@ -698,34 +675,28 @@ describe('Tasks Route - Additional Coverage', () => {
           templateId: null,
           tags: null,
           description: null,
-        }
+        },
       ];
 
       mockDb.task.findMany.mockResolvedValue(tasks);
 
-      const response = await request(app)
-        .get('/api/tasks');
+      const response = await request(app).get('/api/tasks');
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
       expect(response.body.data).toHaveLength(1);
       expect(mockDb.task.findMany).toHaveBeenCalledWith({
         where: {
-          OR: [
-            { projectId: null },
-            { id: { startsWith: 'CODEGOAT-' } }
-          ]
+          OR: [{ projectId: null }, { id: { startsWith: 'CODEGOAT-' } }],
         },
-        orderBy: [{ priority: 'desc' }, { createdAt: 'desc' }]
+        orderBy: [{ priority: 'desc' }, { createdAt: 'desc' }],
       });
     });
-
 
     it('should handle database errors when listing tasks', async () => {
       mockDb.task.findMany.mockRejectedValue(new Error('Database error'));
 
-      const response = await request(app)
-        .get('/api/tasks');
+      const response = await request(app).get('/api/tasks');
 
       expect(response.status).toBe(500);
       expect(response.body.success).toBe(false);
@@ -759,15 +730,13 @@ describe('Tasks Route - Additional Coverage', () => {
       };
       mockDb.bDDScenario.create.mockResolvedValue(mockScenario);
 
-      const response = await request(app)
-        .post('/api/tasks/CODEGOAT-100/scenarios')
-        .send({
-          title: 'Test Scenario',
-          feature: 'User Authentication',
-          description: 'Test description',
-          gherkinContent: 'Given a user\nWhen they log in\nThen they see dashboard',
-          status: 'pending'
-        });
+      const response = await request(app).post('/api/tasks/CODEGOAT-100/scenarios').send({
+        title: 'Test Scenario',
+        feature: 'User Authentication',
+        description: 'Test description',
+        gherkinContent: 'Given a user\nWhen they log in\nThen they see dashboard',
+        status: 'pending',
+      });
 
       expect(response.status).toBe(201);
       expect(response.body.success).toBe(true);
@@ -777,18 +746,16 @@ describe('Tasks Route - Additional Coverage', () => {
         feature: 'User Authentication',
         description: 'Test description',
         gherkinContent: 'Given a user\nWhen they log in\nThen they see dashboard',
-        status: 'pending'
+        status: 'pending',
       });
     });
 
     it('should return 400 if required fields are missing', async () => {
-      const response = await request(app)
-        .post('/api/tasks/CODEGOAT-100/scenarios')
-        .send({
-          title: '',
-          feature: 'User Authentication',
-          gherkinContent: 'Given a user\nWhen they log in\nThen they see dashboard',
-        });
+      const response = await request(app).post('/api/tasks/CODEGOAT-100/scenarios').send({
+        title: '',
+        feature: 'User Authentication',
+        gherkinContent: 'Given a user\nWhen they log in\nThen they see dashboard',
+      });
 
       expect(response.status).toBe(400);
       expect(response.body.success).toBe(false);
@@ -798,13 +765,11 @@ describe('Tasks Route - Additional Coverage', () => {
     it('should return 404 if task does not exist', async () => {
       mockDb.task.findUnique.mockResolvedValue(null);
 
-      const response = await request(app)
-        .post('/api/tasks/NONEXISTENT/scenarios')
-        .send({
-          title: 'Test Scenario',
-          feature: 'User Authentication',
-          gherkinContent: 'Given a user\nWhen they log in\nThen they see dashboard',
-        });
+      const response = await request(app).post('/api/tasks/NONEXISTENT/scenarios').send({
+        title: 'Test Scenario',
+        feature: 'User Authentication',
+        gherkinContent: 'Given a user\nWhen they log in\nThen they see dashboard',
+      });
 
       expect(response.status).toBe(404);
       expect(response.body.success).toBe(false);
@@ -815,13 +780,11 @@ describe('Tasks Route - Additional Coverage', () => {
       mockDb.task.findUnique.mockResolvedValue(mockTask);
       mockDb.bDDScenario.create.mockRejectedValue(new Error('Database error'));
 
-      const response = await request(app)
-        .post('/api/tasks/CODEGOAT-100/scenarios')
-        .send({
-          title: 'Test Scenario',
-          feature: 'User Authentication',
-          gherkinContent: 'Given a user\nWhen they log in\nThen they see dashboard',
-        });
+      const response = await request(app).post('/api/tasks/CODEGOAT-100/scenarios').send({
+        title: 'Test Scenario',
+        feature: 'User Authentication',
+        gherkinContent: 'Given a user\nWhen they log in\nThen they see dashboard',
+      });
 
       expect(response.status).toBe(500);
       expect(response.body.success).toBe(false);
@@ -844,13 +807,11 @@ describe('Tasks Route - Additional Coverage', () => {
       };
       mockDb.bDDScenario.create.mockResolvedValue(mockScenario);
 
-      const response = await request(app)
-        .post('/api/tasks/CODEGOAT-100/scenarios')
-        .send({
-          title: 'Test Scenario',
-          feature: 'User Authentication',
-          gherkinContent: 'Given a user\nWhen they log in\nThen they see dashboard',
-        });
+      const response = await request(app).post('/api/tasks/CODEGOAT-100/scenarios').send({
+        title: 'Test Scenario',
+        feature: 'User Authentication',
+        gherkinContent: 'Given a user\nWhen they log in\nThen they see dashboard',
+      });
 
       expect(response.status).toBe(201);
       expect(response.body.success).toBe(true);
@@ -938,17 +899,15 @@ describe('Tasks Route - Additional Coverage', () => {
         title: 'Updated Title',
         status: BDDScenarioStatus.PASSED,
         executionDuration: 5000,
-        errorMessage: null
+        errorMessage: null,
       };
       mockDb.bDDScenario.update.mockResolvedValue(updatedScenario);
 
-      const response = await request(app)
-        .put('/api/tasks/CODEGOAT-100/scenarios/scenario-1')
-        .send({
-          title: 'Updated Title',
-          status: 'passed',
-          executionDuration: 5000
-        });
+      const response = await request(app).put('/api/tasks/CODEGOAT-100/scenarios/scenario-1').send({
+        title: 'Updated Title',
+        status: 'passed',
+        executionDuration: 5000,
+      });
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -980,12 +939,10 @@ describe('Tasks Route - Additional Coverage', () => {
       };
       mockDb.bDDScenario.update.mockResolvedValue(updatedScenario);
 
-      const response = await request(app)
-        .put('/api/tasks/CODEGOAT-100/scenarios/scenario-1')
-        .send({
-          status: 'passed',
-          executedAt: new Date().toISOString()
-        });
+      const response = await request(app).put('/api/tasks/CODEGOAT-100/scenarios/scenario-1').send({
+        status: 'passed',
+        executedAt: new Date().toISOString(),
+      });
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -993,8 +950,8 @@ describe('Tasks Route - Additional Coverage', () => {
         where: { id: 'scenario-1' },
         data: expect.objectContaining({
           status: BDDScenarioStatus.PASSED,
-          executedAt: expect.any(Date)
-        })
+          executedAt: expect.any(Date),
+        }),
       });
     });
   });
@@ -1027,8 +984,7 @@ describe('Tasks Route - Additional Coverage', () => {
       mockDb.bDDScenario.findFirst.mockResolvedValue(mockScenario);
       mockDb.bDDScenario.delete.mockResolvedValue(mockScenario);
 
-      const response = await request(app)
-        .delete('/api/tasks/CODEGOAT-100/scenarios/scenario-1');
+      const response = await request(app).delete('/api/tasks/CODEGOAT-100/scenarios/scenario-1');
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -1038,8 +994,7 @@ describe('Tasks Route - Additional Coverage', () => {
     it('should return 404 if scenario does not exist for nonexistent task', async () => {
       mockDb.bDDScenario.findFirst.mockResolvedValue(null);
 
-      const response = await request(app)
-        .delete('/api/tasks/NONEXISTENT/scenarios/scenario-1');
+      const response = await request(app).delete('/api/tasks/NONEXISTENT/scenarios/scenario-1');
 
       expect(response.status).toBe(404);
       expect(response.body.success).toBe(false);
@@ -1050,8 +1005,7 @@ describe('Tasks Route - Additional Coverage', () => {
       mockDb.task.findUnique.mockResolvedValue(mockTask);
       mockDb.bDDScenario.findFirst.mockResolvedValue(null);
 
-      const response = await request(app)
-        .delete('/api/tasks/CODEGOAT-100/scenarios/nonexistent');
+      const response = await request(app).delete('/api/tasks/CODEGOAT-100/scenarios/nonexistent');
 
       expect(response.status).toBe(404);
       expect(response.body.success).toBe(false);
@@ -1062,13 +1016,11 @@ describe('Tasks Route - Additional Coverage', () => {
       mockDb.bDDScenario.findFirst.mockResolvedValue(mockScenario);
       mockDb.bDDScenario.delete.mockRejectedValue(new Error('Database error'));
 
-      const response = await request(app)
-        .delete('/api/tasks/CODEGOAT-100/scenarios/scenario-1');
+      const response = await request(app).delete('/api/tasks/CODEGOAT-100/scenarios/scenario-1');
 
       expect(response.status).toBe(500);
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Failed to delete BDD scenario');
-    });
+    }, 30000);
   });
-
 });

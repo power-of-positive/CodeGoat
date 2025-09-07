@@ -1,4 +1,3 @@
- 
 import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -40,7 +39,10 @@ interface StageStatisticsProps {
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
-export function StageStatistics({ defaultDays = DEFAULT_DAYS_PERIOD, stageId }: StageStatisticsProps) {
+export function StageStatistics({
+  defaultDays = DEFAULT_DAYS_PERIOD,
+  stageId,
+}: StageStatisticsProps) {
   const [days, setDays] = useState(defaultDays);
   const [selectedStage, setSelectedStage] = useState(stageId || 'lint');
 
@@ -64,20 +66,23 @@ export function StageStatistics({ defaultDays = DEFAULT_DAYS_PERIOD, stageId }: 
     enabled: !!selectedStage,
   });
 
-  const availableStages = useMemo(() => [
-    { id: 'lint', name: 'Linting' },
-    { id: 'typecheck', name: 'Type Checking' },
-    { id: 'unit-tests-backend', name: 'Backend Unit Tests' },
-    { id: 'unit-tests-frontend', name: 'Frontend Unit Tests' },
-    { id: 'e2e-tests', name: 'E2E Tests' },
-    { id: 'api-e2e-tests', name: 'API E2E Tests' },
-  ], []);
+  const availableStages = useMemo(
+    () => [
+      { id: 'lint', name: 'Linting' },
+      { id: 'typecheck', name: 'Type Checking' },
+      { id: 'unit-tests-backend', name: 'Backend Unit Tests' },
+      { id: 'unit-tests-frontend', name: 'Frontend Unit Tests' },
+      { id: 'e2e-tests', name: 'E2E Tests' },
+      { id: 'api-e2e-tests', name: 'API E2E Tests' },
+    ],
+    []
+  );
 
   const handleExportData = () => {
     if (!stageData) {
       return;
     }
-    
+
     const exportData = {
       exportDate: new Date().toISOString(),
       stage: selectedStage,
@@ -180,18 +185,22 @@ export function StageStatistics({ defaultDays = DEFAULT_DAYS_PERIOD, stageId }: 
   };
 
   // Create chart data from success rate by time of day
-  const hourlyData = Object.entries(typedData.performanceMetrics.successRateByTimeOfDay).map(([hour, data]) => ({
-    hour,
-    successRate: data.rate,
-    attempts: data.attempts,
-  }));
+  const hourlyData = Object.entries(typedData.performanceMetrics.successRateByTimeOfDay).map(
+    ([hour, data]) => ({
+      hour,
+      successRate: data.rate,
+      attempts: data.attempts,
+    })
+  );
 
   // Create failure reasons pie chart data
-  const failureReasonsData = Object.entries(typedData.performanceMetrics.failureReasons).map(([reason, count], index) => ({
-    name: reason,
-    value: count,
-    color: COLORS[index % COLORS.length],
-  }));
+  const failureReasonsData = Object.entries(typedData.performanceMetrics.failureReasons).map(
+    ([reason, count], index) => ({
+      name: reason,
+      value: count,
+      color: COLORS[index % COLORS.length],
+    })
+  );
 
   return (
     <div className="space-y-6">
@@ -200,10 +209,11 @@ export function StageStatistics({ defaultDays = DEFAULT_DAYS_PERIOD, stageId }: 
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Stage Performance Analytics</h2>
           <p className="text-gray-600">
-            Detailed analysis of {availableStages.find(s => s.id === selectedStage)?.name || selectedStage} performance
+            Detailed analysis of{' '}
+            {availableStages.find(s => s.id === selectedStage)?.name || selectedStage} performance
           </p>
         </div>
-        
+
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
@@ -231,10 +241,10 @@ export function StageStatistics({ defaultDays = DEFAULT_DAYS_PERIOD, stageId }: 
               <label className="text-sm font-medium text-gray-700">Stage</label>
               <Select
                 value={selectedStage}
-                onChange={(e) => setSelectedStage(e.target.value)}
+                onChange={e => setSelectedStage(e.target.value)}
                 className="w-48"
               >
-                {availableStages.map((stage) => (
+                {availableStages.map(stage => (
                   <Option key={stage.id} value={stage.id}>
                     {stage.name}
                   </Option>
@@ -246,7 +256,7 @@ export function StageStatistics({ defaultDays = DEFAULT_DAYS_PERIOD, stageId }: 
               <label className="text-sm font-medium text-gray-700">Time Period</label>
               <Select
                 value={days.toString()}
-                onChange={(e) => setDays(Number(e.target.value))}
+                onChange={e => setDays(Number(e.target.value))}
                 className="w-32"
               >
                 <Option value="7">7 days</Option>
@@ -268,7 +278,9 @@ export function StageStatistics({ defaultDays = DEFAULT_DAYS_PERIOD, stageId }: 
               <Activity className="h-8 w-8 text-blue-500" />
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Total Attempts</p>
-                <p className="text-2xl font-bold text-gray-900">{typedData.overview.totalAttempts}</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {typedData.overview.totalAttempts}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -280,7 +292,9 @@ export function StageStatistics({ defaultDays = DEFAULT_DAYS_PERIOD, stageId }: 
               <CheckCircle className="h-8 w-8 text-green-500" />
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Success Rate</p>
-                <p className="text-2xl font-bold text-gray-900">{typedData.overview.successRate.toFixed(1)}%</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {typedData.overview.successRate.toFixed(1)}%
+                </p>
               </div>
             </div>
           </CardContent>
@@ -292,7 +306,9 @@ export function StageStatistics({ defaultDays = DEFAULT_DAYS_PERIOD, stageId }: 
               <Clock className="h-8 w-8 text-orange-500" />
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Avg Duration</p>
-                <p className="text-2xl font-bold text-gray-900">{(typedData.overview.averageDuration / 1000).toFixed(1)}s</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {(typedData.overview.averageDuration / 1000).toFixed(1)}s
+                </p>
               </div>
             </div>
           </CardContent>
@@ -304,7 +320,9 @@ export function StageStatistics({ defaultDays = DEFAULT_DAYS_PERIOD, stageId }: 
               <AlertTriangle className="h-8 w-8 text-red-500" />
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600">Failures</p>
-                <p className="text-2xl font-bold text-gray-900">{typedData.overview.totalFailures}</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {typedData.overview.totalFailures}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -323,11 +341,11 @@ export function StageStatistics({ defaultDays = DEFAULT_DAYS_PERIOD, stageId }: 
                 <BarChart data={hourlyData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="hour" />
-                  <YAxis domain={[0, 100]} tickFormatter={(value) => `${value}%`} />
+                  <YAxis domain={[0, 100]} tickFormatter={value => `${value}%`} />
                   <Tooltip
                     formatter={(value: number, name: string) => [
                       name === 'successRate' ? `${value.toFixed(1)}%` : value,
-                      name === 'successRate' ? 'Success Rate' : 'Attempts'
+                      name === 'successRate' ? 'Success Rate' : 'Attempts',
                     ]}
                   />
                   <Bar dataKey="successRate" fill="#3b82f6" />
@@ -354,7 +372,7 @@ export function StageStatistics({ defaultDays = DEFAULT_DAYS_PERIOD, stageId }: 
                     cy="50%"
                     outerRadius={80}
                     dataKey="value"
-                    label={(entry) => `${entry.name}: ${entry.value}`}
+                    label={entry => `${entry.name}: ${entry.value}`}
                   >
                     {failureReasonsData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
@@ -384,9 +402,7 @@ export function StageStatistics({ defaultDays = DEFAULT_DAYS_PERIOD, stageId }: 
                     <AlertTriangle className="w-5 h-5 text-red-500" />
                   )}
                   <div>
-                    <p className="font-medium">
-                      {run.success ? 'Success' : 'Failed'}
-                    </p>
+                    <p className="font-medium">{run.success ? 'Success' : 'Failed'}</p>
                     <p className="text-sm text-gray-500">
                       {new Date(run.timestamp).toLocaleString()}
                     </p>
@@ -394,9 +410,7 @@ export function StageStatistics({ defaultDays = DEFAULT_DAYS_PERIOD, stageId }: 
                 </div>
                 <div className="text-right">
                   <p className="font-medium">{(run.duration / 1000).toFixed(1)}s</p>
-                  {run.sessionId && (
-                    <p className="text-xs text-gray-500">{run.sessionId}</p>
-                  )}
+                  {run.sessionId && <p className="text-xs text-gray-500">{run.sessionId}</p>}
                 </div>
               </div>
             ))}

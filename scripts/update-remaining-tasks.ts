@@ -6,23 +6,19 @@ import path from 'path';
 
 const prisma = new PrismaClient();
 
-const completedTaskIds = [
-  'CODEGOAT-021',
-  'CODEGOAT-029', 
-  'CODEGOAT-030'
-];
+const completedTaskIds = ['CODEGOAT-021', 'CODEGOAT-029', 'CODEGOAT-030'];
 
 async function updateRemainingTasks() {
   try {
     console.log('Updating remaining completed tasks in database...');
-    
+
     for (const taskId of completedTaskIds) {
       const result = await prisma.task.update({
         where: { id: taskId },
-        data: { 
+        data: {
           status: 'COMPLETED',
-          updatedAt: new Date()
-        }
+          updatedAt: new Date(),
+        },
       });
       console.log(`✅ Updated ${taskId}: ${result.title}`);
     }
@@ -31,12 +27,14 @@ async function updateRemainingTasks() {
     const backupPath = path.join(process.cwd(), 'todo-list.json');
     if (fs.existsSync(backupPath)) {
       const backup = JSON.parse(fs.readFileSync(backupPath, 'utf8'));
-      backup.tasks = backup.tasks.map((task: { id: string; status: string; [key: string]: unknown }) => {
-        if (completedTaskIds.includes(task.id)) {
-          return { ...task, status: 'COMPLETED' };
+      backup.tasks = backup.tasks.map(
+        (task: { id: string; status: string; [key: string]: unknown }) => {
+          if (completedTaskIds.includes(task.id)) {
+            return { ...task, status: 'COMPLETED' };
+          }
+          return task;
         }
-        return task;
-      });
+      );
       backup.lastUpdate = new Date().toISOString();
       fs.writeFileSync(backupPath, JSON.stringify(backup, null, 2));
       console.log('✅ Updated todo-list.json backup');

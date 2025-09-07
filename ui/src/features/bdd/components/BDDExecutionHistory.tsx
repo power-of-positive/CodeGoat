@@ -3,23 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../shared/ui/card';
 import { Badge } from '../../../shared/ui/badge';
 import { Button } from '../../../shared/ui/button';
-import {
-  RefreshCw,
-  TrendingUp,
-  Clock,
-  CheckCircle,
-  XCircle,
-  Minus,
-} from 'lucide-react';
-import {
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-} from 'recharts';
+import { RefreshCw, TrendingUp, Clock, CheckCircle, XCircle, Minus } from 'lucide-react';
+import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { taskApi } from '../../../shared/lib/api';
 
 // Constants
@@ -68,10 +53,7 @@ interface AnalyticsData {
   trends: AnalyticsTrend[];
 }
 
-const BDDExecutionHistory: React.FC<BDDExecutionHistoryProps> = ({
-  taskId,
-  scenarioId,
-}) => {
+const BDDExecutionHistory: React.FC<BDDExecutionHistoryProps> = ({ taskId, scenarioId }) => {
   const [selectedDays, setSelectedDays] = useState(DEFAULT_SELECTED_DAYS);
 
   const {
@@ -80,8 +62,7 @@ const BDDExecutionHistory: React.FC<BDDExecutionHistoryProps> = ({
     refetch: refetchExecutions,
   } = useQuery({
     queryKey: ['scenario-executions', taskId, scenarioId],
-    queryFn: () =>
-      taskApi.getScenarioExecutions(taskId, scenarioId, { limit: 50 }),
+    queryFn: () => taskApi.getScenarioExecutions(taskId, scenarioId, { limit: 50 }),
   });
 
   const {
@@ -90,8 +71,7 @@ const BDDExecutionHistory: React.FC<BDDExecutionHistoryProps> = ({
     refetch: refetchAnalytics,
   } = useQuery({
     queryKey: ['scenario-analytics', taskId, scenarioId, selectedDays],
-    queryFn: () =>
-      taskApi.getScenarioAnalytics(taskId, scenarioId, selectedDays),
+    queryFn: () => taskApi.getScenarioAnalytics(taskId, scenarioId, selectedDays),
   });
 
   const handleRefresh = () => {
@@ -156,10 +136,7 @@ const BDDExecutionHistory: React.FC<BDDExecutionHistoryProps> = ({
             Loading...
           </Button>
         </div>
-        <div
-          className="grid grid-cols-1 md:grid-cols-3 gap-4"
-          data-testid="loading-cards"
-        >
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4" data-testid="loading-cards">
           {[...Array(3)].map((_, i) => (
             <Card key={i} className="animate-pulse">
               <CardHeader>
@@ -183,7 +160,7 @@ const BDDExecutionHistory: React.FC<BDDExecutionHistoryProps> = ({
         <div className="flex items-center space-x-2">
           <select
             value={selectedDays}
-            onChange={(e) => setSelectedDays(Number(e.target.value))}
+            onChange={e => setSelectedDays(Number(e.target.value))}
             className="px-3 py-1 border border-gray-300 rounded-md text-sm"
           >
             <option value={7}>Last 7 days</option>
@@ -202,9 +179,7 @@ const BDDExecutionHistory: React.FC<BDDExecutionHistoryProps> = ({
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">
-                Total Executions
-              </CardTitle>
+              <CardTitle className="text-sm font-medium text-gray-600">Total Executions</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
@@ -215,9 +190,7 @@ const BDDExecutionHistory: React.FC<BDDExecutionHistoryProps> = ({
 
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">
-                Success Rate
-              </CardTitle>
+              <CardTitle className="text-sm font-medium text-gray-600">Success Rate</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-green-600">
@@ -232,9 +205,7 @@ const BDDExecutionHistory: React.FC<BDDExecutionHistoryProps> = ({
 
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">
-                Avg Duration
-              </CardTitle>
+              <CardTitle className="text-sm font-medium text-gray-600">Avg Duration</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
@@ -245,9 +216,7 @@ const BDDExecutionHistory: React.FC<BDDExecutionHistoryProps> = ({
 
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">
-                Skipped
-              </CardTitle>
+              <CardTitle className="text-sm font-medium text-gray-600">Skipped</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-yellow-600">
@@ -274,42 +243,19 @@ const BDDExecutionHistory: React.FC<BDDExecutionHistoryProps> = ({
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis
                     dataKey="date"
-                    tickFormatter={(date) =>
-                      new Date(date).toLocaleDateString()
-                    }
+                    tickFormatter={date => new Date(date).toLocaleDateString()}
                   />
                   <YAxis />
                   <Tooltip
-                    labelFormatter={(date) =>
-                      new Date(date).toLocaleDateString()
-                    }
+                    labelFormatter={date => new Date(date).toLocaleDateString()}
                     formatter={(value, name) => [
                       value,
-                      name === 'passed'
-                        ? 'Passed'
-                        : name === 'failed'
-                          ? 'Failed'
-                          : 'Skipped',
+                      name === 'passed' ? 'Passed' : name === 'failed' ? 'Failed' : 'Skipped',
                     ]}
                   />
-                  <Bar
-                    dataKey="passed"
-                    stackId="a"
-                    fill="#22c55e"
-                    name="passed"
-                  />
-                  <Bar
-                    dataKey="failed"
-                    stackId="a"
-                    fill="#ef4444"
-                    name="failed"
-                  />
-                  <Bar
-                    dataKey="skipped"
-                    stackId="a"
-                    fill="#eab308"
-                    name="skipped"
-                  />
+                  <Bar dataKey="passed" stackId="a" fill="#22c55e" name="passed" />
+                  <Bar dataKey="failed" stackId="a" fill="#ef4444" name="failed" />
+                  <Bar dataKey="skipped" stackId="a" fill="#eab308" name="skipped" />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -325,7 +271,7 @@ const BDDExecutionHistory: React.FC<BDDExecutionHistoryProps> = ({
         <CardContent>
           {executions && executions.length > 0 ? (
             <div className="space-y-3">
-              {executions.map((execution) => (
+              {executions.map(execution => (
                 <div
                   key={(execution as ExecutionDetails)?.id}
                   className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
@@ -337,8 +283,10 @@ const BDDExecutionHistory: React.FC<BDDExecutionHistoryProps> = ({
                         {formatDate((execution as ExecutionDetails)?.executedAt)}
                       </div>
                       <div className="text-xs text-gray-500">
-                        Duration: {formatDuration((execution as ExecutionDetails)?.executionDuration)}
-                        {(execution as ExecutionDetails)?.environment && ` • ${(execution as ExecutionDetails)?.environment}`}
+                        Duration:{' '}
+                        {formatDuration((execution as ExecutionDetails)?.executionDuration)}
+                        {(execution as ExecutionDetails)?.environment &&
+                          ` • ${(execution as ExecutionDetails)?.environment}`}
                         {(execution as ExecutionDetails)?.executedBy &&
                           ` • by ${(execution as ExecutionDetails)?.executedBy}`}
                       </div>
@@ -360,25 +308,23 @@ const BDDExecutionHistory: React.FC<BDDExecutionHistoryProps> = ({
             <div className="text-center py-8 text-gray-500">
               <Clock className="w-12 h-12 mx-auto mb-4 text-gray-300" />
               <p>No execution history found</p>
-              <p className="text-sm">
-                Executions will appear here once the scenario is run
-              </p>
+              <p className="text-sm">Executions will appear here once the scenario is run</p>
             </div>
           )}
         </CardContent>
       </Card>
 
       {/* Step Results for Recent Executions */}
-      {executions && executions.some((e) => (e as ExecutionDetails)?.stepResults) && (
+      {executions && executions.some(e => (e as ExecutionDetails)?.stepResults) && (
         <Card>
           <CardHeader>
             <CardTitle>Latest Step Results</CardTitle>
           </CardHeader>
           <CardContent>
             {executions
-              .filter((e) => (e as ExecutionDetails)?.stepResults)
+              .filter(e => (e as ExecutionDetails)?.stepResults)
               .slice(0, 1)
-              .map((execution) => (
+              .map(execution => (
                 <div key={(execution as ExecutionDetails)?.id} className="space-y-2">
                   <div className="text-sm font-medium text-gray-600 mb-3">
                     Execution from {formatDate((execution as ExecutionDetails)?.executedAt)}
@@ -393,9 +339,7 @@ const BDDExecutionHistory: React.FC<BDDExecutionHistoryProps> = ({
                           {getStatusBadge(step.status)}
                           <span className="text-sm font-mono">{step.step}</span>
                         </div>
-                        <div className="text-xs text-gray-500">
-                          {formatDuration(step.duration)}
-                        </div>
+                        <div className="text-xs text-gray-500">{formatDuration(step.duration)}</div>
                       </div>
                     ))}
                   </div>

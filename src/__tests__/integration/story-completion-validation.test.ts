@@ -27,7 +27,7 @@ describe('Story Completion Validation - Business Logic Test', () => {
     // Business rule validation: stories cannot be completed without BDD scenarios
     const hasScenarios = scenarios.length > 0;
     expect(hasScenarios).toBe(false);
-    
+
     // This would trigger the validation error in the API:
     // "Story cannot be completed without at least one BDD scenario"
   });
@@ -124,7 +124,7 @@ describe('Story Completion Validation - Business Logic Test', () => {
 
     // Business rule validation: all scenarios must pass their tests
     const failedOrPendingScenarios = scenarios.filter(
-      scenario => scenario.status as BDDScenarioStatus !== BDDScenarioStatus.PASSED
+      scenario => (scenario.status as BDDScenarioStatus) !== BDDScenarioStatus.PASSED
     );
 
     expect(failedOrPendingScenarios.length).toBe(2);
@@ -186,14 +186,13 @@ describe('Story Completion Validation - Business Logic Test', () => {
 
     // Business rule validation: all scenarios have passed
     const failedOrPendingScenarios = scenarios.filter(
-      scenario => scenario.status as BDDScenarioStatus !== BDDScenarioStatus.PASSED
+      scenario => (scenario.status as BDDScenarioStatus) !== BDDScenarioStatus.PASSED
     );
     expect(failedOrPendingScenarios.length).toBe(0);
 
     // All validation rules pass - story should be allowed to complete
-    const canComplete = hasScenarios && 
-                       scenariosWithoutTests.length === 0 && 
-                       failedOrPendingScenarios.length === 0;
+    const canComplete =
+      hasScenarios && scenariosWithoutTests.length === 0 && failedOrPendingScenarios.length === 0;
     expect(canComplete).toBe(true);
   });
 

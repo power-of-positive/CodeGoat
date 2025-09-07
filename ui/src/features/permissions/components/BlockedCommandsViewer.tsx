@@ -45,26 +45,28 @@ export function BlockedCommandsViewer({ workerId, onClose }: BlockedCommandsView
                     {blockedData.filter(cmd => cmd.workerId === workerId).length}
                   </span>
                 </div>
-                {blockedData.filter(cmd => cmd.workerId === workerId).map((blocked, index) => (
-                  <div key={index} className="bg-red-50 border border-red-200 rounded-lg p-3">
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="font-mono text-sm text-red-800 bg-red-100 px-2 py-1 rounded">
-                        {blocked.command}
+                {blockedData
+                  .filter(cmd => cmd.workerId === workerId)
+                  .map((blocked, index) => (
+                    <div key={index} className="bg-red-50 border border-red-200 rounded-lg p-3">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="font-mono text-sm text-red-800 bg-red-100 px-2 py-1 rounded">
+                          {blocked.command}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {new Date(blocked.timestamp).toLocaleString()}
+                        </div>
                       </div>
-                      <div className="text-xs text-gray-500">
-                        {new Date(blocked.timestamp).toLocaleString()}
+                      <div className="text-sm text-red-700 mb-1">
+                        <strong>Reason:</strong> {blocked.reason}
                       </div>
+                      {blocked.context && (
+                        <div className="text-sm text-gray-600">
+                          <strong>Context:</strong> {blocked.context}
+                        </div>
+                      )}
                     </div>
-                    <div className="text-sm text-red-700 mb-1">
-                      <strong>Reason:</strong> {blocked.reason}
-                    </div>
-                    {blocked.context && (
-                      <div className="text-sm text-gray-600">
-                        <strong>Context:</strong> {blocked.context}
-                      </div>
-                    )}
-                  </div>
-                ))}
+                  ))}
               </div>
             ) : (
               <div className="text-center py-8">

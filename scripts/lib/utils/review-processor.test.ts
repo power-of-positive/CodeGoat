@@ -2,7 +2,6 @@
  * Tests for review-processor.ts
  */
 
-
 import { performCodeReview, shouldBlockClaude, processReviewResults } from './review-processor';
 import * as fs from 'fs';
 import * as path from 'path';

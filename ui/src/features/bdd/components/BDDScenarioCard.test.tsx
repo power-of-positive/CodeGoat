@@ -6,25 +6,39 @@ import { ScenarioCard } from './BDDScenarioCard';
 // Mock Lucide React icons
 jest.mock('lucide-react', () => ({
   CheckCircle: ({ className }: { className?: string }) => (
-    <div data-testid="check-circle-icon" className={className}>CheckCircle</div>
+    <div data-testid="check-circle-icon" className={className}>
+      CheckCircle
+    </div>
   ),
   XCircle: ({ className }: { className?: string }) => (
-    <div data-testid="x-circle-icon" className={className}>XCircle</div>
+    <div data-testid="x-circle-icon" className={className}>
+      XCircle
+    </div>
   ),
   Clock: ({ className }: { className?: string }) => (
-    <div data-testid="clock-icon" className={className}>Clock</div>
+    <div data-testid="clock-icon" className={className}>
+      Clock
+    </div>
   ),
   AlertCircle: ({ className }: { className?: string }) => (
-    <div data-testid="alert-circle-icon" className={className}>AlertCircle</div>
+    <div data-testid="alert-circle-icon" className={className}>
+      AlertCircle
+    </div>
   ),
   Eye: ({ className }: { className?: string }) => (
-    <div data-testid="eye-icon" className={className}>Eye</div>
+    <div data-testid="eye-icon" className={className}>
+      Eye
+    </div>
   ),
   Play: ({ className }: { className?: string }) => (
-    <div data-testid="play-icon" className={className}>Play</div>
+    <div data-testid="play-icon" className={className}>
+      Play
+    </div>
   ),
   ExternalLink: ({ className }: { className?: string }) => (
-    <div data-testid="external-link-icon" className={className}>ExternalLink</div>
+    <div data-testid="external-link-icon" className={className}>
+      ExternalLink
+    </div>
   ),
 }));
 
@@ -217,7 +231,9 @@ describe('ScenarioCard', () => {
 
       expect(screen.getByText(/executed:/i)).toBeInTheDocument();
       // Check for timestamp with flexible format since toLocaleString() varies by environment
-      expect(screen.getByText(/1\/1\/2023.*11:30:00.*AM|1\/1\/2023.*10:30:00.*AM/)).toBeInTheDocument();
+      expect(
+        screen.getByText(/1\/1\/2023.*11:30:00.*AM|1\/1\/2023.*10:30:00.*AM/)
+      ).toBeInTheDocument();
     });
 
     it('should show playwright test file link when available', () => {
@@ -295,7 +311,9 @@ describe('ScenarioCard', () => {
 
       await waitFor(() => {
         expect(screen.getByText('Error Message:')).toBeInTheDocument();
-        expect(screen.getByTestId('error-message')).toHaveTextContent('Test failed: Element not found');
+        expect(screen.getByTestId('error-message')).toHaveTextContent(
+          'Test failed: Element not found'
+        );
       });
     });
 
@@ -488,7 +506,7 @@ describe('ScenarioCard', () => {
       expect(closeButton).toHaveFocus();
 
       await userEvent.keyboard('{Enter}');
-      
+
       await waitFor(() => {
         expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
       });
@@ -508,7 +526,7 @@ describe('ScenarioCard', () => {
       );
 
       const viewButtons = screen.getAllByRole('button', { name: /view details/i });
-      
+
       // Open first modal
       await userEvent.click(viewButtons[0]);
       expect(screen.getAllByText('Scenario 1')).toHaveLength(2); // Card + Modal

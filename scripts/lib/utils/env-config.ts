@@ -1,6 +1,10 @@
 /**
  * Environment configuration utilities - modular version
  */
+// Suppress dotenv debug messages
+delete process.env.DEBUG;
+delete process.env.DOTENV_CONFIG_DEBUG;
+delete process.env.DOTENV_DEBUG;
 import { config } from 'dotenv';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -72,11 +76,26 @@ interface SingleVarConfig {
 function validateSingleVar(config: SingleVarConfig): void {
   const { varName, allowEmpty, validateFormat, missing, invalid } = config;
   const value = process.env[varName];
-  if (!value || (value.trim() === '' && !allowEmpty)) {
+
+  // Check if the variable is missing
+  if (value === undefined || value === null) {
     missing.push(varName);
     return;
   }
-  if (validateFormat[varName] && value && !validateFormat[varName].test(value)) {
+
+  // Check if empty when not allowed
+  if (value.trim() === '' && !allowEmpty) {
+    missing.push(varName);
+    return;
+  }
+
+  // Skip format validation for empty values when empty is allowed
+  if (value.trim() === '' && allowEmpty) {
+    return;
+  }
+
+  // Validate format if specified
+  if (validateFormat[varName] && !validateFormat[varName].test(value)) {
     invalid.push({
       name: varName,
       reason: `Does not match required format: ${validateFormat[varName]}`,
@@ -108,7 +127,7 @@ export function validateRequiredEnvVars(
       allowEmpty,
       validateFormat,
       missing,
-      invalid
+      invalid,
     });
   });
 

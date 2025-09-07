@@ -48,7 +48,7 @@ interface ChecksConfig {
  */
 export function runChecks(config: ChecksConfig) {
   const { projectRoot, stagedFiles, fileArray, checks, errorPrefix } = config;
-  
+
   try {
     validateStagedFiles(stagedFiles);
     if (stagedFiles[fileArray].length === 0) {

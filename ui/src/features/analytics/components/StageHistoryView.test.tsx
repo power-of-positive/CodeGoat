@@ -103,9 +103,7 @@ const renderWithProviders = (component: React.ReactElement) => {
     },
   });
 
-  return render(
-    <QueryClientProvider client={queryClient}>{component}</QueryClientProvider>
-  );
+  return render(<QueryClientProvider client={queryClient}>{component}</QueryClientProvider>);
 };
 
 describe('StageHistoryView', () => {
@@ -113,21 +111,13 @@ describe('StageHistoryView', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    (analyticsApi.getStageHistory as jest.Mock).mockResolvedValue(
-      mockStageHistory
-    );
-    (analyticsApi.getStageStatistics as jest.Mock).mockResolvedValue(
-      mockStageStatistics
-    );
+    (analyticsApi.getStageHistory as jest.Mock).mockResolvedValue(mockStageHistory);
+    (analyticsApi.getStageStatistics as jest.Mock).mockResolvedValue(mockStageStatistics);
   });
 
   it('renders stage history view with title and back button', async () => {
     renderWithProviders(
-      <StageHistoryView
-        stageId="lint"
-        stageName="Code Linting"
-        onBack={mockOnBack}
-      />
+      <StageHistoryView stageId="lint" stageName="Code Linting" onBack={mockOnBack} />
     );
 
     await waitFor(() => {
@@ -138,11 +128,7 @@ describe('StageHistoryView', () => {
 
   it('calls onBack when back button is clicked', async () => {
     renderWithProviders(
-      <StageHistoryView
-        stageId="lint"
-        stageName="Code Linting"
-        onBack={mockOnBack}
-      />
+      <StageHistoryView stageId="lint" stageName="Code Linting" onBack={mockOnBack} />
     );
 
     await waitFor(() => {
@@ -154,38 +140,22 @@ describe('StageHistoryView', () => {
   });
 
   it('displays loading state initially', () => {
-    (analyticsApi.getStageHistory as jest.Mock).mockImplementation(
-      () => new Promise(() => {})
-    );
-    (analyticsApi.getStageStatistics as jest.Mock).mockImplementation(
-      () => new Promise(() => {})
-    );
+    (analyticsApi.getStageHistory as jest.Mock).mockImplementation(() => new Promise(() => {}));
+    (analyticsApi.getStageStatistics as jest.Mock).mockImplementation(() => new Promise(() => {}));
 
     renderWithProviders(
-      <StageHistoryView
-        stageId="lint"
-        stageName="Code Linting"
-        onBack={mockOnBack}
-      />
+      <StageHistoryView stageId="lint" stageName="Code Linting" onBack={mockOnBack} />
     );
 
     expect(document.querySelector('.animate-pulse')).toBeInTheDocument();
   });
 
   it('displays error state when API fails', async () => {
-    (analyticsApi.getStageHistory as jest.Mock).mockRejectedValue(
-      new Error('API Error')
-    );
-    (analyticsApi.getStageStatistics as jest.Mock).mockRejectedValue(
-      new Error('API Error')
-    );
+    (analyticsApi.getStageHistory as jest.Mock).mockRejectedValue(new Error('API Error'));
+    (analyticsApi.getStageStatistics as jest.Mock).mockRejectedValue(new Error('API Error'));
 
     renderWithProviders(
-      <StageHistoryView
-        stageId="lint"
-        stageName="Code Linting"
-        onBack={mockOnBack}
-      />
+      <StageHistoryView stageId="lint" stageName="Code Linting" onBack={mockOnBack} />
     );
 
     // Since the component doesn't have explicit error handling UI,
@@ -197,11 +167,7 @@ describe('StageHistoryView', () => {
 
   it('displays overview statistics', async () => {
     renderWithProviders(
-      <StageHistoryView
-        stageId="lint"
-        stageName="Code Linting"
-        onBack={mockOnBack}
-      />
+      <StageHistoryView stageId="lint" stageName="Code Linting" onBack={mockOnBack} />
     );
 
     await waitFor(() => {
@@ -213,11 +179,7 @@ describe('StageHistoryView', () => {
 
   it('displays performance trends', async () => {
     renderWithProviders(
-      <StageHistoryView
-        stageId="lint"
-        stageName="Code Linting"
-        onBack={mockOnBack}
-      />
+      <StageHistoryView stageId="lint" stageName="Code Linting" onBack={mockOnBack} />
     );
 
     await waitFor(() => {
@@ -229,11 +191,7 @@ describe('StageHistoryView', () => {
 
   it('displays recent runs', async () => {
     renderWithProviders(
-      <StageHistoryView
-        stageId="lint"
-        stageName="Code Linting"
-        onBack={mockOnBack}
-      />
+      <StageHistoryView stageId="lint" stageName="Code Linting" onBack={mockOnBack} />
     );
 
     await waitFor(() => {
@@ -247,11 +205,7 @@ describe('StageHistoryView', () => {
 
   it('displays duration percentiles', async () => {
     renderWithProviders(
-      <StageHistoryView
-        stageId="lint"
-        stageName="Code Linting"
-        onBack={mockOnBack}
-      />
+      <StageHistoryView stageId="lint" stageName="Code Linting" onBack={mockOnBack} />
     );
 
     await waitFor(() => {
@@ -263,11 +217,7 @@ describe('StageHistoryView', () => {
 
   it('displays failure reasons when there are failures', async () => {
     renderWithProviders(
-      <StageHistoryView
-        stageId="lint"
-        stageName="Code Linting"
-        onBack={mockOnBack}
-      />
+      <StageHistoryView stageId="lint" stageName="Code Linting" onBack={mockOnBack} />
     );
 
     await waitFor(() => {
@@ -281,11 +231,7 @@ describe('StageHistoryView', () => {
 
   it('toggles between daily and hourly views', async () => {
     renderWithProviders(
-      <StageHistoryView
-        stageId="lint"
-        stageName="Code Linting"
-        onBack={mockOnBack}
-      />
+      <StageHistoryView stageId="lint" stageName="Code Linting" onBack={mockOnBack} />
     );
 
     await waitFor(() => {
@@ -338,11 +284,7 @@ describe('StageHistoryView', () => {
     });
 
     renderWithProviders(
-      <StageHistoryView
-        stageId="lint"
-        stageName="Code Linting"
-        onBack={mockOnBack}
-      />
+      <StageHistoryView stageId="lint" stageName="Code Linting" onBack={mockOnBack} />
     );
 
     await waitFor(() => {

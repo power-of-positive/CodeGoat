@@ -16,11 +16,7 @@ export const Card: React.FC<CardProps> = ({ children, className = '', ...props }
   );
 };
 
-export const CardHeader: React.FC<CardProps> = ({
-  children,
-  className = '',
-  ...props
-}) => {
+export const CardHeader: React.FC<CardProps> = ({ children, className = '', ...props }) => {
   return (
     <div className={`flex flex-col space-y-1.5 p-6 ${className}`} {...props}>
       {children}
@@ -28,35 +24,26 @@ export const CardHeader: React.FC<CardProps> = ({
   );
 };
 
-export const CardTitle: React.FC<CardProps> = ({
-  children,
-  className = '',
-  ...props
-}) => {
+export const CardTitle: React.FC<CardProps> = ({ children, className = '', ...props }) => {
   return (
-    <h3
-      className={`text-2xl font-semibold leading-none tracking-tight ${className}`}
-      {...props}
-    >
+    <h3 className={`text-2xl font-semibold leading-none tracking-tight ${className}`} {...props}>
       {children}
     </h3>
   );
 };
 
-export const CardDescription: React.FC<CardProps> = ({
-  children,
-  className = '',
-  ...props
-}) => {
+export const CardDescription: React.FC<CardProps> = ({ children, className = '', ...props }) => {
   return (
-    <p className={`text-sm text-muted-foreground ${className}`} {...props}>{children}</p>
+    <p className={`text-sm text-muted-foreground ${className}`} {...props}>
+      {children}
+    </p>
   );
 };
 
-export const CardContent: React.FC<CardProps> = ({
-  children,
-  className = '',
-  ...props
-}) => {
-  return <div className={`p-6 pt-0 ${className}`} {...props}>{children}</div>;
+export const CardContent: React.FC<CardProps> = ({ children, className = '', ...props }) => {
+  return (
+    <div className={`p-6 pt-0 ${className}`} {...props}>
+      {children}
+    </div>
+  );
 };

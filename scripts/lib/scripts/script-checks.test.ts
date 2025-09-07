@@ -20,7 +20,7 @@ describe('script-checks', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     // Default mock implementations
     mockRunScriptLinting.mockReturnValue({ failed: false, output: '' });
     mockRunScriptCoverage.mockReturnValue({ failed: false, output: '' });
@@ -144,13 +144,20 @@ describe('script-checks', () => {
 
         expect(result.failed).toBe(false);
         expect(result.output).toBe('Linting passed\nCoverage passed\n');
-        
-        expect(mockRunScriptLinting).toHaveBeenCalledWith('/project/root', ['src/test.ts', 'src/utils.ts']);
-        expect(mockExecCommand).toHaveBeenCalledWith('npm run test:scripts', '/project/root', 180000);
+
+        expect(mockRunScriptLinting).toHaveBeenCalledWith('/project/root', [
+          'src/test.ts',
+          'src/utils.ts',
+        ]);
+        expect(mockExecCommand).toHaveBeenCalledWith(
+          'npm run test:scripts',
+          '/project/root',
+          180000
+        );
         expect(mockRunScriptCoverage).toHaveBeenCalledWith({
           scriptsDir: '/project/root',
           timeout: 120000,
-          changedFiles: ['src/test.ts', 'src/utils.ts']
+          changedFiles: ['src/test.ts', 'src/utils.ts'],
         });
       });
 
@@ -173,8 +180,10 @@ describe('script-checks', () => {
         const result = runScriptChecks('/project/root', ['src/test.ts']);
 
         expect(result.failed).toBe(true);
-        expect(result.output).toBe('Linting passed\n\nSCRIPT UNIT TEST FAILURES:\nUnit test failure\n\n');
-        
+        expect(result.output).toBe(
+          'Linting passed\n\nSCRIPT UNIT TEST FAILURES:\nUnit test failure\n\n'
+        );
+
         // Coverage should not be called when unit tests fail
         expect(mockRunScriptCoverage).not.toHaveBeenCalled();
       });
@@ -209,7 +218,10 @@ describe('script-checks', () => {
       it('should fail when coverage fails', () => {
         mockRunScriptLinting.mockReturnValue({ failed: false, output: 'Linting passed\n' });
         mockExecCommand.mockReturnValue({ success: true, output: 'Unit tests passed\n' });
-        mockRunScriptCoverage.mockReturnValue({ failed: true, output: 'Coverage threshold not met\n' });
+        mockRunScriptCoverage.mockReturnValue({
+          failed: true,
+          output: 'Coverage threshold not met\n',
+        });
 
         const result = runScriptChecks('/project/root', ['src/test.ts']);
 
@@ -230,13 +242,13 @@ describe('script-checks', () => {
 
       it('should pass correct parameters to coverage analysis', () => {
         const files = ['src/file1.ts', 'src/file2.ts', 'src/file3.ts'];
-        
+
         runScriptChecks('/custom/path', files);
 
         expect(mockRunScriptCoverage).toHaveBeenCalledWith({
           scriptsDir: '/custom/path',
           timeout: 120000,
-          changedFiles: files
+          changedFiles: files,
         });
       });
 
@@ -244,14 +256,14 @@ describe('script-checks', () => {
         runScriptChecks('/project', ['test.ts']);
 
         expect(mockExecCommand).toHaveBeenCalledWith(
-          'npm run test:scripts', 
-          '/project', 
-          180000  // 3 minutes for unit tests
+          'npm run test:scripts',
+          '/project',
+          180000 // 3 minutes for unit tests
         );
-        
+
         expect(mockRunScriptCoverage).toHaveBeenCalledWith(
           expect.objectContaining({
-            timeout: 120000  // 2 minutes for coverage
+            timeout: 120000, // 2 minutes for coverage
           })
         );
       });
@@ -345,7 +357,7 @@ describe('script-checks', () => {
           '~/home/path',
           '/path/with-dashes',
           '/path/with_underscores',
-          '/path/with.dots'
+          '/path/with.dots',
         ];
 
         validRoots.forEach(root => {
@@ -374,8 +386,14 @@ describe('script-checks', () => {
 
         scenarios.forEach(({ lint, unit, expectedCoverage }) => {
           jest.clearAllMocks();
-          mockRunScriptLinting.mockReturnValue({ failed: lint, output: `Lint: ${lint ? 'FAIL' : 'PASS'}\n` });
-          mockExecCommand.mockReturnValue({ success: unit, output: `Unit: ${unit ? 'PASS' : 'FAIL'}\n` });
+          mockRunScriptLinting.mockReturnValue({
+            failed: lint,
+            output: `Lint: ${lint ? 'FAIL' : 'PASS'}\n`,
+          });
+          mockExecCommand.mockReturnValue({
+            success: unit,
+            output: `Unit: ${unit ? 'PASS' : 'FAIL'}\n`,
+          });
           mockRunScriptCoverage.mockReturnValue({ failed: false, output: 'Coverage: PASS\n' });
 
           const result = runScriptChecks('/project', ['test.ts']);

@@ -8,7 +8,7 @@ echo "🧪 Starting E2E test runner..."
 cleanup() {
     echo "🧹 Cleaning up processes..."
     pkill -f "node.*start" || true
-    pkill -f "vitest" || true
+    pkill -f "jest" || true
     exit 0
 }
 
@@ -17,16 +17,16 @@ trap cleanup EXIT INT TERM
 
 # Kill any existing processes
 pkill -f "node.*start" || true
-pkill -f "vitest" || true
+pkill -f "jest" || true
 
 # Wait a moment for processes to die
 sleep 2
 
 # Run tests with timeout
-echo "▶️ Running vitest tests..."
-npx vitest run --config=vitest.config.ts
+echo "▶️ Running jest tests..."
+NODE_ENV=test NODE_OPTIONS='--max-old-space-size=8192' npx jest --forceExit --detectOpenHandles --maxWorkers=1 --testTimeout=120000
 
-# Exit code from vitest
+# Exit code from jest
 TEST_EXIT_CODE=$?
 
 echo "🏁 Tests completed with exit code: $TEST_EXIT_CODE"

@@ -1,13 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import {
-  RefreshCw,
-  Zap,
-  CheckCircle,
-  XCircle,
-  Terminal,
-} from 'lucide-react';
+import { RefreshCw, Zap, CheckCircle, XCircle, Terminal } from 'lucide-react';
 import { Button } from '../shared/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../shared/ui/card';
 import { PageLoading } from '../shared/ui/loading';
@@ -16,6 +10,7 @@ import LogsViewer from '../features/logs/components/LogsViewer';
 import { WorkerCard } from '../features/workers/components/WorkerCard';
 import { ValidationRunsViewer } from '../features/validation/components/ValidationRunsViewer';
 import { BlockedCommandsViewer } from '../features/permissions/components/BlockedCommandsViewer';
+import { OrchestratorPanel } from '../features/orchestrator/components/OrchestratorPanel';
 import type { UnifiedLogEntry } from '../shared/types/logs';
 
 // Constants
@@ -23,7 +18,7 @@ const AUTO_REFRESH_INTERVAL_MS = 2000;
 const LOG_PROCESSING_INTERVALS = {
   BASE_INTERVAL_MS: 1000,
   LINE_INTERVAL_MS: 100,
-  START_OFFSET_MS: 1000
+  START_OFFSET_MS: 1000,
 };
 
 interface WorkerStatus {
@@ -47,7 +42,6 @@ interface WorkersStatusResponse {
   totalCount: number;
   totalBlockedCommands: number;
 }
-
 
 interface LogViewerProps {
   workerId: string;
@@ -106,11 +100,7 @@ function LogViewer({ workerId, onClose }: LogViewerProps) {
           channel: 'stderr',
           payload: line,
         });
-      } else if (
-        line.includes('🤖') ||
-        line.includes('assistant:') ||
-        line.includes('Claude:')
-      ) {
+      } else if (line.includes('🤖') || line.includes('assistant:') || line.includes('Claude:')) {
         entries.push({
           id: `log-${workerId}-${index}`,
           ts: timestamp,
@@ -185,7 +175,9 @@ function LogViewer({ workerId, onClose }: LogViewerProps) {
 }
 
 // Custom hook for worker mutations
-function useWorkerMutations(queryClient: { invalidateQueries: (query: { queryKey: string[] }) => void }) {
+function useWorkerMutations(queryClient: {
+  invalidateQueries: (query: { queryKey: string[] }) => void;
+}) {
   const stopWorkerMutation = useMutation({
     mutationFn: claudeWorkersApi.stopWorker,
     onSuccess: () => {
@@ -282,26 +274,52 @@ function useWorkerActions(
 }
 
 // Dashboard header component
-function DashboardHeader({ queryClient }: { queryClient: { invalidateQueries: (query: { queryKey: string[] }) => void } }) {
+function DashboardHeader({
+  queryClient,
+  showOrchestrator,
+  setShowOrchestrator,
+}: {
+  queryClient: { invalidateQueries: (query: { queryKey: string[] }) => void };
+  showOrchestrator: boolean;
+  setShowOrchestrator: (show: boolean) => void;
+}) {
   return (
     <div className="flex items-center justify-between">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Claude Code Workers</h1>
-        <p className="text-gray-600">Monitor and manage Claude Code worker processes</p>
+        <p className="text-gray-600">
+          Monitor and manage Claude Code worker processes and task orchestrator
+        </p>
       </div>
-      <Button
-        onClick={() => queryClient.invalidateQueries({ queryKey: ['workers-status'] })}
-        className="flex items-center space-x-2"
-      >
-        <RefreshCw className="h-4 w-4" />
-        <span>Refresh</span>
-      </Button>
+      <div className="flex items-center gap-3">
+        <Button
+          onClick={() => setShowOrchestrator(!showOrchestrator)}
+          variant={showOrchestrator ? 'default' : 'outline'}
+          className="flex items-center space-x-2"
+        >
+          <Zap className="h-4 w-4" />
+          <span>{showOrchestrator ? 'Hide Orchestrator' : 'Show Orchestrator'}</span>
+        </Button>
+        <Button
+          onClick={() => queryClient.invalidateQueries({ queryKey: ['workers-status'] })}
+          variant="outline"
+          className="flex items-center space-x-2"
+        >
+          <RefreshCw className="h-4 w-4" />
+          <span>Refresh</span>
+        </Button>
+      </div>
     </div>
   );
 }
 
 // Stats card component
-function StatsCard({ icon: Icon, iconColor, title, value }: {
+function StatsCard({
+  icon: Icon,
+  iconColor,
+  title,
+  value,
+}: {
   icon: React.ComponentType<{ className?: string }>;
   iconColor: string;
   title: string;
@@ -328,23 +346,42 @@ function StatsCards({ workersData }: { workersData: WorkersStatusResponse | unde
   const activeCount = workersData?.activeCount || 0;
   const totalCount = workersData?.totalCount || 0;
   const totalBlockedCommands = workersData?.totalBlockedCommands || 0;
-  
-  const successRate = totalCount > 0
-    ? Math.round((workers.filter(w => w.status === 'completed').length / totalCount) * 100)
-    : 0;
+
+  const successRate =
+    totalCount > 0
+      ? Math.round((workers.filter(w => w.status === 'completed').length / totalCount) * 100)
+      : 0;
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
       <StatsCard icon={Zap} iconColor="text-blue-600" title="Active Workers" value={activeCount} />
-      <StatsCard icon={Terminal} iconColor="text-green-600" title="Total Workers" value={totalCount} />
-      <StatsCard icon={CheckCircle} iconColor="text-purple-600" title="Success Rate" value={`${successRate}%`} />
-      <StatsCard icon={XCircle} iconColor="text-red-600" title="Blocked Commands" value={totalBlockedCommands} />
+      <StatsCard
+        icon={Terminal}
+        iconColor="text-green-600"
+        title="Total Workers"
+        value={totalCount}
+      />
+      <StatsCard
+        icon={CheckCircle}
+        iconColor="text-purple-600"
+        title="Success Rate"
+        value={`${successRate}%`}
+      />
+      <StatsCard
+        icon={XCircle}
+        iconColor="text-red-600"
+        title="Blocked Commands"
+        value={totalBlockedCommands}
+      />
     </div>
   );
 }
 
 // Workers list component
-function WorkersList({ workers, actions }: {
+function WorkersList({
+  workers,
+  actions,
+}: {
   workers: WorkerStatus[];
   actions: {
     handleViewLogs: (workerId: string) => void;
@@ -362,8 +399,8 @@ function WorkersList({ workers, actions }: {
           <Terminal className="h-12 w-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">No Workers</h3>
           <p className="text-gray-600">
-            No Claude Code workers are currently running. Start a worker from the task board to
-            see it here.
+            No Claude Code workers are currently running. Start a worker from the task board to see
+            it here.
           </p>
         </CardContent>
       </Card>
@@ -389,7 +426,10 @@ function WorkersList({ workers, actions }: {
 }
 
 // Modal components
-function DashboardModals({ selections, setters }: {
+function DashboardModals({
+  selections,
+  setters,
+}: {
   selections: {
     selectedWorkerId: string | null;
     selectedBlockedWorkerId: string | null;
@@ -404,7 +444,10 @@ function DashboardModals({ selections, setters }: {
   return (
     <>
       {selections.selectedWorkerId && (
-        <LogViewer workerId={selections.selectedWorkerId} onClose={() => setters.setSelectedWorkerId(null)} />
+        <LogViewer
+          workerId={selections.selectedWorkerId}
+          onClose={() => setters.setSelectedWorkerId(null)}
+        />
       )}
       {selections.selectedBlockedWorkerId && (
         <BlockedCommandsViewer
@@ -441,6 +484,7 @@ export function WorkersDashboard() {
   const [selectedWorkerId, setSelectedWorkerId] = useState<string | null>(null);
   const [selectedBlockedWorkerId, setSelectedBlockedWorkerId] = useState<string | null>(null);
   const [selectedValidationWorkerId, setSelectedValidationWorkerId] = useState<string | null>(null);
+  const [showOrchestrator, setShowOrchestrator] = useState(false);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
@@ -483,7 +527,14 @@ export function WorkersDashboard() {
 
   return (
     <div className="p-6 space-y-6">
-      <DashboardHeader queryClient={queryClient} />
+      <DashboardHeader
+        queryClient={queryClient}
+        showOrchestrator={showOrchestrator}
+        setShowOrchestrator={setShowOrchestrator}
+      />
+
+      {showOrchestrator && <OrchestratorPanel />}
+
       <StatsCards workersData={workersData} />
       <DashboardModals selections={selections} setters={modalSetters} />
       <div>

@@ -69,18 +69,14 @@ function ProcessStartCard({ payload }: ProcessStartCardProps) {
         <div className="flex items-center gap-2 text-sm">
           <div className="flex items-center gap-2 text-foreground">
             {getProcessIcon(payload.runReason)}
-            <span className="font-medium">
-              {getProcessLabel(payload.runReason)}
-            </span>
+            <span className="font-medium">{getProcessLabel(payload.runReason)}</span>
           </div>
           <div className="flex items-center gap-1 text-muted-foreground">
             <Clock className="h-3 w-3" />
             <span>{formatTime(payload.startedAt)}</span>
           </div>
           {payload.processId && (
-            <div className="text-xs text-muted-foreground font-mono">
-              PID: {payload.processId}
-            </div>
+            <div className="text-xs text-muted-foreground font-mono">PID: {payload.processId}</div>
           )}
           <div
             className={`ml-auto text-xs px-2 py-1 rounded-full ${getStatusColor(payload.status)}`}

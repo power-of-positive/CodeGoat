@@ -2,7 +2,6 @@
 import '@testing-library/jest-dom';
 import { TextEncoder, TextDecoder } from 'util';
 import { cleanup } from '@testing-library/react';
-import { act } from 'react';
 
 // Import Jest globals
 import { afterEach } from '@jest/globals';
@@ -35,9 +34,7 @@ jest.setTimeout(TEST_TIMEOUT_MS);
 
 // Cleanup after each test
 afterEach(() => {
-  act(() => {
-    cleanup();
-  });
+  cleanup();
   // Clear all timers (but don't override timer configuration)
   jest.clearAllTimers();
   // Clear all mocks

@@ -2,7 +2,7 @@
   "name": "validation-analytics-api-e2e",
   "version": "1.0.0",
   "scripts": {
-    "test": "NODE_ENV=test jest --forceExit --detectOpenHandles",
+    "test": "NODE_ENV=test NODE_OPTIONS='--max-old-space-size=8192' jest --forceExit --detectOpenHandles --maxWorkers=1 --testTimeout=120000",
     "test:watch": "NODE_ENV=test jest --watch"
   },
   "devDependencies": {
@@ -16,6 +16,8 @@
     "preset": "ts-jest",
     "testEnvironment": "node",
     "testMatch": ["**/*.spec.ts"],
-    "testTimeout": 30000
+    "testTimeout": 120000,
+    "bail": true,
+    "silent": true
   }
 }

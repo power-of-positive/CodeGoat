@@ -6,19 +6,29 @@ import { TaskFilters, TaskFiltersState } from './TaskFilters';
 // Mock Lucide React icons
 jest.mock('lucide-react', () => ({
   Search: ({ className }: { className?: string }) => (
-    <div data-testid="search-icon" className={className}>Search</div>
+    <div data-testid="search-icon" className={className}>
+      Search
+    </div>
   ),
   Filter: ({ className }: { className?: string }) => (
-    <div data-testid="filter-icon" className={className}>Filter</div>
+    <div data-testid="filter-icon" className={className}>
+      Filter
+    </div>
   ),
   X: ({ className }: { className?: string }) => (
-    <div data-testid="x-icon" className={className}>X</div>
+    <div data-testid="x-icon" className={className}>
+      X
+    </div>
   ),
   ChevronDown: ({ className }: { className?: string }) => (
-    <div data-testid="chevron-down-icon" className={className}>ChevronDown</div>
+    <div data-testid="chevron-down-icon" className={className}>
+      ChevronDown
+    </div>
   ),
   ChevronUp: ({ className }: { className?: string }) => (
-    <div data-testid="chevron-up-icon" className={className}>ChevronUp</div>
+    <div data-testid="chevron-up-icon" className={className}>
+      ChevronUp
+    </div>
   ),
 }));
 
@@ -55,7 +65,7 @@ describe('TaskFilters Integration Tests', () => {
 
       const searchInput = screen.getByPlaceholderText('Search by task content or ID...');
       await userEvent.type(searchInput, 'test query');
-      
+
       await waitFor(() => {
         expect(searchInput).toHaveValue('test query');
       });
@@ -67,7 +77,7 @@ describe('TaskFilters Integration Tests', () => {
       // Test search
       const searchInput = screen.getByPlaceholderText('Search by task content or ID...');
       await userEvent.type(searchInput, 'integration test');
-      
+
       // Test status filter
       const statusSelect = screen.getByDisplayValue('All Statuses');
       await userEvent.click(statusSelect);

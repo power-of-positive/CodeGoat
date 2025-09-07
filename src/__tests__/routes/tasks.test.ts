@@ -73,7 +73,7 @@ describe('Tasks Route - Story Completion Validation', () => {
     it('should prevent story completion without BDD scenarios', async () => {
       // Mock existing story task
       mockDb.task.findUnique.mockResolvedValue(storyTask);
-      
+
       // Mock no BDD scenarios
       mockDb.bDDScenario.findMany.mockResolvedValue([]);
 
@@ -83,17 +83,19 @@ describe('Tasks Route - Story Completion Validation', () => {
 
       expect(response.status).toBe(400);
       expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain('Story cannot be completed without at least one BDD scenario');
+      expect(response.body.message).toContain(
+        'Story cannot be completed without at least one BDD scenario'
+      );
       expect(response.body.code).toBe('STORY_MISSING_BDD_SCENARIOS');
-      
+
       // Ensure task update was not called
       expect(mockDb.task.update).not.toHaveBeenCalled();
     });
 
     it('should prevent story completion with unlinked BDD scenarios', async () => {
-      // Mock existing story task
+      // Mock existing story task - ensure it persists through multiple calls
       mockDb.task.findUnique.mockResolvedValue(storyTask);
-      
+
       // Mock BDD scenarios without test links
       const unlinkedScenarios = [
         {
@@ -129,7 +131,7 @@ describe('Tasks Route - Story Completion Validation', () => {
           errorMessage: null,
         },
       ];
-      
+
       mockDb.bDDScenario.findMany.mockResolvedValue(unlinkedScenarios);
 
       const response = await request(app)
@@ -142,7 +144,7 @@ describe('Tasks Route - Story Completion Validation', () => {
       expect(response.body.code).toBe('STORY_SCENARIOS_NOT_LINKED');
       expect(response.body.details.unlinkedScenarios).toHaveLength(1);
       expect(response.body.details.unlinkedScenarios[0].id).toBe('scenario-1');
-      
+
       // Ensure task update was not called
       expect(mockDb.task.update).not.toHaveBeenCalled();
     });
@@ -150,7 +152,7 @@ describe('Tasks Route - Story Completion Validation', () => {
     it('should prevent story completion with non-passed BDD scenarios', async () => {
       // Mock existing story task
       mockDb.task.findUnique.mockResolvedValue(storyTask);
-      
+
       // Mock BDD scenarios that are linked but not passed
       const nonPassedScenarios = [
         {
@@ -186,7 +188,7 @@ describe('Tasks Route - Story Completion Validation', () => {
           errorMessage: null,
         },
       ];
-      
+
       mockDb.bDDScenario.findMany.mockResolvedValue(nonPassedScenarios);
 
       const response = await request(app)
@@ -200,7 +202,7 @@ describe('Tasks Route - Story Completion Validation', () => {
       expect(response.body.details.nonPassedScenarios).toHaveLength(2);
       expect(response.body.details.nonPassedScenarios[0].status).toBe('failed');
       expect(response.body.details.nonPassedScenarios[1].status).toBe('pending');
-      
+
       // Ensure task update was not called
       expect(mockDb.task.update).not.toHaveBeenCalled();
     });
@@ -208,7 +210,7 @@ describe('Tasks Route - Story Completion Validation', () => {
     it('should allow story completion with valid linked and passed BDD scenarios', async () => {
       // Mock existing story task
       mockDb.task.findUnique.mockResolvedValue(storyTask);
-      
+
       // Mock BDD scenarios that are linked and passed
       const passedScenarios = [
         {
@@ -244,9 +246,9 @@ describe('Tasks Route - Story Completion Validation', () => {
           errorMessage: null,
         },
       ];
-      
+
       mockDb.bDDScenario.findMany.mockResolvedValue(passedScenarios);
-      
+
       // Mock successful task update
       const completedTask = {
         ...storyTask,
@@ -254,7 +256,7 @@ describe('Tasks Route - Story Completion Validation', () => {
         endTime: new Date('2024-01-01T12:00:00Z'),
         duration: '2h 0m',
       };
-      
+
       mockDb.task.update.mockResolvedValue(completedTask);
 
       const response = await request(app)
@@ -264,7 +266,7 @@ describe('Tasks Route - Story Completion Validation', () => {
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
       expect(response.body.data.status).toBe('completed');
-      
+
       // Ensure task update was called
       expect(mockDb.task.update).toHaveBeenCalledWith({
         where: { id: 'CODEGOAT-001' },
@@ -282,9 +284,9 @@ describe('Tasks Route - Story Completion Validation', () => {
         ...storyTask,
         taskType: TaskType.TASK,
       };
-      
+
       mockDb.task.findUnique.mockResolvedValue(regularTask);
-      
+
       // Mock successful task update
       const completedTask = {
         ...regularTask,
@@ -292,7 +294,7 @@ describe('Tasks Route - Story Completion Validation', () => {
         endTime: new Date('2024-01-01T12:00:00Z'),
         duration: '2h 0m',
       };
-      
+
       mockDb.task.update.mockResolvedValue(completedTask);
 
       const response = await request(app)
@@ -302,10 +304,10 @@ describe('Tasks Route - Story Completion Validation', () => {
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
       expect(response.body.data.status).toBe('completed');
-      
+
       // Ensure BDD scenario validation was not called for regular tasks
       expect(mockDb.bDDScenario.findMany).not.toHaveBeenCalled();
-      
+
       // Ensure task update was called
       expect(mockDb.task.update).toHaveBeenCalled();
     });
@@ -313,13 +315,13 @@ describe('Tasks Route - Story Completion Validation', () => {
     it('should allow non-completion status updates for stories without validation', async () => {
       // Mock existing story task
       mockDb.task.findUnique.mockResolvedValue(storyTask);
-      
+
       // Mock successful task update
       const updatedTask = {
         ...storyTask,
         status: TaskStatus.PENDING,
       };
-      
+
       mockDb.task.update.mockResolvedValue(updatedTask);
 
       const response = await request(app)
@@ -329,10 +331,10 @@ describe('Tasks Route - Story Completion Validation', () => {
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
       expect(response.body.data.status).toBe('pending');
-      
+
       // Ensure BDD scenario validation was not called for non-completion updates
       expect(mockDb.bDDScenario.findMany).not.toHaveBeenCalled();
-      
+
       // Ensure task update was called
       expect(mockDb.task.update).toHaveBeenCalled();
     });
@@ -383,9 +385,7 @@ describe('Tasks Route - Story Completion Validation', () => {
 
       mockDb.task.findMany.mockResolvedValue(mockTasks);
 
-      const response = await request(app)
-        .get('/api/tasks')
-        .expect(200);
+      const response = await request(app).get('/api/tasks').expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.data).toHaveLength(2);
@@ -396,10 +396,7 @@ describe('Tasks Route - Story Completion Validation', () => {
 
       expect(mockDb.task.findMany).toHaveBeenCalledWith({
         where: {
-          OR: [
-            { projectId: null },
-            { id: { startsWith: 'CODEGOAT-' } },
-          ],
+          OR: [{ projectId: null }, { id: { startsWith: 'CODEGOAT-' } }],
         },
         orderBy: [{ priority: 'desc' }, { createdAt: 'desc' }],
       });
@@ -408,9 +405,7 @@ describe('Tasks Route - Story Completion Validation', () => {
     it('should handle database errors', async () => {
       mockDb.task.findMany.mockRejectedValue(new Error('Database error'));
 
-      const response = await request(app)
-        .get('/api/tasks')
-        .expect(500);
+      const response = await request(app).get('/api/tasks').expect(500);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Failed to fetch tasks');
@@ -421,9 +416,7 @@ describe('Tasks Route - Story Completion Validation', () => {
     it('should handle database errors in analytics', async () => {
       mockDb.task.count.mockRejectedValue(new Error('Database error'));
 
-      const response = await request(app)
-        .get('/api/tasks/analytics')
-        .expect(500);
+      const response = await request(app).get('/api/tasks/analytics').expect(500);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Failed to fetch task analytics');
@@ -456,9 +449,7 @@ describe('Tasks Route - Story Completion Validation', () => {
 
       mockDb.task.findUnique.mockResolvedValue(mockTask);
 
-      const response = await request(app)
-        .get('/api/tasks/CODEGOAT-001')
-        .expect(200);
+      const response = await request(app).get('/api/tasks/CODEGOAT-001').expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.data.id).toBe('CODEGOAT-001');
@@ -482,9 +473,7 @@ describe('Tasks Route - Story Completion Validation', () => {
     it('should return 404 for non-existent task', async () => {
       mockDb.task.findUnique.mockResolvedValue(null);
 
-      const response = await request(app)
-        .get('/api/tasks/CODEGOAT-999')
-        .expect(404);
+      const response = await request(app).get('/api/tasks/CODEGOAT-999').expect(404);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Task not found');
@@ -493,9 +482,7 @@ describe('Tasks Route - Story Completion Validation', () => {
     it('should handle database errors when fetching task', async () => {
       mockDb.task.findUnique.mockRejectedValue(new Error('Database error'));
 
-      const response = await request(app)
-        .get('/api/tasks/CODEGOAT-001')
-        .expect(500);
+      const response = await request(app).get('/api/tasks/CODEGOAT-001').expect(500);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Failed to fetch task');
@@ -511,9 +498,7 @@ describe('Tasks Route - Story Completion Validation', () => {
       };
 
       // Mock finding existing tasks to generate ID
-      mockDb.task.findMany.mockResolvedValue([
-        { id: 'CODEGOAT-005' }
-      ]);
+      mockDb.task.findMany.mockResolvedValue([{ id: 'CODEGOAT-005' }]);
 
       const createdTask = {
         id: 'CODEGOAT-006',
@@ -537,10 +522,7 @@ describe('Tasks Route - Story Completion Validation', () => {
 
       mockDb.task.create.mockResolvedValue(createdTask);
 
-      const response = await request(app)
-        .post('/api/tasks')
-        .send(newTaskData)
-        .expect(201);
+      const response = await request(app).post('/api/tasks').send(newTaskData).expect(201);
 
       expect(response.body.success).toBe(true);
       expect(response.body.data.id).toBe('CODEGOAT-006');
@@ -615,9 +597,7 @@ describe('Tasks Route - Story Completion Validation', () => {
       mockDb.task.findUnique.mockResolvedValue(existingTask);
       mockDb.task.delete.mockResolvedValue(existingTask);
 
-      const response = await request(app)
-        .delete('/api/tasks/CODEGOAT-001')
-        .expect(200);
+      const response = await request(app).delete('/api/tasks/CODEGOAT-001').expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.message).toBe('Task deleted successfully');
@@ -630,9 +610,7 @@ describe('Tasks Route - Story Completion Validation', () => {
     it('should return 404 when deleting non-existent task', async () => {
       mockDb.task.findUnique.mockResolvedValue(null);
 
-      const response = await request(app)
-        .delete('/api/tasks/CODEGOAT-999')
-        .expect(404);
+      const response = await request(app).delete('/api/tasks/CODEGOAT-999').expect(404);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Task not found');
@@ -646,9 +624,7 @@ describe('Tasks Route - Story Completion Validation', () => {
       });
       mockDb.task.delete.mockRejectedValue(new Error('Database error'));
 
-      const response = await request(app)
-        .delete('/api/tasks/CODEGOAT-001')
-        .expect(500);
+      const response = await request(app).delete('/api/tasks/CODEGOAT-001').expect(500);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Failed to delete task');

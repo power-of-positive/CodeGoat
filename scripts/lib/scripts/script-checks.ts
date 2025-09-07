@@ -59,7 +59,7 @@ export function runScriptChecks(
   if (!scriptFiles?.length) {
     return { failed: false, output: '' };
   }
-  if (!projectRoot || typeof projectRoot !== 'string') {
+  if (!projectRoot || typeof projectRoot !== 'string' || projectRoot.trim() === '') {
     throw new Error('Invalid projectRoot: must be a non-empty string');
   }
 

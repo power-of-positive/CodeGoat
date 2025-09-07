@@ -1,11 +1,11 @@
 // Simplified log viewer using vibe-kanban approach
 import React, { memo, useEffect, useRef } from 'react';
-import { 
-  User, 
-  Bot, 
-  Brain, 
-  Settings, 
-  AlertCircle, 
+import {
+  User,
+  Bot,
+  Brain,
+  Settings,
+  AlertCircle,
   CheckSquare,
   Eye,
   Edit,
@@ -13,7 +13,7 @@ import {
   Search,
   Globe,
   Plus,
-  Play
+  Play,
 } from 'lucide-react';
 import MarkdownRenderer from './MarkdownRenderer';
 import RawLogText from './RawLogText';
@@ -26,7 +26,11 @@ interface VibeLogsProps {
   setRowHeight?: (index: number, height: number) => void;
 }
 
-const getEntryIcon = (entryType: { type: string; tool_name?: string; action_type?: { action: string } }) => {
+const getEntryIcon = (entryType: {
+  type: string;
+  tool_name?: string;
+  action_type?: { action: string };
+}) => {
   if (entryType.type === 'user_message') {
     return <User className="h-4 w-4 text-blue-600" />;
   }
@@ -78,13 +82,14 @@ const getEntryIcon = (entryType: { type: string; tool_name?: string; action_type
   return <Settings className="h-4 w-4 text-gray-400" />;
 };
 
-const getContentClassName = (entryType: { type: string; tool_name?: string; action_type?: { action: string } }) => {
+const getContentClassName = (entryType: {
+  type: string;
+  tool_name?: string;
+  action_type?: { action: string };
+}) => {
   const baseClasses = 'text-sm whitespace-pre-wrap break-words text-gray-800 dark:text-gray-100';
 
-  if (
-    entryType.type === 'tool_use' &&
-    entryType.action_type?.action === 'command_run'
-  ) {
+  if (entryType.type === 'tool_use' && entryType.action_type?.action === 'command_run') {
     return `${baseClasses} font-mono`;
   }
 
@@ -107,10 +112,7 @@ const getContentClassName = (entryType: { type: string; tool_name?: string; acti
   }
 
   // Special styling for plan presentations
-  if (
-    entryType.type === 'tool_use' &&
-    entryType.action_type?.action === 'plan_presentation'
-  ) {
+  if (entryType.type === 'tool_use' && entryType.action_type?.action === 'plan_presentation') {
     return `${baseClasses} text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/20 px-3 py-2 rounded-md border-l-4 border-blue-400`;
   }
 
@@ -142,8 +144,12 @@ const ProcessStartCard: React.FC<{ payload: ProcessStartPayload }> = ({ payload 
         <Play className="h-5 w-5 text-blue-600" />
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <span className="font-semibold text-sm text-gray-800 dark:text-gray-100">Process Started</span>
-            <span className={`px-2 py-0.5 rounded text-xs font-bold ${statusColors[payload.status as keyof typeof statusColors] || statusColors.running}`}>
+            <span className="font-semibold text-sm text-gray-800 dark:text-gray-100">
+              Process Started
+            </span>
+            <span
+              className={`px-2 py-0.5 rounded text-xs font-bold ${statusColors[payload.status as keyof typeof statusColors] || statusColors.running}`}
+            >
               {payload.status.toUpperCase()}
             </span>
           </div>
@@ -156,13 +162,14 @@ const ProcessStartCard: React.FC<{ payload: ProcessStartPayload }> = ({ payload 
   );
 };
 
-const DisplayConversationEntry: React.FC<{ entry: NormalizedEntry; index: number }> = ({ entry, index: _index }) => {
+const DisplayConversationEntry: React.FC<{ entry: NormalizedEntry; index: number }> = ({
+  entry,
+  index: _index,
+}) => {
   return (
     <div className="px-4 py-1">
       <div className="flex items-start gap-3">
-        <div className="flex-shrink-0 mt-1">
-          {getEntryIcon(entry.entry_type)}
-        </div>
+        <div className="flex-shrink-0 mt-1">{getEntryIcon(entry.entry_type)}</div>
         <div className="flex-1 min-w-0">
           <div className={getContentClassName(entry.entry_type)}>
             {shouldRenderMarkdown(entry.entry_type) ? (
@@ -180,12 +187,7 @@ const DisplayConversationEntry: React.FC<{ entry: NormalizedEntry; index: number
   );
 };
 
-function VibeLogs({
-  entry,
-  index,
-  style,
-  setRowHeight,
-}: VibeLogsProps) {
+function VibeLogs({ entry, index, style, setRowHeight }: VibeLogsProps) {
   const rowRef = useRef<HTMLDivElement>(null);
   const lastHeightRef = useRef<number>(0);
 
@@ -219,17 +221,10 @@ function VibeLogs({
             );
           case 'normalized':
             return (
-              <DisplayConversationEntry
-                entry={entry.payload as NormalizedEntry}
-                index={index}
-              />
+              <DisplayConversationEntry entry={entry.payload as NormalizedEntry} index={index} />
             );
           case 'process_start':
-            return (
-              <ProcessStartCard
-                payload={entry.payload as ProcessStartPayload}
-              />
-            );
+            return <ProcessStartCard payload={entry.payload as ProcessStartPayload} />;
           default:
             return (
               <div className="px-4 py-1">

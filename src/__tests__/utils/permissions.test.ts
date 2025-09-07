@@ -326,11 +326,14 @@ describe('PermissionManager', () => {
 
       loggingManager.checkPermission(context);
 
-      expect(mockLogger.info).toHaveBeenCalledWith('Permission check result', expect.objectContaining({
-        action: ActionType.FILE_READ,
-        allowed: true,
-        ruleId: 'allow-file-read',
-      }));
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'Permission check result',
+        expect.objectContaining({
+          action: ActionType.FILE_READ,
+          allowed: true,
+          ruleId: 'allow-file-read',
+        })
+      );
     });
 
     it('should log default permission results when logging enabled', () => {
@@ -348,11 +351,14 @@ describe('PermissionManager', () => {
 
       loggingManager.checkPermission(context);
 
-      expect(mockLogger.info).toHaveBeenCalledWith('Permission check result (default)', expect.objectContaining({
-        action: ActionType.NETWORK_REQUEST,
-        allowed: false,
-        reason: expect.stringContaining('No matching rule found'),
-      }));
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        'Permission check result (default)',
+        expect.objectContaining({
+          action: ActionType.NETWORK_REQUEST,
+          allowed: false,
+          reason: expect.stringContaining('No matching rule found'),
+        })
+      );
     });
 
     it('should log invalid pattern warnings', () => {
@@ -377,10 +383,13 @@ describe('PermissionManager', () => {
 
       loggingManager.checkPermission(context);
 
-      expect(mockLogger.warn).toHaveBeenCalledWith('Invalid pattern in permission rule', expect.objectContaining({
-        pattern: '[invalid-regex',
-        error: expect.any(String),
-      }));
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        'Invalid pattern in permission rule',
+        expect.objectContaining({
+          pattern: '[invalid-regex',
+          error: expect.any(String),
+        })
+      );
     });
   });
 
@@ -598,7 +607,7 @@ describe('DefaultPermissions', () => {
     it('should create consistent configurations', () => {
       // Test that all default configuration methods are callable
       const restrictive = DefaultPermissions.restrictive();
-      const permissive = DefaultPermissions.permissive(); 
+      const permissive = DefaultPermissions.permissive();
       const development = DefaultPermissions.development();
 
       expect(restrictive.rules.length).toBeGreaterThan(0);

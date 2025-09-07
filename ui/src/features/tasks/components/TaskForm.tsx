@@ -19,24 +19,23 @@ function useTaskFormState(task?: Task) {
   const [executorId, setExecutorId] = useState(task?.executorId || 'claude_code');
 
   return {
-    content, setContent,
-    priority, 
+    content,
+    setContent,
+    priority,
     setPriority: (value: string) => setPriority(value as Task['priority']),
-    status, 
+    status,
     setStatus: (value: string) => setStatus(value as Task['status']),
-    taskType, 
+    taskType,
     setTaskType: (value: string) => setTaskType(value as Task['taskType']),
-    executorId, setExecutorId,
+    executorId,
+    setExecutorId,
   };
 }
 
 // Build task data for submission
-function buildTaskData(
-  formState: ReturnType<typeof useTaskFormState>,
-  task?: Task
-) {
+function buildTaskData(formState: ReturnType<typeof useTaskFormState>, task?: Task) {
   const { content, priority, status, taskType, executorId } = formState;
-  
+
   return {
     content: content.trim(),
     priority,
@@ -66,7 +65,10 @@ function TaskFormHeader({ task }: { task?: Task }) {
 }
 
 // Task description field component
-function TaskDescriptionField({ content, onChange }: {
+function TaskDescriptionField({
+  content,
+  onChange,
+}: {
   content: string;
   onChange: (value: string) => void;
 }) {
@@ -78,7 +80,7 @@ function TaskDescriptionField({ content, onChange }: {
       <textarea
         id="task-content"
         value={content}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={e => onChange(e.target.value)}
         className="w-full p-3 border border-gray-300 rounded-md text-sm resize-vertical"
         rows={4}
         placeholder="Describe what needs to be accomplished..."
@@ -89,7 +91,13 @@ function TaskDescriptionField({ content, onChange }: {
 }
 
 // Select field component
-function SelectField({ label, value, onChange, options, id }: {
+function SelectField({
+  label,
+  value,
+  onChange,
+  options,
+  id,
+}: {
   label: string;
   value: string;
   onChange: (value: string) => void;
@@ -104,7 +112,7 @@ function SelectField({ label, value, onChange, options, id }: {
       <select
         id={id}
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={e => onChange(e.target.value)}
         className="w-full p-2 border border-gray-300 rounded-md text-sm"
       >
         {options.map(option => (
@@ -118,7 +126,13 @@ function SelectField({ label, value, onChange, options, id }: {
 }
 
 // Input field component
-function InputField({ label, value, onChange, placeholder, id }: {
+function InputField({
+  label,
+  value,
+  onChange,
+  placeholder,
+  id,
+}: {
   label: string;
   value: string;
   onChange: (value: string) => void;
@@ -134,7 +148,7 @@ function InputField({ label, value, onChange, placeholder, id }: {
         id={id}
         type="text"
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={e => onChange(e.target.value)}
         className="w-full p-2 border border-gray-300 rounded-md text-sm"
         placeholder={placeholder}
       />
@@ -143,10 +157,17 @@ function InputField({ label, value, onChange, placeholder, id }: {
 }
 
 // Form fields grid component
-function TaskFormFields({ formState }: {
-  formState: ReturnType<typeof useTaskFormState>;
-}) {
-  const { priority, setPriority, status, setStatus, taskType, setTaskType, executorId, setExecutorId } = formState;
+function TaskFormFields({ formState }: { formState: ReturnType<typeof useTaskFormState> }) {
+  const {
+    priority,
+    setPriority,
+    status,
+    setStatus,
+    taskType,
+    setTaskType,
+    executorId,
+    setExecutorId,
+  } = formState;
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -194,10 +215,7 @@ function TaskFormFields({ formState }: {
 }
 
 // Form actions component
-function TaskFormActions({ task, onCancel }: {
-  task?: Task;
-  onCancel: () => void;
-}) {
+function TaskFormActions({ task, onCancel }: { task?: Task; onCancel: () => void }) {
   return (
     <div className="flex gap-3">
       <Button type="submit" size="sm">
@@ -228,10 +246,7 @@ export function TaskForm({ task, onSave, onCancel }: TaskFormProps) {
       <TaskFormHeader task={task} />
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <TaskDescriptionField 
-            content={formState.content} 
-            onChange={formState.setContent} 
-          />
+          <TaskDescriptionField content={formState.content} onChange={formState.setContent} />
           <TaskFormFields formState={formState} />
           <TaskFormActions task={task} onCancel={onCancel} />
         </form>

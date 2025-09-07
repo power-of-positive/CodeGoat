@@ -12,12 +12,7 @@ const badgeVariants = {
   outline: 'border border-gray-300 text-gray-700 bg-transparent',
 };
 
-export function Badge({
-  className,
-  variant = 'default',
-  children,
-  ...props
-}: BadgeProps) {
+export function Badge({ className, variant = 'default', children, ...props }: BadgeProps) {
   return (
     <div
       className={cn(

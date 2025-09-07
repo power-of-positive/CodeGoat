@@ -50,9 +50,11 @@ describe('WinstonLogger', () => {
     it('should create logs directory if it does not exist', () => {
       mockFs.existsSync.mockReturnValue(false);
 
+      // Force non-test environment to ensure file logging is enabled
       new WinstonLogger({
         logsDir: testLogsDir,
         enableFile: true,
+        forceTestEnvironment: false, // Override test environment detection
       });
 
       expect(mockFs.mkdirSync).toHaveBeenCalledWith(testLogsDir, { recursive: true });

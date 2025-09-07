@@ -11,12 +11,7 @@ interface RawLogTextProps {
 }
 
 const RawLogText = memo(
-  ({
-    content,
-    channel = 'stdout',
-    as: Component = 'div',
-    className,
-  }: RawLogTextProps) => {
+  ({ content, channel = 'stdout', as: Component = 'div', className }: RawLogTextProps) => {
     // Only apply stderr fallback color when no ANSI codes are present
     const hasAnsiCodes = hasAnsi(content);
     const shouldApplyStderrFallback = channel === 'stderr' && !hasAnsiCodes;

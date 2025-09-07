@@ -18,13 +18,7 @@ describe('Textarea', () => {
   });
 
   it('forwards props to textarea element', () => {
-    render(
-      <Textarea
-        placeholder="Test placeholder"
-        rows={5}
-        data-testid="test-textarea"
-      />
-    );
+    render(<Textarea placeholder="Test placeholder" rows={5} data-testid="test-textarea" />);
 
     const textarea = screen.getByTestId('test-textarea');
     expect(textarea).toHaveAttribute('placeholder', 'Test placeholder');
@@ -43,11 +37,7 @@ describe('Textarea', () => {
   it('supports controlled component pattern', () => {
     const handleChange = jest.fn();
     render(
-      <Textarea
-        value="Controlled value"
-        onChange={handleChange}
-        data-testid="test-textarea"
-      />
+      <Textarea value="Controlled value" onChange={handleChange} data-testid="test-textarea" />
     );
 
     const textarea = screen.getByTestId('test-textarea') as HTMLTextAreaElement;

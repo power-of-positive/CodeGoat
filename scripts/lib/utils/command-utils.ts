@@ -58,7 +58,11 @@ function sanitizeError(errorText: string): string {
       .replace(/\/home\/[^/\s]+/g, '/home/***')
       // Remove potential tokens and secrets
       .replace(new RegExp(`[a-zA-Z0-9_-]{${MIN_SECRET_DETECTION_LENGTH},}`, 'g'), match =>
-        match.length > MIN_SECRET_LENGTH ? match.substring(0, SECRET_PREFIX_LENGTH) + '***' + match.substring(match.length - SECRET_SUFFIX_LENGTH) : match
+        match.length > MIN_SECRET_LENGTH
+          ? match.substring(0, SECRET_PREFIX_LENGTH) +
+            '***' +
+            match.substring(match.length - SECRET_SUFFIX_LENGTH)
+          : match
       )
       // Remove environment variable assignments
       .replace(/\b[A-Z_]+=[^\s]+/g, match => {

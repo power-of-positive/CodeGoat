@@ -9,16 +9,21 @@
  */
 
 // Disable dotenv debug messages at the process level
-process.env.DOTENV_CONFIG_DEBUG = 'false';
+delete process.env.DEBUG;
+delete process.env.DOTENV_CONFIG_DEBUG;
+delete process.env.DOTENV_DEBUG;
 
 // Intercept stderr write to completely block dotenv messages
 const originalStderrWrite = process.stderr.write;
-process.stderr.write = function(string: string | Uint8Array, encoding?: string | ((err?: Error) => void), fd?: ((err?: Error) => void)): boolean {
+process.stderr.write = function (
+  string: string | Uint8Array,
+  encoding?: string | ((err?: Error) => void),
+  fd?: (err?: Error) => void
+): boolean {
   const str = string.toString();
   if (str.includes('[dotenv@') || str.includes('injecting env') || str.includes('tip:')) {
     return true; // Pretend write succeeded but do nothing
   }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return originalStderrWrite.call(process.stderr, string, encoding as any, fd as any);
 };
 
@@ -30,7 +35,11 @@ const originalConsoleWarn = console.warn;
 // Override console methods to filter dotenv messages
 console.error = (...args) => {
   const message = args.join(' ');
-  if (message.includes('[dotenv@') || message.includes('injecting env') || message.includes('tip:')) {
+  if (
+    message.includes('[dotenv@') ||
+    message.includes('injecting env') ||
+    message.includes('tip:')
+  ) {
     return; // Silently ignore dotenv messages
   }
   originalConsoleError.apply(console, args);
@@ -38,7 +47,11 @@ console.error = (...args) => {
 
 console.log = (...args) => {
   const message = args.join(' ');
-  if (message.includes('[dotenv@') || message.includes('injecting env') || message.includes('tip:')) {
+  if (
+    message.includes('[dotenv@') ||
+    message.includes('injecting env') ||
+    message.includes('tip:')
+  ) {
     return; // Silently ignore dotenv messages
   }
   originalConsoleLog.apply(console, args);
@@ -46,16 +59,24 @@ console.log = (...args) => {
 
 console.warn = (...args) => {
   const message = args.join(' ');
-  if (message.includes('[dotenv@') || message.includes('injecting env') || message.includes('tip:')) {
+  if (
+    message.includes('[dotenv@') ||
+    message.includes('injecting env') ||
+    message.includes('tip:')
+  ) {
     return; // Silently ignore dotenv messages
   }
   originalConsoleWarn.apply(console, args);
 };
 
 // Also override process.stderr.write for any direct stderr writes (reusing earlier declaration)
-process.stderr.write = function(chunk: string | Buffer, encoding?: string | ((error?: Error | null) => void), callback?: (error?: Error | null) => void) {
+process.stderr.write = function (
+  chunk: string | Buffer,
+  encoding?: string | ((error?: Error | null) => void),
+  callback?: (error?: Error | null) => void
+) {
   const str = chunk.toString();
-  
+
   // Filter out dotenv debug messages
   if (str.includes('[dotenv@') || str.includes('injecting env') || str.includes('tip:')) {
     // Silently ignore dotenv messages
@@ -66,12 +87,11 @@ process.stderr.write = function(chunk: string | Buffer, encoding?: string | ((er
     }
     return true;
   }
-  
+
   // Pass through other stderr content
   if (typeof encoding === 'function') {
     return originalStderrWrite.call(process.stderr, chunk, undefined, encoding);
   } else {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return originalStderrWrite.call(process.stderr, chunk, encoding as any, callback);
   }
 };
@@ -99,12 +119,11 @@ try {
       process.env[match[1]] = value; // Always override, don't check existing
     }
   });
-  
+
   // Ensure DATABASE_URL is properly set for Prisma
   if (process.env.KANBAN_DATABASE_URL && !process.env.DATABASE_URL) {
     process.env.DATABASE_URL = process.env.KANBAN_DATABASE_URL;
   }
-  
 } catch {
   // Silently ignore if .env.e2e doesn't exist
 }
@@ -125,20 +144,20 @@ const logger = winston.createLogger({
   transports: [
     new winston.transports.File({
       filename: path.join(process.cwd(), 'logs', 'claude-stop-hook.log'),
-      level: 'info'
+      level: 'info',
     }),
     new winston.transports.File({
       filename: path.join(process.cwd(), 'logs', 'claude-stop-hook-error.log'),
-      level: 'error'
-    })
-  ]
+      level: 'error',
+    }),
+  ],
 });
 
 // Log that the hook is being called
 logger.info('🔥 CLAUDE STOP HOOK EXECUTING', {
   timestamp: new Date().toISOString(),
   arguments: process.argv.slice(2),
-  claudeToolInput: process.env.CLAUDE_TOOL_INPUT || ''
+  claudeToolInput: process.env.CLAUDE_TOOL_INPUT || '',
 });
 
 // Safety check: ensure we're running from the correct directory
@@ -147,7 +166,7 @@ const expectedDir = '/Users/rustameynaliyev/Scientist/Research/personal_projects
 if (currentDir !== expectedDir) {
   logger.warn('⚠️ Hook running from wrong directory', {
     currentDir,
-    expectedDir
+    expectedDir,
   });
   logger.info('⚠️ Exiting to prevent infinite loop');
   process.exit(0); // Exit successfully to allow completion
@@ -203,7 +222,7 @@ interface TodoItem {
  */
 function validateTodoList(): { shouldBlock: boolean; reason?: string } {
   const todoInput = process.env.CLAUDE_TOOL_INPUT;
-  
+
   if (!todoInput) {
     logger.info('ℹ️ No CLAUDE_TOOL_INPUT provided - allowing completion');
     return { shouldBlock: false };
@@ -211,7 +230,7 @@ function validateTodoList(): { shouldBlock: boolean; reason?: string } {
 
   try {
     const todos: TodoItem[] = JSON.parse(todoInput);
-    
+
     if (!Array.isArray(todos)) {
       logger.warn('⚠️ CLAUDE_TOOL_INPUT is not an array - allowing completion');
       return { shouldBlock: false };
@@ -219,16 +238,15 @@ function validateTodoList(): { shouldBlock: boolean; reason?: string } {
 
     // Check for high priority unfinished tasks
     const highPriorityUnfinished = todos.filter(
-      todo => todo.priority === 'high' && (todo.status === 'pending' || todo.status === 'in_progress')
+      todo =>
+        todo.priority === 'high' && (todo.status === 'pending' || todo.status === 'in_progress')
     );
 
     if (highPriorityUnfinished.length > 0) {
-      const taskList = highPriorityUnfinished
-        .map(task => `  - ${task.content}`)
-        .join('\n');
+      const taskList = highPriorityUnfinished.map(task => `  - ${task.content}`).join('\n');
       return {
         shouldBlock: true,
-        reason: `High priority tasks remain unfinished:\n${taskList}`
+        reason: `High priority tasks remain unfinished:\n${taskList}`,
       };
     }
 
@@ -240,13 +258,14 @@ function validateTodoList(): { shouldBlock: boolean; reason?: string } {
     if (allUnfinished.length >= 10) {
       return {
         shouldBlock: true,
-        reason: `Too many unfinished tasks (${allUnfinished.length}). Please complete some tasks before stopping.`
+        reason: `Too many unfinished tasks (${allUnfinished.length}). Please complete some tasks before stopping.`,
       };
     }
 
-    logger.info(`✅ Todo validation passed - ${allUnfinished.length} unfinished tasks (no high priority)`);
+    logger.info(
+      `✅ Todo validation passed - ${allUnfinished.length} unfinished tasks (no high priority)`
+    );
     return { shouldBlock: false };
-
   } catch (error) {
     logger.warn(`⚠️ Error parsing CLAUDE_TOOL_INPUT: ${error} - allowing completion`);
     return { shouldBlock: false };
@@ -258,44 +277,35 @@ function validateTodoList(): { shouldBlock: boolean; reason?: string } {
  */
 function stripAnsiCodes(text: string): string {
   // Remove ANSI escape sequences using character code
-  // eslint-disable-next-line no-control-regex
+
   return text.replace(/\x1b\[[0-9;]*m/g, '');
 }
 
 /**
- * Parse validation output to extract detailed error information
+ * Parse validation output to extract detailed error information with enhanced structured failure parsing
  */
 function parseValidationOutput(stdout: string, stderr: string, code: number | null): Error {
   const fullOutput = stripAnsiCodes(`${stdout}\n${stderr}`).trim();
 
-  if (code === 2) {
-    const errorLines = fullOutput
-      .split('\n')
-      .filter(
-        line =>
-          line.includes('FAIL') ||
-          line.includes('failed') ||
-          (line.includes('error') && !line.includes('console.error'))
-      );
+  // First try to extract structured failure information from the validation output
+  const structuredFailures = extractStructuredValidationFailures(fullOutput);
+  if (structuredFailures.length > 0) {
+    const detailedMessage = `Validation failed with specific issues:\n${structuredFailures.join('\n\n')}`;
+    return new Error(detailedMessage);
+  }
 
-    const MAX_ERROR_DISPLAY = 5;
+  if (code === 2) {
+    // Enhanced error extraction for different validation types
+    const errorCategories = categorizeValidationErrors(fullOutput);
+    
     let detailedMessage = `Validation failed`;
-    if (errorLines.length > 0) {
-      const cleanErrors = errorLines
-        .slice(0, MAX_ERROR_DISPLAY)
-        .map(line => line.trim())
-        .filter(line => line.length > 0);
-      if (cleanErrors.length > 0) {
-        detailedMessage += `: ${cleanErrors.join(', ')}`;
-      }
-    }
-    if (errorLines.length > MAX_ERROR_DISPLAY) {
-      detailedMessage += ` and ${errorLines.length - MAX_ERROR_DISPLAY} more errors`;
+    if (errorCategories.length > 0) {
+      detailedMessage += `:\n${errorCategories.join('\n')}`;
     }
 
     return new Error(detailedMessage);
   } else {
-    const LAST_LINES_COUNT = 10;
+    const LAST_LINES_COUNT = 15;
     const LAST_LINES_SLICE_OFFSET = -LAST_LINES_COUNT;
     let detailedMessage = `Validation failed with exit code ${code}`;
     if (fullOutput) {
@@ -304,6 +314,109 @@ function parseValidationOutput(stdout: string, stderr: string, code: number | nu
     }
     return new Error(detailedMessage);
   }
+}
+
+/**
+ * Extract structured failure information from validation output (matches validation script output format)
+ */
+function extractStructuredValidationFailures(output: string): string[] {
+  const failures: string[] = [];
+  const startMarker = '🔄 RETRIGGER_FAILURES_START';
+  const endMarker = '🔄 RETRIGGER_FAILURES_END';
+
+  const startIndex = output.indexOf(startMarker);
+  const endIndex = output.indexOf(endMarker);
+
+  if (startIndex === -1 || endIndex === -1 || startIndex >= endIndex) {
+    return failures;
+  }
+
+  // Extract the structured failure block
+  const failureBlock = output.substring(startIndex + startMarker.length, endIndex).trim();
+  
+  if (!failureBlock) {
+    return failures;
+  }
+
+  // Parse the failure block
+  const stages = failureBlock.split('---').filter(block => block.trim());
+  
+  for (const stageBlock of stages) {
+    const lines = stageBlock.trim().split('\n');
+    let stageName = '';
+    let fixGuidance = '';
+    let errorDetails = '';
+
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+      if (trimmedLine.startsWith('FAILED_STAGE: ')) {
+        stageName = trimmedLine.substring('FAILED_STAGE: '.length);
+      } else if (trimmedLine.startsWith('FIX_GUIDANCE: ')) {
+        fixGuidance = trimmedLine.substring('FIX_GUIDANCE: '.length);
+      } else if (trimmedLine.startsWith('ERROR_DETAILS: ')) {
+        errorDetails = trimmedLine.substring('ERROR_DETAILS: '.length);
+      }
+    }
+
+    if (stageName && fixGuidance) {
+      let failureMessage = `❌ Stage "${stageName}" failed:\n   ${fixGuidance}`;
+      if (errorDetails) {
+        failureMessage += `\n   Details: ${errorDetails}`;
+      }
+      failures.push(failureMessage);
+    }
+  }
+
+  return failures;
+}
+
+/**
+ * Categorize validation errors by type for better error reporting
+ */
+function categorizeValidationErrors(output: string): string[] {
+  const categories: string[] = [];
+  const lines = output.split('\n');
+
+  // Look for different types of errors
+  const lintErrors = lines.filter(line => 
+    line.includes('lint') && (line.includes('❌') || line.includes('Failed') || line.includes('error'))
+  );
+  if (lintErrors.length > 0) {
+    categories.push(`Lint Issues:\n${lintErrors.slice(0, 3).map(line => `  • ${line.trim()}`).join('\n')}`);
+  }
+
+  const typeErrors = lines.filter(line => 
+    line.includes('type') && (line.includes('❌') || line.includes('Failed') || line.includes('TS'))
+  );
+  if (typeErrors.length > 0) {
+    categories.push(`TypeScript Issues:\n${typeErrors.slice(0, 3).map(line => `  • ${line.trim()}`).join('\n')}`);
+  }
+
+  const testFailures = lines.filter(line => 
+    line.includes('test') && (line.includes('❌') || line.includes('Failed') || line.includes('FAIL'))
+  );
+  if (testFailures.length > 0) {
+    categories.push(`Test Failures:\n${testFailures.slice(0, 3).map(line => `  • ${line.trim()}`).join('\n')}`);
+  }
+
+  const buildErrors = lines.filter(line => 
+    line.includes('build') && (line.includes('❌') || line.includes('Failed'))
+  );
+  if (buildErrors.length > 0) {
+    categories.push(`Build Issues:\n${buildErrors.slice(0, 3).map(line => `  • ${line.trim()}`).join('\n')}`);
+  }
+
+  // If no categorized errors, show general failures
+  if (categories.length === 0) {
+    const generalFailures = lines.filter(line => 
+      line.includes('❌') || line.includes('Failed') || (line.includes('error') && !line.includes('console.error'))
+    );
+    if (generalFailures.length > 0) {
+      categories.push(`General Failures:\n${generalFailures.slice(0, 5).map(line => `  • ${line.trim()}`).join('\n')}`);
+    }
+  }
+
+  return categories;
 }
 
 /**
@@ -318,15 +431,25 @@ function createValidationProcess(sessionId: string): Promise<void> {
 
     const child = spawn(
       'npx',
-      ['ts-node', 'scripts/validate-task.ts', sessionId, '--settings=settings.json'],
+      [
+        'ts-node',
+        'scripts/validate-task.ts',
+        sessionId,
+        '--settings=settings.json',
+        '--sequential',
+      ],
       {
-        stdio: ['pipe', 'pipe', 'pipe'], // Redirect all stdio to pipes
+        stdio: ['ignore', 'pipe', 'pipe'], // Use 'ignore' for stdin to prevent hanging
         cwd: process.cwd(),
+        detached: false, // Don't detach the process
         env: {
           ...process.env,
           DEBUG: '', // Suppress all debug output including dotenv
-          DOTENV_CONFIG_DEBUG: 'false' // Suppress dotenv logs
-        }
+          DOTENV_CONFIG_DEBUG: 'false', // Suppress dotenv logs
+          NODE_OPTIONS:
+            '--max-old-space-size=4096 --require /Users/rustameynaliyev/Scientist/Research/personal_projects/codegoat/scripts/suppress-dotenv.js', // Increase memory and suppress dotenv
+          FORCE_COLOR: '0', // Disable color output
+        },
       }
     );
 
@@ -348,7 +471,14 @@ function createValidationProcess(sessionId: string): Promise<void> {
       if (code === 0) {
         resolve();
       } else {
-        reject(parseValidationOutput(stdout, stderr, code));
+        const validationError = parseValidationOutput(stdout, stderr, code);
+        logger.error('Validation failed with detailed output', {
+          exitCode: code,
+          stdout: stdout.substring(0, 1000), // Log first 1000 chars
+          stderr: stderr.substring(0, 1000),
+          errorMessage: validationError.message
+        });
+        reject(validationError);
       }
     });
 
@@ -379,10 +509,17 @@ async function handleValidationChecks(): Promise<void> {
     await Promise.race([validationPromise, timeoutPromise]);
     logger.info('✅ All validation checks passed including todo list');
   } catch (error) {
-    logger.error('⚠️ Validation checks failed', error instanceof Error ? error : new Error(String(error)));
+    logger.error(
+      '⚠️ Validation checks failed',
+      error instanceof Error ? error : new Error(String(error))
+    );
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    
+    // Enhanced feedback for Claude with structured error information
     const blockResult = {
-      decision: 'block',
-      reason: 'Validation failed - fix the issues before stopping',
+      decision: 'block' as const,
+      reason: 'Validation checks failed - please fix the following issues before completing the task',
+      feedback: errorMessage, // Include detailed validation errors as feedback
     };
     process.stdout.write(JSON.stringify(blockResult) + '\n');
     process.exit(2);
@@ -394,20 +531,18 @@ async function handleValidationChecks(): Promise<void> {
  */
 async function handleLLMReview(allChanges: string): Promise<void> {
   logger.info('🤖 Running LLM code review (secondary quality check)...');
-  
+
   // Dynamic import to avoid loading dotenv at startup
-  const {
-    performCodeReview,
-    shouldBlockClaude,
-  } = await import('./lib/utils/review-processor');
-  
+  const { performCodeReview, shouldBlockClaude } = await import('./lib/utils/review-processor');
+
   const reviewComments = await performCodeReview(allChanges);
 
   if (shouldBlockClaude(reviewComments)) {
     logger.warn('⚠️ LLM review found issues - blocking completion');
     const blockResult = {
-      decision: 'block',
+      decision: 'block' as const,
       reason: 'LLM review found issues - please address them',
+      feedback: reviewComments ? `LLM code review identified the following issues:\n${reviewComments}` : 'Please address the code review issues before completing the task.',
     };
     process.stdout.write(JSON.stringify(blockResult) + '\n');
     process.exit(2);
@@ -435,8 +570,9 @@ async function main(): Promise<void> {
     if (todoValidation.shouldBlock) {
       logger.warn('⚠️ Todo validation failed - blocking completion');
       const blockResult = {
-        decision: 'block',
+        decision: 'block' as const,
         reason: 'High priority tasks remain unfinished',
+        feedback: todoValidation.reason || 'Please complete high priority tasks before stopping',
       };
       console.log(JSON.stringify(blockResult));
       process.exit(2);
@@ -449,9 +585,11 @@ async function main(): Promise<void> {
     if (hasUncommittedFiles()) {
       logger.warn('⚠️ Uncommitted files detected - blocking completion');
       logger.info('💡 Please commit your changes before completing');
+      const uncommittedFiles = getChangedFiles().split('\n').slice(0, 10); // Show first 10 files
       const blockResult = {
-        decision: 'block',
+        decision: 'block' as const,
         reason: 'Uncommitted files detected - please commit changes',
+        feedback: `The following files have uncommitted changes:\n${uncommittedFiles.map(f => `  • ${f}`).join('\n')}\n\nPlease commit these changes before completing the task.`,
       };
       console.log(JSON.stringify(blockResult));
       process.exit(2); // Exit with code 2 to indicate block decision
@@ -475,13 +613,25 @@ async function main(): Promise<void> {
   } catch (error) {
     clearTimeout(globalTimeout);
     logger.error('Stop hook error', error instanceof Error ? error : new Error(String(error)));
-    process.stdout.write('{"decision": "block", "reason": "Stop hook execution failed"}\n');
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const blockResult = {
+      decision: 'block' as const,
+      reason: 'Stop hook execution failed',
+      feedback: `An error occurred while running validation checks: ${errorMessage}. Please check the logs for details.`,
+    };
+    process.stdout.write(JSON.stringify(blockResult) + '\n');
     process.exit(2); // Exit with code 2 to indicate block decision
   }
 }
 
 main().catch(error => {
   logger.error('Unhandled error', error instanceof Error ? error : new Error(String(error)));
-  process.stdout.write('{"decision": "block", "reason": "Unhandled error in stop hook"}\n');
+  const errorMessage = error instanceof Error ? error.message : String(error);
+  const blockResult = {
+    decision: 'block' as const,
+    reason: 'Unhandled error in stop hook',
+    feedback: `An unexpected error occurred: ${errorMessage}. Please check the logs and try again.`,
+  };
+  process.stdout.write(JSON.stringify(blockResult) + '\n');
   process.exit(2);
 });

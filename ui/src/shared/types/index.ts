@@ -28,12 +28,18 @@ export interface Config {
 
 export interface ValidationStage {
   id: string;
+  stageId: string;
   name: string;
   command: string;
-  enabled: boolean;
   timeout: number;
+  enabled: boolean;
   continueOnFailure: boolean;
   priority: number;
+  description?: string;
+  environment?: string | null;
+  category?: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface ValidationRun {
@@ -58,22 +64,24 @@ export interface ValidationStageResult {
   status: 'passed' | 'failed' | 'running' | 'pending' | 'skipped';
 }
 
+export interface StageMetrics {
+  id: string;
+  name: string;
+  enabled: boolean;
+  attempts: number;
+  successes: number;
+  successRate: number;
+  averageDuration: number;
+  totalRuns: number;
+}
+
 export interface ValidationMetrics {
   totalRuns: number;
   successfulRuns: number;
   failedRuns: number;
   successRate: number;
   averageDuration: number;
-  stageMetrics: Record<string, {
-    id: string;
-    name: string;
-    enabled: boolean;
-    attempts: number;
-    successes: number;
-    successRate: number;
-    averageDuration: number;
-    totalRuns: number;
-  }>;
+  stageMetrics: Record<string, StageMetrics>;
 }
 
 export enum ThemeMode {
@@ -90,7 +98,7 @@ export interface UserSystemInfo {
   current_directory: string;
   config: Config;
   environment: Record<string, string> | null;
-  profiles: Array<{ name: string; path: string; }> | null;
+  profiles: Array<{ name: string; path: string }> | null;
 }
 
 export interface Task {
@@ -130,7 +138,7 @@ export interface BDDStepResult {
 
 // Import and re-export log types (including moved types)
 // Temporarily commented out to fix circular dependency issue
-// export { 
+// export {
 //   UnifiedLogEntry,
 //   ProcessStartPayload,
 //   WorkerLogEntry,

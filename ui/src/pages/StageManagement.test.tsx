@@ -58,30 +58,39 @@ jest.mock('@dnd-kit/utilities', () => ({
 const mockStages: ValidationStage[] = [
   {
     id: 'lint',
+    stageId: 'lint',
     name: 'Code Linting',
     command: 'npm run lint',
     timeout: 90000,
     enabled: true,
     continueOnFailure: false,
     priority: 1,
+    createdAt: '2023-01-01T00:00:00Z',
+    updatedAt: '2023-01-01T00:00:00Z',
   },
   {
     id: 'typecheck',
+    stageId: 'typecheck',
     name: 'Type Checking',
     command: 'npm run type-check',
     timeout: 45000,
     enabled: true,
     continueOnFailure: false,
     priority: 2,
+    createdAt: '2023-01-01T00:00:00Z',
+    updatedAt: '2023-01-01T00:00:00Z',
   },
   {
     id: 'tests',
+    stageId: 'tests',
     name: 'Unit Tests',
     command: 'npm test',
     timeout: 60000,
     enabled: false,
     continueOnFailure: true,
     priority: 3,
+    createdAt: '2023-01-01T00:00:00Z',
+    updatedAt: '2023-01-01T00:00:00Z',
   },
 ];
 
@@ -118,7 +127,9 @@ describe('StageManagement', () => {
     renderStageManagement();
 
     expect(screen.getByText('Stage Management')).toBeInTheDocument();
-    expect(screen.getByText('Configure validation pipeline stages with advanced editing and reordering')).toBeInTheDocument();
+    expect(
+      screen.getByText('Configure validation pipeline stages with advanced editing and reordering')
+    ).toBeInTheDocument();
   });
 
   it('displays loading state', async () => {
@@ -149,7 +160,9 @@ describe('StageManagement', () => {
 
     await waitFor(() => {
       expect(screen.getByText('No validation stages configured')).toBeInTheDocument();
-      expect(screen.getByText('Get started by adding your first validation stage')).toBeInTheDocument();
+      expect(
+        screen.getByText('Get started by adding your first validation stage')
+      ).toBeInTheDocument();
       expect(screen.getByRole('button', { name: /Add Your First Stage/i })).toBeInTheDocument();
     });
   });
@@ -216,8 +229,8 @@ describe('StageManagement', () => {
 
     // Find and click the Add Stage button (not the "Add Your First Stage" button)
     const addButtons = screen.getAllByRole('button');
-    const addStageButton = addButtons.find(button => 
-      button.textContent?.includes('Add Stage') && !button.textContent?.includes('First')
+    const addStageButton = addButtons.find(
+      button => button.textContent?.includes('Add Stage') && !button.textContent?.includes('First')
     );
     expect(addStageButton).toBeInTheDocument();
     await user.click(addStageButton!);
@@ -364,13 +377,13 @@ describe('StageManagement', () => {
 
     // Try to submit empty form - find the submit button in the form context
     const submitButtons = screen.getAllByRole('button', { name: /Add Stage/i });
-    const formSubmitButton = submitButtons.find(btn => 
-      btn.getAttribute('type') === 'submit' || 
-      btn.closest('form') !== null
-    ) || submitButtons[submitButtons.length - 1]; // Last button is likely the submit button
+    const formSubmitButton =
+      submitButtons.find(
+        btn => btn.getAttribute('type') === 'submit' || btn.closest('form') !== null
+      ) || submitButtons[submitButtons.length - 1]; // Last button is likely the submit button
     await user.click(formSubmitButton!);
 
-    // Since this form uses custom validation, 
+    // Since this form uses custom validation,
     // check that the form didn't submit by ensuring the API wasn't called
     await waitFor(() => {
       expect(settingsApi.addValidationStage).not.toHaveBeenCalled();
@@ -396,7 +409,7 @@ describe('StageManagement', () => {
     // Since @dnd-kit is mocked, check for elements that would normally be drag handles
     const allButtons = screen.getAllByRole('button');
     const gripElements = document.querySelectorAll('[data-testid="sortable-context"] button');
-    
+
     // Should have some interactive elements for the stages
     expect(allButtons.length).toBeGreaterThan(3); // At least edit/delete/toggle buttons per stage
     expect(document.querySelector('[data-testid="sortable-context"]')).toBeInTheDocument();
@@ -437,17 +450,17 @@ describe('StageManagement', () => {
       expect(screen.getByText('Code Linting')).toBeInTheDocument();
       expect(screen.getByText('Type Checking')).toBeInTheDocument();
       expect(screen.getByText('Unit Tests')).toBeInTheDocument();
-      
+
       // Should show commands
       expect(screen.getByText('npm run lint')).toBeInTheDocument();
       expect(screen.getByText('npm run type-check')).toBeInTheDocument();
       expect(screen.getByText('npm test')).toBeInTheDocument();
-      
+
       // Should show timeout values in seconds format (as per component implementation)
       expect(screen.getByText('90.0s timeout')).toBeInTheDocument();
       expect(screen.getByText('45.0s timeout')).toBeInTheDocument();
       expect(screen.getByText('60.0s timeout')).toBeInTheDocument();
-      
+
       // Should show disabled badge for the third stage
       expect(screen.getAllByText('Disabled')).toHaveLength(2); // Statistics + badge
     });

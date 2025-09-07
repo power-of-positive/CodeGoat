@@ -34,9 +34,7 @@ const createTestQueryClient = () =>
 
 const renderWithQueryClient = (component: React.ReactElement) => {
   const queryClient = createTestQueryClient();
-  return render(
-    <QueryClientProvider client={queryClient}>{component}</QueryClientProvider>
-  );
+  return render(<QueryClientProvider client={queryClient}>{component}</QueryClientProvider>);
 };
 
 describe('PermissionEditor', () => {
@@ -91,9 +89,7 @@ describe('PermissionEditor', () => {
     await waitFor(() => {
       expect(screen.getByText('Permission Editor')).toBeInTheDocument();
       expect(
-        screen.getByText(
-          'Configure security permissions for the Claude executor'
-        )
+        screen.getByText('Configure security permissions for the Claude executor')
       ).toBeInTheDocument();
     });
   });
@@ -115,9 +111,7 @@ describe('PermissionEditor', () => {
     await waitFor(() => {
       expect(screen.getByText('Permission Rules (1)')).toBeInTheDocument();
       expect(screen.getByText('file read')).toBeInTheDocument();
-      expect(
-        screen.getByText('Allow file reading in worktree')
-      ).toBeInTheDocument();
+      expect(screen.getByText('Allow file reading in worktree')).toBeInTheDocument();
     });
   });
 
@@ -172,9 +166,7 @@ describe('PermissionEditor', () => {
     renderWithQueryClient(<PermissionEditor />);
 
     await waitFor(() => {
-      expect(
-        screen.getByText('Load Default Configuration:')
-      ).toBeInTheDocument();
+      expect(screen.getByText('Load Default Configuration:')).toBeInTheDocument();
       expect(screen.getByText('restrictive')).toBeInTheDocument();
       expect(screen.getByText('permissive')).toBeInTheDocument();
       expect(screen.getByText('development')).toBeInTheDocument();
@@ -279,9 +271,7 @@ describe('PermissionEditor', () => {
 
     renderWithQueryClient(<PermissionEditor />);
 
-    expect(
-      screen.getByText('Loading permissions configuration...')
-    ).toBeInTheDocument();
+    expect(screen.getByText('Loading permissions configuration...')).toBeInTheDocument();
   });
 
   it('shows empty state when no rules exist', async () => {
@@ -291,9 +281,7 @@ describe('PermissionEditor', () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText(
-          'No permission rules configured. Add a rule to get started.'
-        )
+        screen.getByText('No permission rules configured. Add a rule to get started.')
       ).toBeInTheDocument();
     });
   });
@@ -372,9 +360,7 @@ describe('PermissionEditor', () => {
       fireEvent.click(deleteButton);
     });
 
-    expect(global.confirm).toHaveBeenCalledWith(
-      'Are you sure you want to delete this rule?'
-    );
+    expect(global.confirm).toHaveBeenCalledWith('Are you sure you want to delete this rule?');
     expect(mockPermissionApi.deletePermissionRule).toHaveBeenCalledWith('1');
   });
 
@@ -389,9 +375,7 @@ describe('PermissionEditor', () => {
       fireEvent.click(deleteButton);
     });
 
-    expect(global.confirm).toHaveBeenCalledWith(
-      'Are you sure you want to delete this rule?'
-    );
+    expect(global.confirm).toHaveBeenCalledWith('Are you sure you want to delete this rule?');
     expect(mockPermissionApi.deletePermissionRule).not.toHaveBeenCalled();
   });
 

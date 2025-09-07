@@ -115,7 +115,7 @@ async function fetchTasksFromAPI(): Promise<TodoItem[]> {
       throw new Error(`API request failed: ${response.status} ${response.statusText}`);
     }
 
-    const apiResponse = await response.json() as { success: boolean; data: TodoItem[] };
+    const apiResponse = (await response.json()) as { success: boolean; data: TodoItem[] };
 
     if (!apiResponse.success || !Array.isArray(apiResponse.data)) {
       throw new Error('Invalid API response: expected {success: true, data: []}');
@@ -139,11 +139,27 @@ function extractRawTasksFromData(data: unknown, filePath: string): unknown[] {
   if (Array.isArray(data)) {
     return data;
   }
-  
-  if (data && typeof data === 'object' && 'todos' in data && Array.isArray((data as { todos: unknown }).todos)) {
+
+  // Check for 'todos' property (legacy format)
+  if (
+    data &&
+    typeof data === 'object' &&
+    'todos' in data &&
+    Array.isArray((data as { todos: unknown }).todos)
+  ) {
     return (data as { todos: unknown[] }).todos;
   }
-  
+
+  // Check for 'tasks' property (current format)
+  if (
+    data &&
+    typeof data === 'object' &&
+    'tasks' in data &&
+    Array.isArray((data as { tasks: unknown }).tasks)
+  ) {
+    return (data as { tasks: unknown[] }).tasks;
+  }
+
   console.error(`${colors.red}Invalid JSON format in ${filePath}${colors.reset}`);
   return [];
 }
@@ -152,8 +168,8 @@ function extractRawTasksFromData(data: unknown, filePath: string): unknown[] {
  * Validate and format task ID
  */
 function formatTaskId(id: unknown): string {
-  return typeof id === 'string' && id.startsWith('CODEGOAT-') 
-    ? id 
+  return typeof id === 'string' && id.startsWith('CODEGOAT-')
+    ? id
     : `CODEGOAT-${String(id ?? '').padStart(ID_PADDING_LENGTH, '0')}`;
 }
 
@@ -162,9 +178,9 @@ function formatTaskId(id: unknown): string {
  */
 function validateStatus(status: unknown): TodoItem['status'] {
   const statusStr = String(status);
-  return (['pending', 'in_progress', 'completed'].includes(statusStr) 
-    ? statusStr 
-    : 'pending') as TodoItem['status'];
+  return (
+    ['pending', 'in_progress', 'completed'].includes(statusStr) ? statusStr : 'pending'
+  ) as TodoItem['status'];
 }
 
 /**
@@ -172,19 +188,17 @@ function validateStatus(status: unknown): TodoItem['status'] {
  */
 function validatePriority(priority: unknown): TodoItem['priority'] {
   const priorityStr = String(priority);
-  return (['low', 'medium', 'high'].includes(priorityStr) 
-    ? priorityStr 
-    : 'medium') as TodoItem['priority'];
+  return (
+    ['low', 'medium', 'high'].includes(priorityStr) ? priorityStr : 'medium'
+  ) as TodoItem['priority'];
 }
 
 /**
  * Validate and return taskType with default fallback
  */
 function validateTaskType(taskType: unknown): TodoItem['taskType'] {
-  const taskTypeStr = String(taskType);
-  return (['story', 'task'].includes(taskTypeStr) 
-    ? taskTypeStr 
-    : 'task') as TodoItem['taskType'];
+  const taskTypeStr = String(taskType).toLowerCase();
+  return (['story', 'task'].includes(taskTypeStr) ? taskTypeStr : 'task') as TodoItem['taskType'];
 }
 
 /**
@@ -192,13 +206,17 @@ function validateTaskType(taskType: unknown): TodoItem['taskType'] {
  */
 function convertTaskToTodoItem(task: unknown): TodoItem {
   const taskObj = task as Record<string, unknown>;
-  
+
+  // Map status from UPPERCASE to lowercase if needed
+  const status = String(taskObj.status ?? 'PENDING').toLowerCase();
+  const priority = String(taskObj.priority ?? 'MEDIUM').toLowerCase();
+
   return {
     id: formatTaskId(taskObj.id),
-    content: String(taskObj.content ?? ''),
-    status: validateStatus(taskObj.status),
-    priority: validatePriority(taskObj.priority),
-    taskType: validateTaskType(taskObj.taskType),
+    content: String(taskObj.title ?? taskObj.content ?? ''), // Support both 'title' and 'content' fields
+    status: validateStatus(status),
+    priority: validatePriority(priority),
+    taskType: validateTaskType(taskObj.taskType ?? 'TASK'),
     executorId: taskObj.executorId ? String(taskObj.executorId) : undefined,
     startTime: taskObj.startTime ? String(taskObj.startTime) : undefined,
     endTime: taskObj.endTime ? String(taskObj.endTime) : undefined,
@@ -381,7 +399,10 @@ function displayStatistics(todos: TodoItem[]): void {
   const inProgressTasks = todos.filter(t => t.status === 'in_progress').length;
   const pendingTasks = todos.filter(t => t.status === 'pending').length;
 
-  const completionPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * COMPLETION_PERCENTAGE_MULTIPLIER) : MIN_TODO_ITEMS;
+  const completionPercentage =
+    totalTasks > 0
+      ? Math.round((completedTasks / totalTasks) * COMPLETION_PERCENTAGE_MULTIPLIER)
+      : MIN_TODO_ITEMS;
 
   console.error(`\n${colors.bold}${colors.blue}📊 Project Statistics:${colors.reset}`);
   console.error(`${colors.green}✅ Completed: ${completedTasks}${colors.reset}`);
@@ -402,21 +423,23 @@ async function findAndParseTodoList(): Promise<{ todos: TodoItem[]; source: stri
       const todos = await fetchTasksFromAPI();
       return { todos, source: 'API' };
     } catch (error) {
-      console.error(
-        `${colors.red}❌ API fetch failed: ${error}${colors.reset}`
-      );
+      console.error(`${colors.red}❌ API fetch failed: ${error}${colors.reset}`);
       console.warn(
         `${colors.yellow}⚠️  Falling back to file-based parsing (legacy mode)${colors.reset}`
       );
     }
   } else {
-    console.error(`${colors.yellow}⚠️  Server not running, trying file-based parsing${colors.reset}`);
+    console.error(
+      `${colors.yellow}⚠️  Server not running, trying file-based parsing${colors.reset}`
+    );
   }
 
   // Fallback: File-based parsing (legacy support)
   for (const filePath of TODO_LIST_FILES) {
     if (fs.existsSync(filePath)) {
-      console.error(`${colors.blue}📖 Found legacy todo list: ${path.basename(filePath)}${colors.reset}`);
+      console.error(
+        `${colors.blue}📖 Found legacy todo list: ${path.basename(filePath)}${colors.reset}`
+      );
 
       let todos: TodoItem[] = [];
       if (filePath.endsWith('.json')) {
@@ -439,8 +462,12 @@ function performBasicValidation(todos: TodoItem[], source: string): number {
   if (source === 'none') {
     console.error(`${colors.red}❌ No todo list source found. Tried:${colors.reset}`);
     console.error(`${colors.red}   • Primary API: ${TASKS_ENDPOINT}${colors.reset}`);
-    console.error(`${colors.red}   • Legacy files: ${TODO_LIST_FILES.map(f => path.basename(f)).join(', ')}${colors.reset}`);
-    console.error(`${colors.red}💡 Make sure the CodeGoat server is running on port ${API_PORT}${colors.reset}`);
+    console.error(
+      `${colors.red}   • Legacy files: ${TODO_LIST_FILES.map(f => path.basename(f)).join(', ')}${colors.reset}`
+    );
+    console.error(
+      `${colors.red}💡 Make sure the CodeGoat server is running on port ${API_PORT}${colors.reset}`
+    );
     return 1;
   }
 

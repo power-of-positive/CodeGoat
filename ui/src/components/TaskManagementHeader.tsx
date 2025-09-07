@@ -29,7 +29,9 @@ export function TaskManagementHeader({
       <div className="mb-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Task Management</h1>
+            <h1 className="text-2xl font-bold text-gray-900">
+              Task Management
+            </h1>
             <p className="text-gray-600 mt-1">
               Showing {filteredTasksCount} of {tasksCount} tasks
             </p>
@@ -66,14 +68,8 @@ export function TaskManagementHeader({
 
           {selectedTasksCount > 0 && (
             <div className="flex items-center gap-2">
-              <Badge variant="secondary">
-                {selectedTasksCount} selected
-              </Badge>
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={onBulkDelete}
-              >
+              <Badge variant="secondary">{selectedTasksCount} selected</Badge>
+              <Button variant="destructive" size="sm" onClick={onBulkDelete}>
                 <Trash2 className="w-4 h-4 mr-2" />
                 Delete Selected
               </Button>

@@ -21,6 +21,7 @@ module.exports = {
   verbose: true,
   maxWorkers: 1,
   detectOpenHandles: true,
+  testTimeout: 30000, // 30 seconds per test
   collectCoverageFrom: [
     'lib/**/*.ts',
     '!lib/**/*.{test,spec}.{ts,js}',

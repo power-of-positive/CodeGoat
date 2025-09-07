@@ -67,13 +67,7 @@ interface MetricCardProps {
   color?: 'green' | 'blue' | 'yellow' | 'gray';
 }
 
-function MetricCard({
-  title,
-  value,
-  subtitle,
-  icon: Icon,
-  color = 'blue',
-}: MetricCardProps) {
+function MetricCard({ title, value, subtitle, icon: Icon, color = 'blue' }: MetricCardProps) {
   const colorClasses = {
     green: 'text-green-600 bg-green-50',
     blue: 'text-blue-600 bg-blue-50',
@@ -128,9 +122,7 @@ function TaskRow({ task }: TaskRowProps) {
           <ExternalLink className="h-3 w-3 flex-shrink-0" />
         </Link>
         <div className="flex items-center gap-2 mt-1">
-          <Badge className={`text-xs ${priorityColors[task.priority]}`}>
-            {task.priority}
-          </Badge>
+          <Badge className={`text-xs ${priorityColors[task.priority]}`}>{task.priority}</Badge>
           {task.executorId && (
             <Badge
               variant="outline"
@@ -140,9 +132,7 @@ function TaskRow({ task }: TaskRowProps) {
             </Badge>
           )}
           {task.duration && (
-            <span className="text-xs text-gray-500">
-              Duration: {task.duration}
-            </span>
+            <span className="text-xs text-gray-500">Duration: {task.duration}</span>
           )}
         </div>
       </div>
@@ -166,35 +156,30 @@ export function TaskAnalytics() {
   });
 
   const chartData = useMemo(() => {
-    if (!analytics)
-      {return { priorityData: [], completionData: [], dailyData: [] };}
+    if (!analytics) {
+      return { priorityData: [], completionData: [], dailyData: [] };
+    }
 
     const priorityData = [
       {
         name: 'High Priority',
         total: analytics.priorityBreakdown.high.total,
         completed: analytics.priorityBreakdown.high.completed,
-        completionRate: parseFloat(
-          analytics.priorityBreakdown.high.completionRate
-        ),
+        completionRate: parseFloat(analytics.priorityBreakdown.high.completionRate),
         fill: PRIORITY_COLORS.high,
       },
       {
         name: 'Medium Priority',
         total: analytics.priorityBreakdown.medium.total,
         completed: analytics.priorityBreakdown.medium.completed,
-        completionRate: parseFloat(
-          analytics.priorityBreakdown.medium.completionRate
-        ),
+        completionRate: parseFloat(analytics.priorityBreakdown.medium.completionRate),
         fill: PRIORITY_COLORS.medium,
       },
       {
         name: 'Low Priority',
         total: analytics.priorityBreakdown.low.total,
         completed: analytics.priorityBreakdown.low.completed,
-        completionRate: parseFloat(
-          analytics.priorityBreakdown.low.completionRate
-        ),
+        completionRate: parseFloat(analytics.priorityBreakdown.low.completionRate),
         fill: PRIORITY_COLORS.low,
       },
     ];
@@ -217,7 +202,7 @@ export function TaskAnalytics() {
       },
     ];
 
-    const dailyData = analytics.dailyCompletions.map((day) => ({
+    const dailyData = analytics.dailyCompletions.map(day => ({
       date: new Date(day.date).toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',
@@ -234,7 +219,7 @@ export function TaskAnalytics() {
         <div className="animate-pulse">
           <div className="h-8 bg-gray-200 rounded w-1/3 mb-6"></div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-            {Array.from({ length: LOADING_SKELETON_COUNT }, (_, i) => i + 1).map((i) => (
+            {Array.from({ length: LOADING_SKELETON_COUNT }, (_, i) => i + 1).map(i => (
               <div key={i} className="h-32 bg-gray-200 rounded"></div>
             ))}
           </div>
@@ -273,182 +258,171 @@ export function TaskAnalytics() {
   return (
     <div className="p-6">
       <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Task Analytics</h1>
-          <p className="text-gray-600">
-            Track task completion statistics and performance
-          </p>
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Task Analytics</h1>
+            <p className="text-gray-600">Track task completion statistics and performance</p>
+          </div>
+          <Button onClick={() => refetch()} variant="outline">
+            <TrendingUp className="w-4 h-4 mr-2" />
+            Refresh
+          </Button>
         </div>
-        <Button onClick={() => refetch()} variant="outline">
-          <TrendingUp className="w-4 h-4 mr-2" />
-          Refresh
-        </Button>
-      </div>
 
-      {/* Overview Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <MetricCard
-          title="Total Tasks"
-          value={analytics.overview.totalTasks}
-          icon={Users}
-          color="gray"
-        />
-        <MetricCard
-          title="Completed"
-          value={analytics.overview.completedTasks}
-          subtitle={`${analytics.overview.completionRate}% completion rate`}
-          icon={CheckCircle}
-          color="green"
-        />
-        <MetricCard
-          title="In Progress"
-          value={analytics.overview.inProgressTasks}
-          icon={Play}
-          color="blue"
-        />
-        <MetricCard
-          title="Average Time"
-          value={`${analytics.overview.averageCompletionTimeMinutes}m`}
-          subtitle="Per completed task"
-          icon={Clock}
-          color="yellow"
-        />
-      </div>
+        {/* Overview Metrics */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <MetricCard
+            title="Total Tasks"
+            value={analytics.overview.totalTasks}
+            icon={Users}
+            color="gray"
+          />
+          <MetricCard
+            title="Completed"
+            value={analytics.overview.completedTasks}
+            subtitle={`${analytics.overview.completionRate}% completion rate`}
+            icon={CheckCircle}
+            color="green"
+          />
+          <MetricCard
+            title="In Progress"
+            value={analytics.overview.inProgressTasks}
+            icon={Play}
+            color="blue"
+          />
+          <MetricCard
+            title="Average Time"
+            value={`${analytics.overview.averageCompletionTimeMinutes}m`}
+            subtitle="Per completed task"
+            icon={Clock}
+            color="yellow"
+          />
+        </div>
 
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Priority Completion Chart */}
+        {/* Charts Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Priority Completion Chart */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Award className="h-5 w-5" />
+                Completion Rate by Priority
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
+                <BarChart data={chartData.priorityData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip
+                    formatter={(value, name) => [
+                      name === 'completionRate' ? `${value}%` : value,
+                      name === 'completionRate'
+                        ? 'Completion Rate'
+                        : name === 'total'
+                          ? 'Total Tasks'
+                          : 'Completed Tasks',
+                    ]}
+                  />
+                  <Legend />
+                  <Bar dataKey="total" fill="#E5E7EB" name="Total Tasks" />
+                  <Bar dataKey="completed" fill="#10B981" name="Completed Tasks" />
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          {/* Status Distribution Pie Chart */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <AlertCircle className="h-5 w-5" />
+                Task Status Distribution
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
+                <PieChart>
+                  <Pie
+                    data={chartData.completionData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, value }) => `${name}: ${value}`}
+                    outerRadius={80}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {chartData.completionData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.fill} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Daily Completions Chart */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Award className="h-5 w-5" />
-              Completion Rate by Priority
+              <Calendar className="h-5 w-5" />
+              {`Daily Task Completions (Last ${DEFAULT_DAYS_PERIOD} Days)`}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
-              <BarChart data={chartData.priorityData}>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={chartData.dailyData}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
+                <XAxis dataKey="date" />
                 <YAxis />
-                <Tooltip
-                  formatter={(value, name) => [
-                    name === 'completionRate' ? `${value}%` : value,
-                    name === 'completionRate'
-                      ? 'Completion Rate'
-                      : name === 'total'
-                        ? 'Total Tasks'
-                        : 'Completed Tasks',
-                  ]}
-                />
-                <Legend />
-                <Bar dataKey="total" fill="#E5E7EB" name="Total Tasks" />
-                <Bar
+                <Tooltip />
+                <Line
+                  type="monotone"
                   dataKey="completed"
-                  fill="#10B981"
-                  name="Completed Tasks"
+                  stroke="#10B981"
+                  strokeWidth={LINE_STROKE_WIDTH}
+                  dot={{ fill: '#10B981', strokeWidth: LINE_STROKE_WIDTH, r: DOT_RADIUS }}
                 />
-              </BarChart>
+              </LineChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
 
-        {/* Status Distribution Pie Chart */}
+        {/* Recent Completions */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5" />
-              Task Status Distribution
+              <CheckCircle className="h-5 w-5" />
+              Recent Completions
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
-              <PieChart>
-                <Pie
-                  data={chartData.completionData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, value }) => `${name}: ${value}`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {chartData.completionData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.fill} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
+          <CardContent className="p-0">
+            {analytics.recentCompletions.length === 0 ? (
+              <div className="p-6 text-center text-gray-500">No completed tasks found</div>
+            ) : (
+              <div className="overflow-y-auto" style={{ maxHeight: `${MAX_SCROLL_HEIGHT_REM}rem` }}>
+                {analytics.recentCompletions.map(completion => (
+                  <TaskRow
+                    key={completion.id}
+                    task={{
+                      id: completion.id,
+                      content: completion.title,
+                      status: 'completed' as const,
+                      taskType: 'task' as const,
+                      priority: completion.priority,
+                      duration: `${completion.duration}ms`,
+                    }}
+                  />
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
-      </div>
-
-      {/* Daily Completions Chart */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            {`Daily Task Completions (Last ${DEFAULT_DAYS_PERIOD} Days)`}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={chartData.dailyData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" />
-              <YAxis />
-              <Tooltip />
-              <Line
-                type="monotone"
-                dataKey="completed"
-                stroke="#10B981"
-                strokeWidth={LINE_STROKE_WIDTH}
-                dot={{ fill: '#10B981', strokeWidth: LINE_STROKE_WIDTH, r: DOT_RADIUS }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
-
-      {/* Recent Completions */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <CheckCircle className="h-5 w-5" />
-            Recent Completions
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          {analytics.recentCompletions.length === 0 ? (
-            <div className="p-6 text-center text-gray-500">
-              No completed tasks found
-            </div>
-          ) : (
-            <div 
-              className="overflow-y-auto" 
-              style={{ maxHeight: `${MAX_SCROLL_HEIGHT_REM}rem` }}
-            >
-              {analytics.recentCompletions.map((completion) => (
-                <TaskRow 
-                  key={completion.id} 
-                  task={{
-                    id: completion.id,
-                    content: completion.title,
-                    status: 'completed' as const,
-                    taskType: 'task' as const,
-                    priority: completion.priority,
-                    duration: `${completion.duration}ms`,
-                  }} 
-                />
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
       </div>
     </div>
   );

@@ -10,7 +10,7 @@ const MOCK_LOG_TIMEFRAMES = {
   NORMALIZED_INTERVAL_MS: 500,
   USER_MESSAGE_DELAY_MS: 1500,
   TOOL_USE_DELAY_MS: 2000,
-  ASSISTANT_DELAY_MS: 2500
+  ASSISTANT_DELAY_MS: 2500,
 };
 
 const STREAMING_INTERVAL_MS = 5000;
@@ -54,7 +54,8 @@ export function useProcessesLogs(
         const mockEntries: UnifiedLogEntry[] = [];
 
         processes.forEach((process, processIndex) => {
-          const baseTimestamp = Date.now() - MOCK_LOG_TIMEFRAMES.BASE_OFFSET_MS * (processes.length - processIndex);
+          const baseTimestamp =
+            Date.now() - MOCK_LOG_TIMEFRAMES.BASE_OFFSET_MS * (processes.length - processIndex);
 
           // Add process start entry
           mockEntries.push({
@@ -107,12 +108,16 @@ export function useProcessesLogs(
           if (process.run_reason === 'codingagent') {
             const normalizedEntries: NormalizedEntry[] = [
               {
-                timestamp: new Date(baseTimestamp + MOCK_LOG_TIMEFRAMES.USER_MESSAGE_DELAY_MS).toISOString(),
+                timestamp: new Date(
+                  baseTimestamp + MOCK_LOG_TIMEFRAMES.USER_MESSAGE_DELAY_MS
+                ).toISOString(),
                 entry_type: { type: 'user_message' },
                 content: 'Please help me implement the enhanced logging functionality.',
               },
               {
-                timestamp: new Date(baseTimestamp + MOCK_LOG_TIMEFRAMES.TOOL_USE_DELAY_MS).toISOString(),
+                timestamp: new Date(
+                  baseTimestamp + MOCK_LOG_TIMEFRAMES.TOOL_USE_DELAY_MS
+                ).toISOString(),
                 entry_type: {
                   type: 'tool_use',
                   tool_name: 'Read',
@@ -124,7 +129,9 @@ export function useProcessesLogs(
                 content: 'Reading log component file to understand current implementation...',
               },
               {
-                timestamp: new Date(baseTimestamp + MOCK_LOG_TIMEFRAMES.ASSISTANT_DELAY_MS).toISOString(),
+                timestamp: new Date(
+                  baseTimestamp + MOCK_LOG_TIMEFRAMES.ASSISTANT_DELAY_MS
+                ).toISOString(),
                 entry_type: { type: 'assistant_message' },
                 content:
                   "I'll help you implement the enhanced logging functionality. Let me analyze the current log processing system and create improved components based on your requirements.",
@@ -134,7 +141,10 @@ export function useProcessesLogs(
             normalizedEntries.forEach((entry, entryIndex) => {
               mockEntries.push({
                 id: `${process.id}-normalized-${entryIndex}`,
-                ts: baseTimestamp + MOCK_LOG_TIMEFRAMES.NORMALIZED_START_DELAY_MS + entryIndex * MOCK_LOG_TIMEFRAMES.NORMALIZED_INTERVAL_MS,
+                ts:
+                  baseTimestamp +
+                  MOCK_LOG_TIMEFRAMES.NORMALIZED_START_DELAY_MS +
+                  entryIndex * MOCK_LOG_TIMEFRAMES.NORMALIZED_INTERVAL_MS,
                 processId: process.id,
                 processName: process.run_reason,
                 channel: 'normalized',

@@ -247,7 +247,9 @@ async function handleExistingTask(
   task: Task,
   commitMessage: string
 ): Promise<void> {
-  console.error(`✅ Found existing task [${task.id}]: ${task.content.substring(0, TASK_CONTENT_DISPLAY_LENGTH)}...`);
+  console.error(
+    `✅ Found existing task [${task.id}]: ${task.content.substring(0, TASK_CONTENT_DISPLAY_LENGTH)}...`
+  );
   console.error(`   Current status: ${task.status}, Priority: ${task.priority}`);
 
   // Check if this commit indicates task completion

@@ -2,7 +2,6 @@
  * Tests for frontend-runners.ts
  */
 
-
 import { runFrontendLinting, runFrontendTests, runPlaywrightTests } from './frontend-runners';
 import { execCommand } from '../utils/command-utils';
 import { validateDirectoryExists } from '../utils/validation-utils';

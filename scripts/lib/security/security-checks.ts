@@ -38,9 +38,9 @@ export function runSecurityChecks(projectRoot: string): SecurityCheckResult {
 
       if (!result.success) {
         hasFailure = true;
-        console.error(`❌ ${name} failed`);
+        console.log(`❌ ${name} failed`);
       } else {
-        console.error(`✅ ${name} passed`);
+        console.log(`✅ ${name} passed`);
       }
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);

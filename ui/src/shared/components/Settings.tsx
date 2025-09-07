@@ -1,12 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import {
-  Settings as SettingsIcon,
-  Layers,
-  ArrowRight,
-  Shield,
-  Activity,
-} from 'lucide-react';
+import { Settings as SettingsIcon, Layers, ArrowRight, Shield, Activity } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 
@@ -17,9 +11,7 @@ export function Settings() {
         <SettingsIcon className="h-6 w-6 text-blue-600" />
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Settings</h2>
-          <p className="text-gray-600">
-            Configure CodeGoat application settings and options
-          </p>
+          <p className="text-gray-600">Configure CodeGoat application settings and options</p>
         </div>
       </div>
 
@@ -34,7 +26,8 @@ export function Settings() {
           </CardHeader>
           <CardContent>
             <p className="text-gray-600 mb-4">
-              Configure validation stages, priorities, and execution settings for your development workflow.
+              Configure validation stages, priorities, and execution settings for your development
+              workflow.
             </p>
             <Link to="/stage-management">
               <Button className="w-full">
@@ -78,7 +71,8 @@ export function Settings() {
           </CardHeader>
           <CardContent>
             <p className="text-gray-600 mb-4">
-              View analytics dashboards, performance metrics, and monitoring data for your validation pipeline.
+              View analytics dashboards, performance metrics, and monitoring data for your
+              validation pipeline.
             </p>
             <Link to="/analytics">
               <Button className="w-full" variant="outline">

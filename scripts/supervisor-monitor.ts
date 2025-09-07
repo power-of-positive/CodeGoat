@@ -32,25 +32,25 @@ class SupervisorMonitor {
     try {
       const files = await fs.readdir(this.logDir);
       const sessions: SessionStatus[] = [];
-      
+
       for (const file of files) {
         if (file.endsWith('-results.json')) {
           const sessionPath = path.join(this.logDir, file);
           const sessionData = JSON.parse(await fs.readFile(sessionPath, 'utf8'));
-          
+
           sessions.push({
             sessionId: sessionData.sessionId,
             status: sessionData.success ? 'completed' : 'failed',
             startTime: sessionData.startTime || 'unknown',
             endTime: sessionData.endTime,
             attempts: sessionData.attempts,
-            lastActivity: sessionData.lastActivity || 'unknown'
+            lastActivity: sessionData.lastActivity || 'unknown',
           });
         }
       }
-      
-      return sessions.sort((a, b) => 
-        new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
+
+      return sessions.sort(
+        (a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
       );
     } catch (error) {
       console.error('Error reading sessions:', error);
@@ -60,20 +60,21 @@ class SupervisorMonitor {
 
   async showStatus(): Promise<void> {
     console.error('🎯 Claude Supervisor Monitor\n');
-    
+
     const sessions = await this.getActiveSessions();
-    
+
     if (sessions.length === 0) {
       console.error('📭 No sessions found');
       return;
     }
 
     console.error(`📊 Found ${sessions.length} session(s):\n`);
-    
-    for (const session of sessions.slice(0, 10)) { // Show last 10 sessions
-      const statusIcon = session.status === 'completed' ? '✅' : 
-                        session.status === 'failed' ? '❌' : '🔄';
-      
+
+    for (const session of sessions.slice(0, 10)) {
+      // Show last 10 sessions
+      const statusIcon =
+        session.status === 'completed' ? '✅' : session.status === 'failed' ? '❌' : '🔄';
+
       console.error(`${statusIcon} ${session.sessionId}`);
       console.error(`   Status: ${session.status}`);
       console.error(`   Started: ${session.startTime}`);
@@ -88,10 +89,10 @@ class SupervisorMonitor {
 
   async watchLogs(sessionId?: string): Promise<void> {
     console.error(`👀 Watching logs${sessionId ? ` for ${sessionId}` : ' (latest)'}...\n`);
-    
+
     // Find the latest log file
     let logFile: string;
-    
+
     if (sessionId) {
       const files = await fs.readdir(this.logDir);
       const sessionFiles = files.filter(f => f.startsWith(sessionId));
@@ -112,16 +113,16 @@ class SupervisorMonitor {
 
     // Use tail to follow the log
     const tail = spawn('tail', ['-f', logFile]);
-    
-    tail.stdout.on('data', (data) => {
+
+    tail.stdout.on('data', data => {
       process.stdout.write(data);
     });
-    
-    tail.stderr.on('data', (data) => {
+
+    tail.stderr.on('data', data => {
       process.stderr.write(data);
     });
-    
-    tail.on('close', (code) => {
+
+    tail.on('close', code => {
       console.error(`\nLog watching ended with code ${code}`);
     });
 
@@ -137,15 +138,15 @@ class SupervisorMonitor {
       // Find processes related to the session
       const ps = spawn('ps', ['aux']);
       const grep = spawn('grep', [sessionId]);
-      
+
       ps.stdout.pipe(grep.stdin);
-      
+
       let output = '';
-      grep.stdout.on('data', (data) => {
+      grep.stdout.on('data', data => {
         output += data.toString();
       });
-      
-      grep.on('close', (_code) => {
+
+      grep.on('close', _code => {
         if (output.trim()) {
           const lines = output.trim().split('\n');
           for (const line of lines) {
@@ -160,7 +161,6 @@ class SupervisorMonitor {
           console.error(`ℹ️ No running processes found for session ${sessionId}`);
         }
       });
-      
     } catch (error) {
       console.error('Error killing session:', error);
     }
@@ -168,26 +168,26 @@ class SupervisorMonitor {
 
   async cleanup(): Promise<void> {
     console.error('🧹 Cleaning up old logs...');
-    
+
     try {
       const files = await fs.readdir(this.logDir);
       const now = Date.now();
-      const maxAge = DAYS_TO_KEEP_LOGS * HOURS_PER_DAY * MINUTES_PER_HOUR * SECONDS_PER_MINUTE * MS_PER_SECOND; // 7 days
-      
+      const maxAge =
+        DAYS_TO_KEEP_LOGS * HOURS_PER_DAY * MINUTES_PER_HOUR * SECONDS_PER_MINUTE * MS_PER_SECOND; // 7 days
+
       let cleanedCount = 0;
-      
+
       for (const file of files) {
         const filePath = path.join(this.logDir, file);
         const stats = await fs.stat(filePath);
-        
+
         if (now - stats.mtime.getTime() > maxAge) {
           await fs.unlink(filePath);
           cleanedCount++;
         }
       }
-      
+
       console.error(`✅ Cleaned up ${cleanedCount} old files`);
-      
     } catch (error) {
       console.error('Error during cleanup:', error);
     }
@@ -198,20 +198,20 @@ class SupervisorMonitor {
 async function main() {
   const args = process.argv.slice(2);
   const command = args[0];
-  
+
   const monitor = new SupervisorMonitor();
-  
+
   switch (command) {
     case 'status':
       await monitor.showStatus();
       break;
-      
+
     case 'watch': {
       const sessionId = args[1];
       await monitor.watchLogs(sessionId);
       break;
     }
-      
+
     case 'kill': {
       const killSessionId = args[1];
       if (!killSessionId) {
@@ -221,11 +221,11 @@ async function main() {
       await monitor.killSession(killSessionId);
       break;
     }
-      
+
     case 'cleanup':
       await monitor.cleanup();
       break;
-      
+
     default:
       console.error(`
 🎯 Claude Supervisor Monitor

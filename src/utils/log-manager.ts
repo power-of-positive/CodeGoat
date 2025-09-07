@@ -136,33 +136,36 @@ export class LogManager {
     let emptyFiles = 0;
     let appLogFiles = 0;
 
-    await this.walkDirectory(this.logsDir, (filePath: string, fileStat: fs.Stats): Promise<void> => {
-      if (!this.isLogFile(path.basename(filePath))) {
+    await this.walkDirectory(
+      this.logsDir,
+      (filePath: string, fileStat: fs.Stats): Promise<void> => {
+        if (!this.isLogFile(path.basename(filePath))) {
+          return Promise.resolve();
+        }
+
+        totalFiles++;
+        totalSize += fileStat.size;
+
+        if (fileStat.size === 0) {
+          emptyFiles++;
+        }
+
+        if (this.isProblematicAppLogFile(path.basename(filePath))) {
+          appLogFiles++;
+        }
+
+        if (!oldestMtime || fileStat.mtime < oldestMtime) {
+          oldestFile = filePath;
+          oldestMtime = fileStat.mtime;
+        }
+
+        if (!newestMtime || fileStat.mtime > newestMtime) {
+          newestFile = filePath;
+          newestMtime = fileStat.mtime;
+        }
         return Promise.resolve();
       }
-
-      totalFiles++;
-      totalSize += fileStat.size;
-
-      if (fileStat.size === 0) {
-        emptyFiles++;
-      }
-
-      if (this.isProblematicAppLogFile(path.basename(filePath))) {
-        appLogFiles++;
-      }
-
-      if (!oldestMtime || fileStat.mtime < oldestMtime) {
-        oldestFile = filePath;
-        oldestMtime = fileStat.mtime;
-      }
-
-      if (!newestMtime || fileStat.mtime > newestMtime) {
-        newestFile = filePath;
-        newestMtime = fileStat.mtime;
-      }
-      return Promise.resolve();
-    });
+    );
 
     return {
       totalFiles,

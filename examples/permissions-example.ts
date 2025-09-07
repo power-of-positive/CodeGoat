@@ -312,7 +312,10 @@ async function securityScenarioExample() {
     'Network access:',
     secureExecutor.checkPermission(ActionType.NETWORK_REQUEST, 'https://trusted.com')
   );
-  console.error('System commands:', secureExecutor.checkPermission(ActionType.SYSTEM_COMMAND, 'ls'));
+  console.error(
+    'System commands:',
+    secureExecutor.checkPermission(ActionType.SYSTEM_COMMAND, 'ls')
+  );
 
   try {
     await secureExecutor.spawn('Analyze code without making changes');
@@ -341,7 +344,7 @@ async function permissionConfigComparisonExample() {
 
   const SEPARATOR_LENGTH = 70;
   const COLUMN_PADDING = 25;
-  
+
   console.error('Action\t\t\tRestrictive\tPermissive\tDevelopment');
   console.error('─'.repeat(SEPARATOR_LENGTH));
 
@@ -357,7 +360,9 @@ async function permissionConfigComparisonExample() {
     });
 
     const actionName = `${action} (${target?.split(' ')[0] || 'N/A'})`;
-    console.error(`${actionName.padEnd(COLUMN_PADDING)}\t${results[0]}\t\t${results[1]}\t\t${results[2]}`);
+    console.error(
+      `${actionName.padEnd(COLUMN_PADDING)}\t${results[0]}\t\t${results[1]}\t\t${results[2]}`
+    );
   });
 }
 

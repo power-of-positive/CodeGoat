@@ -31,9 +31,7 @@ const createWrapper = () => {
 
   return ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter>
-        {children}
-      </MemoryRouter>
+      <MemoryRouter>{children}</MemoryRouter>
     </QueryClientProvider>
   );
 };
@@ -112,7 +110,9 @@ describe('WorkerInfo', () => {
         totalBlockedCommands: 0,
       });
 
-      const { unmount } = render(<WorkerInfo executorId="worker-123-abc" />, { wrapper: createWrapper() });
+      const { unmount } = render(<WorkerInfo executorId="worker-123-abc" />, {
+        wrapper: createWrapper(),
+      });
 
       await waitFor(() => {
         expect(screen.getByText(expectedText)).toBeInTheDocument();
@@ -370,7 +370,7 @@ describe('WorkerInfo', () => {
 
     // Mock a slow merge operation
     mockWorkersApi.mergeWorktree.mockImplementation(
-      () => new Promise((resolve) => setTimeout(resolve, 1000))
+      () => new Promise(resolve => setTimeout(resolve, 1000))
     );
 
     render(<WorkerInfo executorId="worker-123-abc" />, { wrapper: createWrapper() });

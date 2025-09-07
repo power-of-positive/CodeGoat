@@ -7,10 +7,14 @@ import { Task } from '../../../shared/types/index';
 // Mock Lucide React icons
 jest.mock('lucide-react', () => ({
   Edit: ({ className }: { className?: string }) => (
-    <div data-testid="edit-icon" className={className}>Edit</div>
+    <div data-testid="edit-icon" className={className}>
+      Edit
+    </div>
   ),
   Plus: ({ className }: { className?: string }) => (
-    <div data-testid="plus-icon" className={className}>Plus</div>
+    <div data-testid="plus-icon" className={className}>
+      Plus
+    </div>
   ),
 }));
 
@@ -75,9 +79,7 @@ describe('TaskForm', () => {
 
   describe('Basic Rendering', () => {
     it('should render create form when no task is provided', () => {
-      render(
-        <TaskForm onSave={mockOnSave} onCancel={mockOnCancel} />
-      );
+      render(<TaskForm onSave={mockOnSave} onCancel={mockOnCancel} />);
 
       expect(screen.getByTestId('card')).toBeInTheDocument();
       expect(screen.getByTestId('card-header')).toBeInTheDocument();
@@ -88,9 +90,7 @@ describe('TaskForm', () => {
     });
 
     it('should render edit form when task is provided', () => {
-      render(
-        <TaskForm task={mockTask} onSave={mockOnSave} onCancel={mockOnCancel} />
-      );
+      render(<TaskForm task={mockTask} onSave={mockOnSave} onCancel={mockOnCancel} />);
 
       expect(screen.getByText('Edit Task')).toBeInTheDocument();
       expect(screen.getByTestId('edit-icon')).toBeInTheDocument();
@@ -98,9 +98,7 @@ describe('TaskForm', () => {
     });
 
     it('should render all form fields', () => {
-      render(
-        <TaskForm onSave={mockOnSave} onCancel={mockOnCancel} />
-      );
+      render(<TaskForm onSave={mockOnSave} onCancel={mockOnCancel} />);
 
       expect(screen.getByLabelText('Task Description *')).toBeInTheDocument();
       expect(screen.getByLabelText('Priority')).toBeInTheDocument();
@@ -113,9 +111,7 @@ describe('TaskForm', () => {
 
   describe('Form Field Defaults', () => {
     it('should have correct default values for create form', () => {
-      render(
-        <TaskForm onSave={mockOnSave} onCancel={mockOnCancel} />
-      );
+      render(<TaskForm onSave={mockOnSave} onCancel={mockOnCancel} />);
 
       expect((screen.getByLabelText('Task Description *') as HTMLTextAreaElement).value).toBe('');
       expect((screen.getByLabelText('Priority') as HTMLSelectElement).value).toBe('medium');
@@ -125,11 +121,11 @@ describe('TaskForm', () => {
     });
 
     it('should populate form fields when editing existing task', () => {
-      render(
-        <TaskForm task={mockTask} onSave={mockOnSave} onCancel={mockOnCancel} />
-      );
+      render(<TaskForm task={mockTask} onSave={mockOnSave} onCancel={mockOnCancel} />);
 
-      expect((screen.getByLabelText('Task Description *') as HTMLTextAreaElement).value).toBe('Existing task content');
+      expect((screen.getByLabelText('Task Description *') as HTMLTextAreaElement).value).toBe(
+        'Existing task content'
+      );
       expect((screen.getByLabelText('Priority') as HTMLSelectElement).value).toBe('high');
       expect((screen.getByLabelText('Status') as HTMLSelectElement).value).toBe('in_progress');
       expect((screen.getByLabelText('Type') as HTMLSelectElement).value).toBe('story');
@@ -139,9 +135,7 @@ describe('TaskForm', () => {
 
   describe('Field Options', () => {
     beforeEach(() => {
-      render(
-        <TaskForm onSave={mockOnSave} onCancel={mockOnCancel} />
-      );
+      render(<TaskForm onSave={mockOnSave} onCancel={mockOnCancel} />);
     });
 
     it('should have correct priority options', () => {
@@ -179,9 +173,7 @@ describe('TaskForm', () => {
     it('should update task description when text area changes', async () => {
       const user = userEvent.setup();
 
-      render(
-        <TaskForm onSave={mockOnSave} onCancel={mockOnCancel} />
-      );
+      render(<TaskForm onSave={mockOnSave} onCancel={mockOnCancel} />);
 
       const descriptionField = screen.getByLabelText('Task Description *');
       await user.type(descriptionField, 'New task description');
@@ -190,9 +182,7 @@ describe('TaskForm', () => {
     });
 
     it('should update priority when select changes', async () => {
-      render(
-        <TaskForm onSave={mockOnSave} onCancel={mockOnCancel} />
-      );
+      render(<TaskForm onSave={mockOnSave} onCancel={mockOnCancel} />);
 
       const prioritySelect = screen.getByLabelText('Priority');
       fireEvent.change(prioritySelect, { target: { value: 'high' } });
@@ -201,9 +191,7 @@ describe('TaskForm', () => {
     });
 
     it('should update status when select changes', async () => {
-      render(
-        <TaskForm onSave={mockOnSave} onCancel={mockOnCancel} />
-      );
+      render(<TaskForm onSave={mockOnSave} onCancel={mockOnCancel} />);
 
       const statusSelect = screen.getByLabelText('Status');
       fireEvent.change(statusSelect, { target: { value: 'completed' } });
@@ -212,9 +200,7 @@ describe('TaskForm', () => {
     });
 
     it('should update task type when select changes', async () => {
-      render(
-        <TaskForm onSave={mockOnSave} onCancel={mockOnCancel} />
-      );
+      render(<TaskForm onSave={mockOnSave} onCancel={mockOnCancel} />);
 
       const typeSelect = screen.getByLabelText('Type');
       fireEvent.change(typeSelect, { target: { value: 'story' } });
@@ -225,9 +211,7 @@ describe('TaskForm', () => {
     it('should update executor when input changes', async () => {
       const user = userEvent.setup();
 
-      render(
-        <TaskForm onSave={mockOnSave} onCancel={mockOnCancel} />
-      );
+      render(<TaskForm onSave={mockOnSave} onCancel={mockOnCancel} />);
 
       const executorInput = screen.getByLabelText('Executor');
       await user.clear(executorInput);
@@ -241,9 +225,7 @@ describe('TaskForm', () => {
     it('should call onSave with correct data when creating new task', async () => {
       const user = userEvent.setup();
 
-      render(
-        <TaskForm onSave={mockOnSave} onCancel={mockOnCancel} />
-      );
+      render(<TaskForm onSave={mockOnSave} onCancel={mockOnCancel} />);
 
       // Fill out form
       await user.type(screen.getByLabelText('Task Description *'), 'Test task content');
@@ -269,9 +251,7 @@ describe('TaskForm', () => {
     it('should call onSave with correct data when updating existing task', async () => {
       const user = userEvent.setup();
 
-      render(
-        <TaskForm task={mockTask} onSave={mockOnSave} onCancel={mockOnCancel} />
-      );
+      render(<TaskForm task={mockTask} onSave={mockOnSave} onCancel={mockOnCancel} />);
 
       // Modify description
       const descriptionField = screen.getByLabelText('Task Description *');
@@ -299,9 +279,7 @@ describe('TaskForm', () => {
     it('should not submit when task description is empty', async () => {
       const user = userEvent.setup();
 
-      render(
-        <TaskForm onSave={mockOnSave} onCancel={mockOnCancel} />
-      );
+      render(<TaskForm onSave={mockOnSave} onCancel={mockOnCancel} />);
 
       // Try to submit with empty description
       const submitButton = screen.getByRole('button', { name: 'Create Task' });
@@ -313,9 +291,7 @@ describe('TaskForm', () => {
     it('should not submit when task description is only whitespace', async () => {
       const user = userEvent.setup();
 
-      render(
-        <TaskForm onSave={mockOnSave} onCancel={mockOnCancel} />
-      );
+      render(<TaskForm onSave={mockOnSave} onCancel={mockOnCancel} />);
 
       // Fill with whitespace only
       await user.type(screen.getByLabelText('Task Description *'), '   ');
@@ -330,9 +306,7 @@ describe('TaskForm', () => {
     it('should trim whitespace from task description when submitting', async () => {
       const user = userEvent.setup();
 
-      render(
-        <TaskForm onSave={mockOnSave} onCancel={mockOnCancel} />
-      );
+      render(<TaskForm onSave={mockOnSave} onCancel={mockOnCancel} />);
 
       // Fill with content that has leading/trailing whitespace
       await user.type(screen.getByLabelText('Task Description *'), '  Test task content  ');
@@ -353,9 +327,7 @@ describe('TaskForm', () => {
     it('should call onCancel when cancel button is clicked', async () => {
       const user = userEvent.setup();
 
-      render(
-        <TaskForm onSave={mockOnSave} onCancel={mockOnCancel} />
-      );
+      render(<TaskForm onSave={mockOnSave} onCancel={mockOnCancel} />);
 
       const cancelButton = screen.getByRole('button', { name: 'Cancel' });
       await user.click(cancelButton);
@@ -366,9 +338,7 @@ describe('TaskForm', () => {
     it('should not call onSave when cancel is clicked', async () => {
       const user = userEvent.setup();
 
-      render(
-        <TaskForm onSave={mockOnSave} onCancel={mockOnCancel} />
-      );
+      render(<TaskForm onSave={mockOnSave} onCancel={mockOnCancel} />);
 
       // Fill out form
       await user.type(screen.getByLabelText('Task Description *'), 'Some content');
@@ -384,9 +354,7 @@ describe('TaskForm', () => {
 
   describe('Form Accessibility', () => {
     it('should have proper form labels and associations', () => {
-      render(
-        <TaskForm onSave={mockOnSave} onCancel={mockOnCancel} />
-      );
+      render(<TaskForm onSave={mockOnSave} onCancel={mockOnCancel} />);
 
       // Check that labels are properly associated with inputs
       const descriptionField = screen.getByLabelText('Task Description *');
@@ -405,20 +373,18 @@ describe('TaskForm', () => {
     });
 
     it('should have required attribute on description field', () => {
-      render(
-        <TaskForm onSave={mockOnSave} onCancel={mockOnCancel} />
-      );
+      render(<TaskForm onSave={mockOnSave} onCancel={mockOnCancel} />);
 
       const descriptionField = screen.getByLabelText('Task Description *');
       expect(descriptionField).toHaveAttribute('required');
     });
 
     it('should have proper placeholder text', () => {
-      render(
-        <TaskForm onSave={mockOnSave} onCancel={mockOnCancel} />
-      );
+      render(<TaskForm onSave={mockOnSave} onCancel={mockOnCancel} />);
 
-      const descriptionField = screen.getByPlaceholderText('Describe what needs to be accomplished...');
+      const descriptionField = screen.getByPlaceholderText(
+        'Describe what needs to be accomplished...'
+      );
       const executorField = screen.getByPlaceholderText('claude_code');
 
       expect(descriptionField).toBeInTheDocument();
@@ -435,11 +401,11 @@ describe('TaskForm', () => {
         // Missing other fields
       };
 
-      render(
-        <TaskForm task={partialTask as Task} onSave={mockOnSave} onCancel={mockOnCancel} />
-      );
+      render(<TaskForm task={partialTask as Task} onSave={mockOnSave} onCancel={mockOnCancel} />);
 
-      expect((screen.getByLabelText('Task Description *') as HTMLTextAreaElement).value).toBe('Partial content');
+      expect((screen.getByLabelText('Task Description *') as HTMLTextAreaElement).value).toBe(
+        'Partial content'
+      );
       expect((screen.getByLabelText('Priority') as HTMLSelectElement).value).toBe('low');
       // Should use defaults for missing fields
       expect((screen.getByLabelText('Status') as HTMLSelectElement).value).toBe('pending');
@@ -450,9 +416,7 @@ describe('TaskForm', () => {
     it('should handle rapid form changes', async () => {
       const user = userEvent.setup();
 
-      render(
-        <TaskForm onSave={mockOnSave} onCancel={mockOnCancel} />
-      );
+      render(<TaskForm onSave={mockOnSave} onCancel={mockOnCancel} />);
 
       const descriptionField = screen.getByLabelText('Task Description *');
       const prioritySelect = screen.getByLabelText('Priority');
@@ -481,9 +445,7 @@ describe('TaskForm', () => {
         bddScenarios: [],
       };
 
-      render(
-        <TaskForm task={emptyTask} onSave={mockOnSave} onCancel={mockOnCancel} />
-      );
+      render(<TaskForm task={emptyTask} onSave={mockOnSave} onCancel={mockOnCancel} />);
 
       expect((screen.getByLabelText('Task Description *') as HTMLTextAreaElement).value).toBe('');
       // When editing a task with empty executorId, the form shows the default value (claude_code)
@@ -495,9 +457,7 @@ describe('TaskForm', () => {
     it('should maintain independent field states', async () => {
       const user = userEvent.setup();
 
-      render(
-        <TaskForm onSave={mockOnSave} onCancel={mockOnCancel} />
-      );
+      render(<TaskForm onSave={mockOnSave} onCancel={mockOnCancel} />);
 
       // Change multiple fields
       await user.type(screen.getByLabelText('Task Description *'), 'Description');
@@ -508,7 +468,9 @@ describe('TaskForm', () => {
       await user.type(screen.getByLabelText('Executor'), 'test_exe');
 
       // Verify all fields maintained their states
-      expect((screen.getByLabelText('Task Description *') as HTMLTextAreaElement).value).toBe('Description');
+      expect((screen.getByLabelText('Task Description *') as HTMLTextAreaElement).value).toBe(
+        'Description'
+      );
       expect((screen.getByLabelText('Priority') as HTMLSelectElement).value).toBe('high');
       expect((screen.getByLabelText('Status') as HTMLSelectElement).value).toBe('completed');
       expect((screen.getByLabelText('Type') as HTMLSelectElement).value).toBe('story');
@@ -518,9 +480,7 @@ describe('TaskForm', () => {
     it('should properly handle form submission with form event', async () => {
       const user = userEvent.setup();
 
-      render(
-        <TaskForm onSave={mockOnSave} onCancel={mockOnCancel} />
-      );
+      render(<TaskForm onSave={mockOnSave} onCancel={mockOnCancel} />);
 
       await user.type(screen.getByLabelText('Task Description *'), 'Test content');
 

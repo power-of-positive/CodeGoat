@@ -10,13 +10,23 @@ import {
   getChangedFiles,
   createEmptyResult,
   createErrorResult,
-  reviewSingleFile
+  reviewSingleFile,
 } from './llm-reviewer-helpers';
 import type { LLMReviewerCore } from './llm-reviewer-core';
 
 // Mock dependencies
 jest.mock('fs');
 jest.mock('child_process');
+
+// Mock fs.promises
+jest.mock('fs', () => ({
+  ...jest.requireActual('fs'),
+  existsSync: jest.fn(),
+  statSync: jest.fn(),
+  promises: {
+    readFile: jest.fn(),
+  },
+}));
 
 describe('llm-reviewer-helpers', () => {
   const mockFs = fs as jest.Mocked<typeof fs>;
@@ -42,7 +52,7 @@ describe('llm-reviewer-helpers', () => {
         { input: null, error: 'Invalid projectRoot: must be non-empty string' },
         { input: undefined, error: 'Invalid projectRoot: must be non-empty string' },
         { input: '', error: 'Invalid projectRoot: must be non-empty string' },
-        { input: 123, error: 'Invalid projectRoot: must be non-empty string' }
+        { input: 123, error: 'Invalid projectRoot: must be non-empty string' },
       ];
 
       testCases.forEach(({ input, error }) => {
@@ -58,7 +68,7 @@ describe('llm-reviewer-helpers', () => {
         'project\\..\\..\\windows\\system32',
         '/project/with\x00null/byte',
         '/project%00/with/encoded/null',
-        '/project%2e%2e/with/encoded/dots'
+        '/project%2e%2e/with/encoded/dots',
       ];
 
       dangerousPatterns.forEach(dangerousPath => {
@@ -132,14 +142,14 @@ describe('llm-reviewer-helpers', () => {
         'src/module.mts',
         'src/config.cts',
         'src/script.mjs',
-        'src/legacy.cjs'
+        'src/legacy.cjs',
       ]);
 
       expect(mockExecSync).toHaveBeenCalledWith('git diff --cached --name-only', {
         cwd: path.resolve('/project/root'),
         encoding: 'utf-8',
         timeout: 15000,
-        maxBuffer: 1048576
+        maxBuffer: 1048576,
       });
 
       expect(consoleSpy).toHaveBeenCalledWith('Found 8 changed files for review');
@@ -172,10 +182,7 @@ describe('llm-reviewer-helpers', () => {
       const result = getChangedFiles('/project/root');
 
       expect(result).toEqual([]);
-      expect(consoleSpy).toHaveBeenCalledWith(
-        'Failed to get changed files:',
-        'git command failed'
-      );
+      expect(consoleSpy).toHaveBeenCalledWith('Failed to get changed files:', 'git command failed');
 
       consoleSpy.mockRestore();
     });
@@ -190,10 +197,7 @@ describe('llm-reviewer-helpers', () => {
       const result = getChangedFiles('/project/root');
 
       expect(result).toEqual([]);
-      expect(consoleSpy).toHaveBeenCalledWith(
-        'Failed to get changed files:',
-        'Unknown error'
-      );
+      expect(consoleSpy).toHaveBeenCalledWith('Failed to get changed files:', 'Unknown error');
 
       consoleSpy.mockRestore();
     });
@@ -217,7 +221,7 @@ describe('llm-reviewer-helpers', () => {
         'git diff --cached --name-only',
         expect.objectContaining({
           timeout: 15000,
-          maxBuffer: 1048576
+          maxBuffer: 1048576,
         })
       );
     });
@@ -252,10 +256,10 @@ describe('llm-reviewer-helpers', () => {
             totalFiles: 0,
             highSeverity: 0,
             mediumSeverity: 0,
-            totalIssues: 0
-          }
+            totalIssues: 0,
+          },
         },
-        textReport: 'No files to review'
+        textReport: 'No files to review',
       });
 
       expect(consoleSpy).toHaveBeenCalledWith('No changed files to review');
@@ -277,10 +281,10 @@ describe('llm-reviewer-helpers', () => {
             totalFiles: 0,
             highSeverity: 0,
             mediumSeverity: 0,
-            totalIssues: 0
-          }
+            totalIssues: 0,
+          },
         },
-        textReport: 'Review failed: OpenAI API failed'
+        textReport: 'Review failed: OpenAI API failed',
       });
 
       expect(consoleSpy).toHaveBeenCalledWith('LLM review failed:', error);
@@ -300,10 +304,10 @@ describe('llm-reviewer-helpers', () => {
             totalFiles: 0,
             highSeverity: 0,
             mediumSeverity: 0,
-            totalIssues: 0
-          }
+            totalIssues: 0,
+          },
         },
-        textReport: 'Review failed: Unknown error'
+        textReport: 'Review failed: Unknown error',
       });
 
       expect(consoleSpy).toHaveBeenCalledWith('LLM review failed:', error);
@@ -328,15 +332,15 @@ describe('llm-reviewer-helpers', () => {
 
     beforeEach(() => {
       mockCore = {
-        reviewCode: jest.fn()
+        reviewCode: jest.fn(),
       } as any;
 
       // Mock fs.promises.readFile
       jest.doMock('fs', () => ({
         ...fs,
         promises: {
-          readFile: jest.fn()
-        }
+          readFile: jest.fn(),
+        },
       }));
     });
 
@@ -347,25 +351,22 @@ describe('llm-reviewer-helpers', () => {
         suggestions: ['Use const instead of let'],
         summary: 'Minor improvements possible',
         hasBlockingIssues: false,
-        confidence: 0.8
+        confidence: 0.8,
       };
 
       mockCore.reviewCode.mockResolvedValue(mockReviewResult);
       mockFs.existsSync.mockReturnValue(true);
-
-      // Mock fs.promises.readFile
-      const mockReadFile = jest.fn().mockResolvedValue('const x = 1;');
-      (fs as any).promises = { readFile: mockReadFile };
+      (mockFs.promises.readFile as jest.Mock).mockResolvedValue('const x = 1;');
 
       const result = await reviewSingleFile(mockCore, '/project/root', 'src/test.ts');
 
       expect(result).toEqual({
         file: 'src/test.ts',
-        result: mockReviewResult
+        result: mockReviewResult,
       });
 
       expect(mockCore.reviewCode).toHaveBeenCalledWith('src/test.ts', 'const x = 1;');
-      expect(mockReadFile).toHaveBeenCalledWith('/project/root/src/test.ts', 'utf-8');
+      expect(mockFs.promises.readFile).toHaveBeenCalledWith('/project/root/src/test.ts', 'utf-8');
     });
 
     it('should reject files outside project root', async () => {
@@ -398,8 +399,7 @@ describe('llm-reviewer-helpers', () => {
     it('should handle file read errors', async () => {
       mockFs.existsSync.mockReturnValue(true);
       const readError = new Error('Permission denied');
-      const mockReadFile = jest.fn().mockRejectedValue(readError);
-      (fs as any).promises = { readFile: mockReadFile };
+      (mockFs.promises.readFile as jest.Mock).mockRejectedValue(readError);
 
       const consoleSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
 
@@ -416,8 +416,7 @@ describe('llm-reviewer-helpers', () => {
 
     it('should handle core review errors', async () => {
       mockFs.existsSync.mockReturnValue(true);
-      const mockReadFile = jest.fn().mockResolvedValue('const x = 1;');
-      (fs as any).promises = { readFile: mockReadFile };
+      (mockFs.promises.readFile as jest.Mock).mockResolvedValue('const x = 1;');
 
       const reviewError = new Error('OpenAI API error');
       mockCore.reviewCode.mockRejectedValue(reviewError);
@@ -427,36 +426,28 @@ describe('llm-reviewer-helpers', () => {
       const result = await reviewSingleFile(mockCore, '/project/root', 'src/test.ts');
 
       expect(result).toBeNull();
-      expect(consoleSpy).toHaveBeenCalledWith(
-        'Review failed for src/test.ts:',
-        'OpenAI API error'
-      );
+      expect(consoleSpy).toHaveBeenCalledWith('Review failed for src/test.ts:', 'OpenAI API error');
 
       consoleSpy.mockRestore();
     });
 
     it('should handle non-Error exceptions during file read', async () => {
       mockFs.existsSync.mockReturnValue(true);
-      const mockReadFile = jest.fn().mockRejectedValue('String error');
-      (fs as any).promises = { readFile: mockReadFile };
+      (mockFs.promises.readFile as jest.Mock).mockRejectedValue('String error');
 
       const consoleSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
 
       const result = await reviewSingleFile(mockCore, '/project/root', 'src/test.ts');
 
       expect(result).toBeNull();
-      expect(consoleSpy).toHaveBeenCalledWith(
-        'Review failed for src/test.ts:',
-        'String error'
-      );
+      expect(consoleSpy).toHaveBeenCalledWith('Review failed for src/test.ts:', 'String error');
 
       consoleSpy.mockRestore();
     });
 
     it('should handle non-Error exceptions during review', async () => {
       mockFs.existsSync.mockReturnValue(true);
-      const mockReadFile = jest.fn().mockResolvedValue('const x = 1;');
-      (fs as any).promises = { readFile: mockReadFile };
+      (mockFs.promises.readFile as jest.Mock).mockResolvedValue('const x = 1;');
 
       mockCore.reviewCode.mockImplementation(() => {
         throw 'String error from core';
@@ -476,16 +467,24 @@ describe('llm-reviewer-helpers', () => {
     });
 
     it('should properly resolve file paths', async () => {
-      const mockReviewResult = { severity: 'low' as const, issues: [], suggestions: [], summary: 'OK', hasBlockingIssues: false, confidence: 0.8 };
+      const mockReviewResult = {
+        severity: 'low' as const,
+        issues: [],
+        suggestions: [],
+        summary: 'OK',
+        hasBlockingIssues: false,
+        confidence: 0.8,
+      };
       mockCore.reviewCode.mockResolvedValue(mockReviewResult);
       mockFs.existsSync.mockReturnValue(true);
-
-      const mockReadFile = jest.fn().mockResolvedValue('code');
-      (fs as any).promises = { readFile: mockReadFile };
+      (mockFs.promises.readFile as jest.Mock).mockResolvedValue('code');
 
       await reviewSingleFile(mockCore, '/project/root', 'src/nested/deep/file.ts');
 
-      expect(mockReadFile).toHaveBeenCalledWith('/project/root/src/nested/deep/file.ts', 'utf-8');
+      expect(mockFs.promises.readFile).toHaveBeenCalledWith(
+        '/project/root/src/nested/deep/file.ts',
+        'utf-8'
+      );
     });
 
     it('should check file path bounds with complex relative paths', async () => {

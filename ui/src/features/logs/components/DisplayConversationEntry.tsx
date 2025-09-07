@@ -83,10 +83,7 @@ const getEntryIcon = (entryType: NormalizedEntryType) => {
 const getContentClassName = (entryType: NormalizedEntryType) => {
   const baseClasses = 'text-sm whitespace-pre-wrap break-words';
 
-  if (
-    entryType.type === 'tool_use' &&
-    entryType.action_type?.action === 'command_run'
-  ) {
+  if (entryType.type === 'tool_use' && entryType.action_type?.action === 'command_run') {
     return `${baseClasses} font-mono`;
   }
 
@@ -107,10 +104,7 @@ const getContentClassName = (entryType: NormalizedEntryType) => {
   }
 
   // Special styling for plan presentations
-  if (
-    entryType.type === 'tool_use' &&
-    entryType.action_type?.action === 'plan_presentation'
-  ) {
+  if (entryType.type === 'tool_use' && entryType.action_type?.action === 'plan_presentation') {
     return `${baseClasses} text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/20 px-3 py-2 rounded-md border-l-4 border-blue-400`;
   }
 
@@ -120,15 +114,20 @@ const getContentClassName = (entryType: NormalizedEntryType) => {
 // Simple markdown-like rendering for basic formatting
 const renderContent = (content: string, entryType: NormalizedEntryType) => {
   // For assistant messages and certain tool outputs, apply basic markdown formatting
-  if (entryType.type === 'assistant_message' || 
-      (entryType.type === 'tool_use' && entryType.action_type?.action === 'plan_presentation')) {
+  if (
+    entryType.type === 'assistant_message' ||
+    (entryType.type === 'tool_use' && entryType.action_type?.action === 'plan_presentation')
+  ) {
     return (
-      <div 
+      <div
         dangerouslySetInnerHTML={{
           __html: content
-            .replace(/`([^`]+)`/g, '<code class="bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded text-sm">$1</code>')
+            .replace(
+              /`([^`]+)`/g,
+              '<code class="bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded text-sm">$1</code>'
+            )
             .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-            .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+            .replace(/\*([^*]+)\*/g, '<em>$1</em>'),
         }}
       />
     );
@@ -140,7 +139,7 @@ function DisplayConversationEntry({ entry, index }: Props) {
   const [expandedErrors, setExpandedErrors] = useState<Set<number>>(new Set());
 
   const toggleErrorExpansion = (index: number) => {
-    setExpandedErrors((prev) => {
+    setExpandedErrors(prev => {
       const newSet = new Set(prev);
       if (newSet.has(index)) {
         newSet.delete(index);

@@ -2,7 +2,6 @@
  * Tests for security-runners.ts
  */
 
-
 import { execSync } from 'child_process';
 import {
   runDuplicateCodeDetection,

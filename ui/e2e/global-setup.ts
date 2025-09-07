@@ -10,21 +10,21 @@ async function globalSetup(config: FullConfig) {
     // Wait for both services to be available
     const maxRetries = 30;
     let retries = 0;
-    
+
     // Check if backend is ready
     while (retries < maxRetries) {
       try {
-        const response = await page.request.get('http://localhost:3001/health', { 
-          timeout: 5000 
+        const response = await page.request.get('http://localhost:3001/health', {
+          timeout: 5000,
         });
         if (response.ok()) break;
       } catch (e) {
         // Service not ready yet
       }
-      
+
       retries++;
       await page.waitForTimeout(2000);
-      
+
       if (retries >= maxRetries) {
         console.error('Backend service did not start in time');
         throw new Error('Backend service did not start in time');
@@ -35,17 +35,17 @@ async function globalSetup(config: FullConfig) {
     // Check if frontend is ready
     while (retries < maxRetries) {
       try {
-        const response = await page.request.get('http://localhost:5173/', { 
-          timeout: 5000 
+        const response = await page.request.get('http://localhost:5173/', {
+          timeout: 5000,
         });
         if (response.ok()) break;
       } catch (e) {
         // Service not ready yet
       }
-      
+
       retries++;
       await page.waitForTimeout(2000);
-      
+
       if (retries >= maxRetries) {
         console.error('Frontend service did not start in time');
         throw new Error('Frontend service did not start in time');
@@ -53,7 +53,6 @@ async function globalSetup(config: FullConfig) {
     }
 
     console.log('✅ Both services are ready');
-    
   } finally {
     await context.close();
     await browser.close();

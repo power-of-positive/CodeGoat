@@ -1,20 +1,17 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
-import {
-  RefreshCw,
-  ChevronUp,
-  ChevronDown,
-  ArrowLeft,
-  Filter,
-} from 'lucide-react';
+import { RefreshCw, ChevronUp, ChevronDown, ArrowLeft, Filter } from 'lucide-react';
 import { Card, CardContent } from '../shared/ui/card';
 import { Button } from '../shared/ui/button';
 import { taskApi, claudeWorkersApi } from '../shared/lib/api';
 import { Task } from '../shared/types/index';
 import { PageLoading } from '../shared/ui/loading';
 import { TaskForm } from '../features/tasks/components/TaskForm';
-import { TaskFilters as TaskFiltersComponent, TaskFiltersState as TaskFiltersType } from '../features/tasks/components/TaskFilters';
+import {
+  TaskFilters as TaskFiltersComponent,
+  TaskFiltersState as TaskFiltersType,
+} from '../features/tasks/components/TaskFilters';
 import { TaskTable } from '../components/TaskTable';
 import { TaskGrid } from '../components/TaskGrid';
 import { TaskManagementHeader } from '../components/TaskManagementHeader';
@@ -79,27 +76,26 @@ export function TaskManagement() {
   // Create task mutation
   const createTaskMutation = useMutation({
     mutationFn: taskApi.createTask,
-    onSuccess: (data) => {
+    onSuccess: data => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       setShowCreateForm(false);
       alert(`✅ Task created successfully!\n\nTask: "${data.content}"`);
     },
-    onError: (error) => {
+    onError: error => {
       console.error('Failed to create task:', error);
       alert('❌ Failed to create task. Please check the console for details.');
     },
   });
 
-  // Update task mutation  
+  // Update task mutation
   const updateTaskMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<Task> }) =>
-      taskApi.updateTask(id, data),
+    mutationFn: ({ id, data }: { id: string; data: Partial<Task> }) => taskApi.updateTask(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       setEditingTask(null);
       alert('✅ Task updated successfully!');
     },
-    onError: (error) => {
+    onError: error => {
       console.error('Failed to update task:', error);
       alert('❌ Failed to update task. Please check the console for details.');
     },
@@ -113,7 +109,7 @@ export function TaskManagement() {
       setSelectedTasks(prev => prev.filter(id => !prev.includes(id)));
       alert('✅ Task deleted successfully!');
     },
-    onError: (error) => {
+    onError: error => {
       console.error('Failed to delete task:', error);
       alert('❌ Failed to delete task. Please check the console for details.');
     },
@@ -125,12 +121,12 @@ export function TaskManagement() {
       await Promise.all(taskIds.map(id => taskApi.deleteTask(id)));
       return taskIds;
     },
-    onSuccess: (deletedIds) => {
+    onSuccess: deletedIds => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       setSelectedTasks(prev => prev.filter(id => !deletedIds.includes(id)));
       alert('✅ Tasks deleted successfully!');
     },
-    onError: (error) => {
+    onError: error => {
       console.error('Failed to delete tasks:', error);
       alert('❌ Failed to delete tasks. Please check the console for details.');
     },
@@ -152,9 +148,10 @@ export function TaskManagement() {
     }
     if (filters.search) {
       const searchLower = filters.search.toLowerCase();
-      filtered = filtered.filter(task =>
-        task.content.toLowerCase().includes(searchLower) ||
-        task.id.toLowerCase().includes(searchLower)
+      filtered = filtered.filter(
+        task =>
+          task.content.toLowerCase().includes(searchLower) ||
+          task.id.toLowerCase().includes(searchLower)
       );
     }
 
@@ -223,7 +220,7 @@ export function TaskManagement() {
     if (selectedTasks.length === 0) {
       return;
     }
-    
+
     if (window.confirm(`Are you sure you want to delete ${selectedTasks.length} selected tasks?`)) {
       bulkDeleteMutation.mutate(selectedTasks);
     }
@@ -285,11 +282,7 @@ export function TaskManagement() {
           >
             <Filter className="w-4 h-4" />
             Filters
-            {showFilters ? (
-              <ChevronUp className="w-4 h-4" />
-            ) : (
-              <ChevronDown className="w-4 h-4" />
-            )}
+            {showFilters ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </Button>
           <Button variant="outline" onClick={() => refetch()}>
             <RefreshCw className="w-4 h-4 mr-2" />
@@ -378,16 +371,12 @@ export function TaskManagement() {
           <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold">Create New Task</h2>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowCreateForm(false)}
-              >
+              <Button variant="ghost" size="sm" onClick={() => setShowCreateForm(false)}>
                 <ArrowLeft className="w-4 h-4" />
               </Button>
             </div>
             <TaskForm
-              onSave={(data) => createTaskMutation.mutate(data)}
+              onSave={data => createTaskMutation.mutate(data)}
               onCancel={() => setShowCreateForm(false)}
             />
           </div>
@@ -400,17 +389,13 @@ export function TaskManagement() {
           <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold">Edit Task</h2>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setEditingTask(null)}
-              >
+              <Button variant="ghost" size="sm" onClick={() => setEditingTask(null)}>
                 <ArrowLeft className="w-4 h-4" />
               </Button>
             </div>
             <TaskForm
               task={editingTask}
-              onSave={(data) => updateTaskMutation.mutate({ id: editingTask.id, data })}
+              onSave={data => updateTaskMutation.mutate({ id: editingTask.id, data })}
               onCancel={() => setEditingTask(null)}
             />
           </div>

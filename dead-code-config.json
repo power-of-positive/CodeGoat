@@ -17,7 +17,7 @@
     "src/services/**service.ts",
     "src/utils/**"
   ],
-  "failOnExcess": false,
+  "failOnExcess": true,
   "tsPruneOptions": [
     "--project", "tsconfig.json"
   ]

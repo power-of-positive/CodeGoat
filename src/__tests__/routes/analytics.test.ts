@@ -4,8 +4,10 @@ import { createAnalyticsRoutes } from '../../routes/analytics';
 import { AnalyticsService } from '../../services/analytics.service';
 import { ILogger } from '../../logger-interface';
 
-// Mock the AnalyticsService
+// Mock the AnalyticsService and dependencies
 jest.mock('../../services/analytics.service');
+jest.mock('../../services/stage-consolidation.service');
+jest.mock('../../services/database');
 
 describe('Analytics Routes', () => {
   let app: express.Application;
@@ -22,6 +24,7 @@ describe('Analytics Routes', () => {
       getSession: jest.fn(),
       getRecentSessions: jest.fn(),
       cleanupSessions: jest.fn(),
+      getValidationRuns: jest.fn().mockResolvedValue([]),
     };
 
     mockLogger = {
@@ -33,10 +36,53 @@ describe('Analytics Routes', () => {
       middleware: jest.fn().mockReturnValue((req: any, res: any, next: any) => next()),
     } as jest.Mocked<ILogger>;
 
-    // Mock the constructor to return our mock service
+    // Mock database service
+    const mockDatabaseService = {
+      validationStageConfig: {
+        findMany: jest.fn().mockResolvedValue([
+          {
+            stageId: 'lint',
+            name: 'Code Linting',
+            enabled: true,
+            priority: 1,
+            command: 'npm run lint',
+            timeout: 30000,
+            continueOnFailure: false,
+            description: 'Run linting checks',
+            environment: null,
+            category: 'lint',
+          },
+        ]),
+      },
+    };
+
+    // Mock stage consolidation service
+    const mockStageConsolidationService = {
+      consolidateStages: jest.fn().mockReturnValue([
+        {
+          stageId: 'lint',
+          name: 'Code Linting',
+          enabled: true,
+          priority: 1,
+        },
+      ]),
+      mergeStageStatistics: jest.fn().mockReturnValue([]),
+    };
+
+    // Mock the constructors
     (AnalyticsService as jest.MockedClass<typeof AnalyticsService>).mockImplementation(
       () => mockAnalyticsService
     );
+
+    // Mock the database service getter
+    require('../../services/database').getDatabaseService = jest
+      .fn()
+      .mockReturnValue(mockDatabaseService);
+
+    // Mock StageConsolidationService constructor
+    require('../../services/stage-consolidation.service').StageConsolidationService = jest
+      .fn()
+      .mockImplementation(() => mockStageConsolidationService);
 
     // Create Express app with the routes
     app = express();
@@ -83,7 +129,7 @@ describe('Analytics Routes', () => {
       });
 
       expect(mockLogger.error).toHaveBeenCalledWith('Failed to get analytics', error);
-    });
+    }, 10000);
   });
 
   describe('GET /api/analytics/sessions', () => {
@@ -435,7 +481,7 @@ describe('Analytics Routes', () => {
       expect(routes).toBeDefined();
 
       // The router should have the expected stack of routes
-      expect(routes.stack).toHaveLength(11); // 11 routes defined (added 4 more routes: 2 stage routes + 2 database routes)
+      expect(routes.stack).toHaveLength(12); // 12 routes defined (added validation-metrics endpoint)
     });
 
     it('should validate that AnalyticsService is properly mocked', () => {

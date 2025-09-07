@@ -241,9 +241,7 @@ describe('TaskDetail', () => {
     // Rerender to trigger another API call
     rerender(
       <QueryClientProvider
-        client={
-          new QueryClient({ defaultOptions: { queries: { retry: false } } })
-        }
+        client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
       >
         <MemoryRouter initialEntries={['/tasks/task-123']}>
           <Routes>

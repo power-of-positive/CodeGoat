@@ -68,9 +68,7 @@ const createWrapper = () => {
 
   return ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter>
-        {children}
-      </MemoryRouter>
+      <MemoryRouter>{children}</MemoryRouter>
     </QueryClientProvider>
   );
 };
@@ -126,7 +124,9 @@ describe('WorkersDashboard - Stop Worker & Viewers', () => {
 
       await waitFor(() => {
         expect(consoleSpy).toHaveBeenCalledWith('Failed to stop worker:', expect.any(Error));
-        expect(window.alert).toHaveBeenCalledWith('Failed to stop worker. Please check the console for details.');
+        expect(window.alert).toHaveBeenCalledWith(
+          'Failed to stop worker. Please check the console for details.'
+        );
       });
 
       consoleSpy.mockRestore();

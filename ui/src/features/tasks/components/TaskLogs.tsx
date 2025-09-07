@@ -29,9 +29,7 @@ function NoExecutorState() {
         <div className="text-center py-12 text-muted-foreground">
           <Terminal className="h-12 w-12 mx-auto mb-4 opacity-50" />
           <p>No active worker for this task</p>
-          <p className="text-sm">
-            Logs will appear when a worker is assigned
-          </p>
+          <p className="text-sm">Logs will appear when a worker is assigned</p>
         </div>
       </CardContent>
     </Card>
@@ -39,7 +37,13 @@ function NoExecutorState() {
 }
 
 // Log controls component
-function LogControls({ autoScroll, autoRefresh, isConnected, onToggleAutoScroll, onToggleAutoRefresh }: {
+function LogControls({
+  autoScroll,
+  autoRefresh,
+  isConnected,
+  onToggleAutoScroll,
+  onToggleAutoRefresh,
+}: {
   autoScroll: boolean;
   autoRefresh: boolean;
   isConnected: boolean;
@@ -55,9 +59,7 @@ function LogControls({ autoScroll, autoRefresh, isConnected, onToggleAutoScroll,
         className="flex items-center space-x-1"
       >
         {autoScroll ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
-        <span className="text-xs">
-          {autoScroll ? 'Pause Scroll' : 'Auto Scroll'}
-        </span>
+        <span className="text-xs">{autoScroll ? 'Pause Scroll' : 'Auto Scroll'}</span>
       </Button>
       <Button
         variant="outline"
@@ -66,9 +68,7 @@ function LogControls({ autoScroll, autoRefresh, isConnected, onToggleAutoScroll,
         className="flex items-center space-x-1"
       >
         <FileText className="h-3 w-3" />
-        <span className="text-xs">
-          {autoRefresh ? 'Live' : 'Manual'}
-        </span>
+        <span className="text-xs">{autoRefresh ? 'Live' : 'Manual'}</span>
       </Button>
       <ConnectionStatus isConnected={isConnected} />
     </div>
@@ -79,11 +79,7 @@ function LogControls({ autoScroll, autoRefresh, isConnected, onToggleAutoScroll,
 function ConnectionStatus({ isConnected }: { isConnected: boolean }) {
   return (
     <div className="flex items-center space-x-1">
-      <div
-        className={`h-2 w-2 rounded-full ${
-          isConnected ? 'bg-green-500' : 'bg-red-500'
-        }`}
-      />
+      <div className={`h-2 w-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
       <span className="text-xs text-muted-foreground">
         {isConnected ? 'Connected' : 'Disconnected'}
       </span>
@@ -92,7 +88,14 @@ function ConnectionStatus({ isConnected }: { isConnected: boolean }) {
 }
 
 // Task logs header component
-function TaskLogsHeader({ executorId, autoScroll, autoRefresh, isConnected, onToggleAutoScroll, onToggleAutoRefresh }: {
+function TaskLogsHeader({
+  executorId,
+  autoScroll,
+  autoRefresh,
+  isConnected,
+  onToggleAutoScroll,
+  onToggleAutoRefresh,
+}: {
   executorId: string;
   autoScroll: boolean;
   autoRefresh: boolean;
@@ -123,17 +126,17 @@ function TaskLogsHeader({ executorId, autoScroll, autoRefresh, isConnected, onTo
 }
 
 // Log content component
-function LogContent({ logEntries, autoScroll, virtuosoRef }: {
+function LogContent({
+  logEntries,
+  autoScroll,
+  virtuosoRef,
+}: {
   logEntries: UnifiedLogEntry[];
   autoScroll: boolean;
   virtuosoRef: React.RefObject<VirtuosoHandle>;
 }) {
   if (logEntries.length === 0) {
-    return (
-      <div className="p-4 text-center text-muted-foreground text-sm">
-        No logs available
-      </div>
-    );
+    return <div className="p-4 text-center text-muted-foreground text-sm">No logs available</div>;
   }
 
   return (
@@ -142,11 +145,7 @@ function LogContent({ logEntries, autoScroll, virtuosoRef }: {
       className="h-full rounded-lg"
       data={logEntries}
       itemContent={(index, entry) => (
-        <EnhancedLogEntryRow
-          key={entry.id}
-          entry={entry}
-          index={index}
-        />
+        <EnhancedLogEntryRow key={entry.id} entry={entry} index={index} />
       )}
       followOutput={autoScroll ? 'smooth' : false}
       increaseViewportBy={{ top: 0, bottom: 600 }}
@@ -155,7 +154,10 @@ function LogContent({ logEntries, autoScroll, virtuosoRef }: {
 }
 
 // Log footer component
-function LogFooter({ logEntries, executorId }: {
+function LogFooter({
+  logEntries,
+  executorId,
+}: {
   logEntries: UnifiedLogEntry[];
   executorId: string;
 }) {
@@ -193,11 +195,7 @@ export function TaskLogs({ executorId }: TaskLogsProps) {
       />
       <CardContent className="p-0">
         <div className="border rounded-lg h-96">
-          <LogContent
-            logEntries={logEntries}
-            autoScroll={autoScroll}
-            virtuosoRef={virtuosoRef}
-          />
+          <LogContent logEntries={logEntries} autoScroll={autoScroll} virtuosoRef={virtuosoRef} />
         </div>
         <LogFooter logEntries={logEntries} executorId={executorId} />
       </CardContent>

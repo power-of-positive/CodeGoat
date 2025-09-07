@@ -48,7 +48,7 @@ describe('EnhancedLogEntryRow', () => {
         processId: 'worker-123',
         processName: 'Test Worker',
         channel: 'stdout',
-        payload: 'Hello stdout'
+        payload: 'Hello stdout',
       };
 
       render(<EnhancedLogEntryRow entry={entry} index={0} />);
@@ -65,7 +65,7 @@ describe('EnhancedLogEntryRow', () => {
         processId: 'worker-123',
         processName: 'Test Worker',
         channel: 'stderr',
-        payload: 'Error message'
+        payload: 'Error message',
       };
 
       render(<EnhancedLogEntryRow entry={entry} index={0} />);
@@ -79,7 +79,7 @@ describe('EnhancedLogEntryRow', () => {
       const normalizedEntry: NormalizedEntry = {
         entry_type: { type: 'user_message' },
         content: 'User message content',
-        timestamp: '2023-01-01T00:00:00Z'
+        timestamp: '2023-01-01T00:00:00Z',
       };
 
       const entry: UnifiedLogEntry = {
@@ -88,7 +88,7 @@ describe('EnhancedLogEntryRow', () => {
         processId: 'worker-123',
         processName: 'Test Worker',
         channel: 'normalized',
-        payload: normalizedEntry
+        payload: normalizedEntry,
       };
 
       render(<EnhancedLogEntryRow entry={entry} index={0} />);
@@ -101,7 +101,7 @@ describe('EnhancedLogEntryRow', () => {
       const normalizedEntry: NormalizedEntry = {
         entry_type: { type: 'assistant_message' },
         content: 'Assistant response',
-        timestamp: '2023-01-01T00:00:00Z'
+        timestamp: '2023-01-01T00:00:00Z',
       };
 
       const entry: UnifiedLogEntry = {
@@ -110,7 +110,7 @@ describe('EnhancedLogEntryRow', () => {
         processId: 'worker-123',
         processName: 'Test Worker',
         channel: 'normalized',
-        payload: normalizedEntry
+        payload: normalizedEntry,
       };
 
       render(<EnhancedLogEntryRow entry={entry} index={0} />);
@@ -123,7 +123,7 @@ describe('EnhancedLogEntryRow', () => {
       const normalizedEntry: NormalizedEntry = {
         entry_type: { type: 'system_message' },
         content: 'System message',
-        timestamp: '2023-01-01T00:00:00Z'
+        timestamp: '2023-01-01T00:00:00Z',
       };
 
       const entry: UnifiedLogEntry = {
@@ -132,7 +132,7 @@ describe('EnhancedLogEntryRow', () => {
         processId: 'worker-123',
         processName: 'Test Worker',
         channel: 'normalized',
-        payload: normalizedEntry
+        payload: normalizedEntry,
       };
 
       render(<EnhancedLogEntryRow entry={entry} index={0} />);
@@ -145,7 +145,7 @@ describe('EnhancedLogEntryRow', () => {
       const normalizedEntry: NormalizedEntry = {
         entry_type: { type: 'thinking' },
         content: 'Thinking process',
-        timestamp: '2023-01-01T00:00:00Z'
+        timestamp: '2023-01-01T00:00:00Z',
       };
 
       const entry: UnifiedLogEntry = {
@@ -154,7 +154,7 @@ describe('EnhancedLogEntryRow', () => {
         processId: 'worker-123',
         processName: 'Test Worker',
         channel: 'normalized',
-        payload: normalizedEntry
+        payload: normalizedEntry,
       };
 
       render(<EnhancedLogEntryRow entry={entry} index={0} />);
@@ -167,7 +167,7 @@ describe('EnhancedLogEntryRow', () => {
       const normalizedEntry: NormalizedEntry = {
         entry_type: { type: 'error_message' },
         content: 'Error occurred',
-        timestamp: '2023-01-01T00:00:00Z'
+        timestamp: '2023-01-01T00:00:00Z',
       };
 
       const entry: UnifiedLogEntry = {
@@ -176,7 +176,7 @@ describe('EnhancedLogEntryRow', () => {
         processId: 'worker-123',
         processName: 'Test Worker',
         channel: 'normalized',
-        payload: normalizedEntry
+        payload: normalizedEntry,
       };
 
       render(<EnhancedLogEntryRow entry={entry} index={0} />);
@@ -187,13 +187,13 @@ describe('EnhancedLogEntryRow', () => {
 
     it('renders tool_use with settings icon by default', () => {
       const normalizedEntry: NormalizedEntry = {
-        entry_type: { 
+        entry_type: {
           type: 'tool_use',
           tool_name: 'UnknownTool',
-          action_type: { action: 'other', description: 'Unknown action' }
+          action_type: { action: 'other', description: 'Unknown action' },
         },
         content: 'Unknown tool',
-        timestamp: '2023-01-01T00:00:00Z'
+        timestamp: '2023-01-01T00:00:00Z',
       };
 
       const entry: UnifiedLogEntry = {
@@ -202,7 +202,7 @@ describe('EnhancedLogEntryRow', () => {
         processId: 'worker-123',
         processName: 'Test Worker',
         channel: 'normalized',
-        payload: normalizedEntry
+        payload: normalizedEntry,
       };
 
       render(<EnhancedLogEntryRow entry={entry} index={0} />);
@@ -213,13 +213,13 @@ describe('EnhancedLogEntryRow', () => {
 
     it('renders tool_use with command_run action and shows actual command', () => {
       const normalizedEntry: NormalizedEntry = {
-        entry_type: { 
+        entry_type: {
           type: 'tool_use',
           tool_name: 'Bash',
-          action_type: { action: 'command_run', command: 'npm run build' }
+          action_type: { action: 'command_run', command: 'npm run build' },
         },
         content: 'Command executed successfully',
-        timestamp: '2023-01-01T00:00:00Z'
+        timestamp: '2023-01-01T00:00:00Z',
       };
 
       const entry: UnifiedLogEntry = {
@@ -228,7 +228,7 @@ describe('EnhancedLogEntryRow', () => {
         processId: 'worker-123',
         processName: 'Test Worker',
         channel: 'normalized',
-        payload: normalizedEntry
+        payload: normalizedEntry,
       };
 
       render(<EnhancedLogEntryRow entry={entry} index={0} />);
@@ -245,7 +245,7 @@ describe('EnhancedLogEntryRow', () => {
         processId: 'worker-123',
         runReason: 'claude-code-worker',
         startedAt: '2023-01-01T00:00:00Z',
-        status: 'running'
+        status: 'running',
       };
 
       const entry: UnifiedLogEntry = {
@@ -254,7 +254,7 @@ describe('EnhancedLogEntryRow', () => {
         processId: 'worker-123',
         processName: 'Test Worker',
         channel: 'process_start',
-        payload: processStartPayload
+        payload: processStartPayload,
       };
 
       render(<EnhancedLogEntryRow entry={entry} index={0} />);
@@ -266,13 +266,13 @@ describe('EnhancedLogEntryRow', () => {
 
     it('renders different process statuses', () => {
       const statuses = ['running', 'completed', 'failed', 'pending'] as const;
-      
-      statuses.forEach((status) => {
+
+      statuses.forEach(status => {
         const processStartPayload: ProcessStartPayload = {
           processId: 'worker-123',
           runReason: 'test',
           startedAt: '2023-01-01T00:00:00Z',
-          status
+          status,
         };
 
         const entry: UnifiedLogEntry = {
@@ -281,7 +281,7 @@ describe('EnhancedLogEntryRow', () => {
           processId: 'worker-123',
           processName: 'Test Worker',
           channel: 'process_start',
-          payload: processStartPayload
+          payload: processStartPayload,
         };
 
         const { unmount } = render(<EnhancedLogEntryRow entry={entry} index={0} />);
@@ -300,7 +300,7 @@ describe('EnhancedLogEntryRow', () => {
         processId: 'worker-123',
         processName: 'Test Worker',
         channel: 'unknown' as any,
-        payload: 'Unknown content'
+        payload: 'Unknown content',
       };
 
       render(<EnhancedLogEntryRow entry={entry} index={0} />);
@@ -317,7 +317,7 @@ describe('EnhancedLogEntryRow', () => {
         processId: 'worker-123',
         processName: 'Test Worker',
         channel: 'stdout',
-        payload: 'Test content'
+        payload: 'Test content',
       };
 
       render(<EnhancedLogEntryRow entry={entry} index={0} />);
@@ -332,7 +332,7 @@ describe('EnhancedLogEntryRow', () => {
         processId: 'worker-123',
         processName: 'Test Worker',
         channel: 'stdout',
-        payload: 'Test content'
+        payload: 'Test content',
       };
 
       // Mock clientHeight
@@ -349,13 +349,13 @@ describe('EnhancedLogEntryRow', () => {
   describe('content rendering', () => {
     it('handles complex normalized entries', () => {
       const complexEntry: NormalizedEntry = {
-        entry_type: { 
+        entry_type: {
           type: 'tool_use',
           tool_name: 'ComplexTool',
-          action_type: { action: 'other', description: 'complex_action' }
+          action_type: { action: 'other', description: 'complex_action' },
         },
         content: 'Complex content with\nmultiple lines',
-        timestamp: '2023-01-01T00:00:00Z'
+        timestamp: '2023-01-01T00:00:00Z',
       };
 
       const entry: UnifiedLogEntry = {
@@ -364,7 +364,7 @@ describe('EnhancedLogEntryRow', () => {
         processId: 'worker-123',
         processName: 'Test Worker',
         channel: 'normalized',
-        payload: complexEntry
+        payload: complexEntry,
       };
 
       render(<EnhancedLogEntryRow entry={entry} index={0} />);
@@ -373,16 +373,16 @@ describe('EnhancedLogEntryRow', () => {
 
     it('handles todo tools by name detection', () => {
       const todoVariations = ['TodoWrite', 'todoread', 'todo_write', 'todo_read', 'todo'];
-      
-      todoVariations.forEach((toolName) => {
+
+      todoVariations.forEach(toolName => {
         const normalizedEntry: NormalizedEntry = {
-          entry_type: { 
+          entry_type: {
             type: 'tool_use',
             tool_name: toolName,
-            action_type: { action: 'other', description: 'todo management' }
+            action_type: { action: 'other', description: 'todo management' },
           },
           content: `Using ${toolName}`,
-          timestamp: '2023-01-01T00:00:00Z'
+          timestamp: '2023-01-01T00:00:00Z',
         };
 
         const entry: UnifiedLogEntry = {
@@ -391,7 +391,7 @@ describe('EnhancedLogEntryRow', () => {
           processId: 'worker-123',
           processName: 'Test Worker',
           channel: 'normalized',
-          payload: normalizedEntry
+          payload: normalizedEntry,
         };
 
         const { unmount } = render(<EnhancedLogEntryRow entry={entry} index={0} />);
@@ -410,7 +410,7 @@ describe('EnhancedLogEntryRow', () => {
         processId: 'worker-123',
         processName: 'Test Worker',
         channel: 'stdout',
-        payload: 'Test content for memo'
+        payload: 'Test content for memo',
       };
 
       const { rerender } = render(<EnhancedLogEntryRow entry={entry} index={0} />);
@@ -425,14 +425,14 @@ describe('EnhancedLogEntryRow', () => {
       const entries = [
         { channel: 'stdout' as const, payload: 'stdout message' },
         { channel: 'stderr' as const, payload: 'stderr message' },
-        { 
-          channel: 'normalized' as const, 
-          payload: { 
-            entry_type: { type: 'user_message' as const }, 
+        {
+          channel: 'normalized' as const,
+          payload: {
+            entry_type: { type: 'user_message' as const },
             content: 'normalized message',
-            timestamp: '2023-01-01T00:00:00Z'
-          } 
-        }
+            timestamp: '2023-01-01T00:00:00Z',
+          },
+        },
       ];
 
       entries.forEach((entryData, index) => {
@@ -441,7 +441,7 @@ describe('EnhancedLogEntryRow', () => {
           ts: index,
           processId: 'worker-123',
           processName: 'Test Worker',
-          ...entryData
+          ...entryData,
         };
 
         const { unmount } = render(<EnhancedLogEntryRow entry={entry} index={index} />);

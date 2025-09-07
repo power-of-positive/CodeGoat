@@ -2,7 +2,6 @@
  * Tests for check-utils.ts
  */
 
-
 import { validateStagedFiles, runChecks } from './check-utils';
 import { StagedFiles } from '../files/staged-files';
 import * as checkRunners from './check-runners';
@@ -98,7 +97,7 @@ describe('check-utils', () => {
         stagedFiles: mockStagedFiles,
         fileArray: 'allFiles',
         checks: [],
-        errorPrefix: 'Test'
+        errorPrefix: 'Test',
       });
 
       expect(result.failed).toBe(false);
@@ -116,7 +115,7 @@ describe('check-utils', () => {
         stagedFiles: mockStagedFiles,
         fileArray: 'allFiles',
         checks: [mockRunner],
-        errorPrefix: 'Test'
+        errorPrefix: 'Test',
       });
 
       expect(result.failed).toBe(true);
@@ -134,7 +133,7 @@ describe('check-utils', () => {
         stagedFiles: mockStagedFiles,
         fileArray: 'allFiles',
         checks: [mockRunner],
-        errorPrefix: 'Test'
+        errorPrefix: 'Test',
       });
 
       expect(result.failed).toBe(true);
@@ -152,7 +151,7 @@ describe('check-utils', () => {
         stagedFiles: mockStagedFiles,
         fileArray: 'allFiles',
         checks: [mockRunner],
-        errorPrefix: 'Test'
+        errorPrefix: 'Test',
       });
 
       expect(result.failed).toBe(true);
@@ -170,7 +169,7 @@ describe('check-utils', () => {
         stagedFiles: mockStagedFiles,
         fileArray: 'allFiles',
         checks: [mockRunner],
-        errorPrefix: 'Test'
+        errorPrefix: 'Test',
       });
 
       expect(result.failed).toBe(true);
@@ -188,7 +187,7 @@ describe('check-utils', () => {
         stagedFiles: mockStagedFiles,
         fileArray: 'allFiles',
         checks: [mockRunner],
-        errorPrefix: 'Test'
+        errorPrefix: 'Test',
       });
 
       expect(result.failed).toBe(true);
@@ -206,7 +205,7 @@ describe('check-utils', () => {
         stagedFiles: mockStagedFiles,
         fileArray: 'allFiles',
         checks: [mockRunner],
-        errorPrefix: 'Test'
+        errorPrefix: 'Test',
       });
 
       expect(result.failed).toBe(true);
@@ -224,7 +223,7 @@ describe('check-utils', () => {
         stagedFiles: emptyFiles,
         fileArray: 'allFiles',
         checks: [],
-        errorPrefix: 'Test'
+        errorPrefix: 'Test',
       });
 
       expect(result.failed).toBe(false);

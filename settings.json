@@ -39,7 +39,7 @@
       {
         "id": "unit-tests-frontend",
         "name": "Frontend Unit Tests",
-        "command": "cd ui && CI=true npm test -- --watchAll=false --no-watch --passWithNoTests --testTimeout=30000 --maxWorkers=2",
+        "command": "cd ui && CI=true node node_modules/.bin/jest --watchAll=false --no-watch --passWithNoTests --testTimeout=30000 --maxWorkers=2",
         "timeout": 120000,
         "enabled": true,
         "continueOnFailure": false,
@@ -48,7 +48,7 @@
       {
         "id": "coverage-frontend",
         "name": "Frontend Coverage Check",
-        "command": "cd ui && npm run test:coverage -- --maxWorkers=2 --testTimeout=30000",
+        "command": "cd ui && node node_modules/.bin/jest --coverage --maxWorkers=2 --testTimeout=30000",
         "timeout": 180000,
         "enabled": true,
         "continueOnFailure": false,
@@ -102,7 +102,7 @@
       {
         "id": "typescript-preference",
         "name": "TypeScript Preference Check",
-        "command": "npx ts-node scripts/check-typescript-preference.ts",
+        "command": "node node_modules/.bin/tsx scripts/check-typescript-preference.ts",
         "timeout": 10000,
         "enabled": true,
         "continueOnFailure": false,
@@ -111,7 +111,7 @@
       {
         "id": "ai-code-review",
         "name": "AI Code Review",
-        "command": "npx ts-node src/tools/ai-code-reviewer.ts",
+        "command": "node node_modules/.bin/tsx src/tools/ai-code-reviewer.ts",
         "timeout": 120000,
         "enabled": true,
         "continueOnFailure": false,
@@ -122,14 +122,14 @@
         "name": "Visual Regression Tests",
         "command": "node scripts/visual-regression.js",
         "timeout": 60000,
-        "enabled": false,
+        "enabled": true,
         "continueOnFailure": false,
         "priority": 13
       },
       {
         "id": "dead-code",
         "name": "Dead Code Detection",
-        "command": "npx ts-node scripts/check-dead-code.ts",
+        "command": "node node_modules/.bin/tsx scripts/check-dead-code.ts",
         "timeout": 45000,
         "enabled": true,
         "continueOnFailure": false,
@@ -156,7 +156,7 @@
       {
         "id": "playwright-e2e",
         "name": "Playwright E2E Tests",
-        "command": "cd ui && npm run test:e2e:robust",
+        "command": "cd ui && npm run test:e2e",
         "timeout": 300000,
         "enabled": true,
         "continueOnFailure": false,
@@ -165,7 +165,7 @@
       {
         "id": "uncommitted-files",
         "name": "Uncommitted Files Check",
-        "command": "npx ts-node scripts/check-uncommitted-files.ts",
+        "command": "node node_modules/.bin/tsx scripts/check-uncommitted-files.ts",
         "timeout": 10000,
         "enabled": true,
         "continueOnFailure": false,
@@ -174,7 +174,7 @@
       {
         "id": "todo-list",
         "name": "Todo List Validation",
-        "command": "npx ts-node scripts/validate-todo-list.ts",
+        "command": "node node_modules/.bin/tsx scripts/validate-todo-list.ts",
         "timeout": 10000,
         "enabled": true,
         "continueOnFailure": false,
@@ -182,7 +182,9 @@
       }
     ],
     "enableMetrics": true,
-    "maxAttempts": 3
+    "maxAttempts": 3,
+    "executionMode": "sequential",
+    "parallelStages": false
   },
   "logging": {
     "level": "info",

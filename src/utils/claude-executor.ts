@@ -3,11 +3,14 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { WinstonLogger } from '../logger-winston';
 import { PermissionManager, ActionType, PermissionContext } from './permissions';
+import { orchestratorStreamManager } from './orchestrator-stream';
 
 export interface ClaudeExecutorOptions {
   worktreeDir: string;
   claudeCommand: string;
   permissionManager?: PermissionManager;
+  streamSessionId?: string; // For streaming output
+  streamTaskId?: string; // For streaming output
 }
 
 export interface ClaudeExecutorResult {
@@ -34,12 +37,37 @@ export class ClaudeCodeExecutor {
   private readonly claudeCommand: string;
   private readonly logger?: WinstonLogger;
   private readonly permissionManager?: PermissionManager;
+  private readonly streamSessionId?: string;
+  private readonly streamTaskId?: string;
 
   constructor(options: ClaudeExecutorOptions, logger?: WinstonLogger) {
     this.worktreeDir = options.worktreeDir;
     this.claudeCommand = options.claudeCommand;
     this.logger = logger;
     this.permissionManager = options.permissionManager;
+    this.streamSessionId = options.streamSessionId;
+    this.streamTaskId = options.streamTaskId;
+  }
+
+  /**
+   * Get the worktree directory
+   */
+  getWorktreeDir(): string {
+    return this.worktreeDir;
+  }
+
+  /**
+   * Get the Claude command
+   */
+  getClaudeCommand(): string {
+    return this.claudeCommand;
+  }
+
+  /**
+   * Get the permission manager
+   */
+  getPermissionManager(): PermissionManager | undefined {
+    return this.permissionManager;
   }
 
   /**
@@ -68,10 +96,23 @@ export class ClaudeCodeExecutor {
       command: this.claudeCommand,
     });
 
+    // Broadcast Claude start if streaming enabled
+    if (this.streamSessionId && this.streamTaskId) {
+      orchestratorStreamManager.broadcastClaudeStart(
+        this.streamSessionId,
+        this.streamTaskId,
+        1,
+        prompt
+      );
+    }
+
     return new Promise((resolve, reject) => {
       try {
         // Parse the command into executable and arguments
         const [executable, ...args] = this.parseShellCommand(this.claudeCommand);
+
+        // Add the prompt as the final argument
+        args.push(prompt);
 
         this.logger?.debug('Parsed command', { executable, args });
 
@@ -91,6 +132,16 @@ export class ClaudeCodeExecutor {
             const chunk = data.toString();
             stdout += chunk;
             this.logger?.debug('Claude stdout chunk', { chunk });
+
+            // Stream output if streaming enabled
+            if (this.streamSessionId && this.streamTaskId) {
+              orchestratorStreamManager.broadcastClaudeOutput(
+                this.streamSessionId,
+                this.streamTaskId,
+                chunk,
+                false
+              );
+            }
           });
         }
 
@@ -100,6 +151,16 @@ export class ClaudeCodeExecutor {
             const chunk = data.toString();
             stderr += chunk;
             this.logger?.debug('Claude stderr chunk', { chunk });
+
+            // Stream error output if streaming enabled
+            if (this.streamSessionId && this.streamTaskId) {
+              orchestratorStreamManager.broadcastClaudeOutput(
+                this.streamSessionId,
+                this.streamTaskId,
+                chunk,
+                true
+              );
+            }
           });
         }
 
@@ -127,13 +188,9 @@ export class ClaudeCodeExecutor {
           });
         });
 
-        // Send the prompt to stdin and close the stream
+        // Close stdin since we're using --print mode with prompt as argument
         if (childProcess.stdin) {
-          this.logger?.debug('Sending prompt to Claude', { promptLength: prompt.length });
-          childProcess.stdin.write(prompt);
           childProcess.stdin.end();
-        } else {
-          reject(new Error('Failed to access Claude process stdin'));
         }
       } catch (error) {
         this.logger?.error('Error spawning Claude process', error as Error);
@@ -188,20 +245,6 @@ export class ClaudeCodeExecutor {
   }
 
   /**
-   * Gets the working directory for this executor
-   */
-  getWorktreeDir(): string {
-    return this.worktreeDir;
-  }
-
-  /**
-   * Gets the Claude command for this executor
-   */
-  getClaudeCommand(): string {
-    return this.claudeCommand;
-  }
-
-  /**
    * Check if a specific action is permitted without executing it
    */
   checkPermission(action: ActionType, target?: string): boolean {
@@ -218,13 +261,6 @@ export class ClaudeCodeExecutor {
 
     const result = this.permissionManager.checkPermission(context);
     return result.allowed;
-  }
-
-  /**
-   * Get the permission manager instance
-   */
-  getPermissionManager(): PermissionManager | undefined {
-    return this.permissionManager;
   }
 
   /**

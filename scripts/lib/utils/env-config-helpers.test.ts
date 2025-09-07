@@ -97,10 +97,10 @@ describe('env-config-helpers', () => {
 
     it('should warn about invalid variable names', () => {
       const parsed = {
-        'VALID_VAR': 'value1',
+        VALID_VAR: 'value1',
         '123_INVALID': 'value2', // Starts with number
         'invalid-var': 'value3', // Contains hyphen
-        '$INVALID': 'value4', // Contains special character
+        $INVALID: 'value4', // Contains special character
       };
       const mergedVariables: Record<string, string> = {};
       const envPath = '/path/to/.env';

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-require-imports */
 import { createDatabaseService, getDatabaseService } from '../../services/database';
 import { createMockLogger } from '../../test-helpers/logger.mock';
 
@@ -144,7 +143,7 @@ describe('Database Service', () => {
 
       // Reset modules to clear the prisma singleton
       jest.resetModules();
-      
+
       // Execute the handler when module is reset (prisma would be null)
       await beforeExitHandler();
 

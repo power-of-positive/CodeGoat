@@ -1,6 +1,7 @@
 import express from 'express';
-import { PrismaClient, BDDScenarioStatus } from '@prisma/client';
+import { BDDScenarioStatus } from '@prisma/client';
 import { BDDScenarioService } from '../services/bdd-scenario-service';
+import { getDatabaseService } from '../services/database';
 
 // HTTP status code constants
 const HTTP_STATUS = {
@@ -11,13 +12,21 @@ const HTTP_STATUS = {
 } as const;
 
 const router = express.Router();
-const prisma = new PrismaClient();
-const bddService = new BDDScenarioService(prisma);
+let bddService: BDDScenarioService | null = null;
+
+// Lazy initialization of BDD service
+function getBDDService(): BDDScenarioService {
+  if (!bddService) {
+    const prisma = getDatabaseService();
+    bddService = new BDDScenarioService(prisma);
+  }
+  return bddService;
+}
 
 // Get all BDD scenarios
 router.get('/', async (req, res) => {
   try {
-    const scenarios = await bddService.getAllScenarios();
+    const scenarios = await getBDDService().getAllScenarios();
     res.json({
       success: true,
       data: scenarios,
@@ -36,7 +45,7 @@ router.get('/', async (req, res) => {
 router.get('/task/:taskId', async (req, res) => {
   try {
     const { taskId } = req.params;
-    const scenarios = await bddService.getScenariosByTaskId(taskId);
+    const scenarios = await getBDDService().getScenariosByTaskId(taskId);
     res.json({
       success: true,
       data: scenarios,
@@ -54,7 +63,7 @@ router.get('/task/:taskId', async (req, res) => {
 // Get BDD execution statistics
 router.get('/stats', async (req, res) => {
   try {
-    const stats = await bddService.getExecutionStats();
+    const stats = await getBDDService().getExecutionStats();
     res.json({
       success: true,
       data: stats,
@@ -72,7 +81,7 @@ router.get('/stats', async (req, res) => {
 // Create comprehensive BDD scenarios from file
 router.post('/comprehensive', async (req, res) => {
   try {
-    const result = await bddService.createComprehensiveScenarios();
+    const result = await getBDDService().createComprehensiveScenarios();
     res.json({
       success: true,
       message: `Created ${result.created} comprehensive BDD scenarios`,
@@ -95,7 +104,7 @@ router.post('/comprehensive', async (req, res) => {
 router.post('/', async (req, res) => {
   try {
     const scenarioData = req.body;
-    
+
     // Validate required fields
     if (!scenarioData.todoTaskId || !scenarioData.title || !scenarioData.gherkinContent) {
       return res.status(HTTP_STATUS.BAD_REQUEST).json({
@@ -111,7 +120,7 @@ router.post('/', async (req, res) => {
     };
     delete mappedScenarioData.todoTaskId;
 
-    const scenario = await bddService.createScenario(mappedScenarioData);
+    const scenario = await getBDDService().createScenario(mappedScenarioData);
     res.status(HTTP_STATUS.CREATED).json({
       success: true,
       data: scenario,
@@ -140,7 +149,7 @@ router.put('/:scenarioId/status', async (req, res) => {
       });
     }
 
-    const scenario = await bddService.updateScenarioStatus(scenarioId, status, errorMessage);
+    const scenario = await getBDDService().updateScenarioStatus(scenarioId, status, errorMessage);
     res.json({
       success: true,
       data: scenario,
@@ -159,7 +168,7 @@ router.put('/:scenarioId/status', async (req, res) => {
 router.post('/:scenarioId/execute', async (req, res) => {
   try {
     const { scenarioId } = req.params;
-    const result = await bddService.executeScenario(scenarioId);
+    const result = await getBDDService().executeScenario(scenarioId);
     res.json({
       success: true,
       data: result,
@@ -178,7 +187,7 @@ router.post('/:scenarioId/execute', async (req, res) => {
 router.get('/:scenarioId/history', async (req, res) => {
   try {
     const { scenarioId } = req.params;
-    const history = await bddService.getExecutionHistory(scenarioId);
+    const history = await getBDDService().getExecutionHistory(scenarioId);
     res.json({
       success: true,
       data: history,
@@ -206,7 +215,7 @@ router.put('/:scenarioId/link-test', async (req, res) => {
       });
     }
 
-    const scenario = await bddService.linkToPlaywrightTest(scenarioId, testFile, testName);
+    const scenario = await getBDDService().linkToPlaywrightTest(scenarioId, testFile, testName);
     res.json({
       success: true,
       data: scenario,
@@ -224,12 +233,12 @@ router.put('/:scenarioId/link-test', async (req, res) => {
 // Bulk execute all scenarios (for testing)
 router.post('/execute-all', async (req, res) => {
   try {
-    const scenarios = await bddService.getAllScenarios();
+    const scenarios = await getBDDService().getAllScenarios();
     const results = [];
 
     for (const scenario of scenarios) {
       try {
-        const result = await bddService.executeScenario(scenario.id);
+        const result = await getBDDService().executeScenario(scenario.id);
         results.push(result);
       } catch (error) {
         console.error(`Failed to execute scenario ${scenario.id}:`, error);

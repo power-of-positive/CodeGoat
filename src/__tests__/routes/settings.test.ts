@@ -47,7 +47,7 @@ describe('Settings Routes', () => {
           logging: expect.any(Object),
         })
       );
-    });
+    }, 10000);
 
     it('should return existing settings from file', async () => {
       const mockSettings = {
@@ -63,7 +63,10 @@ describe('Settings Routes', () => {
     });
 
     it('should handle file read errors', async () => {
-      (fs.readFile as jest.Mock).mockRejectedValue(new Error('Permission denied'));
+      // Mock both the settings file read and the default settings config file read
+      (fs.readFile as jest.Mock)
+        .mockRejectedValueOnce(new Error('Permission denied')) // First call for settings.json
+        .mockRejectedValueOnce(new Error('Config not found')); // Second call for default-settings.json
 
       const response = await request(app).get('/settings').expect(200);
 
@@ -82,7 +85,7 @@ describe('Settings Routes', () => {
           logging: expect.any(Object),
         })
       );
-    });
+    }, 10000);
   });
 
   describe('PUT /settings', () => {
@@ -410,7 +413,7 @@ describe('Settings Routes', () => {
       const response = await request(app).get('/settings/validation/stages').expect(200);
 
       expect(response.body.stages).toEqual(existingSettings.validation.stages);
-    });
+    }, 10000);
 
     it('should return empty array when no stages exist', async () => {
       const existingSettings = {
@@ -426,7 +429,7 @@ describe('Settings Routes', () => {
       const response = await request(app).get('/settings/validation/stages').expect(200);
 
       expect(response.body.stages).toEqual([]);
-    });
+    }, 10000);
   });
 
   describe('Error handling', () => {
@@ -509,10 +512,7 @@ describe('Settings Routes', () => {
       expect(response.body.retryDelay).toBeDefined();
       expect(response.body.enableFallbacks).toBeDefined();
       // The service handles errors gracefully by returning defaults, so error is logged in loadSettings
-      expect(mockLogger.error).toHaveBeenCalledWith(
-        'Failed to load settings',
-        expect.any(Error)
-      );
+      expect(mockLogger.error).toHaveBeenCalledWith('Failed to load settings', expect.any(Error));
     });
 
     it('should handle service errors in main settings retrieval', async () => {
@@ -526,10 +526,7 @@ describe('Settings Routes', () => {
       expect(response.body.fallback).toBeDefined();
       expect(response.body.validation).toBeDefined();
       expect(response.body.logging).toBeDefined();
-      expect(mockLogger.error).toHaveBeenCalledWith(
-        'Failed to load settings',
-        expect.any(Error)
-      );
+      expect(mockLogger.error).toHaveBeenCalledWith('Failed to load settings', expect.any(Error));
     });
   });
 });

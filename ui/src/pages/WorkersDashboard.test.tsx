@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -69,9 +68,7 @@ const createWrapper = () => {
 
   return ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter>
-        {children}
-      </MemoryRouter>
+      <MemoryRouter>{children}</MemoryRouter>
     </QueryClientProvider>
   );
 };
@@ -432,11 +429,15 @@ describe('WorkersDashboard - Core Functionality', () => {
         fireEvent.click(mergeButton);
       });
 
-      expect(window.confirm).toHaveBeenCalledWith('Are you sure you want to merge the worktree changes to the main branch?');
-      
+      expect(window.confirm).toHaveBeenCalledWith(
+        'Are you sure you want to merge the worktree changes to the main branch?'
+      );
+
       await waitFor(() => {
         expect(mockWorkersApi.mergeWorktree).toHaveBeenCalledWith('worker-123-abc');
-        expect(window.alert).toHaveBeenCalledWith('Successfully merged changes from worker-123-abc');
+        expect(window.alert).toHaveBeenCalledWith(
+          'Successfully merged changes from worker-123-abc'
+        );
       });
     });
 
@@ -458,7 +459,9 @@ describe('WorkersDashboard - Core Functionality', () => {
       });
 
       await waitFor(() => {
-        expect(window.alert).toHaveBeenCalledWith('Successfully merged changes from worker-123-abc');
+        expect(window.alert).toHaveBeenCalledWith(
+          'Successfully merged changes from worker-123-abc'
+        );
       });
     });
 
@@ -481,8 +484,13 @@ describe('WorkersDashboard - Core Functionality', () => {
       });
 
       await waitFor(() => {
-        expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to merge worktree:', expect.any(Error));
-        expect(window.alert).toHaveBeenCalledWith('Failed to merge worktree. Please check the console for details.');
+        expect(consoleErrorSpy).toHaveBeenCalledWith(
+          'Failed to merge worktree:',
+          expect.any(Error)
+        );
+        expect(window.alert).toHaveBeenCalledWith(
+          'Failed to merge worktree. Please check the console for details.'
+        );
       });
 
       consoleErrorSpy.mockRestore();
@@ -551,7 +559,9 @@ describe('WorkersDashboard - Core Functionality', () => {
 
       await waitFor(() => {
         expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to open VSCode:', expect.any(Error));
-        expect(window.alert).toHaveBeenCalledWith('VSCode command line tools not found. Please install VSCode and enable shell command integration from the Command Palette.');
+        expect(window.alert).toHaveBeenCalledWith(
+          'VSCode command line tools not found. Please install VSCode and enable shell command integration from the Command Palette.'
+        );
       });
 
       consoleErrorSpy.mockRestore();
@@ -585,7 +595,7 @@ describe('WorkersDashboard - Core Functionality', () => {
     it('handles stop worker error', async () => {
       const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
       const runningWorker = { ...mockWorker, status: 'running' as const };
-      
+
       mockWorkersApi.getWorkersStatus.mockResolvedValue({
         workers: [runningWorker],
         activeCount: 1,
@@ -611,7 +621,9 @@ describe('WorkersDashboard - Core Functionality', () => {
 
       await waitFor(() => {
         expect(consoleErrorSpy).toHaveBeenCalledWith('Failed to stop worker:', expect.any(Error));
-        expect(window.alert).toHaveBeenCalledWith('Failed to stop worker. Please check the console for details.');
+        expect(window.alert).toHaveBeenCalledWith(
+          'Failed to stop worker. Please check the console for details.'
+        );
       });
 
       consoleErrorSpy.mockRestore();
@@ -724,7 +736,7 @@ describe('WorkersDashboard - Core Functionality', () => {
         'Starting worker...',
         '🤖 Processing task',
         '[ERROR] Something went wrong',
-        'Completed step 1'
+        'Completed step 1',
       ]);
     });
 
@@ -753,11 +765,11 @@ describe('WorkersDashboard - Core Functionality', () => {
       await waitFor(() => {
         // Try to find Details button - it might not be rendered with empty logs
         const detailsButtons = screen.queryAllByText('Details');
-        
+
         if (detailsButtons.length > 0) {
           // If details button exists, click it
           fireEvent.click(detailsButtons[0]);
-          
+
           // The Details button navigates to the worker detail page
           expect(mockNavigate).toHaveBeenCalledWith('/workers/worker-123-abc');
         } else {
@@ -817,7 +829,11 @@ describe('WorkersDashboard - Core Functionality', () => {
 
       await waitFor(() => {
         expect(screen.getByText('No Workers')).toBeInTheDocument();
-        expect(screen.getByText('No Claude Code workers are currently running. Start a worker from the task board to see it here.')).toBeInTheDocument();
+        expect(
+          screen.getByText(
+            'No Claude Code workers are currently running. Start a worker from the task board to see it here.'
+          )
+        ).toBeInTheDocument();
       });
     });
 

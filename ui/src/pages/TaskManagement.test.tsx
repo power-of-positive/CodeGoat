@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 import React from 'react';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -101,7 +100,7 @@ describe('TaskManagement', () => {
   beforeEach(() => {
     // Reset all mocks before each test
     jest.clearAllMocks();
-    
+
     // Default mock implementation for getTasks
     mockTaskApi.getTasks.mockResolvedValue(mockTasks);
   });
@@ -124,9 +123,7 @@ describe('TaskManagement', () => {
       });
 
       // Check header elements - the subtitle shows task count instead of description
-      expect(
-        screen.getByText(/Showing \d+ of \d+ tasks/)
-      ).toBeInTheDocument();
+      expect(screen.getByText(/Showing \d+ of \d+ tasks/)).toBeInTheDocument();
       expect(screen.getByText('Add Task')).toBeInTheDocument();
       expect(screen.getByText('Refresh')).toBeInTheDocument();
     });
@@ -356,7 +353,7 @@ describe('TaskManagement', () => {
       await waitFor(() => {
         expect(screen.getByText('Task Management')).toBeInTheDocument();
       });
-      
+
       await waitFor(() => {
         expect(screen.getByText('CODEGOAT-001')).toBeInTheDocument();
       });
@@ -393,7 +390,7 @@ describe('TaskManagement', () => {
       await waitFor(() => {
         expect(screen.getByText('Task Management')).toBeInTheDocument();
       });
-      
+
       await waitFor(() => {
         expect(screen.getByText('CODEGOAT-001')).toBeInTheDocument();
       });
@@ -417,7 +414,10 @@ describe('TaskManagement', () => {
       const selects = screen.getAllByRole('combobox');
       const prioritySelect = selects.find(select => {
         const selectElement = select as HTMLSelectElement;
-        return selectElement.value === 'high' || selectElement.selectedOptions[0]?.text === 'High Priority';
+        return (
+          selectElement.value === 'high' ||
+          selectElement.selectedOptions[0]?.text === 'High Priority'
+        );
       }) as HTMLSelectElement;
       expect(prioritySelect).toBeInTheDocument();
       await user.selectOptions(prioritySelect, 'low');
@@ -460,7 +460,7 @@ describe('TaskManagement', () => {
       await waitFor(() => {
         expect(screen.getByText('Task Management')).toBeInTheDocument();
       });
-      
+
       await waitFor(() => {
         expect(screen.getByText('CODEGOAT-001')).toBeInTheDocument();
       });
@@ -493,7 +493,7 @@ describe('TaskManagement', () => {
       await waitFor(() => {
         expect(screen.getByText('Task Management')).toBeInTheDocument();
       });
-      
+
       await waitFor(() => {
         expect(screen.getByText('CODEGOAT-001')).toBeInTheDocument();
       });
@@ -707,7 +707,7 @@ describe('TaskManagement', () => {
 
       // First click - ascending
       await user.click(idHeader);
-      
+
       // Second click - descending
       await user.click(idHeader);
 
@@ -787,7 +787,7 @@ describe('TaskManagement', () => {
 
       // Verify confirmation and API calls
       expect(confirmSpy).toHaveBeenCalledWith('Are you sure you want to delete 3 selected tasks?');
-      
+
       await waitFor(() => {
         expect(taskApi.deleteTask).toHaveBeenCalledTimes(3);
         expect(taskApi.deleteTask).toHaveBeenCalledWith('CODEGOAT-001');
@@ -803,7 +803,7 @@ describe('TaskManagement', () => {
     it('starts Claude worker for a task', async () => {
       const confirmSpy = jest.spyOn(window, 'confirm').mockReturnValue(true);
       const alertSpy = jest.spyOn(window, 'alert').mockImplementation(() => {});
-      
+
       mockClaudeWorkersApi.startWorker.mockResolvedValue({
         id: 'worker-123',
         taskId: 'CODEGOAT-001',
@@ -833,7 +833,9 @@ describe('TaskManagement', () => {
       await user.click(workerButton);
 
       // Verify confirmation was shown
-      expect(confirmSpy).toHaveBeenCalledWith('Start Claude Code worker for task: "Implement user authentication system"?');
+      expect(confirmSpy).toHaveBeenCalledWith(
+        'Start Claude Code worker for task: "Implement user authentication system"?'
+      );
 
       // Verify API call
       await waitFor(() => {
@@ -841,7 +843,9 @@ describe('TaskManagement', () => {
       });
 
       // Verify success alert
-      expect(alertSpy).toHaveBeenCalledWith('✅ Started Claude Code worker!\nTask: CODEGOAT-001\nContent: "Implement user authentication system"');
+      expect(alertSpy).toHaveBeenCalledWith(
+        '✅ Started Claude Code worker!\nTask: CODEGOAT-001\nContent: "Implement user authentication system"'
+      );
 
       confirmSpy.mockRestore();
       alertSpy.mockRestore();
@@ -872,10 +876,15 @@ describe('TaskManagement', () => {
 
       // Verify error handling
       await waitFor(() => {
-        expect(consoleSpy).toHaveBeenCalledWith('Failed to start Claude worker:', expect.any(Error));
+        expect(consoleSpy).toHaveBeenCalledWith(
+          'Failed to start Claude worker:',
+          expect.any(Error)
+        );
       });
 
-      expect(alertSpy).toHaveBeenCalledWith('❌ Failed to start Claude Code worker. Please check the console for details.');
+      expect(alertSpy).toHaveBeenCalledWith(
+        '❌ Failed to start Claude Code worker. Please check the console for details.'
+      );
 
       confirmSpy.mockRestore();
       alertSpy.mockRestore();
@@ -942,7 +951,7 @@ describe('TaskManagement', () => {
 
       // Check that tasks are displayed in the table - basic verification
       expect(screen.getByText('CODEGOAT-001')).toBeInTheDocument();
-      expect(screen.getByText('CODEGOAT-002')).toBeInTheDocument(); 
+      expect(screen.getByText('CODEGOAT-002')).toBeInTheDocument();
       expect(screen.getByText('CODEGOAT-003')).toBeInTheDocument();
     });
 

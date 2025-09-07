@@ -188,27 +188,35 @@ describe('CommandInterceptor', () => {
 
     it('should block Bash commands matching deny list patterns', () => {
       // Mock the claudeDenyList with a Bash pattern
-      const mockInterceptor = new CommandInterceptor(permissionManager, mockLogger, '/test/worktree');
+      const mockInterceptor = new CommandInterceptor(
+        permissionManager,
+        mockLogger,
+        '/test/worktree'
+      );
       (mockInterceptor as any).claudeDenyList = ['Bash(HUSKY=0*:'];
 
       const result = mockInterceptor.analyzeCommand('HUSKY=0 npm run test');
-      
+
       expect(result.allowed).toBe(false);
       expect(result.reason).toContain('Command blocked by .claude/settings.json deny list');
       expect(result.severity).toBe('error');
     });
 
     it('should block Update() file patterns', () => {
-      const mockInterceptor = new CommandInterceptor(permissionManager, mockLogger, '/test/worktree');
+      const mockInterceptor = new CommandInterceptor(
+        permissionManager,
+        mockLogger,
+        '/test/worktree'
+      );
       (mockInterceptor as any).claudeDenyList = ['Update(package.json)'];
 
       // Test various file editing patterns
       const commands = [
         'vim package.json',
-        'nano package.json', 
+        'nano package.json',
         'echo "test" > package.json',
         'echo "test" >> package.json',
-        'tee package.json'
+        'tee package.json',
       ];
 
       commands.forEach(command => {
@@ -219,45 +227,57 @@ describe('CommandInterceptor', () => {
     });
 
     it('should allow commands not matching deny list patterns', () => {
-      const mockInterceptor = new CommandInterceptor(permissionManager, mockLogger, '/test/worktree');
+      const mockInterceptor = new CommandInterceptor(
+        permissionManager,
+        mockLogger,
+        '/test/worktree'
+      );
       (mockInterceptor as any).claudeDenyList = ['Bash(HUSKY=0*:', 'Update(package.json)'];
 
       const result = mockInterceptor.analyzeCommand('cat README.md');
-      
+
       expect(result.allowed).toBe(true);
       expect(result.reason).toContain('Command permitted');
     });
 
     it('should handle empty deny list', () => {
-      const mockInterceptor = new CommandInterceptor(permissionManager, mockLogger, '/test/worktree');
+      const mockInterceptor = new CommandInterceptor(
+        permissionManager,
+        mockLogger,
+        '/test/worktree'
+      );
       (mockInterceptor as any).claudeDenyList = [];
 
       const result = mockInterceptor.analyzeCommand('rm -rf /');
-      
+
       // Should be blocked by permission rules, not deny list
       expect(result.allowed).toBe(false);
       expect(result.reason).not.toContain('.claude/settings.json');
     });
 
     it('should handle regex escaping in Update patterns', () => {
-      const mockInterceptor = new CommandInterceptor(permissionManager, mockLogger, '/test/worktree');
+      const mockInterceptor = new CommandInterceptor(
+        permissionManager,
+        mockLogger,
+        '/test/worktree'
+      );
       (mockInterceptor as any).claudeDenyList = ['Update(file.with.dots.json)'];
 
       const result = mockInterceptor.analyzeCommand('vim file.with.dots.json');
-      
+
       expect(result.allowed).toBe(false);
       expect(result.reason).toContain('Update(file.with.dots.json)');
     });
 
     it('should handle wildcard patterns in Bash deny list', () => {
-      const mockInterceptor = new CommandInterceptor(permissionManager, mockLogger, '/test/worktree');
+      const mockInterceptor = new CommandInterceptor(
+        permissionManager,
+        mockLogger,
+        '/test/worktree'
+      );
       (mockInterceptor as any).claudeDenyList = ['Bash(npm run*:'];
 
-      const commands = [
-        'npm run build',
-        'npm run test',
-        'npm run lint'
-      ];
+      const commands = ['npm run build', 'npm run test', 'npm run lint'];
 
       commands.forEach(command => {
         const result = mockInterceptor.analyzeCommand(command);
@@ -271,16 +291,16 @@ describe('CommandInterceptor', () => {
     it('should create interceptor instance', async () => {
       // Test the static method functionality
       const interceptor = await CommandInterceptor.createDefault(mockLogger, '/test/worktree');
-      
+
       expect(interceptor).toBeInstanceOf(CommandInterceptor);
     });
 
     it('should handle config loading errors gracefully', async () => {
       // This will use default permissions when config file doesn't exist
       const interceptor = await CommandInterceptor.createDefault(mockLogger, '/test/worktree');
-      
+
       expect(interceptor).toBeInstanceOf(CommandInterceptor);
-      
+
       // Test that it works with a simple command
       const result = interceptor.analyzeCommand('ls');
       expect(result).toBeDefined();
@@ -290,7 +310,7 @@ describe('CommandInterceptor', () => {
   describe('edge cases and error handling', () => {
     it('should handle empty commands', () => {
       const result = interceptor.analyzeCommand('');
-      
+
       expect(result.allowed).toBe(false);
       expect(result.severity).toBe('error');
       expect(result.reason).toContain('Command blocked by permissions');
@@ -298,7 +318,7 @@ describe('CommandInterceptor', () => {
 
     it('should handle whitespace-only commands', () => {
       const result = interceptor.analyzeCommand('   \t\n   ');
-      
+
       expect(result.allowed).toBe(false);
       expect(result.severity).toBe('error');
       expect(result.reason).toContain('Command blocked by permissions');
@@ -306,7 +326,7 @@ describe('CommandInterceptor', () => {
 
     it('should handle commands with special characters', () => {
       const result = interceptor.analyzeCommand('echo "Hello $USER & welcome!"');
-      
+
       expect(result.action).toBe(ActionType.SYSTEM_COMMAND);
       expect(result.target).toBe('echo');
       expect(result.allowed).toBe(false); // Blocked by strict permissions
@@ -315,7 +335,7 @@ describe('CommandInterceptor', () => {
     it('should handle very long commands', () => {
       const longCommand = 'echo ' + 'a'.repeat(1000);
       const result = interceptor.analyzeCommand(longCommand);
-      
+
       expect(result.action).toBe(ActionType.SYSTEM_COMMAND);
       expect(result.target).toBe('echo');
       expect(result.allowed).toBe(false); // Blocked by strict permissions

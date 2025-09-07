@@ -3,7 +3,6 @@
  * Tests with strategic mocking to achieve high coverage
  */
 
-
 // Import the function and its dependencies
 import { runScriptLinting } from './script-linting';
 import * as commandUtils from '../utils/command-utils';

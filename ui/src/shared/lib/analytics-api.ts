@@ -41,7 +41,15 @@ export const analyticsApi = {
   }): Promise<ValidationRun[]> {
     try {
       const queryParams = buildQueryParams(options || {});
-      return await apiRequest<ValidationRun[]>(`/analytics/validation-runs${queryParams}`);
+      const response = await apiRequest<{ validationRuns: ValidationRun[] }>(
+        `/analytics/validation-runs${queryParams}`
+      );
+      // Handle the case where the API returns { validationRuns: [...] }
+      if (response && typeof response === 'object' && 'validationRuns' in response) {
+        return response.validationRuns || [];
+      }
+      // Fallback for direct array response
+      return Array.isArray(response) ? response : [];
     } catch (error) {
       console.error('Failed to fetch validation runs:', error);
       return [];

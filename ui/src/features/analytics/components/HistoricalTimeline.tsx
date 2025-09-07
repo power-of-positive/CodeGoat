@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -85,20 +84,30 @@ const MILLISECONDS_PER_SECOND = 1000;
 const SUCCESS_RATE_THRESHOLD_PERCENT = 80;
 
 const CHART_COLORS = [
-  '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6',
-  '#06b6d4', '#84cc16', '#f97316', '#ec4899', '#6366f1'
+  '#3b82f6',
+  '#10b981',
+  '#f59e0b',
+  '#ef4444',
+  '#8b5cf6',
+  '#06b6d4',
+  '#84cc16',
+  '#f97316',
+  '#ec4899',
+  '#6366f1',
 ];
 
-export function HistoricalTimeline({ 
+export function HistoricalTimeline({
   defaultDays = 30,
   autoRefresh = false,
-  refreshInterval = DEFAULT_REFRESH_INTERVAL_MS
+  refreshInterval = DEFAULT_REFRESH_INTERVAL_MS,
 }: HistoricalTimelineProps) {
   const [days, setDays] = useState(defaultDays);
   const [granularity, setGranularity] = useState<'hour' | 'day' | 'week'>('day');
   const [environment, setEnvironment] = useState('');
   const [includeStages] = useState(true); // Remove setIncludeStages as it's not used
-  const [chartType, setChartType] = useState<'success-rate' | 'duration' | 'volume' | 'combined'>('combined');
+  const [chartType, setChartType] = useState<'success-rate' | 'duration' | 'volume' | 'combined'>(
+    'combined'
+  );
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTimeIndex, setCurrentTimeIndex] = useState(0);
   const [stageVisibility, setStageVisibility] = useState<StageVisibilityControl>({});
@@ -126,14 +135,14 @@ export function HistoricalTimeline({
     if (!timelineData?.timeline || !includeStages) {
       return [];
     }
-    
+
     const stageSet = new Set<string>();
     timelineData.timeline.forEach(period => {
       Object.keys(period.stages || {}).forEach(stageId => {
         stageSet.add(stageId);
       });
     });
-    
+
     return Array.from(stageSet).sort();
   }, [timelineData, includeStages]);
 
@@ -153,7 +162,7 @@ export function HistoricalTimeline({
     if (!isPlaying || !timelineData?.timeline) {
       return;
     }
-    
+
     const interval = setInterval(() => {
       setCurrentTimeIndex(prev => {
         const next = prev + 1;
@@ -171,7 +180,7 @@ export function HistoricalTimeline({
   const handleToggleStageVisibility = (stageId: string) => {
     setStageVisibility(prev => ({
       ...prev,
-      [stageId]: !prev[stageId]
+      [stageId]: !prev[stageId],
     }));
   };
 
@@ -209,9 +218,7 @@ export function HistoricalTimeline({
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
           <Activity className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            Failed to load timeline data
-          </h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Failed to load timeline data</h3>
           <p className="text-gray-600 mb-4">
             There was an error loading the historical timeline data.
           </p>
@@ -235,7 +242,10 @@ export function HistoricalTimeline({
     );
   }
 
-  const { timeline, summary } = timelineData || { timeline: [], summary: { totalRuns: 0, successRate: 0, averageDuration: 0, totalPeriods: 0 } };
+  const { timeline, summary } = timelineData || {
+    timeline: [],
+    summary: { totalRuns: 0, successRate: 0, averageDuration: 0, totalPeriods: 0 },
+  };
 
   // Prepare chart data with formatted timestamps
   const chartData = timeline.map((period, index) => ({
@@ -243,11 +253,14 @@ export function HistoricalTimeline({
     displayTime: formatTimestamp(period.timestamp),
     index,
     // Flatten stage performance for easier charting
-    ...Object.entries(period.stages || {}).reduce((acc, [stageId, perf]) => {
-      acc[`${stageId}_successRate`] = perf.successRate;
-      acc[`${stageId}_avgDuration`] = perf.avgDuration;
-      return acc;
-    }, {} as Record<string, number>)
+    ...Object.entries(period.stages || {}).reduce(
+      (acc, [stageId, perf]) => {
+        acc[`${stageId}_successRate`] = perf.successRate;
+        acc[`${stageId}_avgDuration`] = perf.avgDuration;
+        return acc;
+      },
+      {} as Record<string, number>
+    ),
   }));
 
   // Filter data for animation if playing
@@ -263,7 +276,7 @@ export function HistoricalTimeline({
             Interactive timeline of validation run performance over time
           </p>
         </div>
-        
+
         <div className="flex items-center gap-2">
           {/* Animation Controls */}
           <div className="flex items-center gap-1 border rounded p-1">
@@ -275,11 +288,7 @@ export function HistoricalTimeline({
             >
               <SkipBack className="w-4 h-4" />
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsPlaying(!isPlaying)}
-            >
+            <Button variant="ghost" size="sm" onClick={() => setIsPlaying(!isPlaying)}>
               {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
             </Button>
             <Button
@@ -301,7 +310,7 @@ export function HistoricalTimeline({
             <Settings className="w-4 h-4" />
             Settings
           </Button>
-          
+
           <Button onClick={() => refetch()} size="sm">
             Refresh
           </Button>
@@ -321,12 +330,10 @@ export function HistoricalTimeline({
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
               {/* Time Period */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Time Period
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Time Period</label>
                 <Select
                   value={days.toString()}
-                  onChange={(e) => setDays(parseInt(e.target.value))}
+                  onChange={e => setDays(parseInt(e.target.value))}
                   className="w-full"
                 >
                   <Option value="7">Last 7 days</Option>
@@ -344,7 +351,7 @@ export function HistoricalTimeline({
                 </label>
                 <Select
                   value={granularity}
-                  onChange={(e) => setGranularity(e.target.value as keyof typeof GRANULARITY_OPTIONS)}
+                  onChange={e => setGranularity(e.target.value as keyof typeof GRANULARITY_OPTIONS)}
                   className="w-full"
                 >
                   {Object.entries(GRANULARITY_OPTIONS).map(([key, option]) => (
@@ -357,12 +364,10 @@ export function HistoricalTimeline({
 
               {/* Environment */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Environment
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Environment</label>
                 <Select
                   value={environment}
-                  onChange={(e) => setEnvironment(e.target.value)}
+                  onChange={e => setEnvironment(e.target.value)}
                   className="w-full"
                 >
                   <Option value="">All Environments</Option>
@@ -374,12 +379,14 @@ export function HistoricalTimeline({
 
               {/* Chart Type */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Chart Type
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Chart Type</label>
                 <Select
                   value={chartType}
-                  onChange={(e) => setChartType(e.target.value as 'success-rate' | 'duration' | 'volume' | 'combined')}
+                  onChange={e =>
+                    setChartType(
+                      e.target.value as 'success-rate' | 'duration' | 'volume' | 'combined'
+                    )
+                  }
                   className="w-full"
                 >
                   <Option value="combined">Combined View</Option>
@@ -403,10 +410,16 @@ export function HistoricalTimeline({
                       onClick={() => handleToggleStageVisibility(stageId)}
                       className="flex items-center gap-2"
                       style={{
-                        backgroundColor: stageVisibility[stageId] ? CHART_COLORS[index % CHART_COLORS.length] : undefined
+                        backgroundColor: stageVisibility[stageId]
+                          ? CHART_COLORS[index % CHART_COLORS.length]
+                          : undefined,
                       }}
                     >
-                      {stageVisibility[stageId] ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
+                      {stageVisibility[stageId] ? (
+                        <Eye className="w-3 h-3" />
+                      ) : (
+                        <EyeOff className="w-3 h-3" />
+                      )}
                       {stageId}
                     </Button>
                   ))}
@@ -427,7 +440,7 @@ export function HistoricalTimeline({
                   <div
                     className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                     style={{
-                      width: `${((currentTimeIndex + 1) / chartData.length) * 100}%`
+                      width: `${((currentTimeIndex + 1) / chartData.length) * 100}%`,
                     }}
                   />
                 </div>
@@ -493,7 +506,10 @@ export function HistoricalTimeline({
               <div>
                 <p className="text-sm font-medium text-gray-600">Avg Success Rate</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {(timeline.reduce((sum, period) => sum + period.successRate, 0) / timeline.length).toFixed(1)}%
+                  {(
+                    timeline.reduce((sum, period) => sum + period.successRate, 0) / timeline.length
+                  ).toFixed(1)}
+                  %
                 </p>
               </div>
               <TrendingUp className="w-8 h-8 text-green-500" />
@@ -531,14 +547,14 @@ export function HistoricalTimeline({
                   stroke="#6b7280"
                   fontSize={12}
                   domain={[0, 100]}
-                  tickFormatter={(value) => `${value}%`}
+                  tickFormatter={value => `${value}%`}
                 />
                 <YAxis
                   yAxisId="right"
                   orientation="right"
                   stroke="#6b7280"
                   fontSize={12}
-                  tickFormatter={(value) => `${value}`}
+                  tickFormatter={value => `${value}`}
                 />
                 <Tooltip
                   contentStyle={{
@@ -547,9 +563,9 @@ export function HistoricalTimeline({
                     borderRadius: '6px',
                     color: '#374151',
                   }}
-                  labelFormatter={(label) => `Time: ${label}`}
+                  labelFormatter={label => `Time: ${label}`}
                 />
-                
+
                 {/* Success Rate Area */}
                 <Area
                   yAxisId="left"
@@ -572,21 +588,22 @@ export function HistoricalTimeline({
                 />
 
                 {/* Stage Performance Lines */}
-                {includeStages && availableStages
-                  .filter(stageId => stageVisibility[stageId])
-                  .map((stageId, index) => (
-                    <Line
-                      key={stageId}
-                      yAxisId="left"
-                      type="monotone"
-                      dataKey={`${stageId}_successRate`}
-                      stroke={CHART_COLORS[index % CHART_COLORS.length]}
-                      strokeWidth={1}
-                      strokeDasharray="5 5"
-                      dot={false}
-                      name={`${stageId} Success Rate (%)`}
-                    />
-                  ))}
+                {includeStages &&
+                  availableStages
+                    .filter(stageId => stageVisibility[stageId])
+                    .map((stageId, index) => (
+                      <Line
+                        key={stageId}
+                        yAxisId="left"
+                        type="monotone"
+                        dataKey={`${stageId}_successRate`}
+                        stroke={CHART_COLORS[index % CHART_COLORS.length]}
+                        strokeWidth={1}
+                        strokeDasharray="5 5"
+                        dot={false}
+                        name={`${stageId} Success Rate (%)`}
+                      />
+                    ))}
               </ComposedChart>
             </ResponsiveContainer>
           </CardContent>
@@ -597,16 +614,11 @@ export function HistoricalTimeline({
         <Card>
           <CardHeader>
             <CardTitle>Success Rate Timeline</CardTitle>
-            <p className="text-sm text-gray-600">
-              Overall and per-stage success rates over time
-            </p>
+            <p className="text-sm text-gray-600">Overall and per-stage success rates over time</p>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={400}>
-              <LineChart
-                data={displayData}
-                margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
-              >
+              <LineChart data={displayData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                 <XAxis
                   dataKey="displayTime"
@@ -620,7 +632,7 @@ export function HistoricalTimeline({
                   stroke="#6b7280"
                   fontSize={12}
                   domain={[0, 100]}
-                  tickFormatter={(value) => `${value}%`}
+                  tickFormatter={value => `${value}%`}
                 />
                 <Tooltip
                   contentStyle={{
@@ -641,18 +653,19 @@ export function HistoricalTimeline({
                 />
 
                 {/* Stage Success Rates */}
-                {includeStages && availableStages
-                  .filter(stageId => stageVisibility[stageId])
-                  .map((stageId, index) => (
-                    <Line
-                      key={stageId}
-                      type="monotone"
-                      dataKey={`${stageId}_successRate`}
-                      stroke={CHART_COLORS[index % CHART_COLORS.length]}
-                      strokeWidth={2}
-                      name={`${stageId} Success Rate`}
-                    />
-                  ))}
+                {includeStages &&
+                  availableStages
+                    .filter(stageId => stageVisibility[stageId])
+                    .map((stageId, index) => (
+                      <Line
+                        key={stageId}
+                        type="monotone"
+                        dataKey={`${stageId}_successRate`}
+                        stroke={CHART_COLORS[index % CHART_COLORS.length]}
+                        strokeWidth={2}
+                        name={`${stageId} Success Rate`}
+                      />
+                    ))}
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
@@ -663,16 +676,11 @@ export function HistoricalTimeline({
         <Card>
           <CardHeader>
             <CardTitle>Duration Trends</CardTitle>
-            <p className="text-sm text-gray-600">
-              Average execution duration trends over time
-            </p>
+            <p className="text-sm text-gray-600">Average execution duration trends over time</p>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={400}>
-              <LineChart
-                data={displayData}
-                margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
-              >
+              <LineChart data={displayData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                 <XAxis
                   dataKey="displayTime"
@@ -682,11 +690,7 @@ export function HistoricalTimeline({
                   textAnchor="end"
                   height={CHART_HEIGHT}
                 />
-                <YAxis
-                  stroke="#6b7280"
-                  fontSize={12}
-                  tickFormatter={(value) => `${value}ms`}
-                />
+                <YAxis stroke="#6b7280" fontSize={12} tickFormatter={value => `${value}ms`} />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: '#ffffff',
@@ -706,18 +710,19 @@ export function HistoricalTimeline({
                 />
 
                 {/* Stage Durations */}
-                {includeStages && availableStages
-                  .filter(stageId => stageVisibility[stageId])
-                  .map((stageId, index) => (
-                    <Line
-                      key={stageId}
-                      type="monotone"
-                      dataKey={`${stageId}_avgDuration`}
-                      stroke={CHART_COLORS[index % CHART_COLORS.length]}
-                      strokeWidth={2}
-                      name={`${stageId} Avg Duration (ms)`}
-                    />
-                  ))}
+                {includeStages &&
+                  availableStages
+                    .filter(stageId => stageVisibility[stageId])
+                    .map((stageId, index) => (
+                      <Line
+                        key={stageId}
+                        type="monotone"
+                        dataKey={`${stageId}_avgDuration`}
+                        stroke={CHART_COLORS[index % CHART_COLORS.length]}
+                        strokeWidth={2}
+                        name={`${stageId} Avg Duration (ms)`}
+                      />
+                    ))}
               </LineChart>
             </ResponsiveContainer>
           </CardContent>
@@ -728,16 +733,11 @@ export function HistoricalTimeline({
         <Card>
           <CardHeader>
             <CardTitle>Run Volume Timeline</CardTitle>
-            <p className="text-sm text-gray-600">
-              Number of validation runs executed over time
-            </p>
+            <p className="text-sm text-gray-600">Number of validation runs executed over time</p>
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={400}>
-              <BarChart
-                data={displayData}
-                margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
-              >
+              <BarChart data={displayData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                 <XAxis
                   dataKey="displayTime"
@@ -747,10 +747,7 @@ export function HistoricalTimeline({
                   textAnchor="end"
                   height={CHART_HEIGHT}
                 />
-                <YAxis
-                  stroke="#6b7280"
-                  fontSize={12}
-                />
+                <YAxis stroke="#6b7280" fontSize={12} />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: '#ffffff',
@@ -793,13 +790,17 @@ export function HistoricalTimeline({
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">Success Rate:</span>
-                        <span className={`font-medium ${currentPeriod.successRate >= SUCCESS_RATE_THRESHOLD_PERCENT ? 'text-green-600' : 'text-red-600'}`}>
+                        <span
+                          className={`font-medium ${currentPeriod.successRate >= SUCCESS_RATE_THRESHOLD_PERCENT ? 'text-green-600' : 'text-red-600'}`}
+                        >
                           {currentPeriod.successRate.toFixed(1)}%
                         </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600">Avg Duration:</span>
-                        <span className="font-medium">{currentPeriod.averageDuration.toFixed(1)}ms</span>
+                        <span className="font-medium">
+                          {currentPeriod.averageDuration.toFixed(1)}ms
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -815,7 +816,9 @@ export function HistoricalTimeline({
                             <div className="space-y-1 text-xs">
                               <div className="flex justify-between">
                                 <span className="text-gray-600">Success Rate:</span>
-                                <span className={`font-medium ${perf.successRate >= SUCCESS_RATE_THRESHOLD_PERCENT ? 'text-green-600' : 'text-red-600'}`}>
+                                <span
+                                  className={`font-medium ${perf.successRate >= SUCCESS_RATE_THRESHOLD_PERCENT ? 'text-green-600' : 'text-red-600'}`}
+                                >
                                   {perf.successRate.toFixed(1)}%
                                 </span>
                               </div>

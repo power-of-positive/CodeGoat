@@ -13,10 +13,10 @@ test.describe('Analytics Dashboard', () => {
     test('should navigate to analytics dashboard', async ({ page }) => {
       // Should be on analytics page
       await expect(page).toHaveURL('/analytics');
-      
+
       // Check for specific analytics heading (avoid ambiguous selector)
       const analyticsHeading = page.getByRole('heading', { name: 'Validation Analytics' });
-      if (await analyticsHeading.count() > 0) {
+      if ((await analyticsHeading.count()) > 0) {
         await expect(analyticsHeading).toBeVisible();
       } else {
         // At minimum, verify we're on the right route
@@ -26,27 +26,29 @@ test.describe('Analytics Dashboard', () => {
 
     test('should display analytics sections', async ({ page }) => {
       // Check for main analytics sections
-      const descriptionText = page.getByText('Track validation pipeline performance and success rates');
-      if (await descriptionText.count() > 0) {
+      const descriptionText = page.getByText(
+        'Track validation pipeline performance and success rates'
+      );
+      if ((await descriptionText.count()) > 0) {
         await expect(descriptionText).toBeVisible();
       }
 
       // Check for metric cards with conditional visibility
       const totalRuns = page.getByRole('heading', { name: 'Total Runs', exact: true });
-      if (await totalRuns.count() > 0) {
+      if ((await totalRuns.count()) > 0) {
         await expect(totalRuns).toBeVisible();
       }
-      
+
       const successRate = page.getByRole('heading', { name: 'Success Rate', exact: true });
-      if (await successRate.count() > 0) {
+      if ((await successRate.count()) > 0) {
         await expect(successRate).toBeVisible();
       }
-      
+
       const avgDuration = page.getByRole('heading', { name: 'Avg Duration', exact: true });
-      if (await avgDuration.count() > 0) {
+      if ((await avgDuration.count()) > 0) {
         await expect(avgDuration).toBeVisible();
       }
-      
+
       // At minimum, verify we're on the right route
       expect(page.url()).toContain('/analytics');
     });
@@ -55,7 +57,7 @@ test.describe('Analytics Dashboard', () => {
       // Test mobile viewport
       await page.setViewportSize({ width: 375, height: 667 });
       const mobileHeading = page.getByRole('heading', { name: 'Validation Analytics' });
-      if (await mobileHeading.count() > 0) {
+      if ((await mobileHeading.count()) > 0) {
         await expect(mobileHeading).toBeVisible();
       } else {
         expect(page.url()).toContain('/analytics');
@@ -64,7 +66,7 @@ test.describe('Analytics Dashboard', () => {
       // Test tablet viewport
       await page.setViewportSize({ width: 768, height: 1024 });
       const tabletHeading = page.getByRole('heading', { name: 'Validation Analytics' });
-      if (await tabletHeading.count() > 0) {
+      if ((await tabletHeading.count()) > 0) {
         await expect(tabletHeading).toBeVisible();
       } else {
         expect(page.url()).toContain('/analytics');
@@ -73,7 +75,7 @@ test.describe('Analytics Dashboard', () => {
       // Test desktop viewport
       await page.setViewportSize({ width: 1280, height: 720 });
       const desktopHeading = page.getByRole('heading', { name: 'Validation Analytics' });
-      if (await desktopHeading.count() > 0) {
+      if ((await desktopHeading.count()) > 0) {
         await expect(desktopHeading).toBeVisible();
       } else {
         expect(page.url()).toContain('/analytics');
@@ -85,7 +87,7 @@ test.describe('Analytics Dashboard', () => {
     test('should display recent validation runs', async ({ page }) => {
       // Check for recent runs section
       const recentRuns = page.getByRole('heading', { name: 'Recent Validation Runs' });
-      if (await recentRuns.count() > 0) {
+      if ((await recentRuns.count()) > 0) {
         await expect(recentRuns).toBeVisible();
       } else {
         // At minimum, verify we're on the right route
@@ -96,7 +98,7 @@ test.describe('Analytics Dashboard', () => {
     test('should display validation chart', async ({ page }) => {
       // Check for chart section
       const chartHeading = page.getByRole('heading', { name: 'Stage Performance Overview' });
-      if (await chartHeading.count() > 0) {
+      if ((await chartHeading.count()) > 0) {
         await expect(chartHeading).toBeVisible();
       } else {
         // At minimum, verify we're on the right route
@@ -107,12 +109,12 @@ test.describe('Analytics Dashboard', () => {
     test('should have refresh functionality', async ({ page }) => {
       // Look for refresh button
       const refreshButton = page.getByRole('button', { name: 'Refresh' });
-      if (await refreshButton.count() > 0) {
+      if ((await refreshButton.count()) > 0) {
         await expect(refreshButton).toBeVisible();
-        
+
         // Click refresh
         await refreshButton.click();
-        
+
         // Should still be on analytics page
         await expect(page).toHaveURL('/analytics');
       } else {
@@ -131,7 +133,7 @@ test.describe('Analytics Dashboard', () => {
 
       // Check if settings content is available
       const settingsHeading = page.getByRole('heading', { name: 'Settings' });
-      if (await settingsHeading.count() > 0) {
+      if ((await settingsHeading.count()) > 0) {
         await expect(settingsHeading).toBeVisible();
       } else {
         // At minimum, verify we're on the right route

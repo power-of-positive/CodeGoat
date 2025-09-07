@@ -21,7 +21,8 @@ export const settingsApi = {
 
   async getValidationStages(): Promise<ValidationStage[]> {
     try {
-      return await apiRequest<ValidationStage[]>('/settings/validation-stages');
+      const response = await apiRequest<ValidationStage[]>('/validation-stage-configs');
+      return response || [];
     } catch (error) {
       console.error('Failed to fetch validation stages:', error);
       return [];
@@ -29,17 +30,22 @@ export const settingsApi = {
   },
 
   async addValidationStage(stage: Omit<ValidationStage, 'id'>): Promise<ValidationStage> {
-    return apiRequest<ValidationStage>('/validation-stage-configs', {
+    const response = await apiRequest<ValidationStage>('/validation-stage-configs', {
       method: 'POST',
       body: stage,
     });
+    return response;
   },
 
-  async updateValidationStage(id: string, stage: Partial<ValidationStage>): Promise<ValidationStage> {
-    return apiRequest<ValidationStage>(`/validation-stage-configs/${id}`, {
+  async updateValidationStage(
+    id: string,
+    stage: Partial<ValidationStage>
+  ): Promise<ValidationStage> {
+    const response = await apiRequest<ValidationStage>(`/validation-stage-configs/${id}`, {
       method: 'PUT',
       body: stage,
     });
+    return response;
   },
 
   async removeValidationStage(id: string): Promise<void> {

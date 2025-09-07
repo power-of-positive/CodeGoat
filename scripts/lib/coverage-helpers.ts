@@ -113,8 +113,10 @@ function hasCoverageSuccessMarkers(output: string): boolean {
 /**
  * Type guard for exec error with output
  */
-function isExecErrorWithOutput(error: unknown): error is { stdout: unknown; stderr?: unknown } {
-  return error !== null && typeof error === 'object' && 'status' in error && 'stdout' in error;
+function isExecErrorWithOutput(
+  error: unknown
+): error is { stdout: unknown; stderr?: unknown; status?: unknown; signal?: string } {
+  return error !== null && typeof error === 'object' && 'stdout' in error;
 }
 
 /**
@@ -126,7 +128,13 @@ export function handleCoverageWithWarnings(
   logger: Logger
 ): { failed: boolean; output: string; debug?: string } {
   if (!isExecErrorWithOutput(execError)) {
-    throw execError;
+    // Handle non-exec errors gracefully
+    const errorMessage = execError instanceof Error ? execError.message : String(execError);
+    return {
+      failed: true,
+      output: `❌ Coverage execution failed: ${errorMessage}`,
+      debug: undefined,
+    };
   }
 
   const output = String(execError.stdout);
@@ -138,7 +146,20 @@ export function handleCoverageWithWarnings(
     const errorMessage = `❌ Coverage failed - tests are failing (timeout: ${timeout}ms)`;
     logger.error(errorMessage);
     logger.error(fullOutput);
-    return { failed: true, output: `${errorMessage}\n${fullOutput}` };
+    return {
+      failed: true,
+      output: `${errorMessage}\n${fullOutput}`,
+      debug: output || undefined,
+    };
+  }
+
+  // Handle timeout errors specifically
+  if ('signal' in execError && execError.signal === 'SIGTERM') {
+    return {
+      failed: true,
+      output: '❌ Coverage execution timed out',
+      debug: output || undefined,
+    };
   }
 
   // Only consider it successful if coverage report was generated AND no test failures
@@ -149,7 +170,12 @@ export function handleCoverageWithWarnings(
     return { failed: false, output: successMessage };
   }
 
-  throw execError;
+  // Default failure case
+  return {
+    failed: true,
+    output: `❌ Coverage failed\n${fullOutput}`,
+    debug: output || undefined,
+  };
 }
 
 /**

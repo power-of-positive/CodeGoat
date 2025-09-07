@@ -2,7 +2,7 @@
 
 /**
  * Test Skipping Detection Script
- * 
+ *
  * This script scans for test skipping patterns in the codebase and fails if any are found.
  * It's designed to be integrated into the validation pipeline to prevent skipped tests
  * from being committed.
@@ -34,13 +34,20 @@ interface SkipViolation {
 }
 
 async function findTestFiles(): Promise<string[]> {
+  // Use more specific patterns to avoid deep traversal
   const patterns = [
-    '**/*.test.ts',
-    '**/*.test.tsx',
-    '**/*.spec.ts',
-    '**/*.spec.tsx',
-    'ui/e2e/**/*.ts',
-    'tests/**/*.ts'
+    'src/**/*.test.ts',
+    'src/**/*.spec.ts',
+    'scripts/**/*.test.ts',
+    'scripts/**/*.spec.ts',
+    'ui/src/**/*.test.ts',
+    'ui/src/**/*.test.tsx',
+    'ui/src/**/*.spec.ts',
+    'ui/src/**/*.spec.tsx',
+    'ui/e2e/*.spec.ts',
+    'ui/e2e/*.test.ts',
+    'tests/**/*.spec.ts',
+    'tests/**/*.test.ts',
   ];
 
   const ignorePatterns = [
@@ -51,20 +58,43 @@ async function findTestFiles(): Promise<string[]> {
     'playwright-report/**',
     'test-results/**',
     '**/node_modules/**',
-    'ui/node_modules/**',
-    'tests/**/node_modules/**'
+    'prisma/**',
+    '.git/**',
+    'logs/**',
+    'tmp/**',
+    'temp/**',
+    '.next/**',
+    'out/**',
   ];
 
-  const allFiles = await Promise.all(
-    patterns.map(pattern => 
-      glob(pattern, { 
-        ignore: ignorePatterns,
-        absolute: true 
-      })
-    )
-  );
+  try {
+    // Process all patterns in parallel for better performance
+    const promises = patterns.map(async pattern => {
+      try {
+        const files = await glob(pattern, {
+          ignore: ignorePatterns,
+          absolute: true,
+          nodir: true,
+          follow: false, // Don't follow symlinks
+          maxDepth: 10, // Limit directory depth
+          dot: false, // Skip hidden files
+          windowsPathsNoEscape: true, // Better Windows support
+        });
+        return files;
+      } catch (error) {
+        console.warn(`Warning: Could not glob pattern ${pattern}:`, error);
+        return [];
+      }
+    });
 
-  return [...new Set(allFiles.flat())];
+    const results = await Promise.all(promises);
+    const allFiles = results.flat();
+
+    return [...new Set(allFiles)];
+  } catch (error) {
+    console.error('Error finding test files:', error);
+    return [];
+  }
 }
 
 async function scanFileForSkips(filePath: string): Promise<SkipViolation[]> {
@@ -81,7 +111,7 @@ async function scanFileForSkips(filePath: string): Promise<SkipViolation[]> {
             file: filePath,
             line: index + 1,
             pattern: description,
-            code: line.trim()
+            code: line.trim(),
           });
         }
       });
@@ -96,16 +126,14 @@ async function scanFileForSkips(filePath: string): Promise<SkipViolation[]> {
 
 async function main(): Promise<void> {
   console.log('🔍 Scanning for test skipping patterns...');
-  
+
   const testFiles = await findTestFiles();
   console.log(`📁 Found ${testFiles.length} test files to scan`);
 
-  const allViolations: SkipViolation[] = [];
-  
-  for (const file of testFiles) {
-    const violations = await scanFileForSkips(file);
-    allViolations.push(...violations);
-  }
+  // Process files in parallel for faster execution
+  const violationPromises = testFiles.map(file => scanFileForSkips(file));
+  const violationResults = await Promise.all(violationPromises);
+  const allViolations = violationResults.flat();
 
   if (allViolations.length === 0) {
     console.log('✅ No test skipping patterns found');
@@ -116,13 +144,16 @@ async function main(): Promise<void> {
   console.log('');
 
   // Group violations by file
-  const violationsByFile = allViolations.reduce((acc, violation) => {
-    if (!acc[violation.file]) {
-      acc[violation.file] = [];
-    }
-    acc[violation.file].push(violation);
-    return acc;
-  }, {} as Record<string, SkipViolation[]>);
+  const violationsByFile = allViolations.reduce(
+    (acc, violation) => {
+      if (!acc[violation.file]) {
+        acc[violation.file] = [];
+      }
+      acc[violation.file].push(violation);
+      return acc;
+    },
+    {} as Record<string, SkipViolation[]>
+  );
 
   Object.entries(violationsByFile).forEach(([file, violations]) => {
     console.log(`📄 ${file.replace(process.cwd(), '.')}`);

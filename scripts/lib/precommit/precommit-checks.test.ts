@@ -1,5 +1,3 @@
-
-
 jest.mock('../checks/check-runners', () => ({
   runFrontendLinting: jest.fn(),
   runFrontendTests: jest.fn(),
@@ -30,7 +28,6 @@ describe('precommit-checks', () => {
   });
 
   describe('runAllChecks', () => {
-
     beforeEach(() => {
       (collectCodeResults as jest.Mock).mockResolvedValue({
         failed: false,

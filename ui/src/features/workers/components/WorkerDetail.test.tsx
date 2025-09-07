@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -30,13 +29,7 @@ jest.mock('../../../shared/lib/api', () => ({
 
 // Mock react-window
 jest.mock('react-window', () => ({
-  VariableSizeList: ({
-    children,
-    itemCount,
-  }: {
-    children: any;
-    itemCount: number;
-  }) => {
+  VariableSizeList: ({ children, itemCount }: { children: any; itemCount: number }) => {
     const items = [];
     for (let i = 0; i < itemCount; i++) {
       items.push(
@@ -119,18 +112,12 @@ const renderWithProviders = (workerId: string = 'worker-123') => {
 describe('WorkerDetail', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(
-      mockWorkerStatus
-    );
-    (claudeWorkersApi.getWorkerLogs as jest.Mock).mockResolvedValue(
-      mockWorkerLogs
-    );
+    (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(mockWorkerStatus);
+    (claudeWorkersApi.getWorkerLogs as jest.Mock).mockResolvedValue(mockWorkerLogs);
   });
 
   it('renders worker detail page with loading state', () => {
-    (claudeWorkersApi.getWorkerStatus as jest.Mock).mockImplementation(
-      () => new Promise(() => {})
-    );
+    (claudeWorkersApi.getWorkerStatus as jest.Mock).mockImplementation(() => new Promise(() => {}));
 
     renderWithProviders();
 
@@ -194,9 +181,7 @@ describe('WorkerDetail', () => {
 
   it('allows starting a stopped worker', async () => {
     const stoppedWorker = { ...mockWorkerStatus, status: 'stopped' as const };
-    (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(
-      stoppedWorker
-    );
+    (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(stoppedWorker);
     (claudeWorkersApi.startWorker as jest.Mock).mockResolvedValue({
       success: true,
     });
@@ -236,7 +221,6 @@ describe('WorkerDetail', () => {
     });
   });
 
-
   it('displays task logs', async () => {
     renderWithProviders();
 
@@ -253,17 +237,16 @@ describe('WorkerDetail', () => {
       expect(refreshButton).toBeInTheDocument();
     });
 
-    const initialCallCount = (claudeWorkersApi.getWorkerStatus as jest.Mock)
-      .mock.calls.length;
+    const initialCallCount = (claudeWorkersApi.getWorkerStatus as jest.Mock).mock.calls.length;
 
     const refreshButton = screen.getByRole('button', { name: /refresh/i });
     fireEvent.click(refreshButton);
 
     // Verify API was called again (should be more than initial count)
     await waitFor(() => {
-      expect(
-        (claudeWorkersApi.getWorkerStatus as jest.Mock).mock.calls.length
-      ).toBeGreaterThan(initialCallCount);
+      expect((claudeWorkersApi.getWorkerStatus as jest.Mock).mock.calls.length).toBeGreaterThan(
+        initialCallCount
+      );
     });
   });
 
@@ -296,9 +279,7 @@ describe('WorkerDetail', () => {
       validationPassed: true,
       validationRuns: 3,
     };
-    (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(
-      validatedWorker
-    );
+    (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(validatedWorker);
 
     renderWithProviders();
 
@@ -315,9 +296,7 @@ describe('WorkerDetail', () => {
       status: 'completed' as const,
       endTime: '2024-01-01T10:30:00Z',
     };
-    (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(
-      completedWorker
-    );
+    (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(completedWorker);
 
     renderWithProviders();
 
@@ -331,9 +310,7 @@ describe('WorkerDetail', () => {
       ...mockWorkerStatus,
       hasPermissionSystem: false,
     };
-    (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(
-      workerWithoutPermissions
-    );
+    (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(workerWithoutPermissions);
 
     renderWithProviders();
 
@@ -347,9 +324,7 @@ describe('WorkerDetail', () => {
       ...mockWorkerStatus,
       pid: undefined,
     };
-    (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(
-      workerWithoutPid
-    );
+    (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(workerWithoutPid);
 
     renderWithProviders();
 
@@ -366,7 +341,6 @@ describe('WorkerDetail', () => {
       expect(screen.getByRole('button', { name: /stop worker/i })).toBeInTheDocument();
     });
   });
-
 
   it('shows task ID and content', async () => {
     renderWithProviders();
@@ -396,7 +370,6 @@ describe('WorkerDetail', () => {
     });
   });
 
-
   it('navigates back when back button is clicked', async () => {
     renderWithProviders();
 
@@ -424,7 +397,7 @@ describe('WorkerDetail', () => {
       validationRuns: 2,
       validationPassed: false,
     };
-    
+
     (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(workerWithValidation);
 
     renderWithProviders();
@@ -440,7 +413,7 @@ describe('WorkerDetail', () => {
       status: 'completed' as const,
       endTime: '2023-01-01T11:00:00Z',
     };
-    
+
     (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(completedWorker);
 
     renderWithProviders();
@@ -455,7 +428,7 @@ describe('WorkerDetail', () => {
       ...mockWorkerStatus,
       blockedCommands: 3,
     };
-    
+
     (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(workerWithBlocked);
 
     renderWithProviders();
@@ -470,7 +443,7 @@ describe('WorkerDetail', () => {
       ...mockWorkerStatus,
       hasPermissionSystem: true,
     };
-    
+
     (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(workerWithPermissions);
 
     renderWithProviders();
@@ -485,7 +458,7 @@ describe('WorkerDetail', () => {
       ...mockWorkerStatus,
       hasPermissionSystem: false,
     };
-    
+
     (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(workerWithoutPermissions);
 
     renderWithProviders();
@@ -497,7 +470,7 @@ describe('WorkerDetail', () => {
 
   it('handles different worker statuses', async () => {
     const statuses = ['starting', 'validating', 'stopped'] as const;
-    
+
     for (const status of statuses) {
       const worker = { ...mockWorkerStatus, status };
       (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(worker);
@@ -518,7 +491,7 @@ describe('WorkerDetail', () => {
       status: 'completed' as const,
       validationPassed: true,
     };
-    
+
     (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(validatedWorker);
 
     renderWithProviders();
@@ -534,7 +507,7 @@ describe('WorkerDetail', () => {
       status: 'failed' as const,
       validationPassed: false,
     };
-    
+
     (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(failedValidationWorker);
 
     renderWithProviders();
@@ -594,7 +567,9 @@ describe('WorkerDetail', () => {
       fireEvent.click(mergeButton);
 
       await waitFor(() => {
-        expect(claudeWorkersApi.mergeWorkerChanges).toHaveBeenCalledWith('worker-123', { commitMessage: undefined });
+        expect(claudeWorkersApi.mergeWorkerChanges).toHaveBeenCalledWith('worker-123', {
+          commitMessage: undefined,
+        });
       });
     });
 
@@ -605,9 +580,7 @@ describe('WorkerDetail', () => {
         validationPassed: false,
         validationRuns: 2,
       };
-      (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(
-        failedWorkerWithValidation
-      );
+      (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(failedWorkerWithValidation);
       (claudeWorkersApi.startWorker as jest.Mock).mockResolvedValue({
         workerId: 'worker-123',
         status: 'running',
@@ -635,9 +608,7 @@ describe('WorkerDetail', () => {
         validationPassed: undefined,
         validationRuns: 0,
       };
-      (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(
-        workerWithoutValidation
-      );
+      (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(workerWithoutValidation);
 
       renderWithProviders();
 
@@ -646,7 +617,9 @@ describe('WorkerDetail', () => {
       });
 
       // Should not have retry button
-      expect(screen.queryByRole('button', { name: /retry with same worktree/i })).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', { name: /retry with same worktree/i })
+      ).not.toBeInTheDocument();
     });
 
     it('should handle opening VSCode with loading state', async () => {
@@ -738,9 +711,7 @@ describe('WorkerDetail', () => {
         validationPassed: false,
         validationRuns: 2,
       };
-      (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(
-        failedWorkerWithValidation
-      );
+      (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(failedWorkerWithValidation);
       (claudeWorkersApi.startWorker as jest.Mock).mockImplementation(
         () => new Promise(resolve => setTimeout(() => resolve({}), 100))
       );
@@ -848,7 +819,7 @@ describe('WorkerDetail', () => {
           ],
         },
       };
-      
+
       // Clear previous mocks and set the new one
       jest.clearAllMocks();
       (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(
@@ -859,15 +830,15 @@ describe('WorkerDetail', () => {
 
       await waitFor(() => {
         expect(screen.getByText(/Validation History \(2 runs\):/)).toBeInTheDocument();
-        
+
         // Check for validation history items - use more specific queries
         expect(screen.getAllByText('Passed')).toHaveLength(2); // One in Latest Run, one in history
         expect(screen.getAllByText('Failed')).toHaveLength(2); // One in Latest Run, one in history
-        
+
         // Check for duration texts
         expect(screen.getByText('5.0s')).toBeInTheDocument();
         expect(screen.getByText('3.0s')).toBeInTheDocument();
-        
+
         // Verify View All button exists
         expect(screen.getByText('View All')).toBeInTheDocument();
       });
@@ -918,27 +889,25 @@ describe('WorkerDetail', () => {
           ],
         },
       };
-      (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(
-        workerWithLastRun
-      );
+      (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(workerWithLastRun);
 
       renderWithProviders();
 
       await waitFor(() => {
         expect(screen.getByText('Latest Run:')).toBeInTheDocument();
-        
+
         // Look for the passed stages count in the green box
-        const passedElement = screen.getAllByText('2').find(element => 
-          element.closest('.bg-green-50')
-        );
+        const passedElement = screen
+          .getAllByText('2')
+          .find(element => element.closest('.bg-green-50'));
         expect(passedElement).toBeInTheDocument();
-        
-        // Look for the failed stages count in the red box  
-        const failedElement = screen.getAllByText('1').find(element => 
-          element.closest('.bg-red-50')
-        );
+
+        // Look for the failed stages count in the red box
+        const failedElement = screen
+          .getAllByText('1')
+          .find(element => element.closest('.bg-red-50'));
         expect(failedElement).toBeInTheDocument();
-        
+
         expect(screen.getByText('8.5s duration')).toBeInTheDocument();
       });
     });
@@ -952,9 +921,7 @@ describe('WorkerDetail', () => {
           id: 'run-no-duration',
           timestamp: '2024-01-01T10:00:00Z',
           success: true,
-          stages: [
-            { id: 'lint', name: 'Lint', success: true, duration: 1000, attempt: 1 },
-          ],
+          stages: [{ id: 'lint', name: 'Lint', success: true, duration: 1000, attempt: 1 }],
           // No duration property
         },
       };
@@ -973,7 +940,7 @@ describe('WorkerDetail', () => {
 
     it('should handle validation history click events', async () => {
       const openSpy = jest.spyOn(window, 'open').mockImplementation(() => null);
-      
+
       const workerWithValidationHistory = {
         ...mockWorkerStatus,
         status: 'completed' as const,
@@ -1001,13 +968,13 @@ describe('WorkerDetail', () => {
       });
 
       expect(openSpy).toHaveBeenCalledWith('/validation-run/run-clickable', '_blank');
-      
+
       openSpy.mockRestore();
     });
 
     it('should handle view all validation history button', async () => {
       const openSpy = jest.spyOn(window, 'open').mockImplementation(() => null);
-      
+
       const workerWithValidationHistory = {
         ...mockWorkerStatus,
         status: 'completed' as const,
@@ -1035,7 +1002,7 @@ describe('WorkerDetail', () => {
       });
 
       expect(openSpy).toHaveBeenCalledWith('/analytics', '_blank');
-      
+
       openSpy.mockRestore();
     });
   });
@@ -1044,7 +1011,9 @@ describe('WorkerDetail', () => {
     it('should handle start worker mutation error', async () => {
       const stoppedWorker = { ...mockWorkerStatus, status: 'stopped' as const };
       (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(stoppedWorker);
-      (claudeWorkersApi.startWorker as jest.Mock).mockRejectedValue(new Error('Failed to start worker'));
+      (claudeWorkersApi.startWorker as jest.Mock).mockRejectedValue(
+        new Error('Failed to start worker')
+      );
 
       renderWithProviders();
 
@@ -1060,7 +1029,9 @@ describe('WorkerDetail', () => {
     });
 
     it('should handle stop worker mutation error', async () => {
-      (claudeWorkersApi.stopWorker as jest.Mock).mockRejectedValue(new Error('Failed to stop worker'));
+      (claudeWorkersApi.stopWorker as jest.Mock).mockRejectedValue(
+        new Error('Failed to stop worker')
+      );
 
       renderWithProviders();
 
@@ -1083,9 +1054,7 @@ describe('WorkerDetail', () => {
         validationHistory: undefined,
         lastValidationRun: undefined,
       };
-      (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(
-        workerWithoutValidation
-      );
+      (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(workerWithoutValidation);
 
       renderWithProviders();
 
@@ -1109,12 +1078,10 @@ describe('WorkerDetail', () => {
           stages: [], // Empty stages
         },
       };
-      
+
       // Clear previous mocks and set the new one
       jest.clearAllMocks();
-      (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(
-        workerWithEmptyStages
-      );
+      (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(workerWithEmptyStages);
 
       renderWithProviders();
 
@@ -1133,9 +1100,7 @@ describe('WorkerDetail', () => {
         ...mockWorkerStatus,
         id: 'worker-abc-def-ghi-jkl-mnop',
       };
-      (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(
-        workerWithComplexId
-      );
+      (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(workerWithComplexId);
 
       renderWithProviders('worker-abc-def-ghi-jkl-mnop');
 

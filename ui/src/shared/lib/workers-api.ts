@@ -17,7 +17,7 @@ export const claudeWorkersApi = {
     if (workingDirectory) {
       body.workingDirectory = workingDirectory;
     }
-    
+
     return apiRequest<Worker>('/claude-workers/start', {
       method: 'POST',
       body,
@@ -57,10 +57,13 @@ export const claudeWorkersApi = {
     });
   },
 
-  async getWorkerLogs(workerId: string, options?: {
-    lines?: number;
-    follow?: boolean;
-  }): Promise<string[]> {
+  async getWorkerLogs(
+    workerId: string,
+    options?: {
+      lines?: number;
+      follow?: boolean;
+    }
+  ): Promise<string[]> {
     const queryParams = new URLSearchParams();
     if (options?.lines) {
       queryParams.set('lines', options.lines.toString());
@@ -68,9 +71,11 @@ export const claudeWorkersApi = {
     if (options?.follow) {
       queryParams.set('follow', 'true');
     }
-    
+
     const queryString = queryParams.toString();
-    return apiRequest<string[]>(`/claude-workers/${workerId}/logs${queryString ? `?${queryString}` : ''}`);
+    return apiRequest<string[]>(
+      `/claude-workers/${workerId}/logs${queryString ? `?${queryString}` : ''}`
+    );
   },
 
   async mergeWorktree(workerId: string, commitMessage?: string): Promise<void> {
@@ -123,10 +128,13 @@ export const claudeWorkersApi = {
     });
   },
 
-  async mergeWorkerChanges(workerId: string, options?: {
-    commitMessage?: string;
-    squash?: boolean;
-  }): Promise<void> {
+  async mergeWorkerChanges(
+    workerId: string,
+    options?: {
+      commitMessage?: string;
+      squash?: boolean;
+    }
+  ): Promise<void> {
     await apiRequest<void>(`/claude-workers/${workerId}/merge-changes`, {
       method: 'POST',
       body: options || {},

@@ -180,7 +180,6 @@ describe('ClaudeValidationWrapper', () => {
       mockExecutor.spawn.mockResolvedValue(mockClaudeResult);
 
       // Mock ValidationRunner to throw an error
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
       const { ValidationRunner } = require('../../../scripts/validate-task');
       const originalMock = ValidationRunner.getMockImplementation();
 

@@ -37,18 +37,20 @@ function ScenarioModal({ scenario, isOpen, onClose }: ScenarioModalProps) {
   };
 
   return (
-    <div 
+    <div
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
       onClick={handleBackdropClick}
     >
-      <div 
+      <div
         role="dialog"
         className="bg-white p-6 rounded-lg max-w-2xl w-full m-4 max-h-[80vh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
+        onClick={e => e.stopPropagation()}
       >
         <div className="flex justify-between items-center mb-4">
-          <h2 data-testid="modal-title" className="text-xl font-semibold">Scenario Details</h2>
-          <button 
+          <h2 data-testid="modal-title" className="text-xl font-semibold">
+            Scenario Details
+          </h2>
+          <button
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700"
             data-testid="close-modal"
@@ -56,58 +58,75 @@ function ScenarioModal({ scenario, isOpen, onClose }: ScenarioModalProps) {
             Close
           </button>
         </div>
-        
+
         <div className="space-y-4">
           <div>
             <strong>Title:</strong> <span data-testid="modal-scenario-title">{scenario.title}</span>
           </div>
-          
+
           <div>
             <strong>Feature:</strong> <span data-testid="modal-feature">{scenario.feature}</span>
           </div>
-          
+
           <div>
             <strong>Status:</strong> <span data-testid="modal-status">{scenario.status}</span>
           </div>
 
           <div>
-            <strong>Description:</strong> <span data-testid="modal-description">{scenario.description}</span>
+            <strong>Description:</strong>{' '}
+            <span data-testid="modal-description">{scenario.description}</span>
           </div>
 
           {scenario.executionDuration && (
             <div>
-              <strong>Duration:</strong> <span data-testid="modal-duration">{scenario.executionDuration < 1000 ? `${scenario.executionDuration}ms` : `${(scenario.executionDuration / 1000).toFixed(1)}s`}</span>
+              <strong>Duration:</strong>{' '}
+              <span data-testid="modal-duration">
+                {scenario.executionDuration < 1000
+                  ? `${scenario.executionDuration}ms`
+                  : `${(scenario.executionDuration / 1000).toFixed(1)}s`}
+              </span>
             </div>
           )}
 
           {scenario.executedAt && (
             <div>
-              <strong>Executed:</strong> <span data-testid="modal-executed-at">{new Date(scenario.executedAt).toLocaleString()}</span>
+              <strong>Executed:</strong>{' '}
+              <span data-testid="modal-executed-at">
+                {new Date(scenario.executedAt).toLocaleString()}
+              </span>
             </div>
           )}
 
           {scenario.playwrightTestFile && (
             <div>
-              <strong>Linked to:</strong> <span data-testid="modal-test-file">{scenario.playwrightTestFile}</span>
+              <strong>Linked to:</strong>{' '}
+              <span data-testid="modal-test-file">{scenario.playwrightTestFile}</span>
             </div>
           )}
 
           {scenario.todoTask && (
             <div>
-              <strong>Task:</strong> <span data-testid="modal-task">{scenario.todoTask.content}</span>
+              <strong>Task:</strong>{' '}
+              <span data-testid="modal-task">{scenario.todoTask.content}</span>
             </div>
           )}
 
           {scenario.errorMessage && (
             <div>
-              <strong>Error Message:</strong> <span data-testid="modal-error" className="text-red-600">{scenario.errorMessage}</span>
+              <strong>Error Message:</strong>{' '}
+              <span data-testid="modal-error" className="text-red-600">
+                {scenario.errorMessage}
+              </span>
             </div>
           )}
 
           {scenario.gherkinContent && (
             <div>
               <strong>Gherkin Content:</strong>
-              <pre data-testid="gherkin-content" className="bg-gray-100 p-3 rounded text-sm mt-2 whitespace-pre-wrap">
+              <pre
+                data-testid="gherkin-content"
+                className="bg-gray-100 p-3 rounded text-sm mt-2 whitespace-pre-wrap"
+              >
                 {scenario.gherkinContent}
               </pre>
             </div>
@@ -118,15 +137,18 @@ function ScenarioModal({ scenario, isOpen, onClose }: ScenarioModalProps) {
   );
 }
 
-export function ScenarioCard({ scenario, onExecute }: { 
-  scenario: BDDScenario; 
+export function ScenarioCard({
+  scenario,
+  onExecute,
+}: {
+  scenario: BDDScenario;
   onExecute: (id: string) => void;
 }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  
+
   // Normalize status for data attributes and conditions (uppercase to lowercase)
   const normalizedStatus = scenario.status.toLowerCase();
-  
+
   // Status styling
   const getStatusStyles = (status: string) => {
     switch (status) {
@@ -162,16 +184,16 @@ export function ScenarioCard({ scenario, onExecute }: {
     }
     return duration < 1000 ? `${duration}ms` : `${(duration / 1000).toFixed(1)}s`;
   };
-  
+
   return (
     <>
       <div className="p-4 border rounded" data-testid="scenario-card">
         <h3 data-testid="scenario-title">{scenario.title}</h3>
         <p className="text-sm text-gray-600">{scenario.feature}</p>
         <div className="mt-2 flex items-center gap-2">
-          <span 
+          <span
             className={`inline-block px-2 py-1 text-xs rounded ${getStatusStyles(normalizedStatus)}`}
-            data-testid="scenario-status" 
+            data-testid="scenario-status"
             data-status={normalizedStatus}
           >
             {normalizedStatus}
@@ -206,7 +228,7 @@ export function ScenarioCard({ scenario, onExecute }: {
         {/* Playwright test file link */}
         {scenario.playwrightTestFile && (
           <div className="mt-2 text-xs text-blue-600 flex items-center gap-1">
-            <span>Linked to:</span> 
+            <span>Linked to:</span>
             <span>{scenario.playwrightTestFile}</span>
             <div data-testid="external-link-icon">🔗</div>
           </div>
@@ -222,7 +244,7 @@ export function ScenarioCard({ scenario, onExecute }: {
         {/* Action buttons */}
         <div className="mt-3 flex gap-2">
           {/* View Details button - always show */}
-          <button 
+          <button
             onClick={() => setIsModalOpen(true)}
             className="px-3 py-1 text-xs bg-gray-500 text-white rounded flex items-center gap-1"
             title="View Details"
@@ -233,7 +255,7 @@ export function ScenarioCard({ scenario, onExecute }: {
 
           {/* Execute button - for pending and failed scenarios */}
           {(scenario.status === 'PENDING' || scenario.status === 'FAILED') && (
-            <button 
+            <button
               onClick={() => onExecute(scenario.id)}
               className="px-3 py-1 text-xs bg-blue-500 text-white rounded flex items-center gap-1"
               title="Execute Scenario"
@@ -246,7 +268,7 @@ export function ScenarioCard({ scenario, onExecute }: {
       </div>
 
       {/* Modal */}
-      <ScenarioModal 
+      <ScenarioModal
         scenario={scenario}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}

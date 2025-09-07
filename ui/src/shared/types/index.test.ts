@@ -1,4 +1,3 @@
-/* eslint-disable max-lines */
 import {
   ThemeMode,
   BDDScenario,
@@ -15,11 +14,7 @@ import {
   E2ETestSuite,
   E2ETestHistory,
 } from './index';
-import {
-  NormalizedEntry,
-  NormalizedEntryType,
-  ClaudeActionType,
-} from './logs';
+import { NormalizedEntry, NormalizedEntryType, ClaudeActionType } from './logs';
 
 describe('Shared Types', () => {
   describe('ThemeMode', () => {
@@ -52,10 +47,10 @@ describe('Shared Types', () => {
 
       it('should validate tool_use type with tool_name', () => {
         const actionType: ClaudeActionType = { action: 'file_read', path: '/test/path' };
-        const entryType: NormalizedEntryType = { 
-          type: 'tool_use', 
+        const entryType: NormalizedEntryType = {
+          type: 'tool_use',
           tool_name: 'file_reader',
-          action_type: actionType 
+          action_type: actionType,
         };
         expect(entryType.type).toBe('tool_use');
         expect(entryType.tool_name).toBe('file_reader');
@@ -135,7 +130,7 @@ describe('Shared Types', () => {
         const entry: NormalizedEntry = {
           timestamp: '2023-01-01T00:00:00Z',
           entry_type: { type: 'user_message' },
-          content: 'Test message'
+          content: 'Test message',
         };
 
         expect(entry.timestamp).toBe('2023-01-01T00:00:00Z');
@@ -147,7 +142,7 @@ describe('Shared Types', () => {
         const entry: NormalizedEntry = {
           timestamp: null,
           entry_type: { type: 'assistant_message' },
-          content: 'Test response'
+          content: 'Test response',
         };
 
         expect(entry.timestamp).toBeNull();
@@ -167,7 +162,7 @@ describe('Shared Types', () => {
           given: 'initial condition',
           when: 'action occurs',
           then: 'expected result',
-          status: 'pending'
+          status: 'pending',
         };
 
         expect(scenario.id).toBe('test-1');
@@ -177,7 +172,7 @@ describe('Shared Types', () => {
 
       it('should support all status values', () => {
         const statuses: Array<BDDScenario['status']> = ['pending', 'passed', 'failed', 'skipped'];
-        
+
         statuses.forEach(status => {
           const scenario: BDDScenario = {
             id: `test-${status}`,
@@ -188,9 +183,9 @@ describe('Shared Types', () => {
             given: 'Given',
             when: 'When',
             then: 'Then',
-            status
+            status,
           };
-          
+
           expect(scenario.status).toBe(status);
         });
       });
@@ -212,7 +207,7 @@ describe('Shared Types', () => {
           playwrightTestFile: 'test.spec.ts',
           playwrightTestName: 'test name',
           cucumberSteps: ['step1', 'step2'],
-          executionHistory: []
+          executionHistory: [],
         };
 
         expect(scenario.executedAt).toBe('2023-01-01T00:00:00Z');
@@ -231,7 +226,7 @@ describe('Shared Types', () => {
           id: 'exec-1',
           scenarioId: 'scenario-1',
           status: 'passed',
-          executedAt: '2023-01-01T00:00:00Z'
+          executedAt: '2023-01-01T00:00:00Z',
         };
 
         expect(execution.id).toBe('exec-1');
@@ -241,16 +236,21 @@ describe('Shared Types', () => {
       });
 
       it('should support all execution status values', () => {
-        const statuses: Array<BDDScenarioExecution['status']> = ['pending', 'passed', 'failed', 'skipped'];
-        
+        const statuses: Array<BDDScenarioExecution['status']> = [
+          'pending',
+          'passed',
+          'failed',
+          'skipped',
+        ];
+
         statuses.forEach(status => {
           const execution: BDDScenarioExecution = {
             id: `exec-${status}`,
             scenarioId: 'scenario-1',
             status,
-            executedAt: '2023-01-01T00:00:00Z'
+            executedAt: '2023-01-01T00:00:00Z',
           };
-          
+
           expect(execution.status).toBe(status);
         });
       });
@@ -260,7 +260,7 @@ describe('Shared Types', () => {
       it('should create valid BDDStepResult', () => {
         const stepResult: BDDStepResult = {
           step: 'Given I have a test',
-          status: 'passed'
+          status: 'passed',
         };
 
         expect(stepResult.step).toBe('Given I have a test');
@@ -269,15 +269,15 @@ describe('Shared Types', () => {
 
       it('should support all step status values', () => {
         const statuses: Array<BDDStepResult['status']> = ['passed', 'failed', 'skipped'];
-        
+
         statuses.forEach(status => {
           const stepResult: BDDStepResult = {
             step: 'Test step',
             status,
             duration: 100,
-            error: status === 'failed' ? 'Test error' : undefined
+            error: status === 'failed' ? 'Test error' : undefined,
           };
-          
+
           expect(stepResult.status).toBe(status);
         });
       });
@@ -287,12 +287,15 @@ describe('Shared Types', () => {
       it('should create valid ValidationStage', () => {
         const stage: ValidationStage = {
           id: 'lint',
+          stageId: 'lint',
           name: 'Linting',
           command: 'npm run lint',
           enabled: true,
           timeout: 30000,
           continueOnFailure: false,
-          priority: 1
+          priority: 1,
+          createdAt: '2023-01-01T00:00:00Z',
+          updatedAt: '2023-01-01T00:00:00Z',
         };
 
         expect(stage.id).toBe('lint');
@@ -313,7 +316,7 @@ describe('Shared Types', () => {
           success: true,
           duration: 5000,
           attempt: 1,
-          status: 'passed' as const
+          status: 'passed' as const,
         };
 
         const run: ValidationRun = {
@@ -322,7 +325,7 @@ describe('Shared Types', () => {
           stages: [stageResult],
           success: true,
           duration: 5000,
-          overallStatus: 'passed' as const
+          overallStatus: 'passed' as const,
         };
 
         expect(run.id).toBe('run-1');
@@ -341,7 +344,7 @@ describe('Shared Types', () => {
           successRate: 80,
           averageDuration: 15000,
           stageMetrics: {
-            'lint': {
+            lint: {
               id: 'lint',
               name: 'Linting',
               enabled: true,
@@ -349,9 +352,9 @@ describe('Shared Types', () => {
               successes: 9,
               successRate: 90,
               averageDuration: 3000,
-              totalRuns: 10
-            }
-          }
+              totalRuns: 10,
+            },
+          },
         };
 
         expect(metrics.totalRuns).toBe(10);
@@ -365,7 +368,7 @@ describe('Shared Types', () => {
         const config: Config = {
           theme: ThemeMode.DARK,
           enableMetrics: true,
-          validationStages: []
+          validationStages: [],
         };
 
         expect(config.theme).toBe(ThemeMode.DARK);
@@ -379,7 +382,7 @@ describe('Shared Types', () => {
         const config: Config = {
           theme: ThemeMode.SYSTEM,
           enableMetrics: false,
-          validationStages: []
+          validationStages: [],
         };
 
         const systemInfo: UserSystemInfo = {
@@ -390,7 +393,7 @@ describe('Shared Types', () => {
           current_directory: '/Users/test/project',
           config,
           environment: { NODE_ENV: 'test' },
-          profiles: [{ name: 'default', path: '/Users/test/.profile' }]
+          profiles: [{ name: 'default', path: '/Users/test/.profile' }],
         };
 
         expect(systemInfo.os_type).toBe('darwin');
@@ -403,7 +406,7 @@ describe('Shared Types', () => {
         const config: Config = {
           theme: ThemeMode.LIGHT,
           enableMetrics: true,
-          validationStages: []
+          validationStages: [],
         };
 
         const systemInfo: UserSystemInfo = {
@@ -414,7 +417,7 @@ describe('Shared Types', () => {
           current_directory: '/home/test/project',
           config,
           environment: null,
-          profiles: null
+          profiles: null,
         };
 
         expect(systemInfo.environment).toBeNull();
@@ -429,7 +432,7 @@ describe('Shared Types', () => {
           content: 'Test task content',
           status: 'pending',
           priority: 'medium',
-          taskType: 'task'
+          taskType: 'task',
         };
 
         expect(task.id).toBe('task-1');
@@ -441,48 +444,48 @@ describe('Shared Types', () => {
 
       it('should support all status values', () => {
         const statuses: Array<Task['status']> = ['pending', 'in_progress', 'completed'];
-        
+
         statuses.forEach(status => {
           const task: Task = {
             id: `task-${status}`,
             content: 'Test content',
             status,
             priority: 'low',
-            taskType: 'story'
+            taskType: 'story',
           };
-          
+
           expect(task.status).toBe(status);
         });
       });
 
       it('should support all priority values', () => {
         const priorities: Array<Task['priority']> = ['low', 'medium', 'high'];
-        
+
         priorities.forEach(priority => {
           const task: Task = {
             id: `task-${priority}`,
             content: 'Test content',
             status: 'pending',
             priority,
-            taskType: 'task'
+            taskType: 'task',
           };
-          
+
           expect(task.priority).toBe(priority);
         });
       });
 
       it('should support all taskType values', () => {
         const taskTypes: Array<Task['taskType']> = ['story', 'task'];
-        
+
         taskTypes.forEach(taskType => {
           const task: Task = {
             id: `task-${taskType}`,
             content: 'Test content',
             status: 'pending',
             priority: 'medium',
-            taskType
+            taskType,
           };
-          
+
           expect(task.taskType).toBe(taskType);
         });
       });
@@ -499,7 +502,7 @@ describe('Shared Types', () => {
           duration: '1h',
           executorId: 'executor-1',
           bddScenarios: [],
-          validationRuns: []
+          validationRuns: [],
         };
 
         expect(task.startTime).toBe('2023-01-01T00:00:00Z');
@@ -519,7 +522,7 @@ describe('Shared Types', () => {
             testName: 'Login test',
             status: 'passed',
             duration: 2000,
-            timestamp: '2023-01-01T00:00:00Z'
+            timestamp: '2023-01-01T00:00:00Z',
           };
 
           expect(result.id).toBe('test-1');
@@ -531,7 +534,7 @@ describe('Shared Types', () => {
 
         it('should support all test status values', () => {
           const statuses: Array<E2ETestResult['status']> = ['passed', 'failed', 'skipped'];
-          
+
           statuses.forEach(status => {
             const result: E2ETestResult = {
               id: `test-${status}`,
@@ -539,9 +542,9 @@ describe('Shared Types', () => {
               status,
               duration: 1000,
               timestamp: '2023-01-01T00:00:00Z',
-              error: status === 'failed' ? 'Test error' : undefined
+              error: status === 'failed' ? 'Test error' : undefined,
             };
-            
+
             expect(result.status).toBe(status);
           });
         });
@@ -557,7 +560,7 @@ describe('Shared Types', () => {
             passedTests: 0,
             failedTests: 0,
             duration: 0,
-            timestamp: '2023-01-01T00:00:00Z'
+            timestamp: '2023-01-01T00:00:00Z',
           };
 
           expect(suite.id).toBe('suite-1');
@@ -575,7 +578,7 @@ describe('Shared Types', () => {
             totalRuns: 0,
             successRate: 0,
             averageDuration: 0,
-            lastRunTimestamp: '2023-01-01T00:00:00Z'
+            lastRunTimestamp: '2023-01-01T00:00:00Z',
           };
 
           expect(history.id).toBe('history-1');
@@ -591,19 +594,19 @@ describe('Shared Types', () => {
     it('should ensure NormalizedEntry works with complex entry types', () => {
       const toolUseAction: ClaudeActionType = {
         action: 'file_read',
-        path: '/test/file.ts'
+        path: '/test/file.ts',
       };
 
       const toolUseEntryType: NormalizedEntryType = {
         type: 'tool_use',
         tool_name: 'file_reader',
-        action_type: toolUseAction
+        action_type: toolUseAction,
       };
 
       const entry: NormalizedEntry = {
         timestamp: '2023-01-01T00:00:00Z',
         entry_type: toolUseEntryType,
-        content: 'Reading file content'
+        content: 'Reading file content',
       };
 
       expect(entry.entry_type.type).toBe('tool_use');
@@ -619,7 +622,7 @@ describe('Shared Types', () => {
       const stepResult: BDDStepResult = {
         step: 'Given I am logged in',
         status: 'passed',
-        duration: 500
+        duration: 500,
       };
 
       const execution: BDDScenarioExecution = {
@@ -628,7 +631,7 @@ describe('Shared Types', () => {
         status: 'passed',
         executedAt: '2023-01-01T00:00:00Z',
         executionDuration: 2000,
-        stepResults: [stepResult]
+        stepResults: [stepResult],
       };
 
       const scenario: BDDScenario = {
@@ -641,7 +644,7 @@ describe('Shared Types', () => {
         when: 'user enters credentials',
         then: 'user is logged in',
         status: 'passed',
-        executionHistory: [execution]
+        executionHistory: [execution],
       };
 
       const validationStageResult: ValidationStageResult = {
@@ -650,7 +653,7 @@ describe('Shared Types', () => {
         success: true,
         duration: 5000,
         attempt: 1,
-        status: 'passed' as const
+        status: 'passed' as const,
       };
 
       const validationRun: ValidationRun = {
@@ -659,7 +662,7 @@ describe('Shared Types', () => {
         stages: [validationStageResult],
         success: true,
         duration: 5000,
-        overallStatus: 'passed' as const
+        overallStatus: 'passed' as const,
       };
 
       const task: Task = {
@@ -669,7 +672,7 @@ describe('Shared Types', () => {
         priority: 'high',
         taskType: 'story',
         bddScenarios: [scenario],
-        validationRuns: [validationRun]
+        validationRuns: [validationRun],
       };
 
       expect(task.bddScenarios).toHaveLength(1);

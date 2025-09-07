@@ -92,9 +92,7 @@ const renderWithProviders = (component: React.ReactElement) => {
 describe('TaskAnalytics', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    (taskApi.getTaskAnalytics as jest.Mock).mockResolvedValue(
-      mockTaskAnalytics
-    );
+    (taskApi.getTaskAnalytics as jest.Mock).mockResolvedValue(mockTaskAnalytics);
   });
 
   it('renders task analytics page with title', async () => {
@@ -106,9 +104,7 @@ describe('TaskAnalytics', () => {
   });
 
   it('displays loading state initially', () => {
-    (taskApi.getTaskAnalytics as jest.Mock).mockImplementation(
-      () => new Promise(() => {})
-    );
+    (taskApi.getTaskAnalytics as jest.Mock).mockImplementation(() => new Promise(() => {}));
 
     renderWithProviders(<TaskAnalytics />);
 
@@ -117,16 +113,12 @@ describe('TaskAnalytics', () => {
   });
 
   it('displays error state when API fails', async () => {
-    (taskApi.getTaskAnalytics as jest.Mock).mockRejectedValue(
-      new Error('API Error')
-    );
+    (taskApi.getTaskAnalytics as jest.Mock).mockRejectedValue(new Error('API Error'));
 
     renderWithProviders(<TaskAnalytics />);
 
     await waitFor(() => {
-      expect(
-        screen.getByText(/Failed to load task analytics/i)
-      ).toBeInTheDocument();
+      expect(screen.getByText(/Failed to load task analytics/i)).toBeInTheDocument();
     });
   });
 
@@ -153,9 +145,7 @@ describe('TaskAnalytics', () => {
     renderWithProviders(<TaskAnalytics />);
 
     await waitFor(() => {
-      expect(
-        screen.getByText('Completion Rate by Priority')
-      ).toBeInTheDocument();
+      expect(screen.getByText('Completion Rate by Priority')).toBeInTheDocument();
       expect(screen.getByTestId('bar-chart')).toBeInTheDocument();
     });
   });
@@ -174,9 +164,7 @@ describe('TaskAnalytics', () => {
     renderWithProviders(<TaskAnalytics />);
 
     await waitFor(() => {
-      expect(
-        screen.getByText('Daily Task Completions (Last 30 Days)')
-      ).toBeInTheDocument();
+      expect(screen.getByText('Daily Task Completions (Last 30 Days)')).toBeInTheDocument();
       expect(screen.getByTestId('line-chart')).toBeInTheDocument();
     });
   });
@@ -187,9 +175,7 @@ describe('TaskAnalytics', () => {
     // This component doesn't have time range toggles, so let's just verify it renders
     await waitFor(() => {
       expect(screen.getByText('Task Analytics')).toBeInTheDocument();
-      expect(
-        screen.getByText('Daily Task Completions (Last 30 Days)')
-      ).toBeInTheDocument();
+      expect(screen.getByText('Daily Task Completions (Last 30 Days)')).toBeInTheDocument();
     });
   });
 
@@ -198,9 +184,7 @@ describe('TaskAnalytics', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Task Analytics')).toBeInTheDocument();
-      expect(
-        screen.getByText('Completion Rate by Priority')
-      ).toBeInTheDocument();
+      expect(screen.getByText('Completion Rate by Priority')).toBeInTheDocument();
       expect(screen.getByText('60m')).toBeInTheDocument(); // Average time formatting
     });
   });

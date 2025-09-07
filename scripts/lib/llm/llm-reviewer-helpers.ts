@@ -21,10 +21,17 @@ export function validateProjectRoot(projectRoot: string): void {
     throw new Error('Invalid projectRoot: must be non-empty string');
   }
 
-  const resolvedPath = path.resolve(projectRoot);
-  const normalizedPath = path.normalize(resolvedPath);
+  // Check dangerous patterns in the original input
   const patterns = [/\.\.[/\\]/, /[/\\]\.\.[/\\]/, /\0/, /%00/, /%2e%2e/i];
 
+  if (patterns.some(pattern => pattern.test(projectRoot))) {
+    throw new Error('Invalid projectRoot: dangerous patterns detected');
+  }
+
+  const resolvedPath = path.resolve(projectRoot);
+  const normalizedPath = path.normalize(resolvedPath);
+
+  // Also check the normalized path for safety
   if (patterns.some(pattern => pattern.test(normalizedPath))) {
     throw new Error('Invalid projectRoot: dangerous patterns detected');
   }
@@ -52,6 +59,7 @@ export function getChangedFiles(projectRoot: string): string[] {
     const files = output
       .trim()
       .split('\n')
+      .map(f => f.trim()) // Trim whitespace from each line
       .filter(f => f && /\.(ts|js|tsx|jsx|mts|cts|mjs|cjs)$/i.test(f));
     if (files.length > 0) {
       console.error(`Found ${files.length} changed files for review`);

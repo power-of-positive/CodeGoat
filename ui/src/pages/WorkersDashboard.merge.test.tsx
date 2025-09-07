@@ -67,9 +67,7 @@ const createWrapper = () => {
 
   return ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter>
-        {children}
-      </MemoryRouter>
+      <MemoryRouter>{children}</MemoryRouter>
     </QueryClientProvider>
   );
 };
@@ -124,11 +122,15 @@ describe('WorkersDashboard - Merge Functionality', () => {
         fireEvent.click(mergeButton);
       });
 
-      expect(window.confirm).toHaveBeenCalledWith('Are you sure you want to merge the worktree changes to the main branch?');
+      expect(window.confirm).toHaveBeenCalledWith(
+        'Are you sure you want to merge the worktree changes to the main branch?'
+      );
 
       await waitFor(() => {
         expect(mockWorkersApi.mergeWorktree).toHaveBeenCalledWith('worker-123-abc');
-        expect(window.alert).toHaveBeenCalledWith('Successfully merged changes from worker-123-abc');
+        expect(window.alert).toHaveBeenCalledWith(
+          'Successfully merged changes from worker-123-abc'
+        );
       });
     });
 
@@ -175,7 +177,9 @@ describe('WorkersDashboard - Merge Functionality', () => {
       });
 
       await waitFor(() => {
-        expect(window.alert).toHaveBeenCalledWith('Successfully merged changes from worker-123-abc');
+        expect(window.alert).toHaveBeenCalledWith(
+          'Successfully merged changes from worker-123-abc'
+        );
       });
     });
 
@@ -224,7 +228,9 @@ describe('WorkersDashboard - Merge Functionality', () => {
 
       await waitFor(() => {
         expect(consoleSpy).toHaveBeenCalledWith('Failed to merge worktree:', expect.any(Error));
-        expect(window.alert).toHaveBeenCalledWith('Failed to merge worktree. Please check the console for details.');
+        expect(window.alert).toHaveBeenCalledWith(
+          'Failed to merge worktree. Please check the console for details.'
+        );
       });
 
       consoleSpy.mockRestore();

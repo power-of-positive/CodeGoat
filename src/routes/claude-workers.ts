@@ -250,10 +250,7 @@ async function runValidationChecks(
 /**
  * Restart worker with validation feedback
  */
-function restartWorkerWithFeedback(
-  worker: ClaudeWorker,
-  validationMessage: string
-): void {
+function restartWorkerWithFeedback(worker: ClaudeWorker, validationMessage: string): void {
   try {
     console.error(
       `🔄 Restarting worker ${worker.id} with validation feedback (attempt ${(worker.validationAttempts ?? 0) + 1}/${worker.maxValidationAttempts})`
@@ -460,7 +457,6 @@ function generateWorkerId(): string {
   return `claude-worker-${Date.now()}-${Math.random().toString(BASE36_RADIX).substr(SUBSTR_START_INDEX, RANDOM_STRING_LENGTH)}`;
 }
 
-
 /**
  * Create log directory with date-based organization
  */
@@ -518,9 +514,8 @@ router.post('/start', async (req, res) => {
     // Create command interceptor for permission checking
     // Using console as a simplified logger interface
     const logger = {
-      // eslint-disable-next-line no-console
       debug: console.debug.bind(console),
-      // eslint-disable-next-line no-console
+
       info: console.info.bind(console),
       warn: console.warn.bind(console),
       error: console.error.bind(console),
@@ -622,13 +617,18 @@ router.post('/start', async (req, res) => {
         try {
           const json = JSON.parse(line);
           if (worker.claudeLogProcessor) {
-            const entries = worker.claudeLogProcessor.toNormalizedEntries(json, worker.worktreePath ?? '');
+            const entries = worker.claudeLogProcessor.toNormalizedEntries(
+              json,
+              worker.worktreePath ?? ''
+            );
             // Convert to our internal format
-            worker.structuredEntries.push(...entries.map(entry => ({
-              type: entry.entry_type.type,
-              content: entry.content,
-              metadata: entry.metadata,
-            })));
+            worker.structuredEntries.push(
+              ...entries.map(entry => ({
+                type: entry.entry_type.type,
+                content: entry.content,
+                metadata: entry.metadata,
+              }))
+            );
           }
         } catch {
           // Not JSON, treat as regular output
@@ -660,7 +660,9 @@ router.post('/start', async (req, res) => {
 
     // Send prompt via stdin like the example-ts-backend does
     if (claudeProcess.stdin) {
-      console.error(`[${workerId}] Sending prompt via stdin: ${taskContent.substring(0, STRING_TRUNCATE_LENGTH)}...`);
+      console.error(
+        `[${workerId}] Sending prompt via stdin: ${taskContent.substring(0, STRING_TRUNCATE_LENGTH)}...`
+      );
       logStream.write(`Sending prompt via stdin: ${taskContent}\n`);
       claudeProcess.stdin.write(taskContent);
       claudeProcess.stdin.end();
@@ -672,98 +674,98 @@ router.post('/start', async (req, res) => {
     // Handle process completion
     claudeProcess.on('close', code => {
       (async () => {
-      try {
-        worker.endTime = new Date();
-        const duration = worker.endTime.getTime() - worker.startTime.getTime();
+        try {
+          worker.endTime = new Date();
+          const duration = worker.endTime.getTime() - worker.startTime.getTime();
 
-        if (!logStreamClosed && !logStream.destroyed) {
-          logStream.write(`\n=== Process Completed ===\n`);
-          logStream.write(`Exit Code: ${code}\n`);
+          if (!logStreamClosed && !logStream.destroyed) {
+            logStream.write(`\n=== Process Completed ===\n`);
+            logStream.write(`Exit Code: ${code}\n`);
 
-          // Provide better information about exit codes
-          if (code === 0) {
-            logStream.write(`Status: SUCCESS - Process completed normally\n`);
-          } else if (code === null) {
-            logStream.write(
-              `Status: TERMINATED - Process was killed by signal (likely SIGTERM from manual stop)\n`
-            );
-          } else if (code > 0) {
-            logStream.write(`Status: ERROR - Process exited with error code ${code}\n`);
-          } else {
-            logStream.write(`Status: UNKNOWN - Process exited with unexpected code ${code}\n`);
-          }
-
-          logStream.write(`End Time: ${worker.endTime.toISOString()}\n`);
-          logStream.write(`Duration: ${duration}ms\n`);
-          logStream.end();
-          logStreamClosed = true;
-        }
-
-        console.error(`🏁 Claude Code worker ${workerId} completed with exit code ${code}`);
-
-        if (code === 0) {
-          console.error(`✅ Worker ${workerId} completed successfully`);
-
-          // Run validation checks on successful completion
-          try {
-            const validationResult = await runValidationChecks(worker);
-
-            if (validationResult.success) {
-              console.error(`✅ Worker ${workerId} passed validation, marking task as completed`);
-              worker.status = 'completed';
-              worker.validationPassed = true;
-              // Task will be marked as completed when merge happens (task 5)
+            // Provide better information about exit codes
+            if (code === 0) {
+              logStream.write(`Status: SUCCESS - Process completed normally\n`);
+            } else if (code === null) {
+              logStream.write(
+                `Status: TERMINATED - Process was killed by signal (likely SIGTERM from manual stop)\n`
+              );
+            } else if (code > 0) {
+              logStream.write(`Status: ERROR - Process exited with error code ${code}\n`);
             } else {
-              console.error(`❌ Worker ${workerId} failed validation checks`);
-
-              // Check if we can retry with feedback
-              const currentAttempts = worker.validationAttempts ?? 0;
-              const maxAttempts = worker.maxValidationAttempts ?? 3;
-
-              if (currentAttempts < maxAttempts && validationResult.message) {
-                console.error(
-                  `🔄 Restarting worker ${workerId} with validation feedback (attempt ${currentAttempts + 1}/${maxAttempts})`
-                );
-                restartWorkerWithFeedback(worker, validationResult.message);
-                // Don't clean up worktree yet, worker is restarting
-                return;
-              } else {
-                console.error(
-                  `❌ Worker ${workerId} exceeded max validation attempts (${maxAttempts}), marking as failed`
-                );
-                worker.status = 'failed';
-                worker.validationPassed = false;
-              }
+              logStream.write(`Status: UNKNOWN - Process exited with unexpected code ${code}\n`);
             }
-          } catch {
-            // Validation error logging disabled
-            worker.status = 'failed';
-            worker.validationPassed = false;
-          }
-        } else {
-          worker.status = 'failed';
-          console.error(`❌ Worker ${workerId} failed with exit code ${code}`);
-        }
 
-        // Clean up worktree after completion
-        if (worker.worktreeManager && worker.worktreePath && !workingDirectory) {
-          worker.worktreeManager
-            .removeWorktree(worker.worktreePath)
-            .then(() => {
-              console.error(`🧹 Cleaned up worktree for worker ${workerId}`);
-            })
-            .catch(_cleanupError => {
-              // Worktree cleanup error logging disabled
-            });
+            logStream.write(`End Time: ${worker.endTime.toISOString()}\n`);
+            logStream.write(`Duration: ${duration}ms\n`);
+            logStream.end();
+            logStreamClosed = true;
+          }
+
+          console.error(`🏁 Claude Code worker ${workerId} completed with exit code ${code}`);
+
+          if (code === 0) {
+            console.error(`✅ Worker ${workerId} completed successfully`);
+
+            // Run validation checks on successful completion
+            try {
+              const validationResult = await runValidationChecks(worker);
+
+              if (validationResult.success) {
+                console.error(`✅ Worker ${workerId} passed validation, marking task as completed`);
+                worker.status = 'completed';
+                worker.validationPassed = true;
+                // Task will be marked as completed when merge happens (task 5)
+              } else {
+                console.error(`❌ Worker ${workerId} failed validation checks`);
+
+                // Check if we can retry with feedback
+                const currentAttempts = worker.validationAttempts ?? 0;
+                const maxAttempts = worker.maxValidationAttempts ?? 3;
+
+                if (currentAttempts < maxAttempts && validationResult.message) {
+                  console.error(
+                    `🔄 Restarting worker ${workerId} with validation feedback (attempt ${currentAttempts + 1}/${maxAttempts})`
+                  );
+                  restartWorkerWithFeedback(worker, validationResult.message);
+                  // Don't clean up worktree yet, worker is restarting
+                  return;
+                } else {
+                  console.error(
+                    `❌ Worker ${workerId} exceeded max validation attempts (${maxAttempts}), marking as failed`
+                  );
+                  worker.status = 'failed';
+                  worker.validationPassed = false;
+                }
+              }
+            } catch {
+              // Validation error logging disabled
+              worker.status = 'failed';
+              worker.validationPassed = false;
+            }
+          } else {
+            worker.status = 'failed';
+            console.error(`❌ Worker ${workerId} failed with exit code ${code}`);
+          }
+
+          // Clean up worktree after completion
+          if (worker.worktreeManager && worker.worktreePath && !workingDirectory) {
+            worker.worktreeManager
+              .removeWorktree(worker.worktreePath)
+              .then(() => {
+                console.error(`🧹 Cleaned up worktree for worker ${workerId}`);
+              })
+              .catch(_cleanupError => {
+                // Worktree cleanup error logging disabled
+              });
+          }
+        } catch (error) {
+          console.error(`❌ Error handling worker ${workerId} completion:`, error);
+          worker.status = 'failed';
+          if (!logStreamClosed && !logStream.destroyed) {
+            logStream.end();
+            logStreamClosed = true;
+          }
         }
-      } catch (error) {
-        console.error(`❌ Error handling worker ${workerId} completion:`, error);
-        worker.status = 'failed';
-        if (!logStreamClosed && !logStream.destroyed) {
-          logStream.end();
-          logStreamClosed = true;
-        }
-      }
       })().catch(error => {
         console.error(`❌ Unhandled async error in worker ${workerId} completion:`, error);
         worker.status = 'failed';
@@ -1481,7 +1483,7 @@ router.get('/:workerId/enhanced-logs', (req, res) => {
   res.writeHead(HTTP_OK, {
     'Content-Type': 'text/event-stream',
     'Cache-Control': 'no-cache',
-    'Connection': 'keep-alive',
+    Connection: 'keep-alive',
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Cache-Control',
   });
@@ -1497,7 +1499,7 @@ router.get('/:workerId/enhanced-logs', (req, res) => {
       if (worker.structuredEntries && worker.structuredEntries.length > lastEntryIndex) {
         const newEntries = worker.structuredEntries.slice(lastEntryIndex);
         lastEntryIndex = worker.structuredEntries.length;
-        
+
         newEntries.forEach(entry => {
           patches.push({
             op: 'add',
@@ -1507,34 +1509,39 @@ router.get('/:workerId/enhanced-logs', (req, res) => {
               content: {
                 entry_type: { type: entry.type },
                 content: entry.content,
-                metadata: entry.metadata
+                metadata: entry.metadata,
                 // Removed timestamp to prevent constant rerenders
-              }
-            }
+              },
+            },
           });
         });
       }
 
       // Fallback to raw logs only if no structured entries are available yet
-      if (worker.structuredEntries.length === 0 && worker.logFile && fs.existsSync(worker.logFile)) {
+      if (
+        worker.structuredEntries.length === 0 &&
+        worker.logFile &&
+        fs.existsSync(worker.logFile)
+      ) {
         try {
           const logs = fs.readFileSync(worker.logFile, 'utf-8');
           const logLines = logs.split('\n').filter(line => line.trim());
-          
+
           if (logLines.length > lastLogIndex) {
             const newLines = logLines.slice(lastLogIndex);
             lastLogIndex = logLines.length;
-            
+
             newLines.forEach(line => {
               // Determine if stderr or stdout based on content
-              const isStderr = line.includes('STDERR:') || line.includes('Error:') || line.includes('❌');
+              const isStderr =
+                line.includes('STDERR:') || line.includes('Error:') || line.includes('❌');
               patches.push({
                 op: 'add',
                 path: `/entries/-`,
                 value: {
                   type: isStderr ? 'STDERR' : 'STDOUT',
-                  content: line
-                }
+                  content: line,
+                },
               });
             });
           }
@@ -1565,7 +1572,11 @@ router.get('/:workerId/enhanced-logs', (req, res) => {
 
   // Send finished event when worker completes
   const checkCompletion = () => {
-    if (worker.status === 'completed' || worker.status === 'failed' || worker.status === 'stopped') {
+    if (
+      worker.status === 'completed' ||
+      worker.status === 'failed' ||
+      worker.status === 'stopped'
+    ) {
       res.write(`event: finished\n`);
       res.write(`data: ${JSON.stringify({ status: worker.status })}\n\n`);
       clearInterval(intervalId);
@@ -1617,7 +1628,7 @@ router.post('/:workerId/follow-up', (req, res) => {
   try {
     // Send the prompt to the Claude process stdin
     worker.process.stdin.write(prompt + '\n');
-    
+
     // Log the follow-up action
     const logEntry = `[FOLLOW-UP] User sent prompt: ${prompt.substring(0, STRING_TRUNCATE_LENGTH)}${prompt.length > STRING_TRUNCATE_LENGTH ? '...' : ''}`;
     fs.appendFileSync(worker.logFile, `\n${new Date().toISOString()} ${logEntry}\n`);

@@ -12,16 +12,24 @@ jest.mock('./validation-utils');
 jest.mock('./result-utils');
 
 const mockExecSync = execSync as jest.MockedFunction<typeof execSync>;
-const mockValidateInput = validationUtils.validateInput as jest.MockedFunction<typeof validationUtils.validateInput>;
-const mockValidateDirectoryExists = validationUtils.validateDirectoryExists as jest.MockedFunction<typeof validationUtils.validateDirectoryExists>;
-const mockCreateSuccessResult = resultUtils.createSuccessResult as jest.MockedFunction<typeof resultUtils.createSuccessResult>;
-const mockCreateFailureResult = resultUtils.createFailureResult as jest.MockedFunction<typeof resultUtils.createFailureResult>;
+const mockValidateInput = validationUtils.validateInput as jest.MockedFunction<
+  typeof validationUtils.validateInput
+>;
+const mockValidateDirectoryExists = validationUtils.validateDirectoryExists as jest.MockedFunction<
+  typeof validationUtils.validateDirectoryExists
+>;
+const mockCreateSuccessResult = resultUtils.createSuccessResult as jest.MockedFunction<
+  typeof resultUtils.createSuccessResult
+>;
+const mockCreateFailureResult = resultUtils.createFailureResult as jest.MockedFunction<
+  typeof resultUtils.createFailureResult
+>;
 
 describe('command-utils', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockCreateSuccessResult.mockImplementation((output) => ({ success: true, output }));
-    mockCreateFailureResult.mockImplementation((output) => ({ success: false, output }));
+    mockCreateSuccessResult.mockImplementation(output => ({ success: true, output }));
+    mockCreateFailureResult.mockImplementation(output => ({ success: false, output }));
   });
 
   describe('execCommand', () => {
@@ -118,7 +126,10 @@ describe('command-utils', () => {
       expect(mockCreateFailureResult).toHaveBeenCalledWith(
         'some stdout output\ncommand not found\nCommand failed\nExit code: 127'
       );
-      expect(result).toEqual({ success: false, output: 'some stdout output\ncommand not found\nCommand failed\nExit code: 127' });
+      expect(result).toEqual({
+        success: false,
+        output: 'some stdout output\ncommand not found\nCommand failed\nExit code: 127',
+      });
     });
 
     it('should handle Error instances', () => {
@@ -151,7 +162,7 @@ describe('command-utils', () => {
       const command = 'command-with-secrets';
       const error = {
         stderr: 'Error: OPENAI_API_KEY=sk-1234567890abcdef authentication failed',
-        message: 'Command with API_KEY=secret123456 failed'
+        message: 'Command with API_KEY=secret123456 failed',
       };
       mockExecSync.mockImplementation(() => {
         throw error;
@@ -168,7 +179,7 @@ describe('command-utils', () => {
       const command = 'path-command';
       const error = {
         stdout: 'File not found in /Users/john.doe/project',
-        stderr: 'Permission denied: /home/alice/secret'
+        stderr: 'Permission denied: /home/alice/secret',
       };
       mockExecSync.mockImplementation(() => {
         throw error;
@@ -185,7 +196,7 @@ describe('command-utils', () => {
       const command = 'token-command';
       const longToken = 'a'.repeat(40); // 40 character token
       const error = {
-        message: `Token ${longToken} is invalid`
+        message: `Token ${longToken} is invalid`,
       };
       mockExecSync.mockImplementation(() => {
         throw error;
@@ -193,15 +204,13 @@ describe('command-utils', () => {
 
       const result = execCommand(command);
 
-      expect(mockCreateFailureResult).toHaveBeenCalledWith(
-        'Token aaaa***aaaa is invalid'
-      );
+      expect(mockCreateFailureResult).toHaveBeenCalledWith('Token aaaa***aaaa is invalid');
     });
 
     it('should sanitize environment variable assignments', () => {
       const command = 'env-command';
       const error = {
-        stderr: 'Export failed: DATABASE_URL=postgres://user:pass@host/db SECRET_KEY=mysecret'
+        stderr: 'Export failed: DATABASE_URL=postgres://user:pass@host/db SECRET_KEY=mysecret',
       };
       mockExecSync.mockImplementation(() => {
         throw error;
@@ -218,7 +227,7 @@ describe('command-utils', () => {
       const command = 'partial-error-command';
       const error = {
         stdout: 'some output',
-        code: 1
+        code: 1,
       };
       mockExecSync.mockImplementation(() => {
         throw error;
@@ -226,15 +235,13 @@ describe('command-utils', () => {
 
       const result = execCommand(command);
 
-      expect(mockCreateFailureResult).toHaveBeenCalledWith(
-        'some output\nExit code: 1'
-      );
+      expect(mockCreateFailureResult).toHaveBeenCalledWith('some output\nExit code: 1');
     });
 
     it('should handle CommandError with only stderr', () => {
       const command = 'stderr-only-command';
       const error = {
-        stderr: 'error message only'
+        stderr: 'error message only',
       };
       mockExecSync.mockImplementation(() => {
         throw error;
@@ -281,7 +288,7 @@ describe('command-utils', () => {
       const command = 'short-secret-command';
       const shortSecret = 'abc123'; // 6 characters, below MIN_SECRET_LENGTH
       const error = {
-        message: `Short secret ${shortSecret} should not be sanitized`
+        message: `Short secret ${shortSecret} should not be sanitized`,
       };
       mockExecSync.mockImplementation(() => {
         throw error;

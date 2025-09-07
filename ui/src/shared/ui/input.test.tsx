@@ -8,19 +8,11 @@ describe('Input Component', () => {
     const input = screen.getByTestId('test-input');
 
     expect(input).toBeInTheDocument();
-    expect(input).toHaveClass(
-      'border',
-      'border-gray-300',
-      'rounded',
-      'px-3',
-      'py-2'
-    );
+    expect(input).toHaveClass('border', 'border-gray-300', 'rounded', 'px-3', 'py-2');
   });
 
   it('accepts and displays a value', () => {
-    render(
-      <Input value="test value" onChange={() => {}} data-testid="test-input" />
-    );
+    render(<Input value="test value" onChange={() => {}} data-testid="test-input" />);
     const input = screen.getByTestId('test-input') as HTMLInputElement;
 
     expect(input.value).toBe('test value');
@@ -45,14 +37,7 @@ describe('Input Component', () => {
   });
 
   it('passes through HTML input attributes', () => {
-    render(
-      <Input
-        placeholder="Enter text"
-        type="email"
-        disabled
-        data-testid="test-input"
-      />
-    );
+    render(<Input placeholder="Enter text" type="email" disabled data-testid="test-input" />);
     const input = screen.getByTestId('test-input');
 
     expect(input).toHaveAttribute('placeholder', 'Enter text');

@@ -25,7 +25,11 @@ function sanitizeErrorMessage(message: string): string {
       .replace(/\/home\/[^/\s]+/g, '/home/***')
       // Remove potential secrets (long alphanumeric strings)
       .replace(new RegExp(`\\b[a-zA-Z0-9_-]{${MIN_SECRET_DETECTION_LENGTH},}\\b`, 'g'), match =>
-        match.length > MIN_SECRET_LENGTH ? match.substring(0, SECRET_PREFIX_LENGTH) + '***' + match.substring(match.length - SECRET_SUFFIX_LENGTH) : match
+        match.length > MIN_SECRET_LENGTH
+          ? match.substring(0, SECRET_PREFIX_LENGTH) +
+            '***' +
+            match.substring(match.length - SECRET_SUFFIX_LENGTH)
+          : match
       )
   );
 }
@@ -52,23 +56,33 @@ export function validateInputs(projectRoot: string, allOutput: string): void {
     throw new Error('Invalid allOutput: must be string');
   }
 
-  const resolvedPath = path.resolve(projectRoot);
-  const normalizedPath = path.normalize(resolvedPath);
-  const securityPatterns = [
-    /\.\.[/\\]/,
-    /[/\\]\.\.[/\\]/,
-    /\0/,
-    /%00/i,
-    /%2e%2e/i,
-    /%2f|%5c/i,
-    /\$\{.*\}/,
-    /`.*`/,
-    /\||&&|;/,
+  // Check for dangerous patterns in the original input
+  const dangerousPatterns = [
+    /\0/, // Null bytes
+    /%00/i, // URL encoded null
+    /%2e%2e/i, // URL encoded ..
+    /%2f|%5c/i, // URL encoded slashes
+    /\$\{.*\}/, // Variable injection
+    /`.*`/, // Command substitution
+    /\||&&|;/, // Command chaining
   ];
 
-  if (securityPatterns.some(pattern => pattern.test(normalizedPath))) {
+  // Check for path traversal patterns (both Unix and Windows style)
+  const pathTraversalPatterns = [
+    /(\.\.\/|\.\.\\){3,}/, // 3+ levels up
+    /\/\.\.[/\\]/, // /../ or /..\  in the middle
+    /\\\.\.[/\\]/, // \..\ or \../ in Windows paths
+  ];
+
+  if (
+    dangerousPatterns.some(pattern => pattern.test(projectRoot)) ||
+    pathTraversalPatterns.some(pattern => pattern.test(projectRoot))
+  ) {
     throw new Error('Invalid projectRoot: contains potentially dangerous patterns');
   }
+
+  const resolvedPath = path.resolve(projectRoot);
+  // Removed unused normalizedPath variable
 
   if (!fs.existsSync(resolvedPath)) {
     throw new Error(`ProjectRoot does not exist: ${resolvedPath}`);
@@ -79,11 +93,16 @@ export function validateInputs(projectRoot: string, allOutput: string): void {
  * Check if error is transient and should not block commit permanently
  */
 export function isTransientError(error: Error): boolean {
+  // Empty or missing message should not be considered transient
+  if (error.message === undefined || error.message === null || error.message === '') {
+    return false;
+  }
+
   const transientPatterns = [
     /ENOENT/i,
     /ECONNRESET/i,
     /ETIMEDOUT/i,
-    /timeout/i,
+    /time.*?out/i, // Matches "timeout", "timed out", "time-out", etc.
     /network/i,
     /connection/i,
     /rate.?limit/i,

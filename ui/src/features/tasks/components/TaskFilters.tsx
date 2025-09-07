@@ -66,13 +66,16 @@ function createClearAllFilters(onFiltersChange: (filters: TaskFiltersState) => v
 
 // Check if any filters are active
 function hasActiveFilters(filters: TaskFiltersState): boolean {
-  return Object.values(filters).some(
-    (value) => value && value !== 'all' && value !== ''
-  );
+  return Object.values(filters).some(value => value && value !== 'all' && value !== '');
 }
 
 // Filter header component
-function FilterHeader({ isOpen, onToggle, hasActiveFilters, onClearAll }: {
+function FilterHeader({
+  isOpen,
+  onToggle,
+  hasActiveFilters,
+  onClearAll,
+}: {
   isOpen: boolean;
   onToggle: () => void;
   hasActiveFilters: boolean;
@@ -110,7 +113,10 @@ function FilterHeader({ isOpen, onToggle, hasActiveFilters, onClearAll }: {
 }
 
 // Search input component
-function SearchInput({ filters, onFiltersChange }: {
+function SearchInput({
+  filters,
+  onFiltersChange,
+}: {
   filters: TaskFiltersState;
   onFiltersChange: (filters: TaskFiltersState) => void;
 }) {
@@ -125,9 +131,7 @@ function SearchInput({ filters, onFiltersChange }: {
           id="search-tasks"
           type="text"
           value={filters.search || ''}
-          onChange={(e) =>
-            onFiltersChange({ ...filters, search: e.target.value })
-          }
+          onChange={e => onFiltersChange({ ...filters, search: e.target.value })}
           placeholder="Search by task content or ID..."
           className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md text-sm"
         />
@@ -137,7 +141,13 @@ function SearchInput({ filters, onFiltersChange }: {
 }
 
 // Select filter component
-function SelectFilter({ label, value, options, onChange, id }: {
+function SelectFilter({
+  label,
+  value,
+  options,
+  onChange,
+  id,
+}: {
   label: string;
   value: string;
   options: { value: string; label: string }[];
@@ -152,10 +162,10 @@ function SelectFilter({ label, value, options, onChange, id }: {
       <select
         id={id}
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={e => onChange(e.target.value)}
         className="w-full p-2 border border-gray-300 rounded-md text-sm"
       >
-        {options.map((option) => (
+        {options.map(option => (
           <option key={option.value} value={option.value}>
             {option.label}
           </option>
@@ -166,7 +176,13 @@ function SelectFilter({ label, value, options, onChange, id }: {
 }
 
 // Text filter component
-function TextFilter({ label, value, onChange, placeholder, id }: {
+function TextFilter({
+  label,
+  value,
+  onChange,
+  placeholder,
+  id,
+}: {
   label: string;
   value: string;
   onChange: (value: string) => void;
@@ -182,7 +198,7 @@ function TextFilter({ label, value, onChange, placeholder, id }: {
         id={id}
         type="text"
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={e => onChange(e.target.value)}
         placeholder={placeholder}
         className="w-full p-2 border border-gray-300 rounded-md text-sm"
       />
@@ -191,7 +207,10 @@ function TextFilter({ label, value, onChange, placeholder, id }: {
 }
 
 // Filter controls component
-function FilterControls({ filters, onFiltersChange }: {
+function FilterControls({
+  filters,
+  onFiltersChange,
+}: {
   filters: TaskFiltersState;
   onFiltersChange: (filters: TaskFiltersState) => void;
 }) {
@@ -202,34 +221,42 @@ function FilterControls({ filters, onFiltersChange }: {
         id="filter-status"
         value={filters.status || 'all'}
         options={statusOptions}
-        onChange={(value) => onFiltersChange({ ...filters, status: value as TaskFiltersState['status'] })}
+        onChange={value =>
+          onFiltersChange({ ...filters, status: value as TaskFiltersState['status'] })
+        }
       />
       <SelectFilter
         label="Priority"
         id="filter-priority"
         value={filters.priority || 'all'}
         options={priorityOptions}
-        onChange={(value) => onFiltersChange({ ...filters, priority: value as TaskFiltersState['priority'] })}
+        onChange={value =>
+          onFiltersChange({ ...filters, priority: value as TaskFiltersState['priority'] })
+        }
       />
       <SelectFilter
         label="Type"
         id="filter-type"
         value={filters.taskType || 'all'}
         options={taskTypeOptions}
-        onChange={(value) => onFiltersChange({ ...filters, taskType: value as TaskFiltersState['taskType'] })}
+        onChange={value =>
+          onFiltersChange({ ...filters, taskType: value as TaskFiltersState['taskType'] })
+        }
       />
       <SelectFilter
         label="Date Range"
         id="filter-date-range"
         value={filters.dateRange || 'all'}
         options={dateRangeOptions}
-        onChange={(value) => onFiltersChange({ ...filters, dateRange: value as TaskFiltersState['dateRange'] })}
+        onChange={value =>
+          onFiltersChange({ ...filters, dateRange: value as TaskFiltersState['dateRange'] })
+        }
       />
       <TextFilter
         label="Executor"
         id="filter-executor"
         value={filters.executor || ''}
-        onChange={(value) => onFiltersChange({ ...filters, executor: value })}
+        onChange={value => onFiltersChange({ ...filters, executor: value })}
         placeholder="Filter by executor..."
       />
     </div>
@@ -242,10 +269,10 @@ export function TaskFilters({ filters, onFiltersChange, isOpen, onToggle }: Filt
 
   return (
     <Card className="mb-6">
-      <FilterHeader 
-        isOpen={isOpen} 
-        onToggle={onToggle} 
-        hasActiveFilters={hasActiveFiltersState} 
+      <FilterHeader
+        isOpen={isOpen}
+        onToggle={onToggle}
+        hasActiveFilters={hasActiveFiltersState}
         onClearAll={clearAllFilters}
       />
       {isOpen && (

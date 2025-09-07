@@ -1,6 +1,10 @@
 /**
  * Environment configuration processing utilities
  */
+// Suppress dotenv debug messages
+delete process.env.DEBUG;
+delete process.env.DOTENV_CONFIG_DEBUG;
+delete process.env.DOTENV_DEBUG;
 import { config } from 'dotenv';
 import {
   EnvLoadResult,

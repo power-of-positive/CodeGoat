@@ -7,9 +7,15 @@ import * as checkUtils from '../checks/check-utils';
 jest.mock('../runners/rust-runners');
 jest.mock('../checks/check-utils');
 
-const mockRunRustFormatting = rustRunners.runRustFormatting as jest.MockedFunction<typeof rustRunners.runRustFormatting>;
-const mockRunRustLinting = rustRunners.runRustLinting as jest.MockedFunction<typeof rustRunners.runRustLinting>;
-const mockValidateStagedFiles = checkUtils.validateStagedFiles as jest.MockedFunction<typeof checkUtils.validateStagedFiles>;
+const mockRunRustFormatting = rustRunners.runRustFormatting as jest.MockedFunction<
+  typeof rustRunners.runRustFormatting
+>;
+const mockRunRustLinting = rustRunners.runRustLinting as jest.MockedFunction<
+  typeof rustRunners.runRustLinting
+>;
+const mockValidateStagedFiles = checkUtils.validateStagedFiles as jest.MockedFunction<
+  typeof checkUtils.validateStagedFiles
+>;
 
 // Mock console.error to avoid test output noise
 const originalConsoleError = console.error;
@@ -22,7 +28,7 @@ describe('backend-checks', () => {
     jest.clearAllMocks();
     mockConsoleError = jest.fn();
     console.error = mockConsoleError;
-    
+
     // Default mock implementations
     mockValidateStagedFiles.mockImplementation(() => {});
     mockRunRustFormatting.mockReturnValue({ success: true, output: '' });
@@ -39,7 +45,7 @@ describe('backend-checks', () => {
         frontendFiles: ['src/frontend.tsx'],
         backendFiles: [],
         scriptFiles: ['scripts/test.ts'],
-        allFiles: ['src/frontend.tsx', 'scripts/test.ts']
+        allFiles: ['src/frontend.tsx', 'scripts/test.ts'],
       };
 
       const result = runBackendChecks(projectRoot, stagedFiles);
@@ -56,7 +62,7 @@ describe('backend-checks', () => {
         frontendFiles: [],
         backendFiles: ['src/lib.rs', 'src/main.rs'],
         scriptFiles: [],
-        allFiles: ['src/lib.rs', 'src/main.rs']
+        allFiles: ['src/lib.rs', 'src/main.rs'],
       };
 
       const result = runBackendChecks(projectRoot, stagedFiles);
@@ -78,12 +84,12 @@ describe('backend-checks', () => {
         frontendFiles: [],
         backendFiles: ['src/lib.rs'],
         scriptFiles: [],
-        allFiles: ['src/lib.rs']
+        allFiles: ['src/lib.rs'],
       };
 
       mockRunRustFormatting.mockReturnValue({
         success: false,
-        output: 'Formatting errors found in src/lib.rs'
+        output: 'Formatting errors found in src/lib.rs',
       });
 
       const result = runBackendChecks(projectRoot, stagedFiles);
@@ -99,18 +105,20 @@ describe('backend-checks', () => {
         frontendFiles: [],
         backendFiles: ['src/lib.rs'],
         scriptFiles: [],
-        allFiles: ['src/lib.rs']
+        allFiles: ['src/lib.rs'],
       };
 
       mockRunRustLinting.mockReturnValue({
         success: false,
-        output: 'Clippy warnings:\nwarning: unused variable `x`'
+        output: 'Clippy warnings:\nwarning: unused variable `x`',
       });
 
       const result = runBackendChecks(projectRoot, stagedFiles);
 
       expect(result.failed).toBe(true);
-      expect(result.output).toBe('RUST LINT FAILURES:\nClippy warnings:\nwarning: unused variable `x`');
+      expect(result.output).toBe(
+        'RUST LINT FAILURES:\nClippy warnings:\nwarning: unused variable `x`'
+      );
       expect(mockConsoleError).toHaveBeenCalledWith('✅ Rust Formatting passed');
       expect(mockConsoleError).toHaveBeenCalledWith('❌ Rust Linting failed');
     });
@@ -120,7 +128,7 @@ describe('backend-checks', () => {
         frontendFiles: [],
         backendFiles: ['src/lib.rs'],
         scriptFiles: [],
-        allFiles: ['src/lib.rs']
+        allFiles: ['src/lib.rs'],
       };
 
       const validationError = new Error('Invalid staged files structure');
@@ -132,7 +140,9 @@ describe('backend-checks', () => {
 
       expect(result.failed).toBe(true);
       expect(result.output).toBe('Backend check error: Invalid staged files structure');
-      expect(mockConsoleError).toHaveBeenCalledWith('❌ Backend check error: Invalid staged files structure');
+      expect(mockConsoleError).toHaveBeenCalledWith(
+        '❌ Backend check error: Invalid staged files structure'
+      );
       expect(mockRunRustFormatting).not.toHaveBeenCalled();
       expect(mockRunRustLinting).not.toHaveBeenCalled();
     });
@@ -142,7 +152,7 @@ describe('backend-checks', () => {
         frontendFiles: [],
         backendFiles: ['src/lib.rs'],
         scriptFiles: [],
-        allFiles: ['src/lib.rs']
+        allFiles: ['src/lib.rs'],
       };
 
       mockValidateStagedFiles.mockImplementation(() => {
@@ -161,7 +171,7 @@ describe('backend-checks', () => {
         frontendFiles: [],
         backendFiles: ['src/lib.rs'],
         scriptFiles: [],
-        allFiles: ['src/lib.rs']
+        allFiles: ['src/lib.rs'],
       };
 
       mockRunRustFormatting.mockImplementation(() => {
@@ -172,7 +182,9 @@ describe('backend-checks', () => {
 
       expect(result.failed).toBe(true);
       expect(result.output).toBe('Backend check error: Runner execution failed');
-      expect(mockConsoleError).toHaveBeenCalledWith('❌ Backend check error: Runner execution failed');
+      expect(mockConsoleError).toHaveBeenCalledWith(
+        '❌ Backend check error: Runner execution failed'
+      );
     });
 
     it('should validate staged files before processing', () => {
@@ -180,7 +192,7 @@ describe('backend-checks', () => {
         frontendFiles: [],
         backendFiles: ['src/lib.rs'],
         scriptFiles: [],
-        allFiles: ['src/lib.rs']
+        allFiles: ['src/lib.rs'],
       };
 
       runBackendChecks(projectRoot, stagedFiles);
@@ -193,7 +205,7 @@ describe('backend-checks', () => {
         frontendFiles: [],
         backendFiles: ['src/lib.rs'],
         scriptFiles: [],
-        allFiles: ['src/lib.rs']
+        allFiles: ['src/lib.rs'],
       };
 
       const callOrder: string[] = [];
@@ -218,7 +230,7 @@ describe('backend-checks', () => {
         frontendFiles: [],
         backendFiles: ['src/lib.rs'],
         scriptFiles: [],
-        allFiles: ['src/lib.rs']
+        allFiles: ['src/lib.rs'],
       };
 
       const result = runBackendChecks('', stagedFiles);

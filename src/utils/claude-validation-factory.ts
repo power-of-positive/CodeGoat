@@ -124,7 +124,6 @@ export class ClaudeValidationFactory {
     // Try to find claude command in PATH
     for (const cmd of possibleCommands) {
       try {
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
         const { execSync } = require('child_process');
         execSync(`which ${cmd.split(' ')[0]}`, { stdio: 'ignore' });
         logger?.info('Detected Claude command', { command: cmd });

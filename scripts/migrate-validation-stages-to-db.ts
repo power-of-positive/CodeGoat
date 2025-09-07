@@ -31,11 +31,11 @@ async function loadValidationStagesFromSettings(): Promise<ValidationStage[]> {
     const settingsPath = path.join(process.cwd(), 'settings.json');
     const settingsContent = await fs.readFile(settingsPath, 'utf-8');
     const settings: Settings = JSON.parse(settingsContent);
-    
+
     if (!settings.validation?.stages) {
       throw new Error('No validation stages found in settings.json');
     }
-    
+
     return settings.validation.stages;
   } catch (error) {
     console.error('Error loading settings.json:', error);
@@ -79,7 +79,7 @@ function convertStageToDbFormat(stage: ValidationStage): ValidationStageConfig {
     continueOnFailure: stage.continueOnFailure || false,
     priority: stage.priority || 999,
     description: `Migrated from settings.json - ${stage.name}`,
-    category
+    category,
   };
 }
 
@@ -89,11 +89,11 @@ function convertStageToDbFormat(stage: ValidationStage): ValidationStageConfig {
 async function migrateValidationStagesToDb(): Promise<void> {
   try {
     console.error('🚀 Starting migration of validation stages to database...');
-    
+
     // Load stages from settings.json
     const settingsStages = await loadValidationStagesFromSettings();
     console.error(`📋 Found ${settingsStages.length} validation stages in settings.json`);
-    
+
     // Check if stages already exist in database
     const existingStages = await prisma.validationStageConfig.findMany();
     if (existingStages.length > 0) {
@@ -101,39 +101,39 @@ async function migrateValidationStagesToDb(): Promise<void> {
       console.error('🔄 Clearing existing stages for fresh migration...');
       await prisma.validationStageConfig.deleteMany();
     }
-    
+
     // Convert and insert stages
     const dbStages = settingsStages.map(convertStageToDbFormat);
-    
+
     console.error('💾 Inserting validation stages into database...');
-    
+
     for (const stage of dbStages) {
       await prisma.validationStageConfig.create({
-        data: stage
+        data: stage,
       });
       console.error(`✅ Inserted stage: ${stage.stageId} (${stage.name})`);
     }
-    
+
     // Verify migration
     const finalCount = await prisma.validationStageConfig.count();
     console.error(`🎉 Migration completed! ${finalCount} validation stages now in database.`);
-    
+
     // Display stage summary
     const stagesByCategory = await prisma.validationStageConfig.groupBy({
       by: ['category'],
       _count: {
-        id: true
+        id: true,
       },
       orderBy: {
-        category: 'asc'
-      }
+        category: 'asc',
+      },
     });
-    
+
     console.error('\n📊 Validation stages by category:');
     for (const group of stagesByCategory) {
       console.error(`  ${group.category}: ${group._count.id} stages`);
     }
-    
+
     // Show execution order
     console.error('\n📝 Execution order (by priority):');
     const orderedStages = await prisma.validationStageConfig.findMany({
@@ -141,18 +141,17 @@ async function migrateValidationStagesToDb(): Promise<void> {
         stageId: true,
         name: true,
         priority: true,
-        enabled: true
+        enabled: true,
       },
       orderBy: {
-        priority: 'asc'
-      }
+        priority: 'asc',
+      },
     });
-    
+
     for (const stage of orderedStages) {
       const status = stage.enabled ? '✅' : '❌';
       console.error(`  ${stage.priority}. ${status} ${stage.stageId} - ${stage.name}`);
     }
-    
   } catch (error) {
     console.error('❌ Migration failed:', error);
     throw error;

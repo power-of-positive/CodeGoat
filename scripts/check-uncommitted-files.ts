@@ -74,11 +74,11 @@ function shouldIgnoreFile(filePath: string, ignorePatterns: string[]): boolean {
 function isInPreCommitContext(): boolean {
   return Boolean(
     process.env.HUSKY_GIT_PARAMS ||
-    process.env.GIT_PARAMS ||
-    process.argv.includes('--pre-commit') ||
-    process.env.HUSKY || // Husky sets this environment variable
-    process.env.PRE_COMMIT || // Alternative detection
-    process.env.npm_lifecycle_event === 'precommit'
+      process.env.GIT_PARAMS ||
+      process.argv.includes('--pre-commit') ||
+      process.env.HUSKY || // Husky sets this environment variable
+      process.env.PRE_COMMIT || // Alternative detection
+      process.env.npm_lifecycle_event === 'precommit'
   );
 }
 
@@ -106,7 +106,7 @@ function executeGitStatusRetrieval(): { modified: string[]; untracked: string[] 
   const isPreCommit = isInPreCommitContext();
   const modified = getModifiedFiles(isPreCommit);
   const untracked = getUntrackedFiles();
-  
+
   return { modified, untracked };
 }
 

@@ -43,13 +43,7 @@ interface WorkerStatus {
   id: string;
   taskId: string;
   taskContent: string;
-  status:
-    | 'starting'
-    | 'running'
-    | 'completed'
-    | 'failed'
-    | 'stopped'
-    | 'validating';
+  status: 'starting' | 'running' | 'completed' | 'failed' | 'stopped' | 'validating';
   startTime: string;
   endTime?: string;
   pid?: number;
@@ -61,7 +55,6 @@ interface WorkerStatus {
   validationHistory?: ValidationRun[];
   lastValidationRun?: ValidationRun;
 }
-
 
 // interface WorkerInteractionResponse {
 //   workerId: string;
@@ -104,9 +97,6 @@ export function WorkerDetail() {
     refetchInterval: 2000, // Refresh every 2 seconds
   });
 
-
-
-
   // Start worker
   const startWorkerMutation = useMutation({
     mutationFn: async () => {
@@ -132,7 +122,6 @@ export function WorkerDetail() {
     },
   });
 
-
   // Open VS Code
   const openVSCodeMutation = useMutation({
     mutationFn: async () => {
@@ -156,8 +145,6 @@ export function WorkerDetail() {
       queryClient.invalidateQueries({ queryKey: ['worker-logs', workerId] });
     },
   });
-
-
 
   // Merge worker changes with commit message
   const mergeChangesMutation = useMutation({
@@ -184,8 +171,6 @@ export function WorkerDetail() {
     }
   }, [worker]);
 
-
-
   const formatDuration = (startTime: string, endTime?: string) => {
     const start = new Date(startTime);
     const end = endTime ? new Date(endTime) : new Date();
@@ -204,10 +189,6 @@ export function WorkerDetail() {
     return `${seconds}s`;
   };
 
-
-
-
-
   if (isLoadingWorker) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -224,12 +205,8 @@ export function WorkerDetail() {
       <div className="container mx-auto px-4 py-8">
         <div className="text-center">
           <XCircle className="h-16 w-16 text-red-600 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">
-            Worker Not Found
-          </h1>
-          <p className="text-gray-600">
-            The worker with ID {workerId} could not be found.
-          </p>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Worker Not Found</h1>
+          <p className="text-gray-600">The worker with ID {workerId} could not be found.</p>
         </div>
       </div>
     );
@@ -295,9 +272,7 @@ export function WorkerDetail() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label className="text-sm font-medium text-gray-700">
-                  Task Content:
-                </Label>
+                <Label className="text-sm font-medium text-gray-700">Task Content:</Label>
                 <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded border mt-1">
                   {worker.taskContent}
                 </p>
@@ -306,9 +281,7 @@ export function WorkerDetail() {
               <div className="grid grid-cols-1 gap-3 text-sm">
                 <div>
                   <Label className="font-medium text-gray-700">Started:</Label>
-                  <p className="text-gray-600">
-                    {new Date(worker.startTime).toLocaleString()}
-                  </p>
+                  <p className="text-gray-600">{new Date(worker.startTime).toLocaleString()}</p>
                 </div>
                 <div>
                   <Label className="font-medium text-gray-700">Duration:</Label>
@@ -321,12 +294,8 @@ export function WorkerDetail() {
                 </div>
                 {worker.endTime && (
                   <div>
-                    <Label className="font-medium text-gray-700">
-                      End Time:
-                    </Label>
-                    <p className="text-gray-600">
-                      {new Date(worker.endTime).toLocaleString()}
-                    </p>
+                    <Label className="font-medium text-gray-700">End Time:</Label>
+                    <p className="text-gray-600">{new Date(worker.endTime).toLocaleString()}</p>
                   </div>
                 )}
                 <div>
@@ -339,9 +308,7 @@ export function WorkerDetail() {
 
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <Label className="font-medium text-gray-700">
-                    Permission System:
-                  </Label>
+                  <Label className="font-medium text-gray-700">Permission System:</Label>
                   <div className="flex items-center space-x-1 mt-1">
                     {worker.hasPermissionSystem ? (
                       <>
@@ -357,9 +324,7 @@ export function WorkerDetail() {
                   </div>
                 </div>
                 <div>
-                  <Label className="font-medium text-gray-700">
-                    Blocked Commands:
-                  </Label>
+                  <Label className="font-medium text-gray-700">Blocked Commands:</Label>
                   <p
                     className={`mt-1 ${worker.blockedCommands > 0 ? 'text-red-600' : 'text-gray-600'}`}
                   >
@@ -371,9 +336,7 @@ export function WorkerDetail() {
               {/* Validation Status */}
               {worker.validationRuns && worker.validationRuns > 0 && (
                 <div className="space-y-3">
-                  <Label className="font-medium text-gray-700">
-                    Validation Status:
-                  </Label>
+                  <Label className="font-medium text-gray-700">Validation Status:</Label>
 
                   {/* Overall Status */}
                   <div className="flex items-center space-x-2">
@@ -408,13 +371,9 @@ export function WorkerDetail() {
                   {worker.lastValidationRun && (
                     <div className="bg-gray-50 rounded-lg p-3 text-sm">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="font-medium text-gray-700">
-                          Latest Run:
-                        </span>
+                        <span className="font-medium text-gray-700">Latest Run:</span>
                         <span className="text-gray-500 text-xs">
-                          {new Date(
-                            worker.lastValidationRun.timestamp
-                          ).toLocaleString()}
+                          {new Date(worker.lastValidationRun.timestamp).toLocaleString()}
                         </span>
                       </div>
 
@@ -422,21 +381,13 @@ export function WorkerDetail() {
                         <div className="grid grid-cols-2 gap-2 text-xs">
                           <div className="text-center p-2 bg-green-50 rounded">
                             <div className="font-bold text-green-600">
-                              {
-                                worker.lastValidationRun.stages.filter(
-                                  (s) => s.success
-                                ).length
-                              }
+                              {worker.lastValidationRun.stages.filter(s => s.success).length}
                             </div>
                             <div className="text-gray-600">Passed</div>
                           </div>
                           <div className="text-center p-2 bg-red-50 rounded">
                             <div className="font-bold text-red-600">
-                              {
-                                worker.lastValidationRun.stages.filter(
-                                  (s) => !s.success
-                                ).length
-                              }
+                              {worker.lastValidationRun.stages.filter(s => !s.success).length}
                             </div>
                             <div className="text-gray-600">Failed</div>
                           </div>
@@ -446,98 +397,76 @@ export function WorkerDetail() {
                       {worker.lastValidationRun.duration && (
                         <div className="flex items-center justify-center mt-2 text-xs text-gray-600">
                           <Clock className="h-3 w-3 mr-1" />
-                          {(worker.lastValidationRun.duration / 1000).toFixed(
-                            1
-                          )}
-                          s duration
+                          {(worker.lastValidationRun.duration / 1000).toFixed(1)}s duration
                         </div>
                       )}
                     </div>
                   )}
 
                   {/* Validation History Links */}
-                  {worker.validationHistory &&
-                    worker.validationHistory.length > 0 && (
-                      <div>
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-sm font-medium text-gray-700">
-                            Validation History (
-                            {worker.validationHistory.length} runs):
-                          </span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => window.open('/analytics', '_blank')}
-                            className="text-xs px-2 py-1 h-6"
-                          >
-                            View All
-                          </Button>
-                        </div>
-                        <div className="space-y-1 max-h-24 overflow-y-auto">
-                          {worker.validationHistory.slice(0, 5).map((run) => (
-                            <div
-                              key={run.id}
-                              className="flex items-center justify-between p-2 bg-white rounded border text-xs hover:bg-gray-50 cursor-pointer"
-                              onClick={() =>
-                                window.open(
-                                  `/validation-run/${run.id}`,
-                                  '_blank'
-                                )
-                              }
-                            >
-                              <div className="flex items-center space-x-2">
-                                {run.success ? (
-                                  <CheckCircle className="h-3 w-3 text-green-600" />
-                                ) : (
-                                  <XCircle className="h-3 w-3 text-red-600" />
-                                )}
-                                <span
-                                  className={
-                                    run.success
-                                      ? 'text-green-700'
-                                      : 'text-red-700'
-                                  }
-                                >
-                                  {run.success ? 'Passed' : 'Failed'}
-                                </span>
-                                {run.stages && (
-                                  <span className="text-gray-500">
-                                    (
-                                    {run.stages.filter((s) => s.success).length}
-                                    /{run.stages.length} stages)
-                                  </span>
-                                )}
-                              </div>
-                              <div className="flex items-center space-x-1 text-gray-500">
-                                {run.duration && (
-                                  <>
-                                    <Clock className="h-3 w-3" />
-                                    <span>
-                                      {(run.duration / 1000).toFixed(1)}s
-                                    </span>
-                                  </>
-                                )}
-                                <ExternalLink className="h-3 w-3" />
-                              </div>
-                            </div>
-                          ))}
-                          {worker.validationHistory.length > 5 && (
-                            <div className="text-xs text-gray-500 text-center py-1">
-                              ...and {worker.validationHistory.length - 5} more
-                              runs
-                            </div>
-                          )}
-                        </div>
+                  {worker.validationHistory && worker.validationHistory.length > 0 && (
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-gray-700">
+                          Validation History ({worker.validationHistory.length} runs):
+                        </span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => window.open('/analytics', '_blank')}
+                          className="text-xs px-2 py-1 h-6"
+                        >
+                          View All
+                        </Button>
                       </div>
-                    )}
+                      <div className="space-y-1 max-h-24 overflow-y-auto">
+                        {worker.validationHistory.slice(0, 5).map(run => (
+                          <div
+                            key={run.id}
+                            className="flex items-center justify-between p-2 bg-white rounded border text-xs hover:bg-gray-50 cursor-pointer"
+                            onClick={() => window.open(`/validation-run/${run.id}`, '_blank')}
+                          >
+                            <div className="flex items-center space-x-2">
+                              {run.success ? (
+                                <CheckCircle className="h-3 w-3 text-green-600" />
+                              ) : (
+                                <XCircle className="h-3 w-3 text-red-600" />
+                              )}
+                              <span className={run.success ? 'text-green-700' : 'text-red-700'}>
+                                {run.success ? 'Passed' : 'Failed'}
+                              </span>
+                              {run.stages && (
+                                <span className="text-gray-500">
+                                  ({run.stages.filter(s => s.success).length}/{run.stages.length}{' '}
+                                  stages)
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center space-x-1 text-gray-500">
+                              {run.duration && (
+                                <>
+                                  <Clock className="h-3 w-3" />
+                                  <span>{(run.duration / 1000).toFixed(1)}s</span>
+                                </>
+                              )}
+                              <ExternalLink className="h-3 w-3" />
+                            </div>
+                          </div>
+                        ))}
+                        {worker.validationHistory.length > 5 && (
+                          <div className="text-xs text-gray-500 text-center py-1">
+                            ...and {worker.validationHistory.length - 5} more runs
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Helpful message for failed validation */}
                   {worker.validationPassed === false &&
-                    (worker.status === 'completed' ||
-                      worker.status === 'failed') && (
+                    (worker.status === 'completed' || worker.status === 'failed') && (
                       <p className="text-xs text-orange-600 bg-orange-50 p-2 rounded">
-                        💡 Use "Retry with Same Worktree" to continue working on
-                        the same code
+                        💡 Use "Retry with Same Worktree" to continue working on the same code
                       </p>
                     )}
                 </div>
@@ -560,11 +489,7 @@ export function WorkerDetail() {
                     variant="outline"
                   >
                     <Play className="h-4 w-4" />
-                    <span>
-                      {startWorkerMutation.isPending
-                        ? 'Starting...'
-                        : 'Restart Worker'}
-                    </span>
+                    <span>{startWorkerMutation.isPending ? 'Starting...' : 'Restart Worker'}</span>
                   </Button>
                   <p className="text-xs text-gray-500 text-center">
                     Restarts the worker with the original task content
@@ -581,11 +506,7 @@ export function WorkerDetail() {
                     variant="outline"
                   >
                     <Square className="h-4 w-4" />
-                    <span>
-                      {stopWorkerMutation.isPending
-                        ? 'Stopping...'
-                        : 'Stop Worker'}
-                    </span>
+                    <span>{stopWorkerMutation.isPending ? 'Stopping...' : 'Stop Worker'}</span>
                   </Button>
                   <p className="text-xs text-gray-500 text-center">
                     Stops the current Claude Code execution
@@ -607,9 +528,7 @@ export function WorkerDetail() {
                     >
                       <RefreshCw className="h-4 w-4" />
                       <span>
-                        {retryWorkerMutation.isPending
-                          ? 'Retrying...'
-                          : 'Retry with Same Worktree'}
+                        {retryWorkerMutation.isPending ? 'Retrying...' : 'Retry with Same Worktree'}
                       </span>
                     </Button>
                     <p className="text-xs text-gray-500 text-center">
@@ -628,11 +547,7 @@ export function WorkerDetail() {
                       variant="outline"
                     >
                       <GitMerge className="h-4 w-4" />
-                      <span>
-                        {mergeChangesMutation.isPending
-                          ? 'Merging...'
-                          : 'Merge Changes'}
-                      </span>
+                      <span>{mergeChangesMutation.isPending ? 'Merging...' : 'Merge Changes'}</span>
                     </Button>
                     <p className="text-xs text-gray-500 text-center">
                       Merges successful changes back to main branch
@@ -648,21 +563,14 @@ export function WorkerDetail() {
                   variant="outline"
                 >
                   <Code2 className="h-4 w-4" />
-                  <span>
-                    {openVSCodeMutation.isPending
-                      ? 'Opening...'
-                      : 'Open in VS Code'}
-                  </span>
+                  <span>{openVSCodeMutation.isPending ? 'Opening...' : 'Open in VS Code'}</span>
                 </Button>
                 <p className="text-xs text-gray-500 text-center">
                   Opens the worker's code directory in VS Code
                 </p>
               </div>
-
             </CardContent>
           </Card>
-
-
         </div>
 
         {/* Logs Panel */}

@@ -1,8 +1,11 @@
+// Suppress dotenv debug messages
+process.env.DEBUG = '';
+process.env.DOTENV_CONFIG_DEBUG = 'false';
 import 'dotenv/config';
 import express, { Request, Response, NextFunction } from 'express';
 import { createServer, Server } from 'http';
 import path from 'path';
-import { WinstonLogger } from './logger-winston';
+import { getLogger } from './logger-singleton';
 import { LogCleaner } from './utils/log-cleaner';
 import { createSettingsRoutes } from './routes/settings';
 import { createAnalyticsRoutes } from './routes/analytics';
@@ -12,6 +15,8 @@ import { createE2ERoutes } from './routes/e2e';
 import bddScenariosRouter from './routes/bdd-scenarios';
 import { createValidationRunRoutes } from './routes/validation-runs';
 import claudeWorkersRouter from './routes/claude-workers';
+import { createOrchestratorRoutes } from './routes/orchestrator';
+import validationStageConfigsRouter from './routes/validation-stage-configs';
 import { createDatabaseService } from './services/database';
 
 // Constants
@@ -38,11 +43,11 @@ const SERVER_TIMEOUT_SECONDS = 30;
 const app = express();
 
 const logsDir = path.join(process.cwd(), 'logs');
-const logger = new WinstonLogger({
+const logger = getLogger({
   level: 'info',
   logsDir,
-  enableConsole: true,
-  enableFile: true,
+  enableConsole: process.env.NODE_ENV !== 'test',
+  enableFile: process.env.NODE_ENV !== 'test', // Disable file logging in tests
   maxFiles: '10',
   maxSize: '10485760', // 10MB
 });
@@ -162,6 +167,8 @@ app.use('/api/e2e', createE2ERoutes(logger));
 app.use('/api/bdd-scenarios', bddScenariosRouter);
 app.use('/api/validation-runs', createValidationRunRoutes(logger));
 app.use('/api/claude-workers', claudeWorkersRouter);
+app.use('/api/orchestrator', createOrchestratorRoutes(logger));
+app.use('/api/validation-stage-configs', validationStageConfigsRouter);
 
 // Health check endpoint
 app.get('/health', (_req: Request, res: Response) => {
@@ -195,7 +202,8 @@ if (process.env.NODE_ENV !== 'test') {
 
     // Schedule log cleanup every 6 hours (skip in E2E tests to prevent memory issues)
     if (process.env.NODE_ENV !== 'e2e-test') {
-      const SIX_HOURS = MEMORY_CLEANUP_INTERVAL_MINUTES * MINUTES_PER_HOUR * SECONDS_PER_MINUTE * MS_PER_SECOND;
+      const SIX_HOURS =
+        MEMORY_CLEANUP_INTERVAL_MINUTES * MINUTES_PER_HOUR * SECONDS_PER_MINUTE * MS_PER_SECOND;
       setInterval(() => {
         void logCleaner.cleanLogs();
       }, SIX_HOURS);
@@ -211,15 +219,29 @@ import { logManager } from './utils/log-manager';
 
 // Schedule daily log cleanup (skip in E2E tests to prevent memory issues)
 let logCleanupInterval: ReturnType<typeof setTimeout> | undefined;
-if (process.env.NODE_ENV !== 'e2e-test') {
+if (process.env.NODE_ENV !== 'e2e-test' && process.env.NODE_ENV !== 'test') {
   logCleanupInterval = logManager.scheduleCleanup(LOG_CLEANUP_INTERVAL_HOURS);
   console.error('🧹 Log cleanup scheduled to run every 24 hours');
 }
 
 // Export cleanup function for tests
-export const cleanupIntervals = () => {
+export const cleanupIntervals = async () => {
   if (logCleanupInterval) {
     clearInterval(logCleanupInterval);
+  }
+  // Clean up orchestrator stream manager
+  const { orchestratorStreamManager } = require('./utils/orchestrator-stream');
+  orchestratorStreamManager.cleanup();
+  
+  // Disconnect database in test environment
+  if (process.env.NODE_ENV === 'test') {
+    try {
+      const { getDatabaseService } = require('./services/database');
+      const db = getDatabaseService();
+      await db.$disconnect();
+    } catch (error) {
+      // Ignore errors during cleanup
+    }
   }
 };
 

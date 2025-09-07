@@ -12,10 +12,18 @@ export type NormalizedEntryType =
   | { type: 'system_message' }
   | { type: 'thinking' }
   | { type: 'error_message' }
-  | { type: 'tool_use'; tool_name?: string; action_type?: ActionType }
+  | { type: 'tool_use'; tool_name?: string; action_type?: ActionType };
 
 export interface ActionType {
-  action: 'file_read' | 'file_edit' | 'command_run' | 'search' | 'web_fetch' | 'task_create' | 'plan_presentation' | 'todo_management';
+  action:
+    | 'file_read'
+    | 'file_edit'
+    | 'command_run'
+    | 'search'
+    | 'web_fetch'
+    | 'task_create'
+    | 'plan_presentation'
+    | 'todo_management';
   path?: string;
   changes?: unknown[];
 }
@@ -36,7 +44,14 @@ export type ClaudeContentItem =
   | { type: 'tool_result'; tool_use_id: string; content: unknown; is_error?: boolean };
 
 export type ClaudeJson =
-  | { type: 'system'; subtype?: string; session_id?: string; cwd?: string; tools?: unknown[]; model?: string }
+  | {
+      type: 'system';
+      subtype?: string;
+      session_id?: string;
+      cwd?: string;
+      tools?: unknown[];
+      model?: string;
+    }
   | { type: 'assistant'; message: ClaudeMessage; session_id?: string }
   | { type: 'user'; message: ClaudeMessage; session_id?: string }
   | { type: 'tool_use'; tool_name: string; input: unknown; session_id?: string }

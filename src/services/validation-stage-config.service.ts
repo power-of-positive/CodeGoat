@@ -19,7 +19,7 @@ function convertDbToSettingsFormat(dbStage: ValidationStageConfig): ValidationSt
     timeout: dbStage.timeout,
     enabled: dbStage.enabled,
     continueOnFailure: dbStage.continueOnFailure,
-    priority: dbStage.priority
+    priority: dbStage.priority,
   };
 }
 
@@ -31,8 +31,8 @@ export async function getValidationStagesForExecution(): Promise<ValidationStage
   try {
     const dbStages = await prisma.validationStageConfig.findMany({
       orderBy: {
-        priority: 'asc'
-      }
+        priority: 'asc',
+      },
     });
 
     return dbStages.map(convertDbToSettingsFormat);
@@ -49,11 +49,11 @@ export async function getEnabledValidationStages(): Promise<ValidationStage[]> {
   try {
     const dbStages = await prisma.validationStageConfig.findMany({
       where: {
-        enabled: true
+        enabled: true,
       },
       orderBy: {
-        priority: 'asc'
-      }
+        priority: 'asc',
+      },
     });
 
     return dbStages.map(convertDbToSettingsFormat);
@@ -69,7 +69,7 @@ export async function getEnabledValidationStages(): Promise<ValidationStage[]> {
 export async function getValidationStageById(stageId: string): Promise<ValidationStage | null> {
   try {
     const dbStage = await prisma.validationStageConfig.findUnique({
-      where: { stageId }
+      where: { stageId },
     });
 
     if (!dbStage) {
@@ -86,10 +86,12 @@ export async function getValidationStageById(stageId: string): Promise<Validatio
 /**
  * Create a new validation stage configuration
  */
-export async function createValidationStage(stageData: Omit<ValidationStageConfig, 'id' | 'createdAt' | 'updatedAt'>): Promise<ValidationStageConfig> {
+export async function createValidationStage(
+  stageData: Omit<ValidationStageConfig, 'id' | 'createdAt' | 'updatedAt'>
+): Promise<ValidationStageConfig> {
   try {
     return await prisma.validationStageConfig.create({
-      data: stageData
+      data: stageData,
     });
   } catch (error) {
     console.error('Failed to create validation stage:', error);
@@ -100,11 +102,14 @@ export async function createValidationStage(stageData: Omit<ValidationStageConfi
 /**
  * Update a validation stage configuration
  */
-export async function updateValidationStage(stageId: string, updateData: Partial<Omit<ValidationStageConfig, 'id' | 'stageId' | 'createdAt'>>): Promise<ValidationStageConfig> {
+export async function updateValidationStage(
+  stageId: string,
+  updateData: Partial<Omit<ValidationStageConfig, 'id' | 'stageId' | 'createdAt'>>
+): Promise<ValidationStageConfig> {
   try {
     return await prisma.validationStageConfig.update({
       where: { stageId },
-      data: updateData
+      data: updateData,
     });
   } catch (error) {
     console.error(`Failed to update validation stage ${stageId}:`, error);
@@ -118,7 +123,7 @@ export async function updateValidationStage(stageId: string, updateData: Partial
 export async function deleteValidationStage(stageId: string): Promise<void> {
   try {
     await prisma.validationStageConfig.delete({
-      where: { stageId }
+      where: { stageId },
     });
   } catch (error) {
     console.error(`Failed to delete validation stage ${stageId}:`, error);
@@ -132,7 +137,7 @@ export async function deleteValidationStage(stageId: string): Promise<void> {
 export async function toggleValidationStage(stageId: string): Promise<ValidationStageConfig> {
   try {
     const current = await prisma.validationStageConfig.findUnique({
-      where: { stageId }
+      where: { stageId },
     });
 
     if (!current) {
@@ -141,7 +146,7 @@ export async function toggleValidationStage(stageId: string): Promise<Validation
 
     return await prisma.validationStageConfig.update({
       where: { stageId },
-      data: { enabled: !current.enabled }
+      data: { enabled: !current.enabled },
     });
   } catch (error) {
     console.error(`Failed to toggle validation stage ${stageId}:`, error);
@@ -152,19 +157,21 @@ export async function toggleValidationStage(stageId: string): Promise<Validation
 /**
  * Reorder validation stages by updating priorities
  */
-export async function reorderValidationStages(stages: Array<{ stageId: string; priority: number }>): Promise<ValidationStageConfig[]> {
+export async function reorderValidationStages(
+  stages: Array<{ stageId: string; priority: number }>
+): Promise<ValidationStageConfig[]> {
   try {
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async tx => {
       for (const stage of stages) {
         await tx.validationStageConfig.update({
           where: { stageId: stage.stageId },
-          data: { priority: stage.priority }
+          data: { priority: stage.priority },
         });
       }
     });
 
     return await prisma.validationStageConfig.findMany({
-      orderBy: { priority: 'asc' }
+      orderBy: { priority: 'asc' },
     });
   } catch (error) {
     console.error('Failed to reorder validation stages:', error);
@@ -187,8 +194,8 @@ export async function getValidationStageStats(): Promise<{
       prisma.validationStageConfig.count({ where: { enabled: true } }),
       prisma.validationStageConfig.groupBy({
         by: ['category'],
-        _count: { id: true }
-      })
+        _count: { id: true },
+      }),
     ]);
 
     const byCategory: Record<string, number> = {};
@@ -200,7 +207,7 @@ export async function getValidationStageStats(): Promise<{
       total: totalCount,
       enabled: enabledCount,
       disabled: totalCount - enabledCount,
-      byCategory
+      byCategory,
     };
   } catch (error) {
     console.error('Failed to fetch validation stage statistics:', error);
@@ -211,17 +218,21 @@ export async function getValidationStageStats(): Promise<{
 /**
  * Health check - verify database connection and basic functionality
  */
-export async function healthCheck(): Promise<{ status: 'ok' | 'error'; message?: string; stageCount?: number }> {
+export async function healthCheck(): Promise<{
+  status: 'ok' | 'error';
+  message?: string;
+  stageCount?: number;
+}> {
   try {
     const count = await prisma.validationStageConfig.count();
     return {
       status: 'ok',
-      stageCount: count
+      stageCount: count,
     };
   } catch (error) {
     return {
       status: 'error',
-      message: error instanceof Error ? error.message : 'Unknown error'
+      message: error instanceof Error ? error.message : 'Unknown error',
     };
   }
 }

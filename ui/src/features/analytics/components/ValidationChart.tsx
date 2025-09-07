@@ -42,22 +42,14 @@ function StageHeader({
 }) {
   return (
     <div className="flex items-center gap-2">
-      <span
-        className={`font-medium ${
-          isDisabled ? 'text-gray-400' : 'text-gray-900'
-        }`}
-      >
+      <span className={`font-medium ${isDisabled ? 'text-gray-400' : 'text-gray-900'}`}>
         {stageMetrics.name || stageName}
       </span>
       {isDisabled && (
-        <span className="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded">
-          Disabled
-        </span>
+        <span className="text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded">Disabled</span>
       )}
       {!stageMetrics.totalRuns && stageMetrics.enabled && (
-        <span className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded">
-          No Data
-        </span>
+        <span className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded">No Data</span>
       )}
       {stageConfig && (
         <span
@@ -88,9 +80,7 @@ function StageStats({ stageMetrics }: { stageMetrics: StageMetrics }) {
       >
         {(stageMetrics.successRate * 100).toFixed(1)}% success
       </span>
-      <span className="text-gray-600">
-        {(stageMetrics.averageDuration / 1000).toFixed(1)}s avg
-      </span>
+      <span className="text-gray-600">{(stageMetrics.averageDuration / 1000).toFixed(1)}s avg</span>
     </div>
   );
 }
@@ -111,8 +101,8 @@ function StageProgressBar({ stageMetrics }: { stageMetrics: StageMetrics }) {
         />
       </div>
       <div className="text-xs text-gray-500 mt-1">
-        {stageMetrics.totalRuns} total runs • {stageMetrics.successes} successes
-        • {stageMetrics.attempts - stageMetrics.successes} failures
+        {stageMetrics.totalRuns} total runs • {stageMetrics.successes} successes •{' '}
+        {stageMetrics.attempts - stageMetrics.successes} failures
       </div>
     </>
   );
@@ -132,16 +122,12 @@ function StageDetails({
   return (
     <div className="mt-3 p-3 bg-gray-50 rounded border">
       <div className="flex items-center justify-between mb-2">
-        <h4 className="font-medium text-gray-900">
-          {stageMetrics.name || stageName} Details
-        </h4>
+        <h4 className="font-medium text-gray-900">{stageMetrics.name || stageName} Details</h4>
         {stageMetrics.totalRuns > 0 && (
           <Button
             variant="outline"
             size="sm"
-            onClick={() =>
-              onViewHistory(stageName, stageMetrics.name || stageName)
-            }
+            onClick={() => onViewHistory(stageName, stageMetrics.name || stageName)}
           >
             <BarChart3 className="h-3 w-3 mr-1" />
             View History
@@ -163,15 +149,11 @@ function StageDetails({
         </div>
         <div>
           <span className="text-gray-600">Total Attempts:</span>
-          <div className="font-medium text-gray-900">
-            {stageMetrics.attempts}
-          </div>
+          <div className="font-medium text-gray-900">{stageMetrics.attempts}</div>
         </div>
         <div>
           <span className="text-gray-600">Successes:</span>
-          <div className="font-medium text-green-600">
-            {stageMetrics.successes}
-          </div>
+          <div className="font-medium text-green-600">{stageMetrics.successes}</div>
         </div>
         {stageConfig && (
           <>
@@ -179,9 +161,7 @@ function StageDetails({
               <span className="text-gray-600">Continue on Failure:</span>
               <div
                 className={`font-medium ${
-                  stageConfig.continueOnFailure
-                    ? 'text-orange-600'
-                    : 'text-red-600'
+                  stageConfig.continueOnFailure ? 'text-orange-600' : 'text-red-600'
                 }`}
               >
                 {stageConfig.continueOnFailure ? 'Yes' : 'No'}
@@ -280,9 +260,7 @@ export function ValidationChart({ metrics }: ValidationChartProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-gray-900">
-          Stage Performance Overview
-        </CardTitle>
+        <CardTitle className="text-gray-900">Stage Performance Overview</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
@@ -293,12 +271,8 @@ export function ValidationChart({ metrics }: ValidationChartProps) {
               stageMetrics={stageMetrics}
               stageConfig={stageConfigMap[stageName]}
               selectedStage={selectedStage}
-              onStageClick={(name) =>
-                setSelectedStage(selectedStage === name ? null : name)
-              }
-              onViewHistory={(stageId, name) =>
-                setViewingStageHistory({ id: stageId, name })
-              }
+              onStageClick={name => setSelectedStage(selectedStage === name ? null : name)}
+              onViewHistory={(stageId, name) => setViewingStageHistory({ id: stageId, name })}
             />
           ))}
         </div>

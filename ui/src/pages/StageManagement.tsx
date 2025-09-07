@@ -1,4 +1,3 @@
-/* eslint-disable max-lines, max-lines-per-function, complexity */
 import React, { useState, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -53,12 +52,18 @@ const MAX_TIMEOUT_MS = 300000; // 5 minutes
 const MIN_TIMEOUT_MS = 1000; // 1 second
 
 interface ValidationStageFormData {
+  stageId: string;
   name: string;
   command: string;
   timeout: number;
   enabled: boolean;
   continueOnFailure: boolean;
   priority: number;
+  description?: string;
+  environment?: string | null;
+  category?: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface StageEditFormProps {
@@ -70,13 +75,19 @@ interface StageEditFormProps {
 
 function StageEditForm({ stage, onSave, onCancel, isLoading = false }: StageEditFormProps) {
   const [formData, setFormData] = useState<ValidationStageFormData>({
+    stageId: stage.stageId,
     name: stage.name,
     command: stage.command,
     timeout: stage.timeout,
     enabled: stage.enabled,
     continueOnFailure: stage.continueOnFailure,
     priority: stage.priority,
-    });
+    description: stage.description,
+    environment: stage.environment,
+    category: stage.category,
+    createdAt: stage.createdAt,
+    updatedAt: stage.updatedAt,
+  });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -112,7 +123,10 @@ function StageEditForm({ stage, onSave, onCancel, isLoading = false }: StageEdit
     }
   };
 
-  const handleInputChange = (field: keyof ValidationStageFormData, value: string | number | boolean) => {
+  const handleInputChange = (
+    field: keyof ValidationStageFormData,
+    value: string | number | boolean
+  ) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
@@ -130,7 +144,7 @@ function StageEditForm({ stage, onSave, onCancel, isLoading = false }: StageEdit
           <Input
             id={`name-${stage.id}`}
             value={formData.name}
-            onChange={(e) => handleInputChange('name', e.target.value)}
+            onChange={e => handleInputChange('name', e.target.value)}
             placeholder="e.g., Code Linting"
             className={errors.name ? 'border-red-500' : ''}
             disabled={isLoading}
@@ -147,7 +161,7 @@ function StageEditForm({ stage, onSave, onCancel, isLoading = false }: StageEdit
             id={`priority-${stage.id}`}
             type="number"
             value={formData.priority}
-            onChange={(e) => handleInputChange('priority', parseInt(e.target.value) || 0)}
+            onChange={e => handleInputChange('priority', parseInt(e.target.value) || 0)}
             min="0"
             className={errors.priority ? 'border-red-500' : ''}
             disabled={isLoading}
@@ -164,7 +178,7 @@ function StageEditForm({ stage, onSave, onCancel, isLoading = false }: StageEdit
         <Textarea
           id={`command-${stage.id}`}
           value={formData.command}
-          onChange={(e) => handleInputChange('command', e.target.value)}
+          onChange={e => handleInputChange('command', e.target.value)}
           placeholder="e.g., npm run lint"
           rows={2}
           className={errors.command ? 'border-red-500' : ''}
@@ -183,7 +197,7 @@ function StageEditForm({ stage, onSave, onCancel, isLoading = false }: StageEdit
             id={`timeout-${stage.id}`}
             type="number"
             value={formData.timeout}
-            onChange={(e) => handleInputChange('timeout', parseInt(e.target.value) || MIN_TIMEOUT_MS)}
+            onChange={e => handleInputChange('timeout', parseInt(e.target.value) || MIN_TIMEOUT_MS)}
             min={MIN_TIMEOUT_MS}
             max={MAX_TIMEOUT_MS}
             step="1000"
@@ -195,7 +209,6 @@ function StageEditForm({ stage, onSave, onCancel, isLoading = false }: StageEdit
             {formData.timeout ? `${(formData.timeout / 1000).toFixed(1)} seconds` : ''}
           </p>
         </div>
-
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4">
@@ -203,7 +216,7 @@ function StageEditForm({ stage, onSave, onCancel, isLoading = false }: StageEdit
           <Switch
             id={`enabled-${stage.id}`}
             checked={formData.enabled}
-            onCheckedChange={(checked) => handleInputChange('enabled', checked)}
+            onCheckedChange={checked => handleInputChange('enabled', checked)}
             disabled={isLoading}
           />
           <Label htmlFor={`enabled-${stage.id}`} className="text-sm font-medium cursor-pointer">
@@ -225,10 +238,13 @@ function StageEditForm({ stage, onSave, onCancel, isLoading = false }: StageEdit
           <Switch
             id={`continueOnFailure-${stage.id}`}
             checked={formData.continueOnFailure}
-            onCheckedChange={(checked) => handleInputChange('continueOnFailure', checked)}
+            onCheckedChange={checked => handleInputChange('continueOnFailure', checked)}
             disabled={isLoading}
           />
-          <Label htmlFor={`continueOnFailure-${stage.id}`} className="text-sm font-medium cursor-pointer">
+          <Label
+            htmlFor={`continueOnFailure-${stage.id}`}
+            className="text-sm font-medium cursor-pointer"
+          >
             Continue on failure
           </Label>
         </div>
@@ -257,12 +273,18 @@ interface AddStageFormProps {
 
 function AddStageForm({ onAdd, onCancel, existingStages, isLoading = false }: AddStageFormProps) {
   const [formData, setFormData] = useState<ValidationStageFormData>({
+    stageId: '',
     name: '',
     command: '',
     timeout: 30000,
     enabled: true,
     continueOnFailure: false,
     priority: Math.max(0, ...existingStages.map(s => s.priority)) + 1,
+    description: undefined,
+    environment: null,
+    category: null,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -299,8 +321,23 @@ function AddStageForm({ onAdd, onCancel, existingStages, isLoading = false }: Ad
     }
   };
 
-  const handleInputChange = (field: keyof ValidationStageFormData, value: string | number | boolean) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  const handleInputChange = (
+    field: keyof ValidationStageFormData,
+    value: string | number | boolean
+  ) => {
+    setFormData(prev => {
+      const updated = { ...prev, [field]: value };
+
+      // Auto-generate stageId from name
+      if (field === 'name' && typeof value === 'string') {
+        updated.stageId = value
+          .toLowerCase()
+          .replace(/\s+/g, '-')
+          .replace(/[^a-z0-9\-]/g, '');
+      }
+
+      return updated;
+    });
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
@@ -322,7 +359,7 @@ function AddStageForm({ onAdd, onCancel, existingStages, isLoading = false }: Ad
               <Input
                 id="new-name"
                 value={formData.name}
-                onChange={(e) => handleInputChange('name', e.target.value)}
+                onChange={e => handleInputChange('name', e.target.value)}
                 placeholder="e.g., Code Linting"
                 className={errors.name ? 'border-red-500' : ''}
                 disabled={isLoading}
@@ -339,7 +376,7 @@ function AddStageForm({ onAdd, onCancel, existingStages, isLoading = false }: Ad
                 id="new-priority"
                 type="number"
                 value={formData.priority}
-                onChange={(e) => handleInputChange('priority', parseInt(e.target.value) || 0)}
+                onChange={e => handleInputChange('priority', parseInt(e.target.value) || 0)}
                 min="0"
                 className={errors.priority ? 'border-red-500' : ''}
                 disabled={isLoading}
@@ -356,7 +393,7 @@ function AddStageForm({ onAdd, onCancel, existingStages, isLoading = false }: Ad
             <Textarea
               id="new-command"
               value={formData.command}
-              onChange={(e) => handleInputChange('command', e.target.value)}
+              onChange={e => handleInputChange('command', e.target.value)}
               placeholder="e.g., npm run lint"
               rows={2}
               className={errors.command ? 'border-red-500' : ''}
@@ -375,7 +412,9 @@ function AddStageForm({ onAdd, onCancel, existingStages, isLoading = false }: Ad
                 id="new-timeout"
                 type="number"
                 value={formData.timeout}
-                onChange={(e) => handleInputChange('timeout', parseInt(e.target.value) || MIN_TIMEOUT_MS)}
+                onChange={e =>
+                  handleInputChange('timeout', parseInt(e.target.value) || MIN_TIMEOUT_MS)
+                }
                 min="1000"
                 max="300000"
                 step="1000"
@@ -387,7 +426,6 @@ function AddStageForm({ onAdd, onCancel, existingStages, isLoading = false }: Ad
                 {formData.timeout ? `${(formData.timeout / 1000).toFixed(1)} seconds` : ''}
               </p>
             </div>
-
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4">
@@ -395,7 +433,7 @@ function AddStageForm({ onAdd, onCancel, existingStages, isLoading = false }: Ad
               <Switch
                 id="new-enabled"
                 checked={formData.enabled}
-                onCheckedChange={(checked) => handleInputChange('enabled', checked)}
+                onCheckedChange={checked => handleInputChange('enabled', checked)}
                 disabled={isLoading}
               />
               <Label htmlFor="new-enabled" className="text-sm font-medium cursor-pointer">
@@ -417,7 +455,7 @@ function AddStageForm({ onAdd, onCancel, existingStages, isLoading = false }: Ad
               <Switch
                 id="new-continueOnFailure"
                 checked={formData.continueOnFailure}
-                onCheckedChange={(checked) => handleInputChange('continueOnFailure', checked)}
+                onCheckedChange={checked => handleInputChange('continueOnFailure', checked)}
                 disabled={isLoading}
               />
               <Label htmlFor="new-continueOnFailure" className="text-sm font-medium cursor-pointer">
@@ -465,14 +503,7 @@ function StageCard({
   onToggleEnabled,
   isLoading = false,
 }: StageCardProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ 
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: stage.id,
     disabled: isEditing,
   });
@@ -501,107 +532,101 @@ function StageCard({
     <div
       ref={setNodeRef}
       style={style}
-      className={`${
-        isDragging ? 'opacity-50 rotate-2 shadow-2xl z-10' : ''
-      }`}
+      className={`${isDragging ? 'opacity-50 rotate-2 shadow-2xl z-10' : ''}`}
     >
       <Card
         className={`transition-all duration-200 ${
           isDragging ? '' : 'hover:shadow-md'
         } ${!stage.enabled ? 'opacity-60' : ''}`}
       >
-      <CardContent className="p-6">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-start gap-3 flex-1">
-            <div
-              {...attributes}
-              {...listeners}
-              className="mt-1 cursor-grab active:cursor-grabbing p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
-            >
-              <GripVertical className="w-5 h-5 text-gray-400" />
-            </div>
-                
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-3 mb-2">
-                    <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">
-                      {stage.name}
-                    </h3>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 px-2 py-1 rounded-full">
-                        Priority: {stage.priority}
+        <CardContent className="p-6">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start gap-3 flex-1">
+              <div
+                {...attributes}
+                {...listeners}
+                className="mt-1 cursor-grab active:cursor-grabbing p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+              >
+                <GripVertical className="w-5 h-5 text-gray-400" />
+              </div>
+
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-3 mb-2">
+                  <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">
+                    {stage.name}
+                  </h3>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 px-2 py-1 rounded-full">
+                      Priority: {stage.priority}
+                    </span>
+                    {!stage.enabled && (
+                      <span className="text-xs bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400 px-2 py-1 rounded-full">
+                        Disabled
                       </span>
-                      {!stage.enabled && (
-                        <span className="text-xs bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400 px-2 py-1 rounded-full">
-                          Disabled
-                        </span>
-                      )}
-                      {stage.continueOnFailure && (
-                        <span className="text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 px-2 py-1 rounded-full">
-                          Continue on failure
-                        </span>
-                      )}
-                    </div>
+                    )}
+                    {stage.continueOnFailure && (
+                      <span className="text-xs bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 px-2 py-1 rounded-full">
+                        Continue on failure
+                      </span>
+                    )}
                   </div>
-                  
-                  <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                    <div className="flex items-center gap-2">
-                      <Terminal className="w-4 h-4" />
-                      <code className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-xs flex-1 truncate">
-                        {stage.command}
-                      </code>
-                    </div>
-                    
-                    <div className="flex items-center gap-4 text-xs">
-                      <div className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        <span>{(stage.timeout / 1000).toFixed(1)}s timeout</span>
-                      </div>
+                </div>
+
+                <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                  <div className="flex items-center gap-2">
+                    <Terminal className="w-4 h-4" />
+                    <code className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-xs flex-1 truncate">
+                      {stage.command}
+                    </code>
+                  </div>
+
+                  <div className="flex items-center gap-4 text-xs">
+                    <div className="flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      <span>{(stage.timeout / 1000).toFixed(1)}s timeout</span>
                     </div>
                   </div>
                 </div>
               </div>
-              
-              <div className="flex items-center gap-2">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => onToggleEnabled(stage.id, !stage.enabled)}
-                  disabled={isLoading}
-                  className="p-2"
-                  title={stage.enabled ? 'Disable stage' : 'Enable stage'}
-                >
-                  {stage.enabled ? (
-                    <Pause className="w-4 h-4" />
-                  ) : (
-                    <Play className="w-4 h-4" />
-                  )}
-                </Button>
-                
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => onEdit(stage)}
-                  disabled={isLoading}
-                  className="p-2"
-                  title="Edit stage"
-                >
-                  <Edit className="w-4 h-4" />
-                </Button>
-                
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => onDelete(stage.id)}
-                  disabled={isLoading}
-                  className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
-                  title="Delete stage"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </div>
             </div>
-          </CardContent>
-        </Card>
+
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => onToggleEnabled(stage.id, !stage.enabled)}
+                disabled={isLoading}
+                className="p-2"
+                title={stage.enabled ? 'Disable stage' : 'Enable stage'}
+              >
+                {stage.enabled ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+              </Button>
+
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => onEdit(stage)}
+                disabled={isLoading}
+                className="p-2"
+                title="Edit stage"
+              >
+                <Edit className="w-4 h-4" />
+              </Button>
+
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => onDelete(stage.id)}
+                disabled={isLoading}
+                className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+                title="Delete stage"
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
@@ -612,11 +637,8 @@ export default function StageManagement() {
   const [showAddForm, setShowAddForm] = useState(false);
   const [activeId, setActiveId] = useState<UniqueIdentifier | null>(null);
 
-  const sensors = useSensors(
-    useSensor(MouseSensor),
-    useSensor(TouchSensor)
-  );
-  
+  const sensors = useSensors(useSensor(MouseSensor), useSensor(TouchSensor));
+
   const {
     data: stages = [],
     isLoading,
@@ -633,7 +655,7 @@ export default function StageManagement() {
       queryClient.invalidateQueries({ queryKey: ['validation-stages'] });
       setShowAddForm(false);
     },
-    onError: (error) => {
+    onError: error => {
       console.error('Failed to add validation stage:', error);
     },
   });
@@ -645,7 +667,7 @@ export default function StageManagement() {
       queryClient.invalidateQueries({ queryKey: ['validation-stages'] });
       setEditingStageId(null);
     },
-    onError: (error) => {
+    onError: error => {
       console.error('Failed to update validation stage:', error);
     },
   });
@@ -655,7 +677,7 @@ export default function StageManagement() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['validation-stages'] });
     },
-    onError: (error) => {
+    onError: error => {
       console.error('Failed to delete validation stage:', error);
     },
   });
@@ -672,8 +694,8 @@ export default function StageManagement() {
     setActiveId(null);
 
     if (over && active.id !== over.id) {
-      const oldIndex = sortedStages.findIndex((stage) => stage.id === active.id);
-      const newIndex = sortedStages.findIndex((stage) => stage.id === over.id);
+      const oldIndex = sortedStages.findIndex(stage => stage.id === active.id);
+      const newIndex = sortedStages.findIndex(stage => stage.id === over.id);
 
       if (oldIndex !== -1 && newIndex !== -1) {
         // Create new array with reordered items
@@ -713,13 +735,21 @@ export default function StageManagement() {
   };
 
   const handleDeleteStage = (stageId: string) => {
-    if (window.confirm('Are you sure you want to delete this validation stage? This action cannot be undone.')) {
+    if (
+      window.confirm(
+        'Are you sure you want to delete this validation stage? This action cannot be undone.'
+      )
+    ) {
       deleteMutation.mutate(stageId);
     }
   };
 
   const handleResetPriorities = () => {
-    if (window.confirm('Reset all stage priorities to sequential order (0, 1, 2, ...)? This will reorder stages based on their current position.')) {
+    if (
+      window.confirm(
+        'Reset all stage priorities to sequential order (0, 1, 2, ...)? This will reorder stages based on their current position.'
+      )
+    ) {
       sortedStages.forEach((stage, index) => {
         if (stage.priority !== index) {
           updateMutation.mutate({ id: stage.id, stage: { priority: index } });
@@ -734,13 +764,15 @@ export default function StageManagement() {
         <div className="flex items-center gap-3 mb-6">
           <SettingsIcon className="h-6 w-6 text-red-600" />
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Stage Management</h1>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+              Stage Management
+            </h1>
             <p className="text-gray-600 dark:text-gray-400">
               Configure validation pipeline stages with advanced editing and reordering
             </p>
           </div>
         </div>
-        
+
         <Card className="border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-800">
           <CardContent className="p-6">
             <div className="flex items-center gap-3 text-red-600 dark:text-red-400">
@@ -762,13 +794,15 @@ export default function StageManagement() {
         <div className="flex items-center gap-3">
           <SettingsIcon className="h-6 w-6 text-blue-600" />
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Stage Management</h1>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+              Stage Management
+            </h1>
             <p className="text-gray-600 dark:text-gray-400">
               Configure validation pipeline stages with advanced editing and reordering
             </p>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-3">
           {stages.length > 1 && (
             <Button
@@ -780,11 +814,8 @@ export default function StageManagement() {
               Reset Priorities
             </Button>
           )}
-          
-          <Button
-            onClick={() => setShowAddForm(true)}
-            disabled={showAddForm}
-          >
+
+          <Button onClick={() => setShowAddForm(true)} disabled={showAddForm}>
             <Plus className="w-4 h-4 mr-2" />
             Add Stage
           </Button>
@@ -808,7 +839,7 @@ export default function StageManagement() {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
@@ -824,7 +855,7 @@ export default function StageManagement() {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
@@ -840,7 +871,7 @@ export default function StageManagement() {
             </div>
           </CardContent>
         </Card>
-        
+
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
@@ -850,10 +881,9 @@ export default function StageManagement() {
               <div>
                 <p className="text-sm text-gray-600 dark:text-gray-400">Avg. Timeout</p>
                 <p className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                  {stages.length > 0 
+                  {stages.length > 0
                     ? `${(stages.reduce((acc, s) => acc + s.timeout, 0) / stages.length / 1000).toFixed(1)}s`
-                    : '0s'
-                  }
+                    : '0s'}
                 </p>
               </div>
             </div>
@@ -926,7 +956,7 @@ export default function StageManagement() {
                   stage={stage}
                   _index={index}
                   isEditing={editingStageId === stage.id}
-                  onEdit={(stage) => setEditingStageId(stage.id)}
+                  onEdit={stage => setEditingStageId(stage.id)}
                   onSave={handleUpdateStage}
                   onCancelEdit={() => setEditingStageId(null)}
                   onDelete={handleDeleteStage}
@@ -946,9 +976,7 @@ export default function StageManagement() {
                       <h3 className="font-semibold text-gray-900 dark:text-gray-100">
                         {sortedStages.find(s => s.id === activeId)?.name}
                       </h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Dragging...
-                      </p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Dragging...</p>
                     </div>
                   </div>
                 </CardContent>

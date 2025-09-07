@@ -8,8 +8,12 @@ jest.mock('./severity-analysis-core', () => ({
   createBlockMessage: jest.fn(),
 }));
 
-const mockShouldBlockClaude = severityCore.shouldBlockClaude as jest.MockedFunction<typeof severityCore.shouldBlockClaude>;
-const mockCreateBlockMessage = severityCore.createBlockMessage as jest.MockedFunction<typeof severityCore.createBlockMessage>;
+const mockShouldBlockClaude = severityCore.shouldBlockClaude as jest.MockedFunction<
+  typeof severityCore.shouldBlockClaude
+>;
+const mockCreateBlockMessage = severityCore.createBlockMessage as jest.MockedFunction<
+  typeof severityCore.createBlockMessage
+>;
 
 describe('severity-analyzer', () => {
   beforeEach(() => {
@@ -67,12 +71,12 @@ describe('severity-analyzer', () => {
   describe('processStructuredReviewResults', () => {
     it('should return block decision when structured data has blocking issues with string comments', () => {
       const reviewComments: ReviewComments = {
-        'stage1': 'Critical error found',
-        'stage2': 'Minor issue'
+        stage1: 'Critical error found',
+        stage2: 'Minor issue',
       };
-      
-      mockShouldBlockClaude.mockImplementation((comment: string) => 
-        comment === 'Critical error found'
+
+      mockShouldBlockClaude.mockImplementation(
+        (comment: string) => comment === 'Critical error found'
       );
 
       const result = processStructuredReviewResults(reviewComments);
@@ -83,7 +87,7 @@ describe('severity-analyzer', () => {
 
     it('should return block decision when structured data has blocking issues in file analysis', () => {
       const reviewComments: ReviewComments = {
-        'lint': {
+        lint: {
           files: [
             {
               file: 'test.ts',
@@ -93,17 +97,17 @@ describe('severity-analyzer', () => {
                 issues: ['Critical syntax error'],
                 suggestions: [],
                 summary: 'Critical issues found',
-                confidence: 0.9
-              }
-            }
+                confidence: 0.9,
+              },
+            },
           ],
           summary: {
             totalFiles: 1,
             highSeverity: 1,
             mediumSeverity: 0,
-            totalIssues: 1
-          }
-        }
+            totalIssues: 1,
+          },
+        },
       };
 
       mockShouldBlockClaude.mockReturnValue(false);
@@ -116,8 +120,8 @@ describe('severity-analyzer', () => {
 
     it('should return block decision when multiple stages have blocking issues', () => {
       const reviewComments: ReviewComments = {
-        'stage1': 'Critical error',
-        'stage2': {
+        stage1: 'Critical error',
+        stage2: {
           files: [
             {
               file: 'test.ts',
@@ -127,22 +131,20 @@ describe('severity-analyzer', () => {
                 issues: ['Critical issue'],
                 suggestions: [],
                 summary: 'Critical issues found',
-                confidence: 0.9
-              }
-            }
+                confidence: 0.9,
+              },
+            },
           ],
           summary: {
             totalFiles: 1,
             highSeverity: 1,
             mediumSeverity: 0,
-            totalIssues: 1
-          }
-        }
+            totalIssues: 1,
+          },
+        },
       };
 
-      mockShouldBlockClaude.mockImplementation((comment: string) => 
-        comment === 'Critical error'
-      );
+      mockShouldBlockClaude.mockImplementation((comment: string) => comment === 'Critical error');
 
       const result = processStructuredReviewResults(reviewComments);
 
@@ -152,8 +154,8 @@ describe('severity-analyzer', () => {
 
     it('should return approve decision when no blocking issues exist with stage names', () => {
       const reviewComments: ReviewComments = {
-        'lint': 'Minor style issues',
-        'test': {
+        lint: 'Minor style issues',
+        test: {
           files: [
             {
               file: 'test.ts',
@@ -163,17 +165,17 @@ describe('severity-analyzer', () => {
                 issues: ['Minor issue'],
                 suggestions: ['Consider improvement'],
                 summary: 'Minor issues found',
-                confidence: 0.8
-              }
-            }
+                confidence: 0.8,
+              },
+            },
           ],
           summary: {
             totalFiles: 1,
             highSeverity: 0,
             mediumSeverity: 0,
-            totalIssues: 1
-          }
-        }
+            totalIssues: 1,
+          },
+        },
       };
 
       mockShouldBlockClaude.mockReturnValue(false);
@@ -198,7 +200,7 @@ describe('severity-analyzer', () => {
 
     it('should handle structured data with non-blocking file issues', () => {
       const reviewComments: ReviewComments = {
-        'typecheck': {
+        typecheck: {
           files: [
             {
               file: 'src/test.ts',
@@ -208,17 +210,17 @@ describe('severity-analyzer', () => {
                 issues: ['Minor type annotation suggestion'],
                 suggestions: ['Add type annotation'],
                 summary: 'Type improvements suggested',
-                confidence: 0.8
-              }
-            }
+                confidence: 0.8,
+              },
+            },
           ],
           summary: {
             totalFiles: 1,
             highSeverity: 0,
             mediumSeverity: 0,
-            totalIssues: 1
-          }
-        }
+            totalIssues: 1,
+          },
+        },
       };
 
       mockShouldBlockClaude.mockReturnValue(false);
@@ -231,8 +233,8 @@ describe('severity-analyzer', () => {
 
     it('should handle mixed string and structured comments', () => {
       const reviewComments: ReviewComments = {
-        'stage1': 'String comment without blocking issues',
-        'stage2': {
+        stage1: 'String comment without blocking issues',
+        stage2: {
           files: [
             {
               file: 'test.ts',
@@ -242,17 +244,17 @@ describe('severity-analyzer', () => {
                 issues: ['Non-blocking suggestion'],
                 suggestions: [],
                 summary: 'Minor suggestions',
-                confidence: 0.7
-              }
-            }
+                confidence: 0.7,
+              },
+            },
           ],
           summary: {
             totalFiles: 1,
             highSeverity: 0,
             mediumSeverity: 0,
-            totalIssues: 1
-          }
-        }
+            totalIssues: 1,
+          },
+        },
       };
 
       mockShouldBlockClaude.mockReturnValue(false);
@@ -265,15 +267,15 @@ describe('severity-analyzer', () => {
 
     it('should handle files array that is undefined', () => {
       const reviewComments: ReviewComments = {
-        'stage1': {
+        stage1: {
           files: [],
           summary: {
             totalFiles: 0,
             highSeverity: 0,
             mediumSeverity: 0,
-            totalIssues: 0
-          }
-        }
+            totalIssues: 0,
+          },
+        },
       };
 
       mockShouldBlockClaude.mockReturnValue(false);

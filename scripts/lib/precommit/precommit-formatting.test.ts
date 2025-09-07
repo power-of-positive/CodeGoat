@@ -35,11 +35,11 @@ describe('precommit-formatting', () => {
     it('should run both formatting steps successfully', () => {
       mockRunPrettierFormat.mockReturnValue({
         success: true,
-        output: 'Prettier formatting completed'
+        output: 'Prettier formatting completed',
       });
       mockRunEslintFix.mockReturnValue({
         success: true,
-        output: 'ESLint auto-fix completed'
+        output: 'ESLint auto-fix completed',
       });
 
       runFormattingSteps(projectRoot, stagedFiles);
@@ -47,7 +47,7 @@ describe('precommit-formatting', () => {
       expect(consoleSpy).toHaveBeenCalledWith('🎨 Auto-formatting staged files...');
       expect(mockRunPrettierFormat).toHaveBeenCalledWith(projectRoot, stagedFiles);
       expect(mockRunEslintFix).toHaveBeenCalledWith(projectRoot, stagedFiles);
-      
+
       // Should not warn when both succeed
       expect(consoleWarnSpy).not.toHaveBeenCalled();
     });
@@ -55,17 +55,19 @@ describe('precommit-formatting', () => {
     it('should warn when prettier formatting fails', () => {
       mockRunPrettierFormat.mockReturnValue({
         success: false,
-        output: 'Prettier failed to format files'
+        output: 'Prettier failed to format files',
       });
       mockRunEslintFix.mockReturnValue({
         success: true,
-        output: 'ESLint auto-fix completed'
+        output: 'ESLint auto-fix completed',
       });
 
       runFormattingSteps(projectRoot, stagedFiles);
 
       expect(consoleSpy).toHaveBeenCalledWith('🎨 Auto-formatting staged files...');
-      expect(consoleWarnSpy).toHaveBeenCalledWith('Prettier formatting failed: Prettier failed to format files');
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        'Prettier formatting failed: Prettier failed to format files'
+      );
       expect(mockRunPrettierFormat).toHaveBeenCalledWith(projectRoot, stagedFiles);
       expect(mockRunEslintFix).toHaveBeenCalledWith(projectRoot, stagedFiles);
     });
@@ -73,17 +75,19 @@ describe('precommit-formatting', () => {
     it('should warn when ESLint auto-fix fails', () => {
       mockRunPrettierFormat.mockReturnValue({
         success: true,
-        output: 'Prettier formatting completed'
+        output: 'Prettier formatting completed',
       });
       mockRunEslintFix.mockReturnValue({
         success: false,
-        output: 'ESLint auto-fix encountered errors'
+        output: 'ESLint auto-fix encountered errors',
       });
 
       runFormattingSteps(projectRoot, stagedFiles);
 
       expect(consoleSpy).toHaveBeenCalledWith('🎨 Auto-formatting staged files...');
-      expect(consoleWarnSpy).toHaveBeenCalledWith('ESLint auto-fix failed: ESLint auto-fix encountered errors');
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        'ESLint auto-fix failed: ESLint auto-fix encountered errors'
+      );
       expect(mockRunPrettierFormat).toHaveBeenCalledWith(projectRoot, stagedFiles);
       expect(mockRunEslintFix).toHaveBeenCalledWith(projectRoot, stagedFiles);
     });
@@ -91,32 +95,36 @@ describe('precommit-formatting', () => {
     it('should warn for both failures when both formatting steps fail', () => {
       mockRunPrettierFormat.mockReturnValue({
         success: false,
-        output: 'Prettier configuration error'
+        output: 'Prettier configuration error',
       });
       mockRunEslintFix.mockReturnValue({
         success: false,
-        output: 'ESLint configuration error'
+        output: 'ESLint configuration error',
       });
 
       runFormattingSteps(projectRoot, stagedFiles);
 
       expect(consoleSpy).toHaveBeenCalledWith('🎨 Auto-formatting staged files...');
-      expect(consoleWarnSpy).toHaveBeenCalledWith('Prettier formatting failed: Prettier configuration error');
-      expect(consoleWarnSpy).toHaveBeenCalledWith('ESLint auto-fix failed: ESLint configuration error');
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        'Prettier formatting failed: Prettier configuration error'
+      );
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        'ESLint auto-fix failed: ESLint configuration error'
+      );
       expect(mockRunPrettierFormat).toHaveBeenCalledWith(projectRoot, stagedFiles);
       expect(mockRunEslintFix).toHaveBeenCalledWith(projectRoot, stagedFiles);
     });
 
     it('should handle empty staged files array', () => {
       const emptyFiles: string[] = [];
-      
+
       mockRunPrettierFormat.mockReturnValue({
         success: true,
-        output: 'No files to format'
+        output: 'No files to format',
       });
       mockRunEslintFix.mockReturnValue({
         success: true,
-        output: 'No files to fix'
+        output: 'No files to fix',
       });
 
       runFormattingSteps(projectRoot, emptyFiles);
@@ -129,14 +137,14 @@ describe('precommit-formatting', () => {
 
     it('should handle different project roots correctly', () => {
       const customRoot = '/custom/project/path';
-      
+
       mockRunPrettierFormat.mockReturnValue({
         success: true,
-        output: 'Success'
+        output: 'Success',
       });
       mockRunEslintFix.mockReturnValue({
         success: true,
-        output: 'Success'
+        output: 'Success',
       });
 
       runFormattingSteps(customRoot, stagedFiles);
@@ -148,11 +156,11 @@ describe('precommit-formatting', () => {
     it('should handle formatting results with empty output messages', () => {
       mockRunPrettierFormat.mockReturnValue({
         success: false,
-        output: ''
+        output: '',
       });
       mockRunEslintFix.mockReturnValue({
         success: false,
-        output: ''
+        output: '',
       });
 
       runFormattingSteps(projectRoot, stagedFiles);
@@ -165,11 +173,11 @@ describe('precommit-formatting', () => {
       // Even if prettier fails, eslint should still run
       mockRunPrettierFormat.mockReturnValue({
         success: false,
-        output: 'Prettier failed'
+        output: 'Prettier failed',
       });
       mockRunEslintFix.mockReturnValue({
         success: true,
-        output: 'ESLint succeeded'
+        output: 'ESLint succeeded',
       });
 
       runFormattingSteps(projectRoot, stagedFiles);

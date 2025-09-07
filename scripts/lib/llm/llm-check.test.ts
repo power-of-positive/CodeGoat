@@ -23,7 +23,7 @@ describe('llm-check', () => {
 
       expect(result.blocked).toBe(false);
       expect(result.output).toBe('');
-      expect((severityAnalyzer.analyzeLlmReviewSeverity as jest.Mock)).not.toHaveBeenCalled();
+      expect(severityAnalyzer.analyzeLlmReviewSeverity as jest.Mock).not.toHaveBeenCalled();
     });
 
     it('should return not blocked when no severity issues found', async () => {
@@ -35,7 +35,7 @@ describe('llm-check', () => {
 
       expect(result.blocked).toBe(false);
       expect(result.output).toBe('');
-      expect((severityAnalyzer.analyzeLlmReviewSeverity as jest.Mock)).toHaveBeenCalledWith(
+      expect(severityAnalyzer.analyzeLlmReviewSeverity as jest.Mock).toHaveBeenCalledWith(
         path.join('/mock/project', 'review.tmp')
       );
     });

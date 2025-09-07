@@ -48,7 +48,7 @@ export const taskApi = {
     includeScenarios?: boolean;
   }): Promise<TaskAnalyticsData> {
     const queryParams = new URLSearchParams();
-    
+
     if (options?.taskId) {
       queryParams.set('taskId', options.taskId);
     }
@@ -58,20 +58,27 @@ export const taskApi = {
     if (options?.includeScenarios) {
       queryParams.set('includeScenarios', 'true');
     }
-    
+
     const queryString = queryParams.toString();
     return apiRequest<TaskAnalyticsData>(`/tasks/analytics${queryString ? `?${queryString}` : ''}`);
   },
 
   // BDD Scenario methods
-  async addScenario(taskId: string, scenario: Omit<BDDScenario, 'id' | 'taskId'>): Promise<BDDScenario> {
+  async addScenario(
+    taskId: string,
+    scenario: Omit<BDDScenario, 'id' | 'taskId'>
+  ): Promise<BDDScenario> {
     return apiRequest<BDDScenario>(`/tasks/${taskId}/scenarios`, {
       method: 'POST',
       body: scenario,
     });
   },
 
-  async updateTaskScenario(taskId: string, scenarioId: string, scenario: Partial<BDDScenario>): Promise<BDDScenario> {
+  async updateTaskScenario(
+    taskId: string,
+    scenarioId: string,
+    scenario: Partial<BDDScenario>
+  ): Promise<BDDScenario> {
     return apiRequest<BDDScenario>(`/tasks/${taskId}/scenarios/${scenarioId}`, {
       method: 'PUT',
       body: scenario,
@@ -85,12 +92,20 @@ export const taskApi = {
   },
 
   // BDD scenario execution methods (stub implementations)
-  async getScenarioExecutions(_taskId: string, _scenarioId: string, _options?: { limit?: number }): Promise<unknown[]> {
+  async getScenarioExecutions(
+    _taskId: string,
+    _scenarioId: string,
+    _options?: { limit?: number }
+  ): Promise<unknown[]> {
     // Stub implementation - returns empty array
     return [];
   },
 
-  async getScenarioAnalytics(_taskId: string, _scenarioId: string, _days?: number): Promise<unknown> {
+  async getScenarioAnalytics(
+    _taskId: string,
+    _scenarioId: string,
+    _days?: number
+  ): Promise<unknown> {
     // Stub implementation - returns empty analytics
     return {
       totalExecutions: 0,

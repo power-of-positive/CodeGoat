@@ -23,8 +23,8 @@ jest.mock('lucide-react', () => ({
 // Mock button component
 jest.mock('../ui/button', () => ({
   Button: ({ children, onClick, className, variant, size, ...props }: any) => (
-    <button 
-      onClick={onClick} 
+    <button
+      onClick={onClick}
       className={className}
       data-variant={variant}
       data-size={size}
@@ -41,7 +41,9 @@ jest.mock('react-router-dom', () => {
   return {
     ...jest.requireActual('react-router-dom'),
     Link: ({ children, to, className, onClick }: any) => (
-      <a href={to} className={className} onClick={onClick}>{children}</a>
+      <a href={to} className={className} onClick={onClick}>
+        {children}
+      </a>
     ),
     useLocation: mockUseLocation,
   };
@@ -50,11 +52,7 @@ jest.mock('react-router-dom', () => {
 const { useLocation } = jest.requireMock('react-router-dom');
 
 const renderWithRouter = (component: React.ReactElement, initialRoute = '/') => {
-  return render(
-    <MemoryRouter initialEntries={[initialRoute]}>
-      {component}
-    </MemoryRouter>
-  );
+  return render(<MemoryRouter initialEntries={[initialRoute]}>{component}</MemoryRouter>);
 };
 
 describe('Sidebar', () => {
@@ -84,11 +82,15 @@ describe('Sidebar', () => {
       renderWithRouter(<Sidebar />);
 
       expect(screen.getByText('View validation metrics and performance data')).toBeInTheDocument();
-      expect(screen.getByText('Advanced stage performance analytics and trends')).toBeInTheDocument();
+      expect(
+        screen.getByText('Advanced stage performance analytics and trends')
+      ).toBeInTheDocument();
       expect(screen.getByText('Kanban board for task management')).toBeInTheDocument();
       expect(screen.getByText('Advanced task CRUD with filtering and search')).toBeInTheDocument();
       expect(screen.getByText('View task completion statistics and trends')).toBeInTheDocument();
-      expect(screen.getByText('View BDD scenarios and E2E test execution status')).toBeInTheDocument();
+      expect(
+        screen.getByText('View BDD scenarios and E2E test execution status')
+      ).toBeInTheDocument();
       expect(screen.getByText('Monitor Claude Code worker processes and logs')).toBeInTheDocument();
       expect(screen.getByText('Configure executor security permissions')).toBeInTheDocument();
       expect(screen.getByText('Configure validation pipeline settings')).toBeInTheDocument();
@@ -112,7 +114,7 @@ describe('Sidebar', () => {
 
     it('applies custom className when provided', () => {
       const { container } = renderWithRouter(<Sidebar className="custom-sidebar" />);
-      
+
       const sidebar = container.querySelector('.custom-sidebar');
       expect(sidebar).toBeInTheDocument();
     });
@@ -139,7 +141,7 @@ describe('Sidebar', () => {
 
       const toggleButtons = screen.getAllByRole('button');
       expect(toggleButtons.length).toBeGreaterThan(0);
-      
+
       // Test overlay presence and behavior
       fireEvent.click(toggleButtons[0]);
       const { container } = renderWithRouter(<Sidebar />);
@@ -153,7 +155,7 @@ describe('Sidebar', () => {
 
       const links = screen.getAllByRole('link');
       const hrefs = links.map(link => link.getAttribute('href'));
-      
+
       expect(hrefs).toContain('/analytics');
       expect(hrefs).toContain('/stage-history');
       expect(hrefs).toContain('/kanban');
@@ -208,7 +210,7 @@ describe('Sidebar', () => {
 
       // Check that menu icon is present
       expect(screen.getByTestId('menu-icon')).toBeInTheDocument();
-      
+
       // Navigation items should still be accessible
       expect(screen.getByText('Validation Analytics')).toBeInTheDocument();
     });
@@ -218,10 +220,10 @@ describe('Sidebar', () => {
 
       // Sidebar starts expanded by default, so text should be visible
       expect(screen.getByText('Validation Analytics')).toBeInTheDocument();
-      
+
       const toggleButtons = screen.getAllByRole('button');
       const firstToggleButton = toggleButtons[0];
-      
+
       // Check that sidebar is interactive
       expect(firstToggleButton).toBeInTheDocument();
     });
@@ -243,7 +245,7 @@ describe('Sidebar', () => {
 
       const toggleButtons = screen.getAllByRole('button');
       const firstToggleButton = toggleButtons[0];
-      
+
       // Rapidly toggle multiple times
       fireEvent.click(firstToggleButton);
       fireEvent.click(firstToggleButton);
@@ -269,7 +271,7 @@ describe('Sidebar', () => {
 
       const toggleButtons = screen.getAllByRole('button');
       expect(toggleButtons.length).toBeGreaterThan(0);
-      
+
       // At least one toggle button should have aria-label
       const hasAriaLabel = toggleButtons.some(button => button.hasAttribute('aria-label'));
       expect(hasAriaLabel).toBe(true);
@@ -280,7 +282,7 @@ describe('Sidebar', () => {
 
       const toggleButtons = screen.getAllByRole('button');
       const firstToggleButton = toggleButtons[0];
-      
+
       // Focus the toggle button
       firstToggleButton.focus();
       expect(document.activeElement).toBe(firstToggleButton);

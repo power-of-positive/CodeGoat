@@ -1,12 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  AlertCircle,
-  ChevronDown,
-  ChevronRight,
-  FileText,
-  ExternalLink,
-} from 'lucide-react';
+import { AlertCircle, ChevronDown, ChevronRight, FileText, ExternalLink } from 'lucide-react';
 import { Button } from '../../../shared/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../shared/ui/card';
 import { ValidationRun, ValidationStageResult } from '../../../shared/types';
@@ -29,7 +23,12 @@ function StageStatusIndicator({ success }: { success: boolean }) {
 }
 
 // Stage header component
-function StageHeader({ stage, hasLogs, showLogs, onToggleLogs }: {
+function StageHeader({
+  stage,
+  hasLogs,
+  showLogs,
+  onToggleLogs,
+}: {
   stage: ValidationStageResult;
   hasLogs: boolean;
   showLogs: boolean;
@@ -42,36 +41,21 @@ function StageHeader({ stage, hasLogs, showLogs, onToggleLogs }: {
     >
       <div className="flex items-center gap-2">
         <StageStatusIndicator success={stage.success} />
-        <span className="text-sm text-gray-900">
-          {stage.name || stage.id}
-        </span>
-        {hasLogs && (
-          <FileText
-            className="w-3 h-3 text-gray-400"
-            data-testid="file-icon"
-          />
-        )}
+        <span className="text-sm text-gray-900">{stage.name || stage.id}</span>
+        {hasLogs && <FileText className="w-3 h-3 text-gray-400" data-testid="file-icon" />}
       </div>
       <div className="flex items-center gap-2">
         <div className="flex items-center gap-2 text-xs">
           <span className={stage.success ? 'text-green-600' : 'text-red-600'}>
             {stage.success ? 'PASS' : 'FAIL'}
           </span>
-          <span className="text-gray-500">
-            {(stage.duration / 1000).toFixed(1)}s
-          </span>
+          <span className="text-gray-500">{(stage.duration / 1000).toFixed(1)}s</span>
         </div>
         {hasLogs &&
           (showLogs ? (
-            <ChevronDown
-              className="w-4 h-4 text-gray-400"
-              data-testid="chevron-down"
-            />
+            <ChevronDown className="w-4 h-4 text-gray-400" data-testid="chevron-down" />
           ) : (
-            <ChevronRight
-              className="w-4 h-4 text-gray-400"
-              data-testid="chevron-right"
-            />
+            <ChevronRight className="w-4 h-4 text-gray-400" data-testid="chevron-right" />
           ))}
       </div>
     </div>
@@ -79,21 +63,20 @@ function StageHeader({ stage, hasLogs, showLogs, onToggleLogs }: {
 }
 
 // Stage logs content component
-function StageLogsContent({ stage, hasOutput, hasError }: {
+function StageLogsContent({
+  stage,
+  hasOutput,
+  hasError,
+}: {
   stage: ValidationStageResult;
   hasOutput: boolean;
   hasError: boolean;
 }) {
   return (
-    <div
-      className="border-t border-gray-200 p-3 bg-gray-50"
-      data-testid="stage-logs"
-    >
+    <div className="border-t border-gray-200 p-3 bg-gray-50" data-testid="stage-logs">
       {hasError && (
         <div className="mb-3">
-          <div className="text-xs font-medium text-red-700 mb-1">
-            Error Output:
-          </div>
+          <div className="text-xs font-medium text-red-700 mb-1">Error Output:</div>
           <pre
             className="text-xs bg-red-50 text-red-800 p-2 rounded border overflow-x-auto whitespace-pre-wrap"
             data-testid="error-output"
@@ -129,18 +112,14 @@ function StageDetail({ stage }: { stage: ValidationStageResult }) {
 
   return (
     <div className="border border-gray-200 rounded" data-testid="stage-detail">
-      <StageHeader 
-        stage={stage} 
-        hasLogs={hasLogs} 
-        showLogs={showLogs} 
+      <StageHeader
+        stage={stage}
+        hasLogs={hasLogs}
+        showLogs={showLogs}
         onToggleLogs={handleToggleLogs}
       />
       {showLogs && hasLogs && (
-        <StageLogsContent 
-          stage={stage} 
-          hasOutput={hasOutput} 
-          hasError={hasError}
-        />
+        <StageLogsContent stage={stage} hasOutput={hasOutput} hasError={hasError} />
       )}
     </div>
   );
@@ -198,7 +177,7 @@ function RunsPerPageSelector({
       <label className="text-sm text-gray-600">Show:</label>
       <select
         value={runsPerPage}
-        onChange={(e) => setRunsPerPage(Number(e.target.value))}
+        onChange={e => setRunsPerPage(Number(e.target.value))}
         className="border border-gray-300 rounded px-2 py-1 text-sm text-gray-900 bg-white"
         data-testid="runs-per-page-select"
       >
@@ -236,10 +215,7 @@ function PaginationControls({
   }
 
   return (
-    <div
-      className="flex items-center justify-between"
-      data-testid="pagination-controls"
-    >
+    <div className="flex items-center justify-between" data-testid="pagination-controls">
       <div className="flex items-center gap-1">
         {/* First and Previous buttons */}
         <Button
@@ -285,9 +261,7 @@ function PaginationControls({
         <Button
           variant="outline"
           size="sm"
-          onClick={() =>
-            onPageChange(Math.min(totalPages - 1, currentPage + 1))
-          }
+          onClick={() => onPageChange(Math.min(totalPages - 1, currentPage + 1))}
           disabled={currentPage === totalPages - 1}
         >
           Next
@@ -305,8 +279,7 @@ function PaginationControls({
 
       <div className="flex items-center gap-2 text-sm text-gray-600">
         <span>
-          Showing {startIndex + 1}-
-          {Math.min(startIndex + runsPerPage, totalRuns)} of {totalRuns}
+          Showing {startIndex + 1}-{Math.min(startIndex + runsPerPage, totalRuns)} of {totalRuns}
         </span>
       </div>
     </div>
@@ -324,16 +297,14 @@ function ValidationRunItem({
   onToggleExpand: () => void;
 }) {
   const navigate = useNavigate();
-  const successfulStages = run.stages.filter((stage) => stage.success).length;
+  const successfulStages = run.stages.filter(stage => stage.success).length;
   const failedStages = run.stages.length - successfulStages;
 
   return (
     <div data-testid="validation-run-item">
       <div
         className={`p-3 rounded border-l-4 cursor-pointer transition-colors hover:bg-gray-50 ${
-          run.success
-            ? 'border-green-500 bg-green-50'
-            : 'border-red-500 bg-red-50'
+          run.success ? 'border-green-500 bg-green-50' : 'border-red-500 bg-red-50'
         }`}
         onClick={onToggleExpand}
       >
@@ -345,9 +316,7 @@ function ValidationRunItem({
               <AlertCircle className="w-4 h-4 text-red-500" />
             )}
             <div>
-              <span className="font-medium text-gray-900">
-                {run.stages.length} stages
-              </span>
+              <span className="font-medium text-gray-900">{run.stages.length} stages</span>
               <div className="text-xs text-gray-600">
                 {successfulStages} passed • {failedStages} failed
               </div>
@@ -365,7 +334,7 @@ function ValidationRunItem({
             <Button
               variant="outline"
               size="sm"
-              onClick={(e) => {
+              onClick={e => {
                 e.stopPropagation();
                 navigate(`/validation-run/${run.id}`);
               }}
@@ -408,7 +377,7 @@ function ValidationRunsList({
 
   return (
     <div className="space-y-2" data-testid="validation-runs-list">
-      {runs.map((run) => (
+      {runs.map(run => (
         <ValidationRunItem
           key={run.id}
           run={run}
@@ -443,9 +412,7 @@ export function RecentRuns({ runs }: { runs: ValidationRun[] }) {
       <CardHeader>
         <div className="flex flex-col gap-3">
           <div className="flex justify-between items-center">
-            <CardTitle className="text-gray-900">
-              Recent Validation Runs
-            </CardTitle>
+            <CardTitle className="text-gray-900">Recent Validation Runs</CardTitle>
             <RunsPerPageSelector
               runsPerPage={runsPerPage}
               setRunsPerPage={setRunsPerPage}

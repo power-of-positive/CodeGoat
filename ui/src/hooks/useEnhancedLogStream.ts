@@ -8,7 +8,7 @@ interface UseEnhancedLogStreamResult {
 }
 
 export const useEnhancedLogStream = (
-  workerId: string, 
+  workerId: string,
   enabled: boolean = true
 ): UseEnhancedLogStreamResult => {
   const [entries, setEntries] = useState<UnifiedLogEntry[]>([]);
@@ -53,7 +53,7 @@ export const useEnhancedLogStream = (
       console.warn(`🔗 Enhanced log stream connected for worker: ${workerId}`);
       setError(null);
       setIsConnected(true);
-      
+
       // Add process start marker
       const processStartPayload: ProcessStartPayload = {
         processId: workerId,
@@ -75,49 +75,51 @@ export const useEnhancedLogStream = (
     };
 
     // Handle json_patch events (new format from server)
-    eventSource.addEventListener('json_patch', (event) => {
+    eventSource.addEventListener('json_patch', event => {
       try {
         const patches = JSON.parse(event.data);
         const newEntries: UnifiedLogEntry[] = [];
         console.warn(`📦 Received ${patches.length} patches for worker ${workerId}`);
-        
-        patches.forEach((patch: { value?: { type: string; content: string | NormalizedEntry } }) => {
-          const value = patch?.value;
-          if (!value || !value.type) {
-            return;
+
+        patches.forEach(
+          (patch: { value?: { type: string; content: string | NormalizedEntry } }) => {
+            const value = patch?.value;
+            if (!value || !value.type) {
+              return;
+            }
+
+            let channel: UnifiedLogEntry['channel'];
+            let payload: string | NormalizedEntry;
+
+            switch (value.type) {
+              case 'STDOUT':
+                channel = 'stdout';
+                payload = value.content;
+                break;
+              case 'STDERR':
+                channel = 'stderr';
+                payload = value.content;
+                break;
+              case 'NORMALIZED_ENTRY':
+                channel = 'normalized';
+                payload = value.content;
+                break;
+              default:
+                return; // Skip unknown patch types
+            }
+
+            const entry: UnifiedLogEntry = {
+              id: `${workerId}-${entryCounterRef.current}`,
+              ts: entryCounterRef.current++,
+              processId: workerId,
+              processName: 'Claude Worker',
+              channel,
+              payload,
+            };
+
+            newEntries.push(entry);
           }
-
-          let channel: UnifiedLogEntry['channel'];
-          let payload: string | NormalizedEntry;
-
-          switch (value.type) {
-            case 'STDOUT':
-              channel = 'stdout';
-              payload = value.content;
-              break;
-            case 'STDERR':
-              channel = 'stderr';
-              payload = value.content;
-              break;
-            case 'NORMALIZED_ENTRY':
-              channel = 'normalized';
-              payload = value.content;
-              break;
-            default:
-              return; // Skip unknown patch types
-          }
-
-          const entry: UnifiedLogEntry = {
-            id: `${workerId}-${entryCounterRef.current}`,
-            ts: entryCounterRef.current++,
-            processId: workerId,
-            processName: 'Claude Worker',
-            channel,
-            payload,
-          };
-
-          newEntries.push(entry);
-        });
+        );
 
         if (newEntries.length > 0) {
           setEntries(prev => [...prev, ...newEntries]);
@@ -134,7 +136,7 @@ export const useEnhancedLogStream = (
       eventSourceRef.current = null;
     });
 
-    eventSource.onerror = (error) => {
+    eventSource.onerror = error => {
       console.error(`❌ Enhanced log stream error for worker ${workerId}:`, error);
       setError('Connection failed');
       setIsConnected(false);

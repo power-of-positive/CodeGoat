@@ -2,7 +2,6 @@
  * Tests for check-runners.ts
  */
 
-
 import {
   runFrontendLinting,
   runFrontendTests,

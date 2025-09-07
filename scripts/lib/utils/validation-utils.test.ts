@@ -2,7 +2,6 @@
  * Tests for validation-utils.ts
  */
 
-
 import * as fs from 'fs';
 import * as path from 'path';
 import {
@@ -19,7 +18,9 @@ jest.mock('path');
 describe('validation-utils', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    (path.resolve as jest.Mock).mockImplementation(p => (p.startsWith('/') ? p : `/current/dir/${p}`));
+    (path.resolve as jest.Mock).mockImplementation(p =>
+      p.startsWith('/') ? p : `/current/dir/${p}`
+    );
     (path.normalize as jest.Mock).mockImplementation(p => p);
   });
 

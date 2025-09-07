@@ -31,12 +31,7 @@ describe('Tabs Components', () => {
       );
 
       const tabsList = screen.getByTestId('tabs-list');
-      expect(tabsList).toHaveClass(
-        'inline-flex',
-        'h-10',
-        'items-center',
-        'justify-center'
-      );
+      expect(tabsList).toHaveClass('inline-flex', 'h-10', 'items-center', 'justify-center');
     });
 
     it('applies custom className', () => {
@@ -167,11 +162,7 @@ describe('Tabs Components', () => {
     it('applies custom className', () => {
       render(
         <Tabs defaultValue="tab1">
-          <TabsContent
-            value="tab1"
-            className="custom-content"
-            data-testid="content"
-          >
+          <TabsContent value="tab1" className="custom-content" data-testid="content">
             Content
           </TabsContent>
         </Tabs>

@@ -1,10 +1,4 @@
-import {
-  render,
-  screen,
-  waitFor,
-  fireEvent,
-  act,
-} from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
 import { Analytics } from './Analytics';
@@ -98,12 +92,8 @@ const renderWithProviders = (component: React.ReactElement) => {
 describe('Analytics Component', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    (analyticsApi.getValidationMetrics as jest.Mock).mockResolvedValue(
-      mockValidationMetrics
-    );
-    (analyticsApi.getValidationRuns as jest.Mock).mockResolvedValue(
-      mockRecentRuns
-    );
+    (analyticsApi.getValidationMetrics as jest.Mock).mockResolvedValue(mockValidationMetrics);
+    (analyticsApi.getValidationRuns as jest.Mock).mockResolvedValue(mockRecentRuns);
     (settingsApi.getValidationStages as jest.Mock).mockResolvedValue([]);
   });
 
@@ -120,12 +110,8 @@ describe('Analytics Component', () => {
     renderWithProviders(<Analytics />);
 
     await waitFor(() => {
-      expect(
-        screen.getByRole('heading', { name: /validation analytics/i })
-      ).toBeInTheDocument();
-      expect(
-        screen.getByText(/track validation pipeline performance/i)
-      ).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /validation analytics/i })).toBeInTheDocument();
+      expect(screen.getByText(/track validation pipeline performance/i)).toBeInTheDocument();
     });
   });
 
@@ -133,9 +119,7 @@ describe('Analytics Component', () => {
     renderWithProviders(<Analytics />);
 
     await waitFor(() => {
-      expect(
-        screen.getByRole('heading', { name: /total runs/i })
-      ).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /total runs/i })).toBeInTheDocument();
       // Use getAllByRole to handle multiple success rate and duration headings
       const successRateHeadings = screen.getAllByRole('heading', {
         name: /success rate/i,
@@ -154,7 +138,7 @@ describe('Analytics Component', () => {
     await waitFor(() => {
       // Use getAllByText to handle multiple "50" elements and check the right one
       const allFiftyElements = screen.getAllByText('50');
-      const totalRunsFifty = allFiftyElements.find((el) =>
+      const totalRunsFifty = allFiftyElements.find(el =>
         el.className.includes('text-2xl font-bold')
       );
       expect(totalRunsFifty).toBeInTheDocument();
@@ -167,9 +151,7 @@ describe('Analytics Component', () => {
     renderWithProviders(<Analytics />);
 
     await waitFor(() => {
-      expect(
-        screen.getByRole('heading', { name: /recent validation runs/i })
-      ).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /recent validation runs/i })).toBeInTheDocument();
     });
   });
 
@@ -184,12 +166,8 @@ describe('Analytics Component', () => {
   });
 
   it('handles API errors gracefully', async () => {
-    (analyticsApi.getValidationMetrics as jest.Mock).mockRejectedValue(
-      new Error('API Error')
-    );
-    (analyticsApi.getValidationRuns as jest.Mock).mockRejectedValue(
-      new Error('API Error')
-    );
+    (analyticsApi.getValidationMetrics as jest.Mock).mockRejectedValue(new Error('API Error'));
+    (analyticsApi.getValidationRuns as jest.Mock).mockRejectedValue(new Error('API Error'));
 
     renderWithProviders(<Analytics />);
 
@@ -200,12 +178,8 @@ describe('Analytics Component', () => {
 
   it('can retry after API error', async () => {
     // First, mock failure
-    (analyticsApi.getValidationMetrics as jest.Mock).mockRejectedValueOnce(
-      new Error('API Error')
-    );
-    (analyticsApi.getValidationRuns as jest.Mock).mockRejectedValueOnce(
-      new Error('API Error')
-    );
+    (analyticsApi.getValidationMetrics as jest.Mock).mockRejectedValueOnce(new Error('API Error'));
+    (analyticsApi.getValidationRuns as jest.Mock).mockRejectedValueOnce(new Error('API Error'));
 
     renderWithProviders(<Analytics />);
 
@@ -214,12 +188,8 @@ describe('Analytics Component', () => {
     });
 
     // Then mock success for retry
-    (analyticsApi.getValidationMetrics as jest.Mock).mockResolvedValue(
-      mockValidationMetrics
-    );
-    (analyticsApi.getValidationRuns as jest.Mock).mockResolvedValue(
-      mockRecentRuns
-    );
+    (analyticsApi.getValidationMetrics as jest.Mock).mockResolvedValue(mockValidationMetrics);
+    (analyticsApi.getValidationRuns as jest.Mock).mockResolvedValue(mockRecentRuns);
 
     // Click the "Try Again" button
     const tryAgainButton = screen.getByText('Try Again');
@@ -358,9 +328,7 @@ describe('Analytics Component', () => {
       },
     ];
 
-    (analyticsApi.getValidationRuns as jest.Mock).mockResolvedValue(
-      runWithFailedStage
-    );
+    (analyticsApi.getValidationRuns as jest.Mock).mockResolvedValue(runWithFailedStage);
 
     renderWithProviders(<Analytics />);
 
@@ -395,9 +363,7 @@ describe('Analytics Component', () => {
       },
     ];
 
-    (analyticsApi.getValidationRuns as jest.Mock).mockResolvedValue(
-      runWithoutDuration
-    );
+    (analyticsApi.getValidationRuns as jest.Mock).mockResolvedValue(runWithoutDuration);
 
     renderWithProviders(<Analytics />);
 

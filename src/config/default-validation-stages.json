@@ -23,7 +23,7 @@
     "command": "npm test",
     "timeout": 60000,
     "enabled": true,
-    "continueOnFailure": true,
+    "continueOnFailure": false,
     "order": 3
   },
   {
@@ -32,7 +32,7 @@
     "command": "ts-node scripts/check-typescript-preference.ts",
     "timeout": 10000,
     "enabled": true,
-    "continueOnFailure": true,
+    "continueOnFailure": false,
     "order": 4
   },
   {
@@ -41,7 +41,7 @@
     "command": "cd ui && npm run test:e2e",
     "timeout": 120000,
     "enabled": false,
-    "continueOnFailure": true,
+    "continueOnFailure": false,
     "order": 5
   }
 ]

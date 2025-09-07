@@ -3,7 +3,7 @@
 import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
-import { WinstonLogger } from '../logger-winston';
+import { getLogger } from '../logger-singleton';
 
 // Import types from separate file
 import type {
@@ -15,7 +15,7 @@ import type {
   APIResponse,
 } from './ai-code-reviewer.types';
 
-const logger = new WinstonLogger({
+const logger = getLogger({
   level: 'info',
   logsDir: './logs',
   enableConsole: true,

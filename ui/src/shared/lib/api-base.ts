@@ -28,7 +28,7 @@ export async function apiRequest<T>(
   options: Omit<RequestInit, 'body'> & { body?: unknown } = {}
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
-  
+
   const { body, ...restOptions } = options;
   const config: RequestInit = {
     headers: {
@@ -37,49 +37,43 @@ export async function apiRequest<T>(
     },
     ...restOptions,
   };
-  
+
   if (body) {
     config.body = typeof body === 'object' ? JSON.stringify(body) : String(body);
   }
 
   try {
     const response = await fetch(url, config);
-    
+
     if (!response.ok) {
-      throw new APIError(
-        `HTTP error! status: ${response.status}`,
-        response.status,
-        response
-      );
+      throw new APIError(`HTTP error! status: ${response.status}`, response.status, response);
     }
 
     const data = await response.json();
-    
+
     if (data.success === false) {
       throw new APIError(data.message || data.error || 'API request failed');
     }
-    
+
     return data.data || data;
   } catch (error) {
     if (error instanceof APIError) {
       throw error;
     }
-    throw new APIError(
-      error instanceof Error ? error.message : 'Network request failed'
-    );
+    throw new APIError(error instanceof Error ? error.message : 'Network request failed');
   }
 }
 
 // Helper function to build query parameters
 export function buildQueryParams(params: Record<string, unknown>): string {
   const searchParams = new URLSearchParams();
-  
+
   Object.entries(params).forEach(([key, value]) => {
     if (value !== undefined && value !== null && value !== '') {
       searchParams.append(key, String(value));
     }
   });
-  
+
   const queryString = searchParams.toString();
   return queryString ? `?${queryString}` : '';
 }

@@ -2,7 +2,6 @@
  * API E2E tests for check-runners.ts
  */
 
-
 import { runApiE2eTests } from './check-runners';
 import { execSync } from 'child_process';
 import { createServer } from 'net';

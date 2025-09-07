@@ -25,21 +25,21 @@ const MS_PER_DAY = HOURS_PER_DAY * MINUTES_PER_HOUR * SECONDS_PER_MINUTE * MS_PE
 // Log analysis thresholds
 const LOG_FILE_COUNT_THRESHOLDS = {
   HIGH: 100,
-  MODERATE: 50
+  MODERATE: 50,
 };
 const LOG_SIZE_THRESHOLDS_MB = {
   HIGH: 500,
   MODERATE: 100,
   LARGE_AVG_FILE: 50,
-  MODERATE_AVG_FILE: 10
+  MODERATE_AVG_FILE: 10,
 };
 const LOG_AGE_THRESHOLDS_DAYS = {
   VERY_OLD: 90,
-  OLD: 30
+  OLD: 30,
 };
 const LOG_LEVEL_PERCENTAGE_THRESHOLDS = {
   DEBUG_WARNING: 0.3,
-  INFO_WARNING: 0.5
+  INFO_WARNING: 0.5,
 };
 
 // Configuration defaults
@@ -62,7 +62,9 @@ function displayOverallStats(stats: LogStats): void {
   console.error('📈 Overall Statistics:');
   console.error(`  Total log files: ${stats.totalFiles}`);
   console.error(`  Total size: ${(stats.totalSize / BYTES_PER_MB).toFixed(DECIMAL_PLACES)} MB`);
-  console.error(`  Average file size: ${(stats.averageFileSize / BYTES_PER_KB).toFixed(DECIMAL_PLACES)} KB`);
+  console.error(
+    `  Average file size: ${(stats.averageFileSize / BYTES_PER_KB).toFixed(DECIMAL_PLACES)} KB`
+  );
 
   if (stats.oldestFile && stats.newestFile) {
     const ageInDays = (Date.now() - stats.oldestFile.getTime()) / MS_PER_DAY;
@@ -82,7 +84,9 @@ function displaySizeByLevel(stats: LogStats): void {
   for (const [level, size] of Object.entries(stats.sizeByLevel).sort(
     ([, a]: [string, number], [, b]: [string, number]) => b - a
   )) {
-    const percentage = (((size as number) / totalSizeForPercentage) * 100).toFixed(PERCENTAGE_DECIMAL_PLACES);
+    const percentage = (((size as number) / totalSizeForPercentage) * 100).toFixed(
+      PERCENTAGE_DECIMAL_PLACES
+    );
     console.error(
       `  ${level.padEnd(LEVEL_NAME_PADDING)}: ${((size as number) / BYTES_PER_MB).toFixed(DECIMAL_PLACES).padStart(SIZE_PADDING)} MB (${percentage.padStart(5)}%)`
     );

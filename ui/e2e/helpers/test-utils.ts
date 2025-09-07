@@ -10,16 +10,19 @@ export class TestUtils {
   /**
    * Navigate to a page and wait for it to load with error handling
    */
-  async navigateAndWait(path: string, options?: { 
-    waitForSelector?: string; 
-    timeout?: number;
-    fallbackSelectors?: string[];
-  }) {
+  async navigateAndWait(
+    path: string,
+    options?: {
+      waitForSelector?: string;
+      timeout?: number;
+      fallbackSelectors?: string[];
+    }
+  ) {
     await this.page.goto(path);
     await this.page.waitForLoadState('networkidle');
-    
+
     const timeout = options?.timeout || 30000;
-    
+
     if (options?.waitForSelector) {
       try {
         await this.page.waitForSelector(options.waitForSelector, { timeout });
@@ -73,7 +76,7 @@ export class TestUtils {
     const timeout = options?.timeout || 10000;
     await this.page.waitForSelector(selector, { timeout });
     await this.page.click(selector);
-    
+
     if (options?.waitAfter) {
       await this.page.waitForTimeout(options.waitAfter);
     }
@@ -89,8 +92,8 @@ export class TestUtils {
         '[data-testid="task-board"]',
         '.task-column',
         'text=Pending',
-        '[data-testid="tasks-page"]'
-      ]
+        '[data-testid="tasks-page"]',
+      ],
     });
   }
 
@@ -103,10 +106,10 @@ export class TestUtils {
       fallbackSelectors: [
         'text=Error Loading BDD Scenarios',
         'text=Loading BDD scenarios...',
-        '[data-testid="bdd-dashboard"]'
-      ]
+        '[data-testid="bdd-dashboard"]',
+      ],
     });
-    
+
     // Check for error state and skip if needed
     const errorMessage = await this.elementExists('text=Error Loading BDD Scenarios');
     if (errorMessage) {
@@ -123,8 +126,8 @@ export class TestUtils {
       fallbackSelectors: [
         '[data-testid="analytics-dashboard"]',
         'text=Analytics',
-        '.analytics-content'
-      ]
+        '.analytics-content',
+      ],
     });
   }
 
@@ -134,11 +137,7 @@ export class TestUtils {
   async navigateToSettings() {
     await this.navigateAndWait('/settings', {
       waitForSelector: 'h1',
-      fallbackSelectors: [
-        '[data-testid="settings-page"]',
-        'text=Settings',
-        '.settings-content'
-      ]
+      fallbackSelectors: ['[data-testid="settings-page"]', 'text=Settings', '.settings-content'],
     });
   }
 
@@ -147,9 +146,9 @@ export class TestUtils {
    */
   async waitForLoading(timeout = 15000) {
     try {
-      await this.page.waitForSelector('.loading, .spinner, [data-loading="true"]', { 
-        timeout: 2000, 
-        state: 'detached' 
+      await this.page.waitForSelector('.loading, .spinner, [data-loading="true"]', {
+        timeout: 2000,
+        state: 'detached',
       });
     } catch {
       // No loading state found, continue
@@ -170,11 +169,11 @@ export class TestUtils {
    */
   async assertVisible(selector: string, options?: { timeout?: number; retry?: boolean }) {
     const timeout = options?.timeout || 10000;
-    
+
     if (options?.retry) {
       let attempts = 0;
       const maxAttempts = 3;
-      
+
       while (attempts < maxAttempts) {
         try {
           await expect(this.page.locator(selector)).toBeVisible({ timeout });
@@ -209,9 +208,9 @@ export class TestUtils {
       'text=Error',
       '.error-message',
       '[data-testid="error"]',
-      '.alert-error'
+      '.alert-error',
     ];
-    
+
     for (const selector of errorSelectors) {
       if (await this.elementExists(selector, 2000)) {
         return true;
