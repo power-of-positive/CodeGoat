@@ -1,4 +1,13 @@
-import { TaskType, TaskStatus, Priority, BDDScenarioStatus } from '@prisma/client';
+import {
+  TaskType,
+  TaskStatus,
+  Priority,
+  BDDScenarioStatus,
+  TaskTypeType,
+  TaskStatusType,
+  PriorityType,
+  BDDScenarioStatusType,
+} from '../../types/enums';
 
 // This test validates the business logic and data structures for story completion validation
 describe('Story Completion Validation - Business Logic Test', () => {
@@ -124,7 +133,7 @@ describe('Story Completion Validation - Business Logic Test', () => {
 
     // Business rule validation: all scenarios must pass their tests
     const failedOrPendingScenarios = scenarios.filter(
-      scenario => (scenario.status as BDDScenarioStatus) !== BDDScenarioStatus.PASSED
+      scenario => (scenario.status as BDDScenarioStatusType) !== BDDScenarioStatus.PASSED
     );
 
     expect(failedOrPendingScenarios.length).toBe(2);
@@ -186,7 +195,7 @@ describe('Story Completion Validation - Business Logic Test', () => {
 
     // Business rule validation: all scenarios have passed
     const failedOrPendingScenarios = scenarios.filter(
-      scenario => (scenario.status as BDDScenarioStatus) !== BDDScenarioStatus.PASSED
+      scenario => (scenario.status as BDDScenarioStatusType) !== BDDScenarioStatus.PASSED
     );
     expect(failedOrPendingScenarios.length).toBe(0);
 
@@ -210,21 +219,21 @@ describe('Story Completion Validation - Business Logic Test', () => {
     expect(regularTask.taskType).not.toBe(TaskType.STORY);
 
     // Business rule: BDD validation only applies to stories, not regular tasks
-    const isBddValidationRequired = (regularTask.taskType as TaskType) === TaskType.STORY;
+    const isBddValidationRequired = (regularTask.taskType as TaskTypeType) === TaskType.STORY;
     expect(isBddValidationRequired).toBe(false);
 
     // Regular tasks should be allowed to complete without BDD scenarios
   });
 
   it('should validate the status mapping enums are correct', () => {
-    // Test enum values used in validation
-    expect(TaskType.STORY).toBe('STORY');
-    expect(TaskType.TASK).toBe('TASK');
-    expect(TaskStatus.COMPLETED).toBe('COMPLETED');
-    expect(BDDScenarioStatus.PASSED).toBe('PASSED');
-    expect(BDDScenarioStatus.FAILED).toBe('FAILED');
-    expect(BDDScenarioStatus.PENDING).toBe('PENDING');
-    expect(BDDScenarioStatus.SKIPPED).toBe('SKIPPED');
+    // Test enum values used in validation (values are lowercase in database)
+    expect(TaskType.STORY).toBe('story');
+    expect(TaskType.TASK).toBe('task');
+    expect(TaskStatus.COMPLETED).toBe('completed');
+    expect(BDDScenarioStatus.PASSED).toBe('passed');
+    expect(BDDScenarioStatus.FAILED).toBe('failed');
+    expect(BDDScenarioStatus.PENDING).toBe('pending');
+    expect(BDDScenarioStatus.SKIPPED).toBe('skipped');
 
     // These enum values are used in the validation logic
     // to ensure type safety and consistency

@@ -71,14 +71,16 @@ const runningProcesses = new Set<ChildProcess>();
 
 // Cleanup function
 function cleanupProcesses() {
-  console.error(`${colors?.yellow || '\x1b[33m'}🧹 Cleaning up ${runningProcesses.size} running processes...${colors?.reset || '\x1b[0m'}`);
-  
+  console.error(
+    `${colors?.yellow || '\x1b[33m'}🧹 Cleaning up ${runningProcesses.size} running processes...${colors?.reset || '\x1b[0m'}`
+  );
+
   for (const process of runningProcesses) {
     try {
       if (process.pid && !process.killed) {
         // Try graceful termination first
         process.kill('SIGTERM');
-        
+
         // Force kill after 2 seconds if still running
         setTimeout(() => {
           if (process.pid && !process.killed) {
@@ -90,7 +92,7 @@ function cleanupProcesses() {
       // Process may already be dead
     }
   }
-  
+
   runningProcesses.clear();
 }
 
@@ -104,12 +106,12 @@ process.on('SIGTERM', () => {
   cleanupProcesses();
   process.exit(0);
 });
-process.on('uncaughtException', (error) => {
+process.on('uncaughtException', error => {
   console.error('Uncaught exception:', error);
   cleanupProcesses();
   process.exit(1);
 });
-process.on('unhandledRejection', (reason) => {
+process.on('unhandledRejection', reason => {
   console.error('Unhandled rejection:', reason);
   cleanupProcesses();
   process.exit(1);
@@ -557,20 +559,21 @@ class ValidationRunner {
 
     try {
       const timeout = stage.timeout || DEFAULT_STAGE_TIMEOUT_MS;
-      
+
       // Create a promise-based approach with proper process tracking
       const result = await new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
         // Use shell execution to properly handle complex commands with pipes, redirections, etc.
-        const isShellCommand = stage.command.includes('&&') || 
-                              stage.command.includes('||') || 
-                              stage.command.includes('|') || 
-                              stage.command.includes('cd ') ||
-                              stage.command.includes('>') ||
-                              stage.command.includes('<');
-        
+        const isShellCommand =
+          stage.command.includes('&&') ||
+          stage.command.includes('||') ||
+          stage.command.includes('|') ||
+          stage.command.includes('cd ') ||
+          stage.command.includes('>') ||
+          stage.command.includes('<');
+
         let command: string;
         let args: string[];
-        
+
         if (isShellCommand) {
           // Use shell for complex commands
           command = '/bin/sh';
@@ -581,7 +584,7 @@ class ValidationRunner {
           command = parts[0];
           args = parts.slice(1);
         }
-        
+
         // Spawn process with proper options
         stageProcess = spawn(command, args, {
           cwd: stage.workingDir || process.cwd(),
@@ -594,29 +597,29 @@ class ValidationRunner {
           stdio: ['pipe', 'pipe', 'pipe'],
           detached: false, // Keep as child process for proper cleanup
         });
-        
+
         // Track this process for cleanup
         runningProcesses.add(stageProcess);
-        
+
         let stdout = '';
         let stderr = '';
         let isResolved = false;
-        
+
         // Collect output
-        stageProcess.stdout?.on('data', (data) => {
+        stageProcess.stdout?.on('data', data => {
           stdout += data.toString();
         });
-        
-        stageProcess.stderr?.on('data', (data) => {
+
+        stageProcess.stderr?.on('data', data => {
           stderr += data.toString();
         });
-        
+
         // Handle process completion
-        stageProcess.on('close', (code) => {
+        stageProcess.on('close', code => {
           if (!isResolved) {
             isResolved = true;
             runningProcesses.delete(stageProcess!);
-            
+
             if (code === 0) {
               resolve({ stdout, stderr });
             } else {
@@ -628,8 +631,8 @@ class ValidationRunner {
             }
           }
         });
-        
-        stageProcess.on('error', (error) => {
+
+        stageProcess.on('error', error => {
           if (!isResolved) {
             isResolved = true;
             runningProcesses.delete(stageProcess!);
@@ -640,16 +643,16 @@ class ValidationRunner {
             });
           }
         });
-        
+
         // Set up timeout
         const timeoutHandle = setTimeout(() => {
           if (!isResolved) {
             isResolved = true;
-            
+
             // Try graceful termination first
             if (stageProcess && !stageProcess.killed) {
               stageProcess.kill('SIGTERM');
-              
+
               // Force kill after 2 seconds
               setTimeout(() => {
                 if (stageProcess && !stageProcess.killed) {
@@ -657,7 +660,7 @@ class ValidationRunner {
                 }
               }, 2000);
             }
-            
+
             runningProcesses.delete(stageProcess!);
             reject({
               message: `Stage timed out after ${timeout}ms`,
@@ -666,14 +669,14 @@ class ValidationRunner {
             });
           }
         }, timeout);
-        
+
         // Add warning timeout
         warningTimeout = setTimeout(() => {
           console.error(
             `${colors.yellow}⚠️  Stage "${stage.name}" is taking longer than expected...${colors.reset}`
           );
         }, timeout / 2);
-        
+
         // Cleanup timeout on completion
         stageProcess.on('close', () => {
           clearTimeout(timeoutHandle);
@@ -682,7 +685,7 @@ class ValidationRunner {
       });
 
       const duration = Date.now() - startTime;
-      
+
       return {
         id: stage.id,
         name: stage.name,
@@ -695,7 +698,7 @@ class ValidationRunner {
       const duration = Date.now() - startTime;
 
       // Ensure process is cleaned up
-      if (stageProcess && !((stageProcess as any).killed)) {
+      if (stageProcess && !(stageProcess as any).killed) {
         try {
           (stageProcess as ChildProcess).kill('SIGKILL');
           runningProcesses.delete(stageProcess);
@@ -703,7 +706,7 @@ class ValidationRunner {
           // Process may already be dead
         }
       }
-      
+
       if (warningTimeout) clearTimeout(warningTimeout);
 
       return {
@@ -901,11 +904,13 @@ class ValidationRunner {
     try {
       // Clean up any remaining processes
       cleanupProcesses();
-      
+
       // Disconnect from database
       await this.db.$disconnect();
     } catch (error) {
-      console.warn(`${colors.yellow}⚠️  Cleanup warning: ${(error as Error).message}${colors.reset}`);
+      console.warn(
+        `${colors.yellow}⚠️  Cleanup warning: ${(error as Error).message}${colors.reset}`
+      );
     }
   }
 
@@ -946,7 +951,9 @@ async function main(): Promise<void> {
     cleanupProcesses(); // Ensure final cleanup
     process.exit(success ? 0 : 2);
   } catch (error) {
-    console.error(`${colors.red}Fatal validation error: ${(error as Error).message}${colors.reset}`);
+    console.error(
+      `${colors.red}Fatal validation error: ${(error as Error).message}${colors.reset}`
+    );
     await runner.cleanup();
     cleanupProcesses(); // Ensure final cleanup
     process.exit(2);

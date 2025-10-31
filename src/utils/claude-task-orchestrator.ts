@@ -3,7 +3,8 @@ import { ValidationRunner } from '../../scripts/validate-task';
 import { getDatabaseService } from '../services/database';
 import { WinstonLogger } from '../logger-winston';
 import { PermissionManager } from './permissions';
-import { Task, TaskStatus } from '@prisma/client';
+import { Task } from '@prisma/client';
+import { TaskStatus, TaskStatusType } from '../types/enums';
 import { WorktreeManager } from './worktree-manager';
 import { orchestratorStreamManager } from './orchestrator-stream';
 
@@ -608,7 +609,7 @@ Please try a different approach to complete this task.`;
   /**
    * Update task status in database
    */
-  private async updateTaskStatus(taskId: string, status: TaskStatus): Promise<void> {
+  private async updateTaskStatus(taskId: string, status: TaskStatusType): Promise<void> {
     try {
       const updateData: Record<string, unknown> = { status };
 
@@ -700,18 +701,10 @@ Please try a different approach to complete this task.`;
   }
 
   /**
-   * Calculate duration string from start and end times
+   * Calculate duration in milliseconds from start and end times
    */
-  private calculateDuration(startTime: Date, endTime: Date): string {
-    const diffMs = endTime.getTime() - startTime.getTime();
-    const hours = Math.floor(diffMs / (1000 * 60 * 60));
-    const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-
-    if (hours > 0) {
-      return `${hours}h ${minutes}m`;
-    } else {
-      return `${minutes}m`;
-    }
+  private calculateDuration(startTime: Date, endTime: Date): number {
+    return endTime.getTime() - startTime.getTime();
   }
 
   /**

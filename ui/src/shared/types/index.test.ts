@@ -499,7 +499,7 @@ describe('Shared Types', () => {
           taskType: 'story',
           startTime: '2023-01-01T00:00:00Z',
           endTime: '2023-01-01T01:00:00Z',
-          duration: '1h',
+          duration: 3600000, // 1 hour in milliseconds
           executorId: 'executor-1',
           bddScenarios: [],
           validationRuns: [],
@@ -507,7 +507,7 @@ describe('Shared Types', () => {
 
         expect(task.startTime).toBe('2023-01-01T00:00:00Z');
         expect(task.endTime).toBe('2023-01-01T01:00:00Z');
-        expect(task.duration).toBe('1h');
+        expect(task.duration).toBe(3600000); // 1 hour in milliseconds
         expect(task.executorId).toBe('executor-1');
         expect(task.bddScenarios).toHaveLength(0);
         expect(task.validationRuns).toHaveLength(0);

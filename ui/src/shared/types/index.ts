@@ -104,12 +104,12 @@ export interface UserSystemInfo {
 export interface Task {
   id: string;
   content: string;
-  status: 'pending' | 'in_progress' | 'completed';
+  status: 'pending' | 'in_progress' | 'completed' | 'todo';
   priority: 'low' | 'medium' | 'high';
   taskType: 'story' | 'task';
   startTime?: string;
   endTime?: string;
-  duration?: string;
+  duration?: number; // Duration in milliseconds
   createdAt?: string;
   bddScenarios?: BDDScenario[];
   executorId?: string;

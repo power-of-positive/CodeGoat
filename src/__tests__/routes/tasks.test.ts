@@ -1,8 +1,8 @@
 import request from 'supertest';
 import express from 'express';
-import { createTaskRoutes } from '../../routes/tasks';
+import { createTasksRoutes } from '../../routes/tasks';
 import { getDatabaseService } from '../../services/database';
-import { TaskStatus, Priority, TaskType, BDDScenarioStatus } from '@prisma/client';
+import { TaskStatus, Priority, TaskType, BDDScenarioStatus } from '../../types/enums';
 import { createMockLogger } from '../../test-helpers/logger.mock';
 import type { ILogger } from '../../logger-interface';
 
@@ -41,7 +41,7 @@ describe('Tasks Route - Story Completion Validation', () => {
     app = express();
     app.use(express.json());
     logger = createMockLogger();
-    app.use('/api/tasks', createTaskRoutes(logger));
+    app.use('/api/tasks', createTasksRoutes(logger));
 
     // Clear all mocks and reset database service
     jest.clearAllMocks();
@@ -273,7 +273,7 @@ describe('Tasks Route - Story Completion Validation', () => {
         data: expect.objectContaining({
           status: TaskStatus.COMPLETED,
           endTime: expect.any(Date),
-          duration: expect.any(String),
+          duration: expect.any(Number),
         }),
       });
     });

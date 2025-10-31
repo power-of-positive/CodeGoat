@@ -1,4 +1,5 @@
-import { PrismaClient, BDDScenario, BDDScenarioStatus, BDDScenarioExecution } from '@prisma/client';
+import { PrismaClient, BDDScenario, BDDScenarioExecution } from '@prisma/client';
+import { BDDScenarioStatus, BDDScenarioStatusType } from '../types/enums';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
@@ -15,7 +16,7 @@ export interface BDDScenarioInput {
 
 export interface BDDScenarioExecutionResult {
   scenarioId: string;
-  status: BDDScenarioStatus;
+  status: BDDScenarioStatusType;
   executionDuration?: number;
   errorMessage?: string;
   stepResults?: Record<string, unknown>[];
@@ -179,7 +180,7 @@ export class BDDScenarioService {
    */
   async updateScenarioStatus(
     scenarioId: string,
-    status: BDDScenarioStatus,
+    status: BDDScenarioStatusType,
     errorMessage?: string
   ): Promise<BDDScenario> {
     try {

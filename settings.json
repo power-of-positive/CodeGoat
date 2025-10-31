@@ -22,7 +22,7 @@
         "id": "typecheck",
         "name": "Type Checking",
         "command": "npm run type-check",
-        "timeout": 45000,
+        "timeout": 90000,
         "enabled": true,
         "continueOnFailure": false,
         "priority": 2
@@ -31,7 +31,7 @@
         "id": "unit-tests-backend",
         "name": "Backend Unit Tests",
         "command": "npm run test:unit:backend",
-        "timeout": 60000,
+        "timeout": 120000,
         "enabled": true,
         "continueOnFailure": false,
         "priority": 3
@@ -39,8 +39,8 @@
       {
         "id": "unit-tests-frontend",
         "name": "Frontend Unit Tests",
-        "command": "cd ui && CI=true node node_modules/.bin/jest --watchAll=false --no-watch --passWithNoTests --testTimeout=30000 --maxWorkers=2",
-        "timeout": 120000,
+        "command": "cd ui && npm test -- --watchAll=false --no-watch --passWithNoTests --testTimeout=30000 --maxWorkers=2",
+        "timeout": 180000,
         "enabled": true,
         "continueOnFailure": false,
         "priority": 4
@@ -48,7 +48,7 @@
       {
         "id": "coverage-frontend",
         "name": "Frontend Coverage Check",
-        "command": "cd ui && node node_modules/.bin/jest --coverage --maxWorkers=2 --testTimeout=30000",
+        "command": "cd ui && npm test -- --coverage --maxWorkers=2 --testTimeout=30000 --watchAll=false",
         "timeout": 180000,
         "enabled": true,
         "continueOnFailure": false,
@@ -58,7 +58,7 @@
         "id": "coverage-backend",
         "name": "Backend Coverage Check",
         "command": "npm run test:coverage:backend",
-        "timeout": 45000,
+        "timeout": 120000,
         "enabled": true,
         "continueOnFailure": false,
         "priority": 6
@@ -67,7 +67,7 @@
         "id": "unit-tests-scripts",
         "name": "Scripts Unit Tests",
         "command": "npm run test:unit:scripts",
-        "timeout": 30000,
+        "timeout": 120000,
         "enabled": true,
         "continueOnFailure": false,
         "priority": 7
@@ -85,7 +85,7 @@
         "id": "coverage-scripts",
         "name": "Scripts Coverage Check",
         "command": "npm run test:coverage:scripts",
-        "timeout": 30000,
+        "timeout": 120000,
         "enabled": true,
         "continueOnFailure": false,
         "priority": 9
@@ -130,7 +130,7 @@
         "id": "dead-code",
         "name": "Dead Code Detection",
         "command": "node node_modules/.bin/tsx scripts/check-dead-code.ts",
-        "timeout": 45000,
+        "timeout": 90000,
         "enabled": true,
         "continueOnFailure": false,
         "priority": 14

@@ -9,7 +9,7 @@ import { getLogger } from './logger-singleton';
 import { LogCleaner } from './utils/log-cleaner';
 import { createSettingsRoutes } from './routes/settings';
 import { createAnalyticsRoutes } from './routes/analytics';
-import { createTaskRoutes } from './routes/tasks';
+import { createTasksRoutes } from './routes/tasks';
 import { createPermissionRoutes } from './routes/permissions';
 import { createE2ERoutes } from './routes/e2e';
 import bddScenariosRouter from './routes/bdd-scenarios';
@@ -161,7 +161,7 @@ app.use(express.static(uiDistPath)); // Also serve UI at root
 // Mount API routes
 app.use('/api/settings', createSettingsRoutes(logger));
 app.use('/api/analytics', createAnalyticsRoutes(logger));
-app.use('/api/tasks', createTaskRoutes(logger));
+app.use('/api/tasks', createTasksRoutes(logger));
 app.use('/api/permissions', createPermissionRoutes(logger));
 app.use('/api/e2e', createE2ERoutes(logger));
 app.use('/api/bdd-scenarios', bddScenariosRouter);
@@ -232,7 +232,7 @@ export const cleanupIntervals = async () => {
   // Clean up orchestrator stream manager
   const { orchestratorStreamManager } = require('./utils/orchestrator-stream');
   orchestratorStreamManager.cleanup();
-  
+
   // Disconnect database in test environment
   if (process.env.NODE_ENV === 'test') {
     try {

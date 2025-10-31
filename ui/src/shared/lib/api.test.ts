@@ -253,12 +253,15 @@ describe('API Client', () => {
         json: async () => mockWorker,
       } as Response);
 
-      const result = await claudeWorkersApi.startWorker('task-123');
+      const result = await claudeWorkersApi.startWorker({
+        taskId: 'task-123',
+        taskContent: 'Test task content',
+      });
       expect(result).toEqual(mockWorker);
       expect(fetch).toHaveBeenCalledWith('/api/claude-workers/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ taskId: 'task-123' }),
+        body: JSON.stringify({ taskId: 'task-123', taskContent: 'Test task content' }),
       });
     });
 

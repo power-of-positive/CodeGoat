@@ -44,7 +44,7 @@ export class WinstonLogger implements ILogger {
       if (this.forceTestEnvironment === false && config.enableFile === true) {
         return config;
       }
-      
+
       return {
         ...config,
         enableFile: false, // Disable file logging in test environments

@@ -74,7 +74,7 @@ const mockTasks: Task[] = [
     executorId: 'claude_code',
     startTime: '2024-01-14T14:00:00Z',
     endTime: '2024-01-14T16:30:00Z',
-    duration: '2h 30m',
+    duration: 9000000, // 2h 30m in milliseconds
   },
 ];
 
@@ -837,9 +837,12 @@ describe('TaskManagement', () => {
         'Start Claude Code worker for task: "Implement user authentication system"?'
       );
 
-      // Verify API call
+      // Verify API call - should pass an object with taskId and taskContent
       await waitFor(() => {
-        expect(claudeWorkersApi.startWorker).toHaveBeenCalledWith('CODEGOAT-001', process.cwd());
+        expect(claudeWorkersApi.startWorker).toHaveBeenCalledWith({
+          taskId: 'CODEGOAT-001',
+          taskContent: 'Implement user authentication system',
+        });
       });
 
       // Verify success alert

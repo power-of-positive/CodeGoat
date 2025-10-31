@@ -12,6 +12,7 @@ import { BDDScenario, Task } from '../../../shared/types';
 import { ValidationRunCard } from '../../validation/components/ValidationRunCard';
 import { TaskLogs } from './TaskLogs';
 import { WorkerInfo } from '../../workers/components/WorkerInfo';
+import { formatDuration } from '../../../shared/utils/formatDuration';
 
 // Priority colors
 const priorityColors = {
@@ -234,7 +235,7 @@ function TaskMetadata({ task }: { task: Task }) {
       {task.duration && (
         <div>
           <div className="text-sm font-medium text-gray-700">Duration</div>
-          <div className="text-sm text-gray-600">{task.duration}</div>
+          <div className="text-sm text-gray-600">{formatDuration(task.duration)}</div>
         </div>
       )}
     </div>

@@ -53,12 +53,12 @@ async function disableE2eStages() {
 
     for (const stage of enabledStages) {
       const timeoutMinutes = Math.round(stage.timeout / 60000);
-      console.log(
-        `✅ ${stage.name.padEnd(35)} - ${stage.timeout}ms (${timeoutMinutes} min)`
-      );
+      console.log(`✅ ${stage.name.padEnd(35)} - ${stage.timeout}ms (${timeoutMinutes} min)`);
     }
 
-    console.log('\n⚠️ Note: E2E tests have been temporarily disabled due to parallel execution issues.');
+    console.log(
+      '\n⚠️ Note: E2E tests have been temporarily disabled due to parallel execution issues.'
+    );
     console.log('The tests pass individually but hang when run in parallel with other stages.');
     console.log('This is a temporary workaround to allow validation to complete.');
     console.log('\n✨ E2E stage configuration update complete!');
@@ -71,7 +71,7 @@ async function disableE2eStages() {
 }
 
 // Run the script
-disableE2eStages().catch((error) => {
+disableE2eStages().catch(error => {
   console.error('Script failed:', error);
   process.exit(1);
 });

@@ -197,7 +197,10 @@ describe('WorkerDetail', () => {
     fireEvent.click(startButton);
 
     await waitFor(() => {
-      expect(claudeWorkersApi.startWorker).toHaveBeenCalledWith('task-456');
+      expect(claudeWorkersApi.startWorker).toHaveBeenCalledWith({
+        taskId: 'task-456',
+        taskContent: 'Implement feature X',
+      });
     });
   });
 
@@ -597,7 +600,10 @@ describe('WorkerDetail', () => {
       fireEvent.click(retryButton);
 
       await waitFor(() => {
-        expect(claudeWorkersApi.startWorker).toHaveBeenCalledWith('task-456');
+        expect(claudeWorkersApi.startWorker).toHaveBeenCalledWith({
+          taskId: 'task-456',
+          taskContent: 'Implement feature X',
+        });
       });
     });
 

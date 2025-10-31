@@ -11,6 +11,7 @@ import { Card, CardContent } from '../shared/ui/card';
 import { Badge } from '../shared/ui/badge';
 import { Button } from '../shared/ui/button';
 import { Task } from '../shared/types/index';
+import { formatDuration } from '../shared/utils/formatDuration';
 
 interface TaskGridProps {
   tasks: Task[];
@@ -120,7 +121,7 @@ export function TaskGrid({
                   {task.duration && (
                     <div className="flex items-center gap-1 text-xs text-gray-500">
                       <Clock className="w-3 h-3" />
-                      {task.duration}
+                      {formatDuration(task.duration)}
                     </div>
                   )}
                 </div>

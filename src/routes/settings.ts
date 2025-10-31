@@ -2,6 +2,17 @@ import { Router, Request, Response } from 'express';
 import { ILogger } from '../logger-interface';
 import { z } from 'zod';
 import { SettingsService } from '../services/settings.service';
+import { validateRequest, validateParams } from '../middleware/validate';
+import {
+  UpdateSettingsRequestSchema,
+  UpdateFallbackSettingsRequestSchema,
+  UpdateValidationSettingsRequestSchema,
+  AddValidationStageRequestSchema,
+  GetValidationStageParamsSchema,
+  UpdateValidationStageParamsSchema,
+  UpdateValidationStageRequestSchema,
+  RemoveValidationStageParamsSchema,
+} from '../shared/schemas';
 
 // HTTP Status Codes
 const HTTP_STATUS = {
@@ -175,10 +186,19 @@ function createStageHandlers(
 function createAddStageHandler(settingsService: SettingsService, logger: ILogger) {
   return async (req: Request, res: Response): Promise<void> => {
     try {
-      const stage = await settingsService.addValidationStage(req.body);
+      // Transform API schema (stageId) to internal schema (id)
+      const { stageId, ...rest } = req.body;
+      const internalStage = { id: stageId, ...rest };
+
+      const stage = await settingsService.addValidationStage(internalStage);
+
+      // Transform response back to API schema
+      const { id, ...responseRest } = stage;
+      const apiStage = { stageId: id, ...responseRest };
+
       res.status(HTTP_STATUS.CREATED).json({
         message: 'Validation stage added successfully',
-        stage,
+        stage: apiStage,
       });
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -291,22 +311,51 @@ export function createSettingsRoutes(logger: ILogger): Router {
 
   // Main settings routes
   router.get('/', createSettingsHandler(settingsService, logger));
-  router.put('/', updateSettingsHandler(settingsService, logger));
+  router.put(
+    '/',
+    validateRequest(UpdateSettingsRequestSchema),
+    updateSettingsHandler(settingsService, logger)
+  );
 
   // Fallback settings routes
   router.get('/fallback', fallbackHandlers.getFallback);
-  router.put('/fallback', fallbackHandlers.updateFallback);
+  router.put(
+    '/fallback',
+    validateRequest(UpdateFallbackSettingsRequestSchema),
+    fallbackHandlers.updateFallback
+  );
 
   // Validation settings routes
   router.get('/validation', validationHandlers.getValidation);
-  router.put('/validation', validationHandlers.updateValidation);
+  router.put(
+    '/validation',
+    validateRequest(UpdateValidationSettingsRequestSchema),
+    validationHandlers.updateValidation
+  );
 
   // Validation stages routes
   router.get('/validation/stages', stageHandlers.getStages);
-  router.post('/validation/stages', stageHandlers.addStage);
-  router.get('/validation/stages/:id', stageHandlers.getStage);
-  router.put('/validation/stages/:id', stageHandlers.updateStage);
-  router.delete('/validation/stages/:id', stageHandlers.removeStage);
+  router.post(
+    '/validation/stages',
+    validateRequest(AddValidationStageRequestSchema),
+    stageHandlers.addStage
+  );
+  router.get(
+    '/validation/stages/:id',
+    validateParams(GetValidationStageParamsSchema),
+    stageHandlers.getStage
+  );
+  router.put(
+    '/validation/stages/:id',
+    validateParams(UpdateValidationStageParamsSchema),
+    validateRequest(UpdateValidationStageRequestSchema),
+    stageHandlers.updateStage
+  );
+  router.delete(
+    '/validation/stages/:id',
+    validateParams(RemoveValidationStageParamsSchema),
+    stageHandlers.removeStage
+  );
 
   return router;
 }

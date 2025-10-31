@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Plus,
   Edit,
@@ -16,8 +16,17 @@ import {
 import { Button } from '../../../shared/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../shared/ui/card';
 import { Badge } from '../../../shared/ui/badge';
+import {
+  Dialog,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogContent,
+  DialogFooter,
+} from '../../../shared/ui/dialog';
 import { taskApi, claudeWorkersApi } from '../../../shared/lib/api';
 import { Task } from '../../../shared/types/index';
+import { formatDuration } from '../../../shared/utils/formatDuration';
 
 // Priority colors
 const priorityColors = {
@@ -186,13 +195,6 @@ interface TaskCardProps {
 
 function TaskCard({ task, onEdit, onDelete, onStatusChange, onStartWorker }: TaskCardProps) {
   const [showActions, setShowActions] = useState(false);
-
-  const formatDuration = (duration?: string) => {
-    if (!duration) {
-      return null;
-    }
-    return duration;
-  };
 
   const handleStatusChange = (newStatus: Task['status']) => {
     if (newStatus !== task.status) {
@@ -399,7 +401,13 @@ function StatusColumn({
 export function TaskBoard() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [workerStartedDialog, setWorkerStartedDialog] = useState<{
+    workerId: string;
+    taskId: string;
+    pid?: number;
+  } | null>(null);
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   // Fetch tasks
   const {
@@ -442,10 +450,23 @@ export function TaskBoard() {
   const startWorkerMutation = useMutation({
     mutationFn: claudeWorkersApi.startWorker,
     onSuccess: data => {
-      console.error(`🚀 Started Claude worker ${data.id} for task ${data.taskId}`);
-      // Show success notification with link to worker monitoring
-      const message = `Started Claude Code worker!\nWorker ID: ${data.id}\nPID: ${data.pid}\n\nView progress in the Workers dashboard.`;
-      alert(message);
+      // The API returns 'workerId' not 'id' - need to handle both for backward compatibility
+      const workerId = (data as any).workerId || data.id;
+      console.log('Worker started response:', data);
+      console.error(`🚀 Started Claude worker ${workerId} for task ${data.taskId}`);
+
+      if (!workerId) {
+        console.error('ERROR: Worker ID is undefined in response:', data);
+        alert('Worker started but ID is missing. Check console for details.');
+        return;
+      }
+
+      // Show modal with worker details
+      setWorkerStartedDialog({
+        workerId: workerId,
+        taskId: data.taskId,
+        pid: data.pid,
+      });
     },
     onError: error => {
       console.error('Failed to start Claude worker:', error);
@@ -487,7 +508,10 @@ export function TaskBoard() {
         `Start Claude Code worker for task: "${task.content}"?\n\nThis will spawn a new process and execute the task automatically.`
       )
     ) {
-      startWorkerMutation.mutate(task.id);
+      startWorkerMutation.mutate({
+        taskId: task.id,
+        taskContent: task.content,
+      });
     }
   };
 
@@ -587,6 +611,52 @@ export function TaskBoard() {
           ))}
         </div>
       </div>
+
+      {/* Worker Started Modal */}
+      <Dialog open={!!workerStartedDialog} onOpenChange={(open) => !open && setWorkerStartedDialog(null)}>
+        <DialogHeader onClose={() => setWorkerStartedDialog(null)}>
+          <DialogTitle>Worker Started Successfully!</DialogTitle>
+        </DialogHeader>
+        <DialogContent>
+          <div className="space-y-3">
+            <DialogDescription>
+              Claude Code worker has been started and is now working on your task.
+            </DialogDescription>
+            <div className="bg-gray-50 p-4 rounded-lg space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Worker ID:</span>
+                <span className="font-mono font-medium">{workerStartedDialog?.workerId}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">Task ID:</span>
+                <span className="font-mono font-medium">{workerStartedDialog?.taskId}</span>
+              </div>
+              {workerStartedDialog?.pid && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">Process ID:</span>
+                  <span className="font-mono font-medium">{workerStartedDialog.pid}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={() => setWorkerStartedDialog(null)}
+          >
+            Close
+          </Button>
+          <Button
+            onClick={() => {
+              navigate(`/workers/${workerStartedDialog?.workerId}`);
+              setWorkerStartedDialog(null);
+            }}
+          >
+            View Worker Details
+          </Button>
+        </DialogFooter>
+      </Dialog>
     </div>
   );
 }

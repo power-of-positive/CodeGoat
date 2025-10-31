@@ -372,7 +372,9 @@ describe('Analytics Routes', () => {
       const attemptData = {
         attempt: 1,
         timestamp: '2023-10-01T10:00:00Z',
-        stages: [{ id: 'lint', success: true, duration: 200 }],
+        success: true,
+        totalTime: 200,
+        stages: [{ stageName: 'lint', stageId: 'lint', success: true, duration: 200 }],
       };
 
       mockAnalyticsService.recordValidationAttempt.mockResolvedValue(undefined);
@@ -400,7 +402,13 @@ describe('Analytics Routes', () => {
 
       const response = await request(app)
         .post('/api/analytics/sessions/non-existent/attempts')
-        .send({ attempt: 1 })
+        .send({
+          attempt: 1,
+          timestamp: '2023-10-01T10:00:00Z',
+          success: false,
+          totalTime: 100,
+          stages: [],
+        })
         .expect(404);
 
       expect(response.body).toEqual({
@@ -414,7 +422,13 @@ describe('Analytics Routes', () => {
 
       const response = await request(app)
         .post('/api/analytics/sessions/test-session/attempts')
-        .send({ attempt: 1 })
+        .send({
+          attempt: 1,
+          timestamp: '2023-10-01T10:00:00Z',
+          success: false,
+          totalTime: 100,
+          stages: [],
+        })
         .expect(500);
 
       expect(response.body).toEqual({

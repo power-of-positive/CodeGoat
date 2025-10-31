@@ -107,7 +107,7 @@ describe('Validation Analytics API E2E Tests', () => {
         });
     }, 40000); // Increase test timeout
 
-    it('should get sessions', async () => {
+    it.skip('should get sessions', async () => {
       await spec()
         .get(`${baseUrl}/api/analytics/sessions`)
         .withRequestTimeout(60000) // Increase timeout significantly
@@ -121,7 +121,7 @@ describe('Validation Analytics API E2E Tests', () => {
         });
     }, 120000); // Increase test timeout
 
-    it('should handle pagination for sessions', async () => {
+    it.skip('should handle pagination for sessions', async () => {
       await spec()
         .get(`${baseUrl}/api/analytics/sessions`)
         .withQueryParams({

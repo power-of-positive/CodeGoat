@@ -12,6 +12,15 @@ import {
   PermissionConfig,
   PermissionContext,
 } from '../utils/permissions';
+import { validateRequest, validateParams } from '../middleware/validate';
+import {
+  UpdatePermissionConfigRequestSchema,
+  CreatePermissionRuleRequestSchema,
+  UpdatePermissionRuleParamsSchema,
+  UpdatePermissionRuleRequestSchema,
+  DeletePermissionRuleParamsSchema,
+  TestPermissionRequestSchema,
+} from '../shared/schemas';
 
 // HTTP Status Codes
 const HTTP_STATUS = {
@@ -68,7 +77,7 @@ export function createPermissionRoutes(logger: WinstonLogger) {
   });
 
   // PUT /permissions/config - Update permission configuration
-  router.put('/config', async (req, res) => {
+  router.put('/config', validateRequest(UpdatePermissionConfigRequestSchema), async (req, res) => {
     try {
       const currentConfig = await readPermissionsConfig();
       const updates = req.body;
@@ -104,16 +113,9 @@ export function createPermissionRoutes(logger: WinstonLogger) {
   });
 
   // POST /permissions/rules - Create new permission rule
-  router.post('/rules', async (req, res) => {
+  router.post('/rules', validateRequest(CreatePermissionRuleRequestSchema), async (req, res) => {
     try {
       const { action, scope, target, allowed, reason, priority } = req.body;
-
-      if (!action || !scope || typeof allowed !== 'boolean' || typeof priority !== 'number') {
-        return res.status(HTTP_STATUS.BAD_REQUEST).json({
-          success: false,
-          message: 'Missing required fields: action, scope, allowed, priority',
-        });
-      }
 
       const config = await readPermissionsConfig();
       const newRule: PermissionRule = {
@@ -143,82 +145,84 @@ export function createPermissionRoutes(logger: WinstonLogger) {
   });
 
   // PUT /permissions/rules/:id - Update permission rule
-  router.put('/rules/:id', async (req, res) => {
-    try {
-      const { id } = req.params;
-      const updates = req.body;
+  router.put(
+    '/rules/:id',
+    validateParams(UpdatePermissionRuleParamsSchema),
+    validateRequest(UpdatePermissionRuleRequestSchema),
+    async (req, res) => {
+      try {
+        const { id } = req.params;
+        const updates = req.body;
 
-      const config = await readPermissionsConfig();
-      const ruleIndex = config.rules.findIndex(rule => rule.id === id);
+        const config = await readPermissionsConfig();
+        const ruleIndex = config.rules.findIndex(rule => rule.id === id);
 
-      if (ruleIndex === -1) {
-        return res
-          .status(HTTP_STATUS.NOT_FOUND)
-          .json({ success: false, message: 'Permission rule not found' });
+        if (ruleIndex === -1) {
+          return res
+            .status(HTTP_STATUS.NOT_FOUND)
+            .json({ success: false, message: 'Permission rule not found' });
+        }
+
+        const updatedRule = {
+          ...config.rules[ruleIndex],
+          ...updates,
+          id, // Ensure ID cannot be changed
+        };
+
+        config.rules[ruleIndex] = updatedRule;
+        // Re-sort rules by priority
+        config.rules.sort((a, b) => b.priority - a.priority);
+
+        await writePermissionsConfig(config);
+        logger.info('Updated permission rule:', { ruleId: id, updates });
+
+        res.json(updatedRule);
+      } catch (error) {
+        logger.error('Error updating permission rule:', error as Error);
+        res
+          .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+          .json({ success: false, message: 'Failed to update permission rule' });
       }
-
-      const updatedRule = {
-        ...config.rules[ruleIndex],
-        ...updates,
-        id, // Ensure ID cannot be changed
-      };
-
-      config.rules[ruleIndex] = updatedRule;
-      // Re-sort rules by priority
-      config.rules.sort((a, b) => b.priority - a.priority);
-
-      await writePermissionsConfig(config);
-      logger.info('Updated permission rule:', { ruleId: id, updates });
-
-      res.json(updatedRule);
-    } catch (error) {
-      logger.error('Error updating permission rule:', error as Error);
-      res
-        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json({ success: false, message: 'Failed to update permission rule' });
     }
-  });
+  );
 
   // DELETE /permissions/rules/:id - Delete permission rule
-  router.delete('/rules/:id', async (req, res) => {
-    try {
-      const { id } = req.params;
+  router.delete(
+    '/rules/:id',
+    validateParams(DeletePermissionRuleParamsSchema),
+    async (req, res) => {
+      try {
+        const { id } = req.params;
 
-      const config = await readPermissionsConfig();
-      const ruleIndex = config.rules.findIndex(rule => rule.id === id);
+        const config = await readPermissionsConfig();
+        const ruleIndex = config.rules.findIndex(rule => rule.id === id);
 
-      if (ruleIndex === -1) {
-        return res
-          .status(HTTP_STATUS.NOT_FOUND)
-          .json({ success: false, message: 'Permission rule not found' });
+        if (ruleIndex === -1) {
+          return res
+            .status(HTTP_STATUS.NOT_FOUND)
+            .json({ success: false, message: 'Permission rule not found' });
+        }
+
+        const deletedRule = config.rules[ruleIndex];
+        config.rules.splice(ruleIndex, 1);
+
+        await writePermissionsConfig(config);
+        logger.info('Deleted permission rule:', { ruleId: id, action: deletedRule.action });
+
+        res.json({ success: true, message: 'Permission rule deleted successfully' });
+      } catch (error) {
+        logger.error('Error deleting permission rule:', error as Error);
+        res
+          .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+          .json({ success: false, message: 'Failed to delete permission rule' });
       }
-
-      const deletedRule = config.rules[ruleIndex];
-      config.rules.splice(ruleIndex, 1);
-
-      await writePermissionsConfig(config);
-      logger.info('Deleted permission rule:', { ruleId: id, action: deletedRule.action });
-
-      res.json({ success: true, message: 'Permission rule deleted successfully' });
-    } catch (error) {
-      logger.error('Error deleting permission rule:', error as Error);
-      res
-        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
-        .json({ success: false, message: 'Failed to delete permission rule' });
     }
-  });
+  );
 
   // POST /permissions/test - Test permission
-  router.post('/test', async (req, res) => {
+  router.post('/test', validateRequest(TestPermissionRequestSchema), async (req, res) => {
     try {
       const { action, target, worktreeDir } = req.body;
-
-      if (!action) {
-        return res.status(HTTP_STATUS.BAD_REQUEST).json({
-          success: false,
-          message: 'Action is required for permission testing',
-        });
-      }
 
       const config = await readPermissionsConfig();
       const permissionManager = new PermissionManager(config, logger);

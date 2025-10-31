@@ -297,7 +297,7 @@ function parseValidationOutput(stdout: string, stderr: string, code: number | nu
   if (code === 2) {
     // Enhanced error extraction for different validation types
     const errorCategories = categorizeValidationErrors(fullOutput);
-    
+
     let detailedMessage = `Validation failed`;
     if (errorCategories.length > 0) {
       detailedMessage += `:\n${errorCategories.join('\n')}`;
@@ -333,14 +333,14 @@ function extractStructuredValidationFailures(output: string): string[] {
 
   // Extract the structured failure block
   const failureBlock = output.substring(startIndex + startMarker.length, endIndex).trim();
-  
+
   if (!failureBlock) {
     return failures;
   }
 
   // Parse the failure block
   const stages = failureBlock.split('---').filter(block => block.trim());
-  
+
   for (const stageBlock of stages) {
     const lines = stageBlock.trim().split('\n');
     let stageName = '';
@@ -378,41 +378,75 @@ function categorizeValidationErrors(output: string): string[] {
   const lines = output.split('\n');
 
   // Look for different types of errors
-  const lintErrors = lines.filter(line => 
-    line.includes('lint') && (line.includes('❌') || line.includes('Failed') || line.includes('error'))
+  const lintErrors = lines.filter(
+    line =>
+      line.includes('lint') &&
+      (line.includes('❌') || line.includes('Failed') || line.includes('error'))
   );
   if (lintErrors.length > 0) {
-    categories.push(`Lint Issues:\n${lintErrors.slice(0, 3).map(line => `  • ${line.trim()}`).join('\n')}`);
+    categories.push(
+      `Lint Issues:\n${lintErrors
+        .slice(0, 3)
+        .map(line => `  • ${line.trim()}`)
+        .join('\n')}`
+    );
   }
 
-  const typeErrors = lines.filter(line => 
-    line.includes('type') && (line.includes('❌') || line.includes('Failed') || line.includes('TS'))
+  const typeErrors = lines.filter(
+    line =>
+      line.includes('type') &&
+      (line.includes('❌') || line.includes('Failed') || line.includes('TS'))
   );
   if (typeErrors.length > 0) {
-    categories.push(`TypeScript Issues:\n${typeErrors.slice(0, 3).map(line => `  • ${line.trim()}`).join('\n')}`);
+    categories.push(
+      `TypeScript Issues:\n${typeErrors
+        .slice(0, 3)
+        .map(line => `  • ${line.trim()}`)
+        .join('\n')}`
+    );
   }
 
-  const testFailures = lines.filter(line => 
-    line.includes('test') && (line.includes('❌') || line.includes('Failed') || line.includes('FAIL'))
+  const testFailures = lines.filter(
+    line =>
+      line.includes('test') &&
+      (line.includes('❌') || line.includes('Failed') || line.includes('FAIL'))
   );
   if (testFailures.length > 0) {
-    categories.push(`Test Failures:\n${testFailures.slice(0, 3).map(line => `  • ${line.trim()}`).join('\n')}`);
+    categories.push(
+      `Test Failures:\n${testFailures
+        .slice(0, 3)
+        .map(line => `  • ${line.trim()}`)
+        .join('\n')}`
+    );
   }
 
-  const buildErrors = lines.filter(line => 
-    line.includes('build') && (line.includes('❌') || line.includes('Failed'))
+  const buildErrors = lines.filter(
+    line => line.includes('build') && (line.includes('❌') || line.includes('Failed'))
   );
   if (buildErrors.length > 0) {
-    categories.push(`Build Issues:\n${buildErrors.slice(0, 3).map(line => `  • ${line.trim()}`).join('\n')}`);
+    categories.push(
+      `Build Issues:\n${buildErrors
+        .slice(0, 3)
+        .map(line => `  • ${line.trim()}`)
+        .join('\n')}`
+    );
   }
 
   // If no categorized errors, show general failures
   if (categories.length === 0) {
-    const generalFailures = lines.filter(line => 
-      line.includes('❌') || line.includes('Failed') || (line.includes('error') && !line.includes('console.error'))
+    const generalFailures = lines.filter(
+      line =>
+        line.includes('❌') ||
+        line.includes('Failed') ||
+        (line.includes('error') && !line.includes('console.error'))
     );
     if (generalFailures.length > 0) {
-      categories.push(`General Failures:\n${generalFailures.slice(0, 5).map(line => `  • ${line.trim()}`).join('\n')}`);
+      categories.push(
+        `General Failures:\n${generalFailures
+          .slice(0, 5)
+          .map(line => `  • ${line.trim()}`)
+          .join('\n')}`
+      );
     }
   }
 
@@ -476,7 +510,7 @@ function createValidationProcess(sessionId: string): Promise<void> {
           exitCode: code,
           stdout: stdout.substring(0, 1000), // Log first 1000 chars
           stderr: stderr.substring(0, 1000),
-          errorMessage: validationError.message
+          errorMessage: validationError.message,
         });
         reject(validationError);
       }
@@ -514,11 +548,12 @@ async function handleValidationChecks(): Promise<void> {
       error instanceof Error ? error : new Error(String(error))
     );
     const errorMessage = error instanceof Error ? error.message : String(error);
-    
+
     // Enhanced feedback for Claude with structured error information
     const blockResult = {
       decision: 'block' as const,
-      reason: 'Validation checks failed - please fix the following issues before completing the task',
+      reason:
+        'Validation checks failed - please fix the following issues before completing the task',
       feedback: errorMessage, // Include detailed validation errors as feedback
     };
     process.stdout.write(JSON.stringify(blockResult) + '\n');
@@ -542,7 +577,9 @@ async function handleLLMReview(allChanges: string): Promise<void> {
     const blockResult = {
       decision: 'block' as const,
       reason: 'LLM review found issues - please address them',
-      feedback: reviewComments ? `LLM code review identified the following issues:\n${reviewComments}` : 'Please address the code review issues before completing the task.',
+      feedback: reviewComments
+        ? `LLM code review identified the following issues:\n${reviewComments}`
+        : 'Please address the code review issues before completing the task.',
     };
     process.stdout.write(JSON.stringify(blockResult) + '\n');
     process.exit(2);

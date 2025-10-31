@@ -45,7 +45,8 @@ import { ClaudeTaskOrchestrator, OrchestratorOptions } from '../src/utils/claude
 import { WinstonLogger } from '../src/logger-winston';
 import { PermissionManager } from '../src/utils/permissions';
 import { createDatabaseService, getDatabaseService } from '../src/services/database';
-import { Priority, Task, TaskStatus, TaskType } from '@prisma/client';
+import { Task } from '@prisma/client';
+import { Priority, TaskStatus, TaskType, TaskStatusType, TaskTypeType } from '../src/types/enums';
 
 // Load environment variables
 dotenv.config({ path: '.env' });
@@ -245,9 +246,9 @@ async function createPromptTask(prompt: string): Promise<Task> {
       id: taskId,
       title: prompt.substring(0, 100) + (prompt.length > 100 ? '...' : ''),
       content: prompt,
-      status: 'PENDING' as TaskStatus,
+      status: TaskStatus.PENDING,
       priority: Priority.HIGH,
-      taskType: 'TASK' as TaskType,
+      taskType: TaskType.TASK,
     },
   });
 

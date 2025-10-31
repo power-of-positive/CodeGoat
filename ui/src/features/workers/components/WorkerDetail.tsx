@@ -103,7 +103,10 @@ export function WorkerDetail() {
       if (!worker) {
         throw new Error('Worker data not available');
       }
-      const response = await claudeWorkersApi.startWorker(worker.taskId);
+      const response = await claudeWorkersApi.startWorker({
+        taskId: worker.taskId,
+        taskContent: worker.taskContent,
+      });
       return response;
     },
     onSuccess: () => {
@@ -114,19 +117,31 @@ export function WorkerDetail() {
   // Stop worker
   const stopWorkerMutation = useMutation({
     mutationFn: async () => {
-      const response = await claudeWorkersApi.stopWorker(workerId!);
-      return response;
+      await claudeWorkersApi.stopWorker(workerId!);
     },
     onSuccess: () => {
+      // Invalidate and refetch immediately
       queryClient.invalidateQueries({ queryKey: ['worker', workerId] });
+      queryClient.refetchQueries({ queryKey: ['worker', workerId] });
+      alert('Worker stopped. Running validation checks...');
+    },
+    onError: (error: Error) => {
+      console.error('Failed to stop worker:', error);
+      alert(`Failed to stop worker: ${error.message}`);
     },
   });
 
   // Open VS Code
   const openVSCodeMutation = useMutation({
     mutationFn: async () => {
-      const response = await claudeWorkersApi.openVSCode(workerId!);
-      return response;
+      await claudeWorkersApi.openVSCode(workerId!);
+    },
+    onSuccess: () => {
+      alert('✅ Opened worktree in VS Code!');
+    },
+    onError: (error: Error) => {
+      console.error('Failed to open VS Code:', error);
+      alert(`❌ Failed to open VS Code: ${error.message}\n\nMake sure VS Code CLI tools are installed.`);
     },
   });
 
@@ -137,7 +152,10 @@ export function WorkerDetail() {
         throw new Error('Worker data not available');
       }
       // Start the worker again with the same task and worktree
-      const response = await claudeWorkersApi.startWorker(worker.taskId);
+      const response = await claudeWorkersApi.startWorker({
+        taskId: worker.taskId,
+        taskContent: worker.taskContent,
+      });
       return response;
     },
     onSuccess: () => {
@@ -155,6 +173,11 @@ export function WorkerDetail() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['worker', workerId] });
       queryClient.invalidateQueries({ queryKey: ['worker-logs', workerId] });
+      alert('✅ Changes merged successfully to main branch!');
+    },
+    onError: (error: Error) => {
+      console.error('Failed to merge changes:', error);
+      alert(`❌ Failed to merge changes: ${error.message}`);
     },
   });
 
@@ -541,7 +564,16 @@ export function WorkerDetail() {
                 worker.validationPassed && (
                   <div className="space-y-2">
                     <Button
-                      onClick={() => mergeChangesMutation.mutate(undefined)}
+                      onClick={() => {
+                        const commitMessage = prompt(
+                          'Enter a commit message (optional):',
+                          `Task ${worker.taskId}: ${worker.taskContent.substring(0, 50)}...`
+                        );
+                        // If user cancels, commitMessage will be null, so don't proceed
+                        if (commitMessage !== null) {
+                          mergeChangesMutation.mutate(commitMessage || undefined);
+                        }
+                      }}
                       disabled={mergeChangesMutation.isPending}
                       className="w-full flex items-center justify-center space-x-2 text-green-600"
                       variant="outline"

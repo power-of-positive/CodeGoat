@@ -1,6 +1,7 @@
 #!/usr/bin/env npx ts-node
 
-import { PrismaClient, TaskStatus, Priority, TaskType } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
+import { TaskStatus, Priority, TaskType } from '../src/types/enums';
 
 const prisma = new PrismaClient();
 

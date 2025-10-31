@@ -3,11 +3,31 @@ import { ILogger } from '../logger-interface';
 import { AnalyticsService } from '../services/analytics.service';
 import { StageConsolidationService } from '../services/stage-consolidation.service';
 import { getDatabaseService } from '../services/database';
+import { validateRequest, validateParams, validateQuery } from '../middleware/validate';
+import {
+  GetAnalyticsQuerySchema,
+  GetSessionsQuerySchema,
+  GetSessionParamsSchema,
+  StartSessionRequestSchema,
+  EndSessionParamsSchema,
+  EndSessionRequestSchema,
+  RecordAttemptParamsSchema,
+  RecordAttemptRequestSchema,
+  CleanupSessionsQuerySchema,
+  GetStageHistoryParamsSchema,
+  GetStageHistoryQuerySchema,
+  GetStageStatisticsParamsSchema,
+  GetValidationRunsQuerySchema,
+  GetValidationStatisticsQuerySchema,
+} from '../shared/schemas';
 
 // HTTP Status Code Constants
-const HTTP_STATUS_CREATED = 201;
-const HTTP_STATUS_NOT_FOUND = 404;
-const HTTP_STATUS_INTERNAL_SERVER_ERROR = 500;
+const HTTP_STATUS = {
+  OK: 200,
+  CREATED: 201,
+  NOT_FOUND: 404,
+  INTERNAL_SERVER_ERROR: 500,
+} as const;
 
 // Default Value Constants
 const DEFAULT_SESSIONS_LIMIT = 10;
@@ -24,7 +44,7 @@ function getAnalytics(analyticsService: AnalyticsService, logger: ILogger) {
       res.json(analytics);
     } catch (error) {
       logger.error('Failed to get analytics', error as Error);
-      res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).json({ error: 'Failed to get analytics' });
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ error: 'Failed to get analytics' });
     }
   };
 }
@@ -37,7 +57,7 @@ function getSessions(analyticsService: AnalyticsService, logger: ILogger) {
       res.json({ sessions });
     } catch (error) {
       logger.error('Failed to get sessions', error as Error);
-      res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).json({ error: 'Failed to get sessions' });
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ error: 'Failed to get sessions' });
     }
   };
 }
@@ -49,14 +69,14 @@ function getSession(analyticsService: AnalyticsService, logger: ILogger) {
       const session = await analyticsService.getSession(sessionId);
 
       if (!session) {
-        res.status(HTTP_STATUS_NOT_FOUND).json({ error: 'Session not found' });
+        res.status(HTTP_STATUS.NOT_FOUND).json({ error: 'Session not found' });
         return;
       }
 
       res.json(session);
     } catch (error) {
       logger.error('Failed to get session', error as Error);
-      res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).json({ error: 'Failed to get session' });
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ error: 'Failed to get session' });
     }
   };
 }
@@ -67,13 +87,13 @@ function startSession(analyticsService: AnalyticsService, logger: ILogger) {
       const { userPrompt, taskDescription } = req.body;
       const sessionId = await analyticsService.startSession(userPrompt, taskDescription);
 
-      res.status(HTTP_STATUS_CREATED).json({
+      res.status(HTTP_STATUS.CREATED).json({
         message: 'Session started successfully',
         sessionId,
       });
     } catch (error) {
       logger.error('Failed to start session', error as Error);
-      res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).json({ error: 'Failed to start session' });
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ error: 'Failed to start session' });
     }
   };
 }
@@ -92,10 +112,10 @@ function endSession(analyticsService: AnalyticsService, logger: ILogger) {
       });
     } catch (error) {
       if ((error as Error).message.includes('not found')) {
-        res.status(HTTP_STATUS_NOT_FOUND).json({ error: 'Session not found' });
+        res.status(HTTP_STATUS.NOT_FOUND).json({ error: 'Session not found' });
       } else {
         logger.error('Failed to end session', error as Error);
-        res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).json({ error: 'Failed to end session' });
+        res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ error: 'Failed to end session' });
       }
     }
   };
@@ -109,18 +129,18 @@ function recordAttempt(analyticsService: AnalyticsService, logger: ILogger) {
 
       await analyticsService.recordValidationAttempt(sessionId, attempt);
 
-      res.status(HTTP_STATUS_CREATED).json({
+      res.status(HTTP_STATUS.CREATED).json({
         message: 'Validation attempt recorded successfully',
         sessionId,
         attempt: attempt.attempt,
       });
     } catch (error) {
       if ((error as Error).message.includes('not found')) {
-        res.status(HTTP_STATUS_NOT_FOUND).json({ error: 'Session not found' });
+        res.status(HTTP_STATUS.NOT_FOUND).json({ error: 'Session not found' });
       } else {
         logger.error('Failed to record validation attempt', error as Error);
         res
-          .status(HTTP_STATUS_INTERNAL_SERVER_ERROR)
+          .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
           .json({ error: 'Failed to record validation attempt' });
       }
     }
@@ -139,7 +159,7 @@ function cleanupSessions(analyticsService: AnalyticsService, logger: ILogger) {
       });
     } catch (error) {
       logger.error('Failed to cleanup sessions', error as Error);
-      res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).json({ error: 'Failed to cleanup sessions' });
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ error: 'Failed to cleanup sessions' });
     }
   };
 }
@@ -154,7 +174,7 @@ function getStageHistory(analyticsService: AnalyticsService, logger: ILogger) {
       res.json({ stageId, history });
     } catch (error) {
       logger.error('Failed to get stage history', error as Error);
-      res.status(HTTP_STATUS_INTERNAL_SERVER_ERROR).json({ error: 'Failed to get stage history' });
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({ error: 'Failed to get stage history' });
     }
   };
 }
@@ -169,7 +189,7 @@ function getStageStatistics(analyticsService: AnalyticsService, logger: ILogger)
     } catch (error) {
       logger.error('Failed to get stage statistics', error as Error);
       res
-        .status(HTTP_STATUS_INTERNAL_SERVER_ERROR)
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
         .json({ error: 'Failed to get stage statistics' });
     }
   };
@@ -186,7 +206,7 @@ function getValidationRuns(analyticsService: AnalyticsService, logger: ILogger) 
     } catch (error) {
       logger.error('Failed to get validation runs', error as Error);
       res
-        .status(HTTP_STATUS_INTERNAL_SERVER_ERROR)
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
         .json({ error: 'Failed to get validation runs' });
     }
   };
@@ -202,37 +222,17 @@ function getValidationStatistics(analyticsService: AnalyticsService, logger: ILo
     } catch (error) {
       logger.error('Failed to get validation statistics', error as Error);
       res
-        .status(HTTP_STATUS_INTERNAL_SERVER_ERROR)
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
         .json({ error: 'Failed to get validation statistics' });
     }
   };
 }
 
-export function createAnalyticsRoutes(logger: ILogger): Router {
-  const router = Router();
-  const analyticsService = new AnalyticsService(logger);
-
-  router.get('/', getAnalytics(analyticsService, logger));
-  router.get('/sessions', getSessions(analyticsService, logger));
-  router.get('/sessions/:sessionId', getSession(analyticsService, logger));
-  router.post('/sessions', startSession(analyticsService, logger));
-  router.put('/sessions/:sessionId/end', endSession(analyticsService, logger));
-  router.post('/sessions/:sessionId/attempts', recordAttempt(analyticsService, logger));
-  router.delete('/cleanup', cleanupSessions(analyticsService, logger));
-
-  // Stage-specific analytics
-  router.get('/stages/:stageId/history', getStageHistory(analyticsService, logger));
-  router.get('/stages/:stageId/statistics', getStageStatistics(analyticsService, logger));
-
-  // Database-based validation runs and statistics
-  router.get('/validation-runs', getValidationRuns(analyticsService, logger));
-  router.get('/validation-statistics', getValidationStatistics(analyticsService, logger));
-
-  // Add validation-metrics endpoint for the Analytics page with stage consolidation
-  router.get('/validation-metrics', async (req: Request, res: Response) => {
+function getValidationMetrics(analyticsService: AnalyticsService, logger: ILogger) {
+  return async (req: Request, res: Response): Promise<void> => {
     try {
-      // Get validation runs from database (no limit to get all runs)
-      const runs = await analyticsService.getValidationRuns();
+      // Get validation runs from database (limit to recent runs for performance)
+      const runs = await analyticsService.getValidationRuns(50);
 
       // Calculate statistics from runs
       const totalRuns = runs.length;
@@ -332,10 +332,77 @@ export function createAnalyticsRoutes(logger: ILogger): Router {
     } catch (error) {
       logger.error('Failed to get validation metrics', error as Error);
       res
-        .status(HTTP_STATUS_INTERNAL_SERVER_ERROR)
+        .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
         .json({ error: 'Failed to get validation metrics' });
     }
-  });
+  };
+}
+
+export function createAnalyticsRoutes(logger: ILogger): Router {
+  const router = Router();
+  const analyticsService = new AnalyticsService(logger);
+
+  router.get('/', validateQuery(GetAnalyticsQuerySchema), getAnalytics(analyticsService, logger));
+  router.get(
+    '/sessions',
+    validateQuery(GetSessionsQuerySchema),
+    getSessions(analyticsService, logger)
+  );
+  router.get(
+    '/sessions/:sessionId',
+    validateParams(GetSessionParamsSchema),
+    getSession(analyticsService, logger)
+  );
+  router.post(
+    '/sessions',
+    validateRequest(StartSessionRequestSchema),
+    startSession(analyticsService, logger)
+  );
+  router.put(
+    '/sessions/:sessionId/end',
+    validateParams(EndSessionParamsSchema),
+    validateRequest(EndSessionRequestSchema),
+    endSession(analyticsService, logger)
+  );
+  router.post(
+    '/sessions/:sessionId/attempts',
+    validateParams(RecordAttemptParamsSchema),
+    validateRequest(RecordAttemptRequestSchema),
+    recordAttempt(analyticsService, logger)
+  );
+  router.delete(
+    '/cleanup',
+    validateQuery(CleanupSessionsQuerySchema),
+    cleanupSessions(analyticsService, logger)
+  );
+
+  // Stage-specific analytics
+  router.get(
+    '/stages/:stageId/history',
+    validateParams(GetStageHistoryParamsSchema),
+    validateQuery(GetStageHistoryQuerySchema),
+    getStageHistory(analyticsService, logger)
+  );
+  router.get(
+    '/stages/:stageId/statistics',
+    validateParams(GetStageStatisticsParamsSchema),
+    getStageStatistics(analyticsService, logger)
+  );
+
+  // Database-based validation runs and statistics
+  router.get(
+    '/validation-runs',
+    validateQuery(GetValidationRunsQuerySchema),
+    getValidationRuns(analyticsService, logger)
+  );
+  router.get(
+    '/validation-statistics',
+    validateQuery(GetValidationStatisticsQuerySchema),
+    getValidationStatistics(analyticsService, logger)
+  );
+
+  // Validation metrics endpoint for the Analytics page with stage consolidation
+  router.get('/validation-metrics', getValidationMetrics(analyticsService, logger));
 
   return router;
 }

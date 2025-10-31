@@ -330,7 +330,7 @@ describe('Validation Stage Configs Routes', () => {
         .expect(400);
 
       expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe('Validation failed');
+      expect(response.body.message).toBe('Stage ID is required');
       expect(response.body.errors).toBeDefined();
     });
 
@@ -348,7 +348,9 @@ describe('Validation Stage Configs Routes', () => {
         .expect(400);
 
       expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe('Validation failed');
+      expect(response.body.message).toBe(
+        'Stage ID must be alphanumeric with hyphens and underscores only'
+      );
     }, 10000);
 
     it('should handle database errors', async () => {
@@ -450,7 +452,7 @@ describe('Validation Stage Configs Routes', () => {
         .expect(400);
 
       expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe('Validation failed');
+      expect(response.body.message).toBe('Timeout must be at least 1000ms');
     });
 
     it('should handle database errors', async () => {
@@ -683,7 +685,7 @@ describe('Validation Stage Configs Routes', () => {
         .expect(400);
 
       expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe('Validation failed');
+      expect(response.body.message).toBe('Invalid input: expected array, received string');
     });
 
     it('should handle database errors during reorder', async () => {

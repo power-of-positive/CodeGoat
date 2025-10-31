@@ -4,123 +4,40 @@
  */
 
 import { Router, Request, Response } from 'express';
-import { body, param, query, validationResult } from 'express-validator';
 import { getDatabaseService } from '../services/database';
+import { validateRequest, validateParams, validateQuery } from '../middleware/validate';
+import {
+  GetStageConfigsQuerySchema,
+  GetStageConfigParamsSchema,
+  CreateStageConfigRequestSchema,
+  UpdateStageConfigParamsSchema,
+  UpdateStageConfigRequestSchema,
+  DeleteStageConfigParamsSchema,
+  ToggleStageConfigParamsSchema,
+  ReorderStageConfigsRequestSchema,
+} from '../shared/schemas';
 
-const router = Router();
-let prisma: ReturnType<typeof getDatabaseService> | null = null;
+// HTTP Status Codes
+const HTTP_STATUS = {
+  OK: 200,
+  CREATED: 201,
+  NOT_FOUND: 404,
+  CONFLICT: 409,
+  INTERNAL_SERVER_ERROR: 500,
+} as const;
 
 // Lazy initialization of database connection
+let prisma: ReturnType<typeof getDatabaseService> | null = null;
+
 function getDatabase() {
   prisma ??= getDatabaseService();
   return prisma;
 }
 
-/**
- * Input validation schemas
- */
-const createValidationStageSchema = [
-  body('stageId')
-    .isString()
-    .isLength({ min: 1, max: 100 })
-    .matches(/^[a-zA-Z0-9\-_]+$/)
-    .withMessage('Stage ID must be alphanumeric with hyphens and underscores only'),
-  body('name')
-    .isString()
-    .isLength({ min: 1, max: 200 })
-    .withMessage('Name must be between 1 and 200 characters'),
-  body('command')
-    .isString()
-    .isLength({ min: 1, max: 1000 })
-    .withMessage('Command must be between 1 and 1000 characters'),
-  body('timeout')
-    .optional()
-    .isInt({ min: 1000, max: 3600000 })
-    .withMessage('Timeout must be between 1000ms and 1 hour'),
-  body('enabled').optional().isBoolean().withMessage('Enabled must be a boolean'),
-  body('continueOnFailure')
-    .optional()
-    .isBoolean()
-    .withMessage('Continue on failure must be a boolean'),
-  body('priority').isInt({ min: 1, max: 999 }).withMessage('Priority must be between 1 and 999'),
-  body('description')
-    .optional()
-    .isString()
-    .isLength({ max: 500 })
-    .withMessage('Description must be max 500 characters'),
-  body('category')
-    .optional()
-    .isString()
-    .isIn(['lint', 'test', 'type', 'build', 'e2e', 'security', 'quality', 'validation', 'other'])
-    .withMessage('Category must be a valid category'),
-];
-
-const updateValidationStageSchema = [
-  body('name')
-    .optional()
-    .isString()
-    .isLength({ min: 1, max: 200 })
-    .withMessage('Name must be between 1 and 200 characters'),
-  body('command')
-    .optional()
-    .isString()
-    .isLength({ min: 1, max: 1000 })
-    .withMessage('Command must be between 1 and 1000 characters'),
-  body('timeout')
-    .optional()
-    .isInt({ min: 1000, max: 3600000 })
-    .withMessage('Timeout must be between 1000ms and 1 hour'),
-  body('enabled').optional().isBoolean().withMessage('Enabled must be a boolean'),
-  body('continueOnFailure')
-    .optional()
-    .isBoolean()
-    .withMessage('Continue on failure must be a boolean'),
-  body('priority')
-    .optional()
-    .isInt({ min: 1, max: 999 })
-    .withMessage('Priority must be between 1 and 999'),
-  body('description')
-    .optional()
-    .isString()
-    .isLength({ max: 500 })
-    .withMessage('Description must be max 500 characters'),
-  body('category')
-    .optional()
-    .isString()
-    .isIn(['lint', 'test', 'type', 'build', 'e2e', 'security', 'quality', 'validation', 'other'])
-    .withMessage('Category must be a valid category'),
-];
-
-/**
- * Handle validation errors
- */
-function handleValidationErrors(req: Request, res: Response): boolean {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    res.status(400).json({
-      success: false,
-      message: 'Validation failed',
-      errors: errors.array(),
-    });
-    return true;
-  }
-  return false;
-}
-
-/**
- * GET /api/validation-stage-configs
- * List all validation stage configurations
- */
-router.get(
-  '/',
-  query('category').optional().isString(),
-  query('enabled').optional().isBoolean(),
-  async (req: Request, res: Response) => {
+// Handler functions for validation stage config routes
+function getStageConfigs() {
+  return async (req: Request, res: Response): Promise<void> => {
     try {
-      if (handleValidationErrors(req, res)) {
-        return;
-      }
-
       const { category, enabled } = req.query;
       const where: Record<string, unknown> = {};
 
@@ -150,27 +67,17 @@ router.get(
       });
     } catch (error) {
       console.error('Error fetching validation stage configs:', error);
-      res.status(500).json({
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
         success: false,
         message: 'Failed to fetch validation stage configurations',
       });
     }
-  }
-);
+  };
+}
 
-/**
- * GET /api/validation-stage-configs/:stageId
- * Get a specific validation stage configuration
- */
-router.get(
-  '/:stageId',
-  param('stageId').isString().isLength({ min: 1 }),
-  async (req: Request, res: Response) => {
+function getStageConfig() {
+  return async (req: Request, res: Response): Promise<void> => {
     try {
-      if (handleValidationErrors(req, res)) {
-        return;
-      }
-
       const { stageId } = req.params;
 
       const stage = await getDatabase().validationStageConfig.findUnique({
@@ -178,10 +85,11 @@ router.get(
       });
 
       if (!stage) {
-        return res.status(404).json({
+        res.status(HTTP_STATUS.NOT_FOUND).json({
           success: false,
           message: 'Validation stage configuration not found',
         });
+        return;
       }
 
       res.json({
@@ -190,90 +98,74 @@ router.get(
       });
     } catch (error) {
       console.error('Error fetching validation stage config:', error);
-      res.status(500).json({
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
         success: false,
         message: 'Failed to fetch validation stage configuration',
       });
     }
-  }
-);
+  };
+}
 
-/**
- * POST /api/validation-stage-configs
- * Create a new validation stage configuration
- */
-router.post('/', ...createValidationStageSchema, async (req: Request, res: Response) => {
-  try {
-    if (handleValidationErrors(req, res)) {
-      return;
-    }
-
-    const {
-      stageId,
-      name,
-      command,
-      timeout = 60000,
-      enabled = true,
-      continueOnFailure = false,
-      priority,
-      description,
-      category = 'other',
-    } = req.body;
-
-    // Check if stageId already exists
-    const existing = await getDatabase().validationStageConfig.findUnique({
-      where: { stageId },
-    });
-
-    if (existing) {
-      return res.status(409).json({
-        success: false,
-        message: 'A validation stage with this ID already exists',
-      });
-    }
-
-    const stage = await getDatabase().validationStageConfig.create({
-      data: {
+function createStageConfig() {
+  return async (req: Request, res: Response): Promise<void> => {
+    try {
+      const {
         stageId,
         name,
         command,
-        timeout,
-        enabled,
-        continueOnFailure,
+        timeout = 60000,
+        enabled = true,
+        continueOnFailure = false,
         priority,
         description,
-        category,
-      },
-    });
+        category = 'other',
+      } = req.body;
 
-    res.status(201).json({
-      success: true,
-      data: stage,
-      message: 'Validation stage configuration created successfully',
-    });
-  } catch (error) {
-    console.error('Error creating validation stage config:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to create validation stage configuration',
-    });
-  }
-});
+      // Check if stageId already exists
+      const existing = await getDatabase().validationStageConfig.findUnique({
+        where: { stageId },
+      });
 
-/**
- * PUT /api/validation-stage-configs/:stageId
- * Update a validation stage configuration
- */
-router.put(
-  '/:stageId',
-  param('stageId').isString().isLength({ min: 1 }),
-  ...updateValidationStageSchema,
-  async (req: Request, res: Response) => {
-    try {
-      if (handleValidationErrors(req, res)) {
+      if (existing) {
+        res.status(HTTP_STATUS.CONFLICT).json({
+          success: false,
+          message: 'A validation stage with this ID already exists',
+        });
         return;
       }
 
+      const stage = await getDatabase().validationStageConfig.create({
+        data: {
+          stageId,
+          name,
+          command,
+          timeout,
+          enabled,
+          continueOnFailure,
+          priority,
+          description,
+          category,
+        },
+      });
+
+      res.status(HTTP_STATUS.CREATED).json({
+        success: true,
+        data: stage,
+        message: 'Validation stage configuration created successfully',
+      });
+    } catch (error) {
+      console.error('Error creating validation stage config:', error);
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: 'Failed to create validation stage configuration',
+      });
+    }
+  };
+}
+
+function updateStageConfig() {
+  return async (req: Request, res: Response): Promise<void> => {
+    try {
       const { stageId } = req.params;
       const updateData = req.body;
 
@@ -283,10 +175,11 @@ router.put(
       });
 
       if (!existing) {
-        return res.status(404).json({
+        res.status(HTTP_STATUS.NOT_FOUND).json({
           success: false,
           message: 'Validation stage configuration not found',
         });
+        return;
       }
 
       const stage = await getDatabase().validationStageConfig.update({
@@ -301,27 +194,17 @@ router.put(
       });
     } catch (error) {
       console.error('Error updating validation stage config:', error);
-      res.status(500).json({
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
         success: false,
         message: 'Failed to update validation stage configuration',
       });
     }
-  }
-);
+  };
+}
 
-/**
- * DELETE /api/validation-stage-configs/:stageId
- * Delete a validation stage configuration
- */
-router.delete(
-  '/:stageId',
-  param('stageId').isString().isLength({ min: 1 }),
-  async (req: Request, res: Response) => {
+function deleteStageConfig() {
+  return async (req: Request, res: Response): Promise<void> => {
     try {
-      if (handleValidationErrors(req, res)) {
-        return;
-      }
-
       const { stageId } = req.params;
 
       // Check if stage exists
@@ -330,10 +213,11 @@ router.delete(
       });
 
       if (!existing) {
-        return res.status(404).json({
+        res.status(HTTP_STATUS.NOT_FOUND).json({
           success: false,
           message: 'Validation stage configuration not found',
         });
+        return;
       }
 
       await getDatabase().validationStageConfig.delete({
@@ -346,27 +230,17 @@ router.delete(
       });
     } catch (error) {
       console.error('Error deleting validation stage config:', error);
-      res.status(500).json({
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
         success: false,
         message: 'Failed to delete validation stage configuration',
       });
     }
-  }
-);
+  };
+}
 
-/**
- * POST /api/validation-stage-configs/:stageId/toggle
- * Toggle enabled status of a validation stage
- */
-router.post(
-  '/:stageId/toggle',
-  param('stageId').isString().isLength({ min: 1 }),
-  async (req: Request, res: Response) => {
+function toggleStageConfig() {
+  return async (req: Request, res: Response): Promise<void> => {
     try {
-      if (handleValidationErrors(req, res)) {
-        return;
-      }
-
       const { stageId } = req.params;
 
       // Check if stage exists
@@ -375,10 +249,11 @@ router.post(
       });
 
       if (!existing) {
-        return res.status(404).json({
+        res.status(HTTP_STATUS.NOT_FOUND).json({
           success: false,
           message: 'Validation stage configuration not found',
         });
+        return;
       }
 
       const stage = await getDatabase().validationStageConfig.update({
@@ -393,31 +268,17 @@ router.post(
       });
     } catch (error) {
       console.error('Error toggling validation stage config:', error);
-      res.status(500).json({
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
         success: false,
         message: 'Failed to toggle validation stage configuration',
       });
     }
-  }
-);
+  };
+}
 
-/**
- * POST /api/validation-stage-configs/reorder
- * Reorder validation stages by updating priorities
- */
-router.post(
-  '/reorder',
-  body('stages').isArray().withMessage('Stages must be an array'),
-  body('stages.*.stageId').isString().withMessage('Each stage must have a stageId'),
-  body('stages.*.priority')
-    .isInt({ min: 1, max: 999 })
-    .withMessage('Each stage must have a valid priority'),
-  async (req: Request, res: Response) => {
+function reorderStageConfigs() {
+  return async (req: Request, res: Response): Promise<void> => {
     try {
-      if (handleValidationErrors(req, res)) {
-        return;
-      }
-
       const { stages } = req.body;
 
       // Update priorities in a transaction
@@ -441,12 +302,49 @@ router.post(
       });
     } catch (error) {
       console.error('Error reordering validation stage configs:', error);
-      res.status(500).json({
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
         success: false,
         message: 'Failed to reorder validation stage configurations',
       });
     }
-  }
-);
+  };
+}
 
-export default router;
+export function createValidationStageConfigsRoutes(): Router {
+  const router = Router();
+
+  // GET all validation stage configurations
+  router.get('/', validateQuery(GetStageConfigsQuerySchema), getStageConfigs());
+
+  // GET specific validation stage configuration
+  router.get('/:stageId', validateParams(GetStageConfigParamsSchema), getStageConfig());
+
+  // POST create new validation stage configuration
+  router.post('/', validateRequest(CreateStageConfigRequestSchema), createStageConfig());
+
+  // PUT update validation stage configuration
+  router.put(
+    '/:stageId',
+    validateParams(UpdateStageConfigParamsSchema),
+    validateRequest(UpdateStageConfigRequestSchema),
+    updateStageConfig()
+  );
+
+  // DELETE validation stage configuration
+  router.delete('/:stageId', validateParams(DeleteStageConfigParamsSchema), deleteStageConfig());
+
+  // POST toggle enabled status
+  router.post(
+    '/:stageId/toggle',
+    validateParams(ToggleStageConfigParamsSchema),
+    toggleStageConfig()
+  );
+
+  // POST reorder validation stages
+  router.post('/reorder', validateRequest(ReorderStageConfigsRequestSchema), reorderStageConfigs());
+
+  return router;
+}
+
+// Default export for backward compatibility
+export default createValidationStageConfigsRoutes();

@@ -1,6 +1,7 @@
 import request from 'supertest';
 import express from 'express';
-import { PrismaClient, BDDScenarioStatus } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
+import { BDDScenarioStatus } from '../../types/enums';
 import bddScenariosRouter from '../bdd-scenarios';
 
 // Mock the BDDScenarioService

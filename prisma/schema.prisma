@@ -10,6 +10,13 @@ datasource db {
   url      = env("KANBAN_DATABASE_URL")
 }
 
+// String-based enums for SQLite compatibility
+// TaskStatus: "todo", "inprogress", "inreview", "done", "cancelled", "pending", "in_progress", "completed"
+// Priority: "low", "medium", "high", "urgent"
+// TaskType: "story", "task"
+// BDDScenarioStatus: "pending", "passed", "failed", "skipped"
+// LogLevel: "debug", "info", "warn", "error"
+
 // Projects table (from vibe-kanban)
 model Project {
   id            String   @id @default(uuid())
@@ -47,7 +54,7 @@ model Task {
   executorId         String?       @map("executor_id")
   startTime          DateTime?     @map("start_time")
   endTime            DateTime?     @map("end_time")
-  duration           String?       // Human-readable duration like "1h 30m"
+  duration           Int?          // Duration in milliseconds
   content            String?       // For todo tasks, this mirrors title
   
   project            Project?      @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -325,13 +332,3 @@ model BDDScenarioExecution {
   @@map("bdd_scenario_executions")
 }
 
-// String-based enums for SQLite compatibility
-// TaskStatus: "todo", "inprogress", "inreview", "done", "cancelled", "pending", "in_progress", "completed"
-// Priority: "low", "medium", "high", "urgent"
-// AttemptStatus: "created", "running", "completed", "failed", "cancelled"
-// ProcessType: "setupscript", "codingagent", "devserver", "validation", "cleanup"
-// ProcessStatus: "running", "completed", "failed", "killed"
-// LogStream: "stdout", "stderr"
-// BDDScenarioStatus: "pending", "passed", "failed", "skipped"
-// TaskType: "story", "task"
-// LogLevel: "debug", "info", "warn", "error"

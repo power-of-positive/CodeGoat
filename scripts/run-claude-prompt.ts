@@ -298,16 +298,17 @@ async function handleValidationWithRetrigger(
     }
 
     // Create enhanced context with both current and historical errors
-    const contextualPrompt = attempt === 1 
-      ? `The following validation stage(s) are failing:\n\n${validationResult.feedback}\n\nPlease fix these specific issues and ensure all validation stages pass.`
-      : `Validation is still failing after ${attempt} attempt(s). Here are the current issues:\n\n${validationResult.feedback}\n\nPrevious attempts have encountered these errors:\n${accumulatedErrors.slice(0, -1).join('\n\n')}\n\nPlease carefully analyze what hasn't been fixed yet and address the remaining issues.`;
+    const contextualPrompt =
+      attempt === 1
+        ? `The following validation stage(s) are failing:\n\n${validationResult.feedback}\n\nPlease fix these specific issues and ensure all validation stages pass.`
+        : `Validation is still failing after ${attempt} attempt(s). Here are the current issues:\n\n${validationResult.feedback}\n\nPrevious attempts have encountered these errors:\n${accumulatedErrors.slice(0, -1).join('\n\n')}\n\nPlease carefully analyze what hasn't been fixed yet and address the remaining issues.`;
 
     // Pass the accumulated validation errors context to retrigger
     await retriggerClaude(
-      contextualPrompt, 
-      options, 
-      useNewTerminal, 
-      sessionInfo, 
+      contextualPrompt,
+      options,
+      useNewTerminal,
+      sessionInfo,
       orchestratorSessionInfo,
       accumulatedErrors.join('\n\n')
     );
@@ -1004,42 +1005,45 @@ function extractValidationFeedback(stderr: string): string {
 function extractEnhancedValidationErrors(cleanedStderr: string): string | null {
   const errorSections = [];
   const lines = cleanedStderr.split('\n');
-  
+
   // Look for TypeScript errors
-  const tsErrors = lines.filter(line => 
-    line.includes('TS') && (line.includes('error') || line.includes('Error'))
+  const tsErrors = lines.filter(
+    line => line.includes('TS') && (line.includes('error') || line.includes('Error'))
   );
   if (tsErrors.length > 0) {
     errorSections.push(`TypeScript Errors:\n${tsErrors.join('\n')}`);
   }
 
   // Look for lint errors
-  const lintErrors = lines.filter(line => 
-    line.includes('ESLint') || 
-    (line.includes('error') && (line.includes('✖') || line.includes('✘'))) ||
-    line.match(/\d+:\d+\s+error/)
+  const lintErrors = lines.filter(
+    line =>
+      line.includes('ESLint') ||
+      (line.includes('error') && (line.includes('✖') || line.includes('✘'))) ||
+      line.match(/\d+:\d+\s+error/)
   );
   if (lintErrors.length > 0) {
     errorSections.push(`Lint Errors:\n${lintErrors.join('\n')}`);
   }
 
   // Look for test failures
-  const testErrors = lines.filter(line => 
-    line.includes('FAIL') || 
-    line.includes('Test Suites:') ||
-    line.includes('Tests:') ||
-    line.includes('expect(') ||
-    line.includes('AssertionError')
+  const testErrors = lines.filter(
+    line =>
+      line.includes('FAIL') ||
+      line.includes('Test Suites:') ||
+      line.includes('Tests:') ||
+      line.includes('expect(') ||
+      line.includes('AssertionError')
   );
   if (testErrors.length > 0) {
     errorSections.push(`Test Failures:\n${testErrors.join('\n')}`);
   }
 
   // Look for build errors
-  const buildErrors = lines.filter(line => 
-    line.includes('Build failed') ||
-    line.includes('compilation error') ||
-    line.includes('Module not found')
+  const buildErrors = lines.filter(
+    line =>
+      line.includes('Build failed') ||
+      line.includes('compilation error') ||
+      line.includes('Module not found')
   );
   if (buildErrors.length > 0) {
     errorSections.push(`Build Errors:\n${buildErrors.join('\n')}`);

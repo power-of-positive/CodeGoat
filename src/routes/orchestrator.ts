@@ -10,8 +10,25 @@ import { WinstonLogger } from '../logger-winston';
 import { PermissionManager } from '../utils/permissions';
 import { createDatabaseService, getDatabaseService } from '../services/database';
 import { orchestratorStreamManager } from '../utils/orchestrator-stream';
-import { Priority, Task, TaskStatus, TaskType } from '@prisma/client';
+import { Task } from '@prisma/client';
+import {
+  Priority,
+  TaskStatus,
+  TaskType,
+  PriorityType,
+  TaskStatusType,
+  TaskTypeType,
+} from '../types/enums';
 import { v4 as uuidv4 } from 'uuid';
+import { validateRequest, validateQuery } from '../middleware/validate';
+import {
+  GetStreamQuerySchema,
+  GetStreamInfoQuerySchema,
+  StartOrchestratorRequestSchema,
+  ExecutePromptRequestSchema,
+  RunCycleRequestSchema,
+  GetOrchestratorMetricsQuerySchema,
+} from '../shared/schemas';
 
 const router = express.Router();
 
@@ -135,7 +152,7 @@ export function createOrchestratorRoutes(logger: ILogger) {
   createDatabaseService(logger as WinstonLogger);
 
   // GET /api/orchestrator/stream - Server-Sent Events stream for real-time updates
-  router.get('/stream', (req, res) => {
+  router.get('/stream', validateQuery(GetStreamQuerySchema), (req, res) => {
     try {
       const clientId = uuidv4();
       const sessionId = req.query.sessionId as string | undefined;
@@ -154,7 +171,7 @@ export function createOrchestratorRoutes(logger: ILogger) {
   });
 
   // GET /api/orchestrator/stream/info - Get stream information
-  router.get('/stream/info', (req, res) => {
+  router.get('/stream/info', validateQuery(GetStreamInfoQuerySchema), (req, res) => {
     try {
       const sessionId = req.query.sessionId as string | undefined;
       const clientCount = orchestratorStreamManager.getClientCount(sessionId);
@@ -206,7 +223,7 @@ export function createOrchestratorRoutes(logger: ILogger) {
   });
 
   // POST /api/orchestrator/start - Start orchestrator in continuous mode
-  router.post('/start', (req, res) => {
+  router.post('/start', validateRequest(StartOrchestratorRequestSchema), (req, res) => {
     try {
       if (globalOrchestrator?.getStatus().isRunning) {
         return res.status(HTTP_STATUS.CONFLICT).json({
@@ -278,7 +295,7 @@ export function createOrchestratorRoutes(logger: ILogger) {
   });
 
   // POST /api/orchestrator/execute - Execute single prompt
-  router.post('/execute', async (req, res) => {
+  router.post('/execute', validateRequest(ExecutePromptRequestSchema), async (req, res) => {
     try {
       const { prompt, options = {} }: ExecutePromptRequest = req.body;
 
@@ -310,7 +327,7 @@ export function createOrchestratorRoutes(logger: ILogger) {
           content: prompt,
           status: TaskStatus.PENDING,
           priority: Priority.HIGH,
-          taskType: 'TASK' as TaskType,
+          taskType: 'TASK' as TaskTypeType,
         },
       });
 
@@ -357,7 +374,7 @@ export function createOrchestratorRoutes(logger: ILogger) {
   });
 
   // POST /api/orchestrator/cycle - Run single orchestrator cycle
-  router.post('/cycle', async (req, res) => {
+  router.post('/cycle', validateRequest(RunCycleRequestSchema), async (req, res) => {
     try {
       const { options = {} }: { options?: ApiOrchestratorOptions } = req.body;
 
@@ -417,7 +434,7 @@ export function createOrchestratorRoutes(logger: ILogger) {
   });
 
   // GET /api/orchestrator/metrics - Get orchestrator metrics
-  router.get('/metrics', async (req, res) => {
+  router.get('/metrics', validateQuery(GetOrchestratorMetricsQuerySchema), async (req, res) => {
     try {
       const db = getDatabaseService();
       const { days = '7' } = req.query;

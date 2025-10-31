@@ -813,7 +813,7 @@ export class AnalyticsService {
    * Get validation runs from the database
    */
   async getValidationRuns(
-    limit: number = 10000,
+    limit: number = 100,
     todoTaskId?: string
   ): Promise<
     Array<{

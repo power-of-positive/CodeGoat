@@ -18,15 +18,15 @@ async function setSequentialValidation() {
     const settingsPath = path.join(process.cwd(), 'settings.json');
     if (fs.existsSync(settingsPath)) {
       const settings = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'));
-      
+
       if (!settings.validation) {
         settings.validation = {};
       }
-      
+
       // Set execution mode to sequential
       settings.validation.executionMode = 'sequential';
       settings.validation.parallelStages = false;
-      
+
       fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
       console.log('✅ Updated settings.json to use sequential execution');
     } else {
@@ -36,10 +36,10 @@ async function setSequentialValidation() {
           executionMode: 'sequential',
           parallelStages: false,
           enableMetrics: true,
-          maxAttempts: 5
-        }
+          maxAttempts: 5,
+        },
       };
-      
+
       fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
       console.log('✅ Created settings.json with sequential execution');
     }
@@ -74,7 +74,7 @@ async function setSequentialValidation() {
 }
 
 // Run the script
-setSequentialValidation().catch((error) => {
+setSequentialValidation().catch(error => {
   console.error('Script failed:', error);
   process.exit(1);
 });

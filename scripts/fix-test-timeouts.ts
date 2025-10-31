@@ -83,7 +83,7 @@ async function fixTestTimeouts() {
 }
 
 // Run the script
-fixTestTimeouts().catch((error) => {
+fixTestTimeouts().catch(error => {
   console.error('Script failed:', error);
   process.exit(1);
 });

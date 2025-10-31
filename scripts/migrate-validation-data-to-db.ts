@@ -11,7 +11,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { getDatabaseService, createDatabaseService } from '../src/services/database';
 import { WinstonLogger } from '../src/logger-winston';
-import { LogLevel } from '@prisma/client';
+import { LogLevel } from '../src/types/enums';
 
 // Initialize database service first
 const logger = new WinstonLogger({

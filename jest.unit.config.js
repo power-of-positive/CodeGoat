@@ -12,7 +12,7 @@ module.exports = {
   },
   // No setup files - run tests without any global setup
   forceExit: true,
-  silent: true,
+  silent: false,
   verbose: false,
   maxWorkers: 1,
   detectOpenHandles: false,

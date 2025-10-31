@@ -1,8 +1,8 @@
 import request from 'supertest';
 import express from 'express';
-import { createTaskRoutes } from '../../routes/tasks';
+import { createTasksRoutes } from '../../routes/tasks';
 import { getDatabaseService } from '../../services/database';
-import { TaskStatus, Priority, TaskType, BDDScenarioStatus } from '@prisma/client';
+import { TaskStatus, Priority, TaskType, BDDScenarioStatus } from '../../types/enums';
 import { createMockLogger } from '../../test-helpers/logger.mock';
 import type { ILogger } from '../../logger-interface';
 
@@ -49,7 +49,7 @@ describe('Tasks Route - Additional Coverage', () => {
     app = express();
     app.use(express.json());
     logger = createMockLogger();
-    app.use('/api/tasks', createTaskRoutes(logger));
+    app.use('/api/tasks', createTasksRoutes(logger));
 
     // Mock ID generation for POST requests
     mockDb.task.findMany.mockResolvedValue([]);
@@ -113,7 +113,7 @@ describe('Tasks Route - Additional Coverage', () => {
         executorId: null,
         startTime: new Date(),
         endTime: new Date(),
-        duration: '0m',
+        duration: 0,
         createdAt: new Date(),
         updatedAt: new Date(),
         projectId: null,
@@ -138,7 +138,7 @@ describe('Tasks Route - Additional Coverage', () => {
           status: TaskStatus.COMPLETED,
           startTime: expect.any(Date),
           endTime: expect.any(Date),
-          duration: '0m',
+          duration: 0,
         }),
       });
     });
@@ -332,7 +332,7 @@ describe('Tasks Route - Additional Coverage', () => {
         status: TaskStatus.COMPLETED,
         startTime: new Date(),
         endTime: new Date(),
-        duration: '0m',
+        duration: 0,
       });
 
       const response = await request(app).put('/api/tasks/CODEGOAT-200').send({
@@ -346,7 +346,7 @@ describe('Tasks Route - Additional Coverage', () => {
           status: TaskStatus.COMPLETED,
           startTime: expect.any(Date),
           endTime: expect.any(Date),
-          duration: '0m',
+          duration: 0,
         }),
       });
     });
@@ -412,7 +412,7 @@ describe('Tasks Route - Additional Coverage', () => {
         data: expect.objectContaining({
           status: TaskStatus.COMPLETED,
           endTime: expect.any(Date),
-          duration: expect.any(String),
+          duration: expect.any(Number),
         }),
       });
     });
@@ -759,7 +759,7 @@ describe('Tasks Route - Additional Coverage', () => {
 
       expect(response.status).toBe(400);
       expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe('Title, feature, and gherkin content are required');
+      expect(response.body.message).toBe('Scenario title is required');
     });
 
     it('should return 404 if task does not exist', async () => {
@@ -768,6 +768,7 @@ describe('Tasks Route - Additional Coverage', () => {
       const response = await request(app).post('/api/tasks/NONEXISTENT/scenarios').send({
         title: 'Test Scenario',
         feature: 'User Authentication',
+        description: 'Test description',
         gherkinContent: 'Given a user\nWhen they log in\nThen they see dashboard',
       });
 
@@ -783,6 +784,7 @@ describe('Tasks Route - Additional Coverage', () => {
       const response = await request(app).post('/api/tasks/CODEGOAT-100/scenarios').send({
         title: 'Test Scenario',
         feature: 'User Authentication',
+        description: 'Test description',
         gherkinContent: 'Given a user\nWhen they log in\nThen they see dashboard',
       });
 
@@ -798,7 +800,7 @@ describe('Tasks Route - Additional Coverage', () => {
         taskId: 'CODEGOAT-100',
         title: 'Test Scenario',
         feature: 'User Authentication',
-        description: '',
+        description: 'Test description',
         gherkinContent: 'Given a user\nWhen they log in\nThen they see dashboard',
         status: BDDScenarioStatus.PENDING,
         executedAt: null,
@@ -810,6 +812,7 @@ describe('Tasks Route - Additional Coverage', () => {
       const response = await request(app).post('/api/tasks/CODEGOAT-100/scenarios').send({
         title: 'Test Scenario',
         feature: 'User Authentication',
+        description: 'Test description',
         gherkinContent: 'Given a user\nWhen they log in\nThen they see dashboard',
       });
 
@@ -820,7 +823,7 @@ describe('Tasks Route - Additional Coverage', () => {
           taskId: 'CODEGOAT-100',
           title: 'Test Scenario',
           feature: 'User Authentication',
-          description: '',
+          description: 'Test description',
           gherkinContent: 'Given a user\nWhen they log in\nThen they see dashboard',
           status: BDDScenarioStatus.PENDING,
         },

@@ -1,7 +1,35 @@
 import express from 'express';
 import type { ILogger } from '../logger-interface';
 import { getDatabaseService } from '../services/database';
-import { TaskStatus, Priority, Task, BDDScenarioStatus, TaskType } from '@prisma/client';
+import { Task } from '@prisma/client';
+import {
+  TaskStatus,
+  Priority,
+  BDDScenarioStatus,
+  TaskType,
+  TaskStatusType,
+  PriorityType,
+  TaskTypeType,
+  BDDScenarioStatusType,
+} from '../types/enums';
+import { validateRequest, validateParams, validateQuery } from '../middleware/validate';
+import {
+  GetTasksQuerySchema,
+  GetTaskParamsSchema,
+  CreateTaskRequestSchema,
+  UpdateTaskParamsSchema,
+  UpdateTaskRequestSchema,
+  DeleteTaskParamsSchema,
+  CreateScenarioParamsSchema,
+  CreateScenarioRequestSchema,
+  UpdateScenarioParamsSchema,
+  UpdateScenarioRequestSchema,
+  DeleteScenarioParamsSchema,
+  GetExecutionsParamsSchema,
+  ExecuteScenarioParamsSchema,
+  ExecuteScenarioRequestSchema,
+  GetScenarioAnalyticsParamsSchema,
+} from '../shared/schemas';
 
 // HTTP Status Codes
 const HTTP_STATUS = {
@@ -36,31 +64,31 @@ interface ApiTask {
   executorId?: string;
   startTime?: string;
   endTime?: string;
-  duration?: string;
+  duration?: number; // Duration in milliseconds
 }
 
 // Status mapping between API and Prisma enum
-const statusMapping: Record<string, TaskStatus> = {
+const statusMapping: Record<string, TaskStatusType> = {
   pending: TaskStatus.PENDING,
   in_progress: TaskStatus.IN_PROGRESS,
   completed: TaskStatus.COMPLETED,
 };
 
 // Priority mapping between API and Prisma enum
-const priorityMapping: Record<string, Priority> = {
+const priorityMapping: Record<string, PriorityType> = {
   low: Priority.LOW,
   medium: Priority.MEDIUM,
   high: Priority.HIGH,
 };
 
 // TaskType mapping between API and Prisma enum
-const taskTypeMapping: Record<string, TaskType> = {
+const taskTypeMapping: Record<string, TaskTypeType> = {
   story: TaskType.STORY,
   task: TaskType.TASK,
 };
 
 // Reverse mappings for API responses
-const reverseStatusMapping: Record<TaskStatus, string> = {
+const reverseStatusMapping: Record<TaskStatusType, string> = {
   [TaskStatus.PENDING]: 'pending',
   [TaskStatus.IN_PROGRESS]: 'in_progress',
   [TaskStatus.COMPLETED]: 'completed',
@@ -71,27 +99,27 @@ const reverseStatusMapping: Record<TaskStatus, string> = {
   [TaskStatus.CANCELLED]: 'cancelled',
 };
 
-const reversePriorityMapping: Record<Priority, string> = {
+const reversePriorityMapping: Record<PriorityType, string> = {
   [Priority.LOW]: 'low',
   [Priority.MEDIUM]: 'medium',
   [Priority.HIGH]: 'high',
   [Priority.URGENT]: 'urgent',
 };
 
-const reverseTaskTypeMapping: Record<TaskType, string> = {
+const reverseTaskTypeMapping: Record<TaskTypeType, string> = {
   [TaskType.STORY]: 'story',
   [TaskType.TASK]: 'task',
 };
 
 // BDD Scenario status mapping
-const bddStatusMapping: Record<string, BDDScenarioStatus> = {
+const bddStatusMapping: Record<string, BDDScenarioStatusType> = {
   pending: BDDScenarioStatus.PENDING,
   passed: BDDScenarioStatus.PASSED,
   failed: BDDScenarioStatus.FAILED,
   skipped: BDDScenarioStatus.SKIPPED,
 };
 
-const reverseBddStatusMapping: Record<BDDScenarioStatus, string> = {
+const reverseBddStatusMapping: Record<BDDScenarioStatusType, string> = {
   [BDDScenarioStatus.PENDING]: 'pending',
   [BDDScenarioStatus.PASSED]: 'passed',
   [BDDScenarioStatus.FAILED]: 'failed',
@@ -130,9 +158,15 @@ function dbTaskToApiTask(dbTask: Task): ApiTask {
   return {
     id: dbTask.id,
     content: dbTask.content ?? dbTask.title, // Use content for todo tasks, title for regular tasks
-    status: reverseStatusMapping[dbTask.status] as ApiTask['status'],
-    priority: reversePriorityMapping[dbTask.priority] as ApiTask['priority'],
-    taskType: reverseTaskTypeMapping[dbTask.taskType ?? TaskType.TASK] as ApiTask['taskType'],
+    status: reverseStatusMapping[
+      dbTask.status as keyof typeof reverseStatusMapping
+    ] as ApiTask['status'],
+    priority: reversePriorityMapping[
+      dbTask.priority as keyof typeof reversePriorityMapping
+    ] as ApiTask['priority'],
+    taskType: reverseTaskTypeMapping[
+      (dbTask.taskType ?? TaskType.TASK) as keyof typeof reverseTaskTypeMapping
+    ] as ApiTask['taskType'],
     executorId: dbTask.executorId ?? undefined,
     startTime: dbTask.startTime?.toISOString(),
     endTime: dbTask.endTime?.toISOString(),
@@ -140,33 +174,20 @@ function dbTaskToApiTask(dbTask: Task): ApiTask {
   };
 }
 
-// Helper function to calculate duration
-function calculateDuration(startTime?: string, endTime?: string): string | undefined {
+// Helper function to calculate duration in milliseconds
+function calculateDuration(startTime?: string, endTime?: string): number | undefined {
   if (!startTime || !endTime) {
     return undefined;
   }
 
   const start = new Date(startTime);
   const end = new Date(endTime);
-  const diffMs = end.getTime() - start.getTime();
-
-  const hours = Math.floor(diffMs / TIME_CALC_CONSTANTS.MS_PER_HOUR);
-  const minutes = Math.floor(
-    (diffMs % TIME_CALC_CONSTANTS.MS_PER_HOUR) / TIME_CALC_CONSTANTS.MS_PER_MINUTE
-  );
-
-  if (hours > 0) {
-    return `${hours}h ${minutes}m`;
-  } else {
-    return `${minutes}m`;
-  }
+  return end.getTime() - start.getTime();
 }
 
-export function createTaskRoutes(logger: ILogger) {
-  const router = express.Router();
-
-  // GET /api/tasks - Get all tasks
-  router.get('/', async (req, res) => {
+// Handler functions for task routes
+function createGetAllTasksHandler(logger: ILogger) {
+  return async (req: express.Request, res: express.Response) => {
     try {
       const db = getDatabaseService();
       const dbTasks = await db.task.findMany({
@@ -185,10 +206,11 @@ export function createTaskRoutes(logger: ILogger) {
         .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
         .json({ success: false, message: 'Failed to fetch tasks' });
     }
-  });
+  };
+}
 
-  // GET /api/tasks/analytics - Get task completion statistics
-  router.get('/analytics', async (req, res) => {
+function createGetTaskAnalyticsHandler(logger: ILogger) {
+  return async (req: express.Request, res: express.Response) => {
     try {
       const db = getDatabaseService();
 
@@ -339,10 +361,11 @@ export function createTaskRoutes(logger: ILogger) {
         .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
         .json({ success: false, message: 'Failed to fetch task analytics' });
     }
-  });
+  };
+}
 
-  // GET /api/tasks/:id - Get single task
-  router.get('/:id', async (req, res) => {
+function createGetTaskByIdHandler(logger: ILogger) {
+  return async (req: express.Request, res: express.Response) => {
     try {
       const db = getDatabaseService();
       const dbTask = await db.task.findUnique({
@@ -373,7 +396,7 @@ export function createTaskRoutes(logger: ILogger) {
         feature: scenario.feature,
         description: scenario.description,
         gherkinContent: scenario.gherkinContent,
-        status: reverseBddStatusMapping[scenario.status],
+        status: reverseBddStatusMapping[scenario.status as keyof typeof reverseBddStatusMapping],
         executedAt: scenario.executedAt?.toISOString(),
         executionDuration: scenario.executionDuration,
         errorMessage: scenario.errorMessage,
@@ -393,10 +416,11 @@ export function createTaskRoutes(logger: ILogger) {
         .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
         .json({ success: false, message: 'Failed to fetch task' });
     }
-  });
+  };
+}
 
-  // POST /api/tasks - Create new task
-  router.post('/', async (req, res) => {
+function createCreateTaskHandler(logger: ILogger) {
+  return async (req: express.Request, res: express.Response) => {
     try {
       const {
         content,
@@ -423,13 +447,13 @@ export function createTaskRoutes(logger: ILogger) {
         id: string;
         title: string;
         content: string;
-        status: TaskStatus;
-        priority: Priority;
-        taskType: TaskType;
+        status: TaskStatusType;
+        priority: PriorityType;
+        taskType: TaskTypeType;
         executorId?: string;
         startTime?: Date;
         endTime?: Date;
-        duration?: string;
+        duration?: number;
       } = {
         id: taskId,
         title: content.trim(), // Set title for unified schema
@@ -446,7 +470,7 @@ export function createTaskRoutes(logger: ILogger) {
       } else if (status === 'completed') {
         taskData.startTime = new Date();
         taskData.endTime = new Date();
-        taskData.duration = '0m';
+        taskData.duration = 0;
       }
 
       const dbTask = await db.task.create({
@@ -463,10 +487,11 @@ export function createTaskRoutes(logger: ILogger) {
         .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
         .json({ success: false, message: 'Failed to create task' });
     }
-  });
+  };
+}
 
-  // PUT /api/tasks/:id - Update task
-  router.put('/:id', async (req, res) => {
+function createUpdateTaskHandler(logger: ILogger) {
+  return async (req: express.Request, res: express.Response) => {
     try {
       const db = getDatabaseService();
       const existingTask = await db.task.findUnique({
@@ -483,13 +508,13 @@ export function createTaskRoutes(logger: ILogger) {
       const updateData: {
         content?: string;
         title?: string;
-        status?: TaskStatus;
-        priority?: Priority;
-        taskType?: TaskType;
+        status?: TaskStatusType;
+        priority?: PriorityType;
+        taskType?: TaskTypeType;
         executorId?: string;
         startTime?: Date;
         endTime?: Date;
-        duration?: string;
+        duration?: number;
       } = {};
 
       // Handle content updates
@@ -514,7 +539,11 @@ export function createTaskRoutes(logger: ILogger) {
       }
 
       // Handle status changes and timing
-      if (updates.status && updates.status !== reverseStatusMapping[existingTask.status]) {
+      if (
+        updates.status &&
+        updates.status !==
+          reverseStatusMapping[existingTask.status as keyof typeof reverseStatusMapping]
+      ) {
         // Validate story completion requirements
         if (updates.status === 'completed' && existingTask.taskType === TaskType.STORY) {
           // Check if story has BDD scenarios
@@ -561,7 +590,7 @@ export function createTaskRoutes(logger: ILogger) {
                 nonPassedScenarios: failedOrPendingScenarios.map(s => ({
                   id: s.id,
                   title: s.title,
-                  status: reverseBddStatusMapping[s.status],
+                  status: reverseBddStatusMapping[s.status as keyof typeof reverseBddStatusMapping],
                 })),
               },
             });
@@ -588,7 +617,7 @@ export function createTaskRoutes(logger: ILogger) {
           // If completing a task that was never started
           updateData.startTime = new Date();
           updateData.endTime = new Date();
-          updateData.duration = '0m';
+          updateData.duration = 0;
         }
       }
 
@@ -607,10 +636,11 @@ export function createTaskRoutes(logger: ILogger) {
         .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
         .json({ success: false, message: 'Failed to update task' });
     }
-  });
+  };
+}
 
-  // DELETE /api/tasks/:id - Delete task
-  router.delete('/:id', async (req, res) => {
+function createDeleteTaskHandler(logger: ILogger) {
+  return async (req: express.Request, res: express.Response) => {
     try {
       const db = getDatabaseService();
       const existingTask = await db.task.findUnique({
@@ -635,12 +665,11 @@ export function createTaskRoutes(logger: ILogger) {
         .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
         .json({ success: false, message: 'Failed to delete task' });
     }
-  });
+  };
+}
 
-  // BDD Scenario endpoints
-
-  // POST /api/tasks/:id/scenarios - Create new scenario for task
-  router.post('/:id/scenarios', async (req, res) => {
+function createCreateScenarioHandler(logger: ILogger) {
+  return async (req: express.Request, res: express.Response) => {
     try {
       const { title, feature, description, gherkinContent, status = 'pending' } = req.body;
 
@@ -687,7 +716,7 @@ export function createTaskRoutes(logger: ILogger) {
           feature: scenario.feature,
           description: scenario.description,
           gherkinContent: scenario.gherkinContent,
-          status: reverseBddStatusMapping[scenario.status],
+          status: reverseBddStatusMapping[scenario.status as keyof typeof reverseBddStatusMapping],
           executedAt: scenario.executedAt?.toISOString(),
           executionDuration: scenario.executionDuration,
           errorMessage: scenario.errorMessage,
@@ -699,10 +728,11 @@ export function createTaskRoutes(logger: ILogger) {
         .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
         .json({ success: false, message: 'Failed to create BDD scenario' });
     }
-  });
+  };
+}
 
-  // PUT /api/tasks/:id/scenarios/:scenarioId - Update scenario
-  router.put('/:id/scenarios/:scenarioId', async (req, res) => {
+function createUpdateScenarioHandler(logger: ILogger) {
+  return async (req: express.Request, res: express.Response) => {
     try {
       const db = getDatabaseService();
 
@@ -737,7 +767,7 @@ export function createTaskRoutes(logger: ILogger) {
         feature?: string;
         description?: string;
         gherkinContent?: string;
-        status?: BDDScenarioStatus;
+        status?: BDDScenarioStatusType;
         executedAt?: Date;
         executionDuration?: number;
         errorMessage?: string;
@@ -797,7 +827,8 @@ export function createTaskRoutes(logger: ILogger) {
           feature: updatedScenario.feature,
           description: updatedScenario.description,
           gherkinContent: updatedScenario.gherkinContent,
-          status: reverseBddStatusMapping[updatedScenario.status],
+          status:
+            reverseBddStatusMapping[updatedScenario.status as keyof typeof reverseBddStatusMapping],
           executedAt: updatedScenario.executedAt?.toISOString(),
           executionDuration: updatedScenario.executionDuration,
           errorMessage: updatedScenario.errorMessage,
@@ -809,10 +840,11 @@ export function createTaskRoutes(logger: ILogger) {
         .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
         .json({ success: false, message: 'Failed to update BDD scenario' });
     }
-  });
+  };
+}
 
-  // DELETE /api/tasks/:id/scenarios/:scenarioId - Delete scenario
-  router.delete('/:id/scenarios/:scenarioId', async (req, res) => {
+function createDeleteScenarioHandler(logger: ILogger) {
+  return async (req: express.Request, res: express.Response) => {
     try {
       const db = getDatabaseService();
 
@@ -845,12 +877,11 @@ export function createTaskRoutes(logger: ILogger) {
         .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
         .json({ success: false, message: 'Failed to delete BDD scenario' });
     }
-  });
+  };
+}
 
-  // BDD Scenario Execution History endpoints
-
-  // GET /api/tasks/:id/scenarios/:scenarioId/executions - Get execution history for a scenario
-  router.get('/:id/scenarios/:scenarioId/executions', async (req, res) => {
+function createGetExecutionsHandler(logger: ILogger) {
+  return async (req: express.Request, res: express.Response) => {
     try {
       const db = getDatabaseService();
       const { limit = '50', offset = '0' } = req.query;
@@ -879,7 +910,7 @@ export function createTaskRoutes(logger: ILogger) {
       const executionsResponse = executions.map(execution => ({
         id: execution.id,
         scenarioId: execution.scenarioId,
-        status: reverseBddStatusMapping[execution.status],
+        status: reverseBddStatusMapping[execution.status as keyof typeof reverseBddStatusMapping],
         executedAt: execution.executedAt.toISOString(),
         executionDuration: execution.executionDuration,
         errorMessage: execution.errorMessage,
@@ -896,10 +927,11 @@ export function createTaskRoutes(logger: ILogger) {
         .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
         .json({ success: false, message: 'Failed to fetch execution history' });
     }
-  });
+  };
+}
 
-  // POST /api/tasks/:id/scenarios/:scenarioId/executions - Create new execution record
-  router.post('/:id/scenarios/:scenarioId/executions', async (req, res) => {
+function createCreateExecutionHandler(logger: ILogger) {
+  return async (req: express.Request, res: express.Response) => {
     try {
       const {
         status,
@@ -971,7 +1003,7 @@ export function createTaskRoutes(logger: ILogger) {
         data: {
           id: execution.id,
           scenarioId: execution.scenarioId,
-          status: reverseBddStatusMapping[execution.status],
+          status: reverseBddStatusMapping[execution.status as keyof typeof reverseBddStatusMapping],
           executedAt: execution.executedAt.toISOString(),
           executionDuration: execution.executionDuration,
           errorMessage: execution.errorMessage,
@@ -987,10 +1019,11 @@ export function createTaskRoutes(logger: ILogger) {
         .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
         .json({ success: false, message: 'Failed to create execution record' });
     }
-  });
+  };
+}
 
-  // GET /api/tasks/:id/scenarios/:scenarioId/analytics - Get execution analytics for a scenario
-  router.get('/:id/scenarios/:scenarioId/analytics', async (req, res) => {
+function createGetScenarioAnalyticsHandler(logger: ILogger) {
+  return async (req: express.Request, res: express.Response) => {
     try {
       const db = getDatabaseService();
       const { days = '30' } = req.query;
@@ -1080,7 +1113,8 @@ export function createTaskRoutes(logger: ILogger) {
           trends: Object.values(dailyStats).sort((a, b) => a.date.localeCompare(b.date)),
           recentExecutions: executions.slice(0, 10).map(execution => ({
             id: execution.id,
-            status: reverseBddStatusMapping[execution.status],
+            status:
+              reverseBddStatusMapping[execution.status as keyof typeof reverseBddStatusMapping],
             executedAt: execution.executedAt.toISOString(),
             executionDuration: execution.executionDuration,
             errorMessage: execution.errorMessage,
@@ -1095,7 +1129,64 @@ export function createTaskRoutes(logger: ILogger) {
         .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
         .json({ success: false, message: 'Failed to fetch execution analytics' });
     }
-  });
+  };
+}
+
+export function createTasksRoutes(logger: ILogger): express.Router {
+  const router = express.Router();
+
+  // Main task routes
+  router.get('/', validateQuery(GetTasksQuerySchema), createGetAllTasksHandler(logger));
+  router.get('/analytics', createGetTaskAnalyticsHandler(logger));
+  router.get('/:id', validateParams(GetTaskParamsSchema), createGetTaskByIdHandler(logger));
+  router.post('/', validateRequest(CreateTaskRequestSchema), createCreateTaskHandler(logger));
+  router.put(
+    '/:id',
+    validateParams(UpdateTaskParamsSchema),
+    validateRequest(UpdateTaskRequestSchema),
+    createUpdateTaskHandler(logger)
+  );
+  router.delete('/:id', validateParams(DeleteTaskParamsSchema), createDeleteTaskHandler(logger));
+
+  // BDD Scenario routes
+  router.post(
+    '/:id/scenarios',
+    validateParams(CreateScenarioParamsSchema),
+    validateRequest(CreateScenarioRequestSchema),
+    createCreateScenarioHandler(logger)
+  );
+  router.put(
+    '/:id/scenarios/:scenarioId',
+    validateParams(UpdateScenarioParamsSchema),
+    validateRequest(UpdateScenarioRequestSchema),
+    createUpdateScenarioHandler(logger)
+  );
+  router.delete(
+    '/:id/scenarios/:scenarioId',
+    validateParams(DeleteScenarioParamsSchema),
+    createDeleteScenarioHandler(logger)
+  );
+
+  // BDD Scenario Execution History routes
+  router.get(
+    '/:id/scenarios/:scenarioId/executions',
+    validateParams(GetExecutionsParamsSchema),
+    createGetExecutionsHandler(logger)
+  );
+  router.post(
+    '/:id/scenarios/:scenarioId/executions',
+    validateParams(ExecuteScenarioParamsSchema),
+    validateRequest(ExecuteScenarioRequestSchema),
+    createCreateExecutionHandler(logger)
+  );
+  router.get(
+    '/:id/scenarios/:scenarioId/analytics',
+    validateParams(GetScenarioAnalyticsParamsSchema),
+    createGetScenarioAnalyticsHandler(logger)
+  );
 
   return router;
 }
+
+// Default export for backward compatibility
+export default createTasksRoutes;

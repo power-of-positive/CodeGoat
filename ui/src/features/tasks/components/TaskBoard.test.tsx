@@ -51,7 +51,7 @@ const mockTasks: Task[] = [
     executorId: 'claude_code',
     startTime: '2024-01-15T09:00:00.000Z',
     endTime: '2024-01-15T11:00:00.000Z',
-    duration: '2h 0m',
+    duration: 7200000, // 2 hours in milliseconds
   },
 ];
 
@@ -165,8 +165,8 @@ describe('TaskBoard', () => {
       expect(screen.getByText('Kanban')).toBeInTheDocument();
     });
 
-    // Check duration display
-    expect(screen.getByText('Duration: 2h 0m')).toBeInTheDocument();
+    // Check duration display (formatted from milliseconds)
+    expect(screen.getByText('Duration: 2h')).toBeInTheDocument();
   });
 
   it('should show empty state when no tasks in a column', async () => {

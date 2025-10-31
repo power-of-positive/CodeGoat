@@ -32,6 +32,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../../shared/ui/car
 import { Badge } from '../../../shared/ui/badge';
 import { taskApi } from '../../../shared/lib/api';
 import { TaskAnalyticsData, Task } from '../../../shared/types/index';
+import { formatDuration } from '../../../shared/utils/formatDuration';
 
 // Constants
 const DEFAULT_DAYS_PERIOD = 30;
@@ -132,7 +133,7 @@ function TaskRow({ task }: TaskRowProps) {
             </Badge>
           )}
           {task.duration && (
-            <span className="text-xs text-gray-500">Duration: {task.duration}</span>
+            <span className="text-xs text-gray-500">Duration: {formatDuration(task.duration)}</span>
           )}
         </div>
       </div>
@@ -415,7 +416,7 @@ export function TaskAnalytics() {
                       status: 'completed' as const,
                       taskType: 'task' as const,
                       priority: completion.priority,
-                      duration: `${completion.duration}ms`,
+                      duration: completion.duration,
                     }}
                   />
                 ))}

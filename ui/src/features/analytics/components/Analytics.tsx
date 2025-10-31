@@ -91,16 +91,6 @@ export function Analytics() {
   const [selectedAgent, setSelectedAgent] = useState<string>('');
   const { metrics, runs, isLoading, error, refetch } = useAnalyticsData(selectedAgent || undefined);
 
-  // Debug logging
-  console.log('🔍 Analytics component debug:', {
-    metrics: !!metrics,
-    metricsData: metrics,
-    runs: runs?.length || 0,
-    isLoading,
-    error: !!error,
-    errorMessage: error?.message,
-  });
-
   // Extract unique agent IDs from runs for filter options
   const agentIds = React.useMemo(() => {
     return ['claude_cli', 'gemini_cli', 'cursor_cli'];

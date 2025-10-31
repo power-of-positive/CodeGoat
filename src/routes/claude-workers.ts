@@ -6,18 +6,42 @@ import { CommandInterceptor, formatCommandAnalysis } from '../utils/command-inte
 import { WorktreeManager } from '../utils/worktree-manager';
 import { ValidationRunner } from '../../scripts/validate-task';
 import { getDatabaseService } from '../services/database';
-import { TaskStatus } from '@prisma/client';
+import { TaskStatus, TaskStatusType } from '../types/enums';
 import { logManager } from '../utils/log-manager';
 import { ClaudeLogProcessor } from '../utils/claude-log-processor';
+import { validateRequest, validateParams } from '../middleware/validate';
+import {
+  StartWorkerRequestSchema,
+  SendMessageRequestSchema,
+  SendMessageParamsSchema,
+  SendFollowUpRequestSchema,
+  SendFollowUpParamsSchema,
+  MergeWorkerRequestSchema,
+  MergeWorkerParamsSchema,
+  MergeWorktreeRequestSchema,
+  MergeWorktreeParamsSchema,
+  GetWorkerParamsSchema,
+  StopWorkerParamsSchema,
+  GetWorkerLogsParamsSchema,
+  GetLogEntriesParamsSchema,
+  GetEnhancedLogsParamsSchema,
+  GetBlockedCommandsParamsSchema,
+  GetValidationRunsParamsSchema,
+  GetValidationRunParamsSchema,
+  OpenVSCodeParamsSchema,
+  CleanupLogsRequestSchema,
+} from '../shared/schemas';
 // import { WinstonLogger } from '../logger-winston';
 
 const router = express.Router();
 
 // HTTP Status Codes
-const HTTP_BAD_REQUEST = 400;
-const HTTP_NOT_FOUND = 404;
-const HTTP_INTERNAL_SERVER_ERROR = 500;
-const HTTP_OK = 200;
+const HTTP_STATUS = {
+  OK: 200,
+  BAD_REQUEST: 400,
+  NOT_FOUND: 404,
+  INTERNAL_SERVER_ERROR: 500,
+} as const;
 
 // Magic Numbers
 const RANDOM_STRING_LENGTH = 9;
@@ -89,7 +113,7 @@ const activeWorkers = new Map<string, ClaudeWorker>();
  */
 async function updateTaskStatus(
   taskId: string,
-  status: TaskStatus,
+  status: TaskStatusType,
   workerId?: string
 ): Promise<void> {
   try {
@@ -107,7 +131,7 @@ async function updateTaskStatus(
 
     // Prepare update data
     const updateData: {
-      status: TaskStatus;
+      status: TaskStatusType;
       executorId?: string;
       startTime?: Date;
       endTime?: Date;
@@ -474,16 +498,10 @@ function ensureLogDirectory(): string {
 /**
  * Start a Claude Code worker for a specific task
  */
-router.post('/start', async (req, res) => {
+router.post('/start', validateRequest(StartWorkerRequestSchema), async (req, res) => {
   try {
+    // Request is already validated by middleware!
     const { taskId, taskContent, workingDirectory } = req.body;
-
-    if (!taskId || !taskContent) {
-      return res.status(HTTP_BAD_REQUEST).json({
-        success: false,
-        error: 'taskId and taskContent are required',
-      });
-    }
 
     const workerId = generateWorkerId();
     const logDir = ensureLogDirectory();
@@ -505,7 +523,7 @@ router.post('/start', async (req, res) => {
       }
     } catch (error) {
       console.error(`Failed to create worktree for worker ${workerId}:`, error);
-      return res.status(HTTP_INTERNAL_SERVER_ERROR).json({
+      return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
         success: false,
         error: `Failed to create worktree: ${(error as Error).message}`,
       });
@@ -616,6 +634,21 @@ router.post('/start', async (req, res) => {
       for (const line of lines) {
         try {
           const json = JSON.parse(line);
+
+          // Detect task completion: Claude Code outputs {"type":"result","subtype":"success"} when done
+          if (json.type === 'result' && json.subtype === 'success') {
+            console.error(`🎯 Worker ${workerId} detected task completion signal`);
+
+            // Stop the worker process and trigger validation
+            setTimeout(() => {
+              if (worker.process && worker.status === 'running') {
+                console.error(`🛑 Auto-stopping worker ${workerId} after task completion`);
+                worker.process.kill('SIGTERM');
+                // The close handler will run validation automatically
+              }
+            }, 2000); // Wait 2 seconds to ensure all output is captured
+          }
+
           if (worker.claudeLogProcessor) {
             const entries = worker.claudeLogProcessor.toNormalizedEntries(
               json,
@@ -813,17 +846,20 @@ router.post('/start', async (req, res) => {
     res.json({
       success: true,
       data: {
-        workerId,
+        id: workerId,
         taskId,
+        taskContent,
         status: worker.status,
         pid: worker.pid,
         logFile,
         startTime: worker.startTime,
+        blockedCommands: 0,
+        hasPermissionSystem: true,
       },
     });
   } catch (error) {
     console.error('Error starting Claude Code worker:', error);
-    res.status(HTTP_INTERNAL_SERVER_ERROR).json({
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
     });
@@ -863,12 +899,12 @@ router.get('/status', (req, res) => {
 /**
  * Get specific worker status
  */
-router.get('/:workerId', (req, res) => {
+router.get('/:workerId', validateParams(GetWorkerParamsSchema), (req, res) => {
   const { workerId } = req.params;
   const worker = activeWorkers.get(workerId);
 
   if (!worker) {
-    return res.status(HTTP_NOT_FOUND).json({
+    return res.status(HTTP_STATUS.NOT_FOUND).json({
       success: false,
       error: 'Worker not found',
     });
@@ -946,18 +982,18 @@ router.post('/clear', (req, res) => {
 /**
  * Stop a specific worker
  */
-router.post('/:workerId/stop', (req, res) => {
+router.post('/:workerId/stop', validateParams(StopWorkerParamsSchema), async (req, res) => {
   const { workerId } = req.params;
   const worker = activeWorkers.get(workerId);
 
   if (!worker) {
-    return res.status(HTTP_NOT_FOUND).json({
+    return res.status(HTTP_STATUS.NOT_FOUND).json({
       success: false,
       error: 'Worker not found',
     });
   }
 
-  if (worker.process && worker.status === 'running') {
+  if (worker.process && (worker.status === 'running' || worker.status === 'validating')) {
     console.error(`🛑 Stopping Claude Code worker ${workerId}`);
 
     // Write termination reason to log file before killing process
@@ -977,6 +1013,27 @@ router.post('/:workerId/stop', (req, res) => {
     worker.process.kill('SIGTERM');
     worker.status = 'stopped';
     worker.endTime = new Date();
+
+    // Run validation checks after manual stop (async, don't block the response)
+    (async () => {
+      try {
+        console.error(`🔍 Running validation checks for manually stopped worker ${workerId}...`);
+        const validationResult = await runValidationChecks(worker);
+
+        if (validationResult.success) {
+          console.error(`✅ Worker ${workerId} passed validation, marking as completed`);
+          worker.status = 'completed';
+          worker.validationPassed = true;
+        } else {
+          console.error(`❌ Worker ${workerId} failed validation checks`);
+          worker.validationPassed = false;
+          // Keep status as 'stopped' since it was manually stopped
+        }
+      } catch (error) {
+        console.error(`❌ Error running validation for stopped worker ${workerId}:`, error);
+        worker.validationPassed = false;
+      }
+    })();
   }
 
   res.json({
@@ -991,12 +1048,12 @@ router.post('/:workerId/stop', (req, res) => {
 /**
  * Get worker logs
  */
-router.get('/:workerId/logs', (req, res) => {
+router.get('/:workerId/logs', validateParams(GetWorkerLogsParamsSchema), (req, res) => {
   const { workerId } = req.params;
   const worker = activeWorkers.get(workerId);
 
   if (!worker) {
-    return res.status(HTTP_NOT_FOUND).json({
+    return res.status(HTTP_STATUS.NOT_FOUND).json({
       success: false,
       error: 'Worker not found',
     });
@@ -1013,7 +1070,7 @@ router.get('/:workerId/logs', (req, res) => {
       },
     });
   } catch {
-    res.status(HTTP_INTERNAL_SERVER_ERROR).json({
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: 'Failed to read log file',
     });
@@ -1023,85 +1080,83 @@ router.get('/:workerId/logs', (req, res) => {
 /**
  * Send message to a running worker
  */
-router.post('/:workerId/message', (req, res) => {
-  const { workerId } = req.params;
-  const { message } = req.body;
+router.post(
+  '/:workerId/message',
+  validateParams(SendMessageParamsSchema),
+  validateRequest(SendMessageRequestSchema),
+  (req, res) => {
+    const { workerId } = req.params;
+    const { message } = req.body;
 
-  if (!message) {
-    return res.status(HTTP_BAD_REQUEST).json({
-      success: false,
-      error: 'Message content is required',
-    });
-  }
+    const worker = activeWorkers.get(workerId);
 
-  const worker = activeWorkers.get(workerId);
+    if (!worker) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json({
+        success: false,
+        error: 'Worker not found',
+      });
+    }
 
-  if (!worker) {
-    return res.status(HTTP_NOT_FOUND).json({
-      success: false,
-      error: 'Worker not found',
-    });
-  }
+    if (worker.status !== 'running') {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
+        success: false,
+        error: `Cannot send message to worker with status: ${worker.status}`,
+      });
+    }
 
-  if (worker.status !== 'running') {
-    return res.status(HTTP_BAD_REQUEST).json({
-      success: false,
-      error: `Cannot send message to worker with status: ${worker.status}`,
-    });
-  }
+    if (!worker.process?.stdin) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
+        success: false,
+        error: 'Worker process is not available for input',
+      });
+    }
 
-  if (!worker.process?.stdin) {
-    return res.status(HTTP_BAD_REQUEST).json({
-      success: false,
-      error: 'Worker process is not available for input',
-    });
-  }
+    try {
+      // Log the message being sent
+      const timestamp = new Date().toISOString();
+      const logEntry = `[${timestamp}] [USER MESSAGE] ${message}\n`;
+      fs.appendFileSync(worker.logFile, logEntry);
 
-  try {
-    // Log the message being sent
-    const timestamp = new Date().toISOString();
-    const logEntry = `[${timestamp}] [USER MESSAGE] ${message}\n`;
-    fs.appendFileSync(worker.logFile, logEntry);
-
-    // Add to structured entries
-    worker.structuredEntries.push({
-      timestamp,
-      type: 'UserMessage',
-      content: message,
-      metadata: { source: 'api' },
-    });
-
-    // Send message to worker process via stdin
-    worker.process.stdin.write(`${message}\n`);
-
-    res.json({
-      success: true,
-      data: {
-        workerId,
-        message,
+      // Add to structured entries
+      worker.structuredEntries.push({
         timestamp,
-        status: 'sent',
-      },
-    });
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        type: 'UserMessage',
+        content: message,
+        metadata: { source: 'api' },
+      });
 
-    res.status(HTTP_INTERNAL_SERVER_ERROR).json({
-      success: false,
-      error: `Failed to send message: ${errorMessage}`,
-    });
+      // Send message to worker process via stdin
+      worker.process.stdin.write(`${message}\n`);
+
+      res.json({
+        success: true,
+        data: {
+          workerId,
+          message,
+          timestamp,
+          status: 'sent',
+        },
+      });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        error: `Failed to send message: ${errorMessage}`,
+      });
+    }
   }
-});
+);
 
 /**
  * Get structured entries from worker
  */
-router.get('/:workerId/entries', (req, res) => {
+router.get('/:workerId/entries', validateParams(GetLogEntriesParamsSchema), (req, res) => {
   const { workerId } = req.params;
   const worker = activeWorkers.get(workerId);
 
   if (!worker) {
-    return res.status(HTTP_NOT_FOUND).json({
+    return res.status(HTTP_STATUS.NOT_FOUND).json({
       success: false,
       error: 'Worker not found',
     });
@@ -1158,7 +1213,7 @@ router.post('/cleanup-worktrees', async (req, res) => {
     });
   } catch (error) {
     console.error('Error cleaning up worktrees:', error);
-    res.status(HTTP_INTERNAL_SERVER_ERROR).json({
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: 'Failed to cleanup worktrees',
     });
@@ -1168,110 +1223,115 @@ router.post('/cleanup-worktrees', async (req, res) => {
 /**
  * Merge worktree changes back to main branch
  */
-router.post('/:workerId/merge-worktree', async (req, res) => {
-  const { workerId } = req.params;
-  const worker = activeWorkers.get(workerId);
+router.post(
+  '/:workerId/merge-worktree',
+  validateParams(MergeWorktreeParamsSchema),
+  validateRequest(MergeWorktreeRequestSchema),
+  async (req, res) => {
+    const { workerId } = req.params;
+    const worker = activeWorkers.get(workerId);
 
-  if (!worker) {
-    return res.status(HTTP_NOT_FOUND).json({
-      success: false,
-      error: 'Worker not found',
-    });
-  }
-
-  if (!worker.worktreePath) {
-    return res.status(HTTP_BAD_REQUEST).json({
-      success: false,
-      error: 'No worktree associated with this worker',
-    });
-  }
-
-  try {
-    const { exec } = await import('child_process');
-    const util = await import('util');
-    const execAsync = util.promisify(exec);
-
-    // Check if there are any changes to commit
-    const { stdout: statusOutput } = await execAsync('git status --porcelain', {
-      cwd: worker.worktreePath,
-    });
-
-    if (statusOutput.trim()) {
-      // Commit changes in worktree
-      await execAsync('git add .', { cwd: worker.worktreePath });
-      await execAsync(`git commit -m "Task ${worker.taskId}: Changes from worker ${workerId}"`, {
-        cwd: worker.worktreePath,
+    if (!worker) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json({
+        success: false,
+        error: 'Worker not found',
       });
     }
 
-    // Get current branch in worktree
-    const { stdout: currentBranch } = await execAsync('git branch --show-current', {
-      cwd: worker.worktreePath,
-    });
-
-    const branchName = currentBranch.trim() || 'HEAD';
-
-    // Switch to main branch and merge
-    await execAsync('git checkout main', { cwd: process.cwd() });
-    await execAsync(`git merge ${branchName}`, { cwd: process.cwd() });
-
-    // Mark task as completed after successful merge (only if validation passed)
-    if (worker.validationPassed === true) {
-      try {
-        await updateTaskStatus(worker.taskId, TaskStatus.COMPLETED);
-        console.error(`✅ Task ${worker.taskId} marked as completed after successful merge`);
-      } catch {
-        // Task completion error logging disabled
-      }
-    } else {
-      // Task validation warning disabled
+    if (!worker.worktreePath) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
+        success: false,
+        error: 'No worktree associated with this worker',
+      });
     }
 
-    // Clean up worktree after successful merge
-    if (worker.worktreeManager && worker.worktreePath) {
-      try {
-        await worker.worktreeManager.removeWorktree(worker.worktreePath);
-        console.error(`🧹 Cleaned up worktree ${worker.worktreePath} after successful merge`);
-      } catch {
-        // Worktree cleanup error logging disabled
-      }
-    }
+    try {
+      const { exec } = await import('child_process');
+      const util = await import('util');
+      const execAsync = util.promisify(exec);
 
-    res.json({
-      success: true,
-      data: {
-        message: `Successfully merged changes from worktree ${workerId}`,
-        workerId,
-        mergedBranch: branchName,
-        hasChanges: !!statusOutput.trim(),
-        worktreeCleaned: true,
-      },
-    });
-  } catch (error) {
-    console.error(`Error merging worktree for worker ${workerId}:`, error);
-    res.status(HTTP_INTERNAL_SERVER_ERROR).json({
-      success: false,
-      error: `Failed to merge worktree: ${(error as Error).message}`,
-    });
+      // Check if there are any changes to commit
+      const { stdout: statusOutput } = await execAsync('git status --porcelain', {
+        cwd: worker.worktreePath,
+      });
+
+      if (statusOutput.trim()) {
+        // Commit changes in worktree
+        await execAsync('git add .', { cwd: worker.worktreePath });
+        await execAsync(`git commit -m "Task ${worker.taskId}: Changes from worker ${workerId}"`, {
+          cwd: worker.worktreePath,
+        });
+      }
+
+      // Get current branch in worktree
+      const { stdout: currentBranch } = await execAsync('git branch --show-current', {
+        cwd: worker.worktreePath,
+      });
+
+      const branchName = currentBranch.trim() || 'HEAD';
+
+      // Switch to main branch and merge
+      await execAsync('git checkout main', { cwd: process.cwd() });
+      await execAsync(`git merge ${branchName}`, { cwd: process.cwd() });
+
+      // Mark task as completed after successful merge (only if validation passed)
+      if (worker.validationPassed === true) {
+        try {
+          await updateTaskStatus(worker.taskId, TaskStatus.COMPLETED);
+          console.error(`✅ Task ${worker.taskId} marked as completed after successful merge`);
+        } catch {
+          // Task completion error logging disabled
+        }
+      } else {
+        // Task validation warning disabled
+      }
+
+      // Clean up worktree after successful merge
+      if (worker.worktreeManager && worker.worktreePath) {
+        try {
+          await worker.worktreeManager.removeWorktree(worker.worktreePath);
+          console.error(`🧹 Cleaned up worktree ${worker.worktreePath} after successful merge`);
+        } catch {
+          // Worktree cleanup error logging disabled
+        }
+      }
+
+      res.json({
+        success: true,
+        data: {
+          message: `Successfully merged changes from worktree ${workerId}`,
+          workerId,
+          mergedBranch: branchName,
+          hasChanges: !!statusOutput.trim(),
+          worktreeCleaned: true,
+        },
+      });
+    } catch (error) {
+      console.error(`Error merging worktree for worker ${workerId}:`, error);
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        error: `Failed to merge worktree: ${(error as Error).message}`,
+      });
+    }
   }
-});
+);
 
 /**
  * Open worktree in VSCode
  */
-router.post('/:workerId/open-vscode', async (req, res) => {
+router.post('/:workerId/open-vscode', validateParams(OpenVSCodeParamsSchema), async (req, res) => {
   const { workerId } = req.params;
   const worker = activeWorkers.get(workerId);
 
   if (!worker) {
-    return res.status(HTTP_NOT_FOUND).json({
+    return res.status(HTTP_STATUS.NOT_FOUND).json({
       success: false,
       error: 'Worker not found',
     });
   }
 
   if (!worker.worktreePath) {
-    return res.status(HTTP_BAD_REQUEST).json({
+    return res.status(HTTP_STATUS.BAD_REQUEST).json({
       success: false,
       error: 'No worktree associated with this worker',
     });
@@ -1284,7 +1344,7 @@ router.post('/:workerId/open-vscode', async (req, res) => {
 
     // Check if the worktree directory exists
     if (!fs.existsSync(worker.worktreePath)) {
-      return res.status(HTTP_NOT_FOUND).json({
+      return res.status(HTTP_STATUS.NOT_FOUND).json({
         success: false,
         error: 'Worktree directory not found',
       });
@@ -1309,14 +1369,14 @@ router.post('/:workerId/open-vscode', async (req, res) => {
     // Provide helpful error message if 'code' command not found
     const errorMessage = (error as Error).message;
     if (errorMessage.includes('command not found') || errorMessage.includes('not recognized')) {
-      return res.status(HTTP_INTERNAL_SERVER_ERROR).json({
+      return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
         success: false,
         error:
           'VSCode command line tools not installed. Install VSCode and enable shell command integration.',
       });
     }
 
-    res.status(HTTP_INTERNAL_SERVER_ERROR).json({
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: `Failed to open VSCode: ${errorMessage}`,
     });
@@ -1326,100 +1386,112 @@ router.post('/:workerId/open-vscode', async (req, res) => {
 /**
  * Get blocked commands for a specific worker
  */
-router.get('/:workerId/blocked-commands', (req, res) => {
-  const { workerId } = req.params;
-  const worker = activeWorkers.get(workerId);
+router.get(
+  '/:workerId/blocked-commands',
+  validateParams(GetBlockedCommandsParamsSchema),
+  (req, res) => {
+    const { workerId } = req.params;
+    const worker = activeWorkers.get(workerId);
 
-  if (!worker) {
-    return res.status(HTTP_NOT_FOUND).json({
-      success: false,
-      error: 'Worker not found',
+    if (!worker) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json({
+        success: false,
+        error: 'Worker not found',
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        workerId,
+        blockedCommands: worker.blockedCommands,
+        blockedCommandsList: worker.blockedCommandsList,
+        hasPermissionSystem: !!worker.interceptor,
+      },
     });
   }
-
-  res.json({
-    success: true,
-    data: {
-      workerId,
-      blockedCommands: worker.blockedCommands,
-      blockedCommandsList: worker.blockedCommandsList,
-      hasPermissionSystem: !!worker.interceptor,
-    },
-  });
-});
+);
 
 /**
  * Get validation runs for a specific worker
  */
-router.get('/:workerId/validation-runs', (req, res) => {
-  const { workerId } = req.params;
-  const worker = activeWorkers.get(workerId);
+router.get(
+  '/:workerId/validation-runs',
+  validateParams(GetValidationRunsParamsSchema),
+  (req, res) => {
+    const { workerId } = req.params;
+    const worker = activeWorkers.get(workerId);
 
-  if (!worker) {
-    return res.status(HTTP_NOT_FOUND).json({
-      success: false,
-      error: 'Worker not found',
+    if (!worker) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json({
+        success: false,
+        error: 'Worker not found',
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        workerId,
+        validationRuns: worker.validationRuns || [],
+        totalRuns: worker.validationRuns?.length || 0,
+        lastRun:
+          worker.validationRuns?.length > 0
+            ? worker.validationRuns[worker.validationRuns.length - 1]
+            : null,
+      },
     });
   }
-
-  res.json({
-    success: true,
-    data: {
-      workerId,
-      validationRuns: worker.validationRuns || [],
-      totalRuns: worker.validationRuns?.length || 0,
-      lastRun:
-        worker.validationRuns?.length > 0
-          ? worker.validationRuns[worker.validationRuns.length - 1]
-          : null,
-    },
-  });
-});
+);
 
 /**
  * Get specific validation run details
  */
-router.get('/:workerId/validation-runs/:runId', (req, res) => {
-  const { workerId, runId } = req.params;
-  const worker = activeWorkers.get(workerId);
+router.get(
+  '/:workerId/validation-runs/:runId',
+  validateParams(GetValidationRunParamsSchema),
+  (req, res) => {
+    const { workerId, runId } = req.params;
+    const worker = activeWorkers.get(workerId);
 
-  if (!worker) {
-    return res.status(HTTP_NOT_FOUND).json({
-      success: false,
-      error: 'Worker not found',
-    });
-  }
-
-  const validationRun = worker.validationRuns?.find(run => run.id === runId);
-
-  if (!validationRun) {
-    return res.status(HTTP_NOT_FOUND).json({
-      success: false,
-      error: 'Validation run not found',
-    });
-  }
-
-  // Try to read metrics file if available
-  let metrics = null;
-  if (validationRun.metricsFile) {
-    try {
-      const metricsContent = fs.readFileSync(validationRun.metricsFile, 'utf-8');
-      metrics = JSON.parse(metricsContent);
-    } catch {
-      // Metrics file read warning disabled
+    if (!worker) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json({
+        success: false,
+        error: 'Worker not found',
+      });
     }
-  }
 
-  res.json({
-    success: true,
-    data: {
-      workerId,
-      runId,
-      validationRun,
-      metrics,
-    },
-  });
-});
+    const validationRun = worker.validationRuns?.find(run => run.id === runId);
+
+    if (!validationRun) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json({
+        success: false,
+        error: 'Validation run not found',
+      });
+    }
+
+    // Try to read metrics file if available
+    let metrics = null;
+    if (validationRun.metricsFile) {
+      try {
+        const metricsContent = fs.readFileSync(validationRun.metricsFile, 'utf-8');
+        metrics = JSON.parse(metricsContent);
+      } catch {
+        // Metrics file read warning disabled
+      }
+    }
+
+    res.json({
+      success: true,
+      data: {
+        workerId,
+        runId,
+        validationRun,
+        metrics,
+      },
+    });
+  }
+);
 
 /**
  * Get log statistics
@@ -1433,7 +1505,7 @@ router.get('/logs/stats', async (req, res) => {
     });
   } catch (error) {
     console.error('Error getting log stats:', error);
-    res.status(HTTP_INTERNAL_SERVER_ERROR).json({
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: 'Failed to get log statistics',
     });
@@ -1443,7 +1515,7 @@ router.get('/logs/stats', async (req, res) => {
 /**
  * Clean up old logs
  */
-router.post('/logs/cleanup', async (req, res) => {
+router.post('/logs/cleanup', validateRequest(CleanupLogsRequestSchema), async (req, res) => {
   try {
     console.error('🧹 Starting manual log cleanup...');
     await logManager.organizeLogs();
@@ -1458,7 +1530,7 @@ router.post('/logs/cleanup', async (req, res) => {
     });
   } catch (error) {
     console.error('Error cleaning up logs:', error);
-    res.status(HTTP_INTERNAL_SERVER_ERROR).json({
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
       success: false,
       error: 'Failed to cleanup logs',
     });
@@ -1473,14 +1545,14 @@ router.get('/:workerId/enhanced-logs', (req, res) => {
   const worker = activeWorkers.get(workerId);
 
   if (!worker) {
-    return res.status(HTTP_NOT_FOUND).json({
+    return res.status(HTTP_STATUS.NOT_FOUND).json({
       success: false,
       error: 'Worker not found',
     });
   }
 
   // Set up Server-Sent Events
-  res.writeHead(HTTP_OK, {
+  res.writeHead(HTTP_STATUS.OK, {
     'Content-Type': 'text/event-stream',
     'Cache-Control': 'no-cache',
     Connection: 'keep-alive',
@@ -1591,178 +1663,188 @@ router.get('/:workerId/enhanced-logs', (req, res) => {
 /**
  * Send follow-up comment to a running worker
  */
-router.post('/:workerId/follow-up', (req, res) => {
-  const { workerId } = req.params;
-  const { prompt } = req.body;
+router.post(
+  '/:workerId/follow-up',
+  validateParams(SendFollowUpParamsSchema),
+  validateRequest(SendFollowUpRequestSchema),
+  (req, res) => {
+    const { workerId } = req.params;
+    const { prompt } = req.body;
 
-  if (!prompt || typeof prompt !== 'string') {
-    return res.status(HTTP_BAD_REQUEST).json({
-      success: false,
-      error: 'Prompt is required',
-    });
-  }
+    if (!prompt || typeof prompt !== 'string') {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
+        success: false,
+        error: 'Prompt is required',
+      });
+    }
 
-  const worker = activeWorkers.get(workerId);
+    const worker = activeWorkers.get(workerId);
 
-  if (!worker) {
-    return res.status(HTTP_NOT_FOUND).json({
-      success: false,
-      error: 'Worker not found',
-    });
-  }
+    if (!worker) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json({
+        success: false,
+        error: 'Worker not found',
+      });
+    }
 
-  if (worker.status !== 'running') {
-    return res.status(HTTP_BAD_REQUEST).json({
-      success: false,
-      error: 'Worker is not running',
-    });
-  }
+    if (worker.status !== 'running') {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
+        success: false,
+        error: 'Worker is not running',
+      });
+    }
 
-  if (!worker.process?.stdin) {
-    return res.status(HTTP_BAD_REQUEST).json({
-      success: false,
-      error: 'Worker process is not available for input',
-    });
-  }
+    if (!worker.process?.stdin) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
+        success: false,
+        error: 'Worker process is not available for input',
+      });
+    }
 
-  try {
-    // Send the prompt to the Claude process stdin
-    worker.process.stdin.write(prompt + '\n');
+    try {
+      // Send the prompt to the Claude process stdin
+      worker.process.stdin.write(prompt + '\n');
 
-    // Log the follow-up action
-    const logEntry = `[FOLLOW-UP] User sent prompt: ${prompt.substring(0, STRING_TRUNCATE_LENGTH)}${prompt.length > STRING_TRUNCATE_LENGTH ? '...' : ''}`;
-    fs.appendFileSync(worker.logFile, `\n${new Date().toISOString()} ${logEntry}\n`);
+      // Log the follow-up action
+      const logEntry = `[FOLLOW-UP] User sent prompt: ${prompt.substring(0, STRING_TRUNCATE_LENGTH)}${prompt.length > STRING_TRUNCATE_LENGTH ? '...' : ''}`;
+      fs.appendFileSync(worker.logFile, `\n${new Date().toISOString()} ${logEntry}\n`);
 
-    // Add to structured entries
-    worker.structuredEntries.push({
-      type: 'follow_up',
-      content: prompt,
-      timestamp: new Date().toISOString(),
-      metadata: {
-        workerId,
-        taskId: worker.taskId,
-      },
-    });
-
-    res.json({
-      success: true,
-      data: {
-        message: 'Follow-up prompt sent successfully',
-        workerId,
+      // Add to structured entries
+      worker.structuredEntries.push({
+        type: 'follow_up',
+        content: prompt,
         timestamp: new Date().toISOString(),
-      },
-    });
-  } catch (error) {
-    console.error('Failed to send follow-up:', error);
-    res.status(HTTP_INTERNAL_SERVER_ERROR).json({
-      success: false,
-      error: 'Failed to send follow-up prompt',
-    });
+        metadata: {
+          workerId,
+          taskId: worker.taskId,
+        },
+      });
+
+      res.json({
+        success: true,
+        data: {
+          message: 'Follow-up prompt sent successfully',
+          workerId,
+          timestamp: new Date().toISOString(),
+        },
+      });
+    } catch (error) {
+      console.error('Failed to send follow-up:', error);
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        error: 'Failed to send follow-up prompt',
+      });
+    }
   }
-});
+);
 
 /**
  * Merge changes from worker's worktree
  */
-router.post('/:workerId/merge', async (req, res) => {
-  const { workerId } = req.params;
-  const { commitMessage } = req.body;
+router.post(
+  '/:workerId/merge',
+  validateParams(MergeWorkerParamsSchema),
+  validateRequest(MergeWorkerRequestSchema),
+  async (req, res) => {
+    const { workerId } = req.params;
+    const { commitMessage } = req.body;
 
-  const worker = activeWorkers.get(workerId);
+    const worker = activeWorkers.get(workerId);
 
-  if (!worker) {
-    return res.status(HTTP_NOT_FOUND).json({
-      success: false,
-      error: 'Worker not found',
-    });
-  }
-
-  if (!worker.worktreeManager || !worker.worktreePath) {
-    return res.status(HTTP_BAD_REQUEST).json({
-      success: false,
-      error: 'Worker does not have a worktree',
-    });
-  }
-
-  try {
-    // Get the current branch from worktree
-    const { execSync } = await import('child_process');
-    const worktreePath = worker.worktreePath;
-
-    // Check if there are changes to commit
-    const status = execSync('git status --porcelain', {
-      cwd: worktreePath,
-      encoding: 'utf8',
-    });
-
-    if (!status.trim()) {
-      return res.status(HTTP_BAD_REQUEST).json({
+    if (!worker) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json({
         success: false,
-        error: 'No changes to commit',
+        error: 'Worker not found',
       });
     }
 
-    // Stage all changes
-    execSync('git add -A', { cwd: worktreePath });
+    if (!worker.worktreeManager || !worker.worktreePath) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
+        success: false,
+        error: 'Worker does not have a worktree',
+      });
+    }
 
-    // Create commit message
-    const defaultMessage = `Task ${worker.taskId}: ${worker.taskContent.substring(0, TASK_CONTENT_SUBSTRING_LENGTH)}...`;
-    const finalMessage = commitMessage ?? defaultMessage;
+    try {
+      // Get the current branch from worktree
+      const { execSync } = await import('child_process');
+      const worktreePath = worker.worktreePath;
 
-    // Commit changes
-    execSync(`git commit -m "${finalMessage}"`, { cwd: worktreePath });
+      // Check if there are changes to commit
+      const status = execSync('git status --porcelain', {
+        cwd: worktreePath,
+        encoding: 'utf8',
+      });
 
-    // Get commit hash
-    const commitHash = execSync('git rev-parse HEAD', {
-      cwd: worktreePath,
-      encoding: 'utf8',
-    }).trim();
+      if (!status.trim()) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+          success: false,
+          error: 'No changes to commit',
+        });
+      }
 
-    // Merge to main branch (or current branch)
-    const currentBranch = execSync('git branch --show-current', {
-      cwd: path.dirname(worktreePath),
-      encoding: 'utf8',
-    }).trim();
+      // Stage all changes
+      execSync('git add -A', { cwd: worktreePath });
 
-    // Cherry-pick the commit to main branch
-    execSync(`git cherry-pick ${commitHash}`, {
-      cwd: path.dirname(worktreePath),
-    });
+      // Create commit message
+      const defaultMessage = `Task ${worker.taskId}: ${worker.taskContent.substring(0, TASK_CONTENT_SUBSTRING_LENGTH)}...`;
+      const finalMessage = commitMessage ?? defaultMessage;
 
-    // Log the merge action
-    const logEntry = `[MERGE] Changes merged to ${currentBranch} branch with commit ${commitHash}`;
-    fs.appendFileSync(worker.logFile, `\n${new Date().toISOString()} ${logEntry}\n`);
+      // Commit changes
+      execSync(`git commit -m "${finalMessage}"`, { cwd: worktreePath });
 
-    // Add to structured entries
-    worker.structuredEntries.push({
-      type: 'merge',
-      content: finalMessage,
-      timestamp: new Date().toISOString(),
-      metadata: {
-        workerId,
-        taskId: worker.taskId,
-        commitHash,
-        targetBranch: currentBranch,
-      },
-    });
+      // Get commit hash
+      const commitHash = execSync('git rev-parse HEAD', {
+        cwd: worktreePath,
+        encoding: 'utf8',
+      }).trim();
 
-    res.json({
-      success: true,
-      data: {
-        message: 'Changes merged successfully',
-        commitHash,
-        targetBranch: currentBranch,
-        commitMessage: finalMessage,
-      },
-    });
-  } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error('Failed to merge changes:', error);
-    res.status(HTTP_INTERNAL_SERVER_ERROR).json({
-      success: false,
-      error: `Failed to merge changes: ${errorMessage}`,
-    });
+      // Merge to main branch (or current branch)
+      const currentBranch = execSync('git branch --show-current', {
+        cwd: path.dirname(worktreePath),
+        encoding: 'utf8',
+      }).trim();
+
+      // Cherry-pick the commit to main branch
+      execSync(`git cherry-pick ${commitHash}`, {
+        cwd: path.dirname(worktreePath),
+      });
+
+      // Log the merge action
+      const logEntry = `[MERGE] Changes merged to ${currentBranch} branch with commit ${commitHash}`;
+      fs.appendFileSync(worker.logFile, `\n${new Date().toISOString()} ${logEntry}\n`);
+
+      // Add to structured entries
+      worker.structuredEntries.push({
+        type: 'merge',
+        content: finalMessage,
+        timestamp: new Date().toISOString(),
+        metadata: {
+          workerId,
+          taskId: worker.taskId,
+          commitHash,
+          targetBranch: currentBranch,
+        },
+      });
+
+      res.json({
+        success: true,
+        data: {
+          message: 'Changes merged successfully',
+          commitHash,
+          targetBranch: currentBranch,
+          commitMessage: finalMessage,
+        },
+      });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Failed to merge changes:', error);
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        error: `Failed to merge changes: ${errorMessage}`,
+      });
+    }
   }
-});
+);
 
 export default router;

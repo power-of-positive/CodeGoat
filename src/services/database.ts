@@ -7,7 +7,7 @@ export function createDatabaseService(_logger: WinstonLogger) {
   if (!prisma) {
     // Configure Prisma with appropriate timeout for test environment
     const prismaOptions: any = {};
-    
+
     if (process.env.NODE_ENV === 'test') {
       prismaOptions.datasources = {
         db: {
@@ -17,7 +17,7 @@ export function createDatabaseService(_logger: WinstonLogger) {
       // Set connection pool timeout for test environment
       prismaOptions.log = ['error', 'warn'];
     }
-    
+
     prisma = new PrismaClient(prismaOptions);
 
     // Handle graceful shutdown

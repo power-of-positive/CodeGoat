@@ -1,5 +1,11 @@
 import { apiRequest } from './api-base';
 import { Worker, ValidationRun, BlockedCommand } from '../types/index';
+import type {
+  StartWorkerRequest,
+  SendMessageRequest,
+  SendFollowUpRequest,
+  MergeWorkerRequest,
+} from '../schemas';
 
 interface WorkersStatusResponse {
   workers: Worker[];
@@ -9,18 +15,14 @@ interface WorkersStatusResponse {
 }
 
 export const claudeWorkersApi = {
-  async startWorker(taskId?: string, workingDirectory?: string): Promise<Worker> {
-    const body: Record<string, string> = {};
-    if (taskId) {
-      body.taskId = taskId;
-    }
-    if (workingDirectory) {
-      body.workingDirectory = workingDirectory;
-    }
-
+  /**
+   * Start a new Claude Code worker
+   * Now type-safe with Zod schema validation!
+   */
+  async startWorker(request: StartWorkerRequest): Promise<Worker> {
     return apiRequest<Worker>('/claude-workers/start', {
       method: 'POST',
-      body,
+      body: request,
     });
   },
 
@@ -48,7 +50,7 @@ export const claudeWorkersApi = {
   },
 
   async getWorkerStatus(workerId: string): Promise<Worker> {
-    return apiRequest<Worker>(`/claude-workers/${workerId}/status`);
+    return apiRequest<Worker>(`/claude-workers/${workerId}`);
   },
 
   async stopWorker(workerId: string): Promise<void> {
@@ -87,7 +89,7 @@ export const claudeWorkersApi = {
   },
 
   async openVSCode(workerId: string): Promise<void> {
-    await apiRequest<void>(`/claude-workers/${workerId}/vscode`, {
+    await apiRequest<void>(`/claude-workers/${workerId}/open-vscode`, {
       method: 'POST',
     });
   },
@@ -135,7 +137,7 @@ export const claudeWorkersApi = {
       squash?: boolean;
     }
   ): Promise<void> {
-    await apiRequest<void>(`/claude-workers/${workerId}/merge-changes`, {
+    await apiRequest<void>(`/claude-workers/${workerId}/merge`, {
       method: 'POST',
       body: options || {},
     });

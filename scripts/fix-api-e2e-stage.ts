@@ -53,7 +53,7 @@ async function fixApiE2eStage() {
 }
 
 // Run the script
-fixApiE2eStage().catch((error) => {
+fixApiE2eStage().catch(error => {
   console.error('Script failed:', error);
   process.exit(1);
 });

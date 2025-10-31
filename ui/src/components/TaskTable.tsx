@@ -12,6 +12,7 @@ import { Card, CardContent } from '../shared/ui/card';
 import { Badge } from '../shared/ui/badge';
 import { Button } from '../shared/ui/button';
 import { Task } from '../shared/types/index';
+import { formatDuration } from '../shared/utils/formatDuration';
 
 interface SortConfig {
   field: keyof Task | 'createdAt';
@@ -41,6 +42,11 @@ const statusConfig = {
     color: 'bg-gray-100 text-gray-800 border-gray-300',
     icon: AlertCircle,
     label: 'Pending',
+  },
+  todo: {
+    color: 'bg-gray-100 text-gray-800 border-gray-300',
+    icon: AlertCircle,
+    label: 'Todo',
   },
   in_progress: {
     color: 'bg-blue-100 text-blue-800 border-blue-300',
@@ -145,7 +151,9 @@ export function TaskTable({
             </thead>
             <tbody className="divide-y divide-gray-200">
               {tasks.map((task) => {
-                const StatusIcon = statusConfig[task.status].icon;
+                const statusInfo =
+                  statusConfig[task.status] || statusConfig.pending;
+                const StatusIcon = statusInfo.icon;
                 return (
                   <tr
                     key={task.id}
@@ -176,10 +184,10 @@ export function TaskTable({
                     </td>
                     <td className="p-3">
                       <Badge
-                        className={`${statusConfig[task.status].color} flex items-center gap-1 w-fit`}
+                        className={`${statusInfo.color} flex items-center gap-1 w-fit`}
                       >
                         <StatusIcon className="w-3 h-3" />
-                        {statusConfig[task.status].label}
+                        {statusInfo.label}
                       </Badge>
                     </td>
                     <td className="p-3">
@@ -189,7 +197,7 @@ export function TaskTable({
                     </td>
                     <td className="p-3">
                       <span className="text-sm text-gray-600">
-                        {task.duration ? task.duration : 'N/A'}
+                        {formatDuration(task.duration)}
                       </span>
                     </td>
                     <td className="p-3">

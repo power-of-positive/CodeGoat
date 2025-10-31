@@ -1,4 +1,5 @@
-import { PrismaClient, BDDScenarioStatus, Task, BDDScenario } from '@prisma/client';
+import { PrismaClient, Task, BDDScenario } from '@prisma/client';
+import { BDDScenarioStatus } from '../../types/enums';
 import { BDDScenarioService, BDDScenarioInput } from '../bdd-scenario-service';
 import * as fs from 'fs/promises';
 import * as path from 'path';

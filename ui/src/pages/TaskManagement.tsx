@@ -229,7 +229,12 @@ export function TaskManagement() {
   const handleStartWorker = async (task: Task) => {
     if (window.confirm(`Start Claude Code worker for task: "${task.content}"?`)) {
       try {
-        await claudeWorkersApi.startWorker(task.id, process.cwd());
+        // Type-safe API call with schema validation!
+        await claudeWorkersApi.startWorker({
+          taskId: task.id,
+          taskContent: task.content,
+          // workingDirectory is optional
+        });
         queryClient.invalidateQueries({ queryKey: ['workers'] });
         alert(`✅ Started Claude Code worker!\nTask: ${task.id}\nContent: "${task.content}"`);
       } catch (error) {
