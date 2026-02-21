@@ -467,7 +467,7 @@ test.describe('BDD Comprehensive Scenarios E2E Tests', () => {
         await expect(page.locator('.execution-result').first()).toBeVisible({ timeout: 15000 });
       } else {
         // If no execute buttons, just verify scenarios exist and have duration data
-        await expect(page.locator('[data-testid="scenario-card"]')).toBeVisible();
+        await expect(page.locator('[data-testid="scenario-card"]').first()).toBeVisible();
       }
 
       // Should show execution duration

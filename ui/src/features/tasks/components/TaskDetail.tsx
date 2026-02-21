@@ -1,7 +1,17 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, CheckCircle, Play, AlertCircle, Activity, GitMerge, Edit } from 'lucide-react';
+import {
+  ArrowLeft,
+  CheckCircle,
+  Play,
+  AlertCircle,
+  Activity,
+  GitMerge,
+  Edit,
+  RefreshCw,
+  Server,
+} from 'lucide-react';
 import { Button } from '../../../shared/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../shared/ui/card';
 import { Badge } from '../../../shared/ui/badge';
@@ -13,6 +23,9 @@ import { ValidationRunCard } from '../../validation/components/ValidationRunCard
 import { TaskLogs } from './TaskLogs';
 import { WorkerInfo } from '../../workers/components/WorkerInfo';
 import { formatDuration } from '../../../shared/utils/formatDuration';
+import { DiffViewer } from '../../workers/components/DiffViewer';
+
+type WorkerDiff = Awaited<ReturnType<typeof claudeWorkersApi.getWorkerDiff>>;
 
 // Priority colors
 const priorityColors = {
@@ -92,14 +105,14 @@ function useTaskData(taskId: string | undefined) {
 function useMergeChanges(taskId: string | undefined, task: Task | undefined) {
   const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: async () => {
+  return useMutation<void, Error, string | undefined>({
+    mutationFn: async (commitMessage?: string) => {
       if (!task?.executorId) {
         throw new Error('No executor ID available for this task');
       }
-      const commitMessage = `Task ${taskId}: Merge changes from task execution`;
-      const response = await claudeWorkersApi.mergeWorktree(task.executorId, commitMessage);
-      return response;
+      const defaultMessage = `Task ${taskId}: Merge changes from task execution`;
+      const message = commitMessage || defaultMessage;
+      await claudeWorkersApi.mergeWorktree(task.executorId, message);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['task', taskId] });
@@ -113,18 +126,64 @@ function TaskHeader({
   task,
   mergeChangesMutation,
   completeTaskMutation,
+  startDevServerMutation,
 }: {
   navigate: (path: string) => void;
   task: Task;
-  mergeChangesMutation: {
-    mutate: () => void;
-    isPending: boolean;
-  };
+  mergeChangesMutation: ReturnType<typeof useMergeChanges>;
   completeTaskMutation: {
     mutate: () => void;
     isPending: boolean;
   };
+  startDevServerMutation: {
+    mutate: () => void;
+    isPending: boolean;
+  };
 }) {
+  const [isAutoMerging, setIsAutoMerging] = useState(false);
+
+  const defaultCommitMessage = `Task ${task.id}: ${task.content.substring(0, 50)}...`;
+
+  const handleManualMerge = () => {
+    const commitMessage = prompt('Enter a commit message (optional):', defaultCommitMessage);
+    if (commitMessage !== null) {
+      mergeChangesMutation.mutate(commitMessage || undefined);
+    }
+  };
+
+  const handleAutoMerge = async () => {
+    if (!task.executorId) {
+      alert('No worker associated with this task to merge changes from.');
+      return;
+    }
+
+    try {
+      setIsAutoMerging(true);
+      const result = await claudeWorkersApi.generateCommitMessage(task.executorId);
+      const commitMessage = prompt(
+        'Generated commit message (edit if needed):',
+        result.commitMessage
+      );
+
+      if (commitMessage === null) {
+        return;
+      }
+
+      await mergeChangesMutation.mutateAsync(commitMessage || undefined);
+    } catch (error) {
+      console.error('Failed to auto-generate commit message:', error);
+      const fallbackCommit = prompt(
+        'Enter a commit message (optional):',
+        defaultCommitMessage
+      );
+      if (fallbackCommit !== null) {
+        await mergeChangesMutation.mutateAsync(fallbackCommit || undefined);
+      }
+    } finally {
+      setIsAutoMerging(false);
+    }
+  };
+
   return (
     <div className="flex items-center justify-between">
       <div className="flex items-center gap-3">
@@ -159,14 +218,39 @@ function TaskHeader({
           </Button>
         )}
         {task.executorId && task.status === 'completed' && (
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={handleAutoMerge}
+              disabled={mergeChangesMutation.isPending || isAutoMerging}
+              className="flex items-center gap-2"
+              variant="outline"
+            >
+              <GitMerge className="w-4 h-4" />
+              {mergeChangesMutation.isPending || isAutoMerging
+                ? 'Merging...'
+                : 'Auto-Generate & Merge'}
+            </Button>
+            <Button
+              onClick={handleManualMerge}
+              disabled={mergeChangesMutation.isPending || isAutoMerging}
+              className="flex items-center gap-2"
+              variant="outline"
+              size="sm"
+            >
+              <GitMerge className="w-4 h-4" />
+              Manual
+            </Button>
+          </div>
+        )}
+        {task.executorId && (
           <Button
-            onClick={() => mergeChangesMutation.mutate()}
-            disabled={mergeChangesMutation.isPending}
-            className="flex items-center gap-2"
+            onClick={() => startDevServerMutation.mutate()}
+            disabled={startDevServerMutation.isPending}
             variant="outline"
+            className="flex items-center gap-2"
           >
-            <GitMerge className="w-4 h-4" />
-            {mergeChangesMutation.isPending ? 'Merging...' : 'Merge Changes'}
+            <Server className="w-4 h-4" />
+            {startDevServerMutation.isPending ? 'Starting Dev Servers…' : 'Start Dev Servers'}
           </Button>
         )}
       </div>
@@ -338,7 +422,28 @@ export function TaskDetail() {
   } = useTaskData(taskId);
 
   const task = taskResponse;
+  const executorId = task?.executorId;
   const mergeChangesMutation = useMergeChanges(taskId, task);
+  const startDevServerMutation = useMutation({
+    mutationFn: async () => {
+      if (!task?.executorId) {
+        throw new Error('No executor assigned to this task');
+      }
+      return claudeWorkersApi.startDevServer(task.executorId, 'both');
+    },
+    onSuccess: data => {
+      const serverSummary = Array.isArray(data?.servers)
+        ? data.servers
+            .map(server => `${server.type} (${server.port ?? 'N/A'})`)
+            .join(', ')
+        : 'Dev servers started';
+      alert(`Dev servers started successfully: ${serverSummary}`);
+    },
+    onError: (error: Error) => {
+      console.error('Failed to start dev servers:', error);
+      alert(`Failed to start dev servers: ${error.message}`);
+    },
+  });
   const queryClient = useQueryClient();
 
   // Complete task mutation
@@ -352,6 +457,21 @@ export function TaskDetail() {
       console.error('Failed to complete task:', error);
       alert('❌ Failed to complete task. Please check the console for details.');
     },
+  });
+
+  const {
+    data: workerDiff,
+    isLoading: isLoadingDiff,
+    isError: isDiffError,
+    error: diffError,
+    isFetching: isFetchingDiff,
+    refetch: refetchWorkerDiff,
+  } = useQuery<WorkerDiff>({
+    queryKey: ['worker-diff', executorId],
+    queryFn: () => claudeWorkersApi.getWorkerDiff(executorId!),
+    enabled: !!executorId,
+    refetchInterval: 5000,
+    retry: false,
   });
 
   const scenarioHandlers = {
@@ -389,10 +509,72 @@ export function TaskDetail() {
         task={task}
         mergeChangesMutation={mergeChangesMutation}
         completeTaskMutation={completeTaskMutation}
+        startDevServerMutation={startDevServerMutation}
       />
       <TaskInformation task={task} />
       <TaskLogs executorId={task.executorId} />
       {task.executorId && <WorkerInfo executorId={task.executorId} />}
+      {executorId && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-gray-900">Worktree Changes</h2>
+            <div className="flex items-center gap-2">
+              {isFetchingDiff && (
+                <span className="flex items-center text-xs text-gray-500 gap-1">
+                  <RefreshCw className="h-3 w-3 animate-spin" />
+                  Updating…
+                </span>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => refetchWorkerDiff()}
+                disabled={isLoadingDiff}
+                className="flex items-center gap-2"
+              >
+                <RefreshCw className="h-4 w-4" />
+                <span>Refresh Diff</span>
+              </Button>
+            </div>
+          </div>
+
+          {isLoadingDiff && !workerDiff ? (
+            <Card>
+              <CardContent className="flex items-center gap-3 py-10">
+                <RefreshCw className="h-5 w-5 animate-spin text-blue-600" />
+                <span className="text-sm text-gray-600">Loading git diff…</span>
+              </CardContent>
+            </Card>
+          ) : isDiffError ? (
+            <Card>
+              <CardContent className="space-y-2 py-6">
+                <p className="text-sm text-red-600 font-medium">
+                  Failed to load worktree diff for this task&apos;s worker.
+                </p>
+                <p className="text-xs text-gray-600">
+                  {diffError instanceof Error ? diffError.message : 'Unknown error occurred.'}
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => refetchWorkerDiff()}
+                  className="flex items-center gap-2"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  <span>Try Again</span>
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <DiffViewer
+              diff={workerDiff?.diff ?? ''}
+              diffStat={workerDiff?.diffStat ?? ''}
+              changedFiles={workerDiff?.changedFiles ?? []}
+              worktreePath={workerDiff?.worktreePath}
+            />
+          )}
+        </div>
+      )}
       <BDDScenariosSection taskId={taskId!} task={task} scenarioHandlers={scenarioHandlers} />
       <ValidationRunsSection validationRuns={validationRuns} />
     </div>

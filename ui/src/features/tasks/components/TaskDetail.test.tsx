@@ -21,9 +21,15 @@ jest.mock('../../../shared/lib/api', () => ({
     createScenarioExecution: jest.fn(),
     getScenarioAnalytics: jest.fn(),
   },
+  claudeWorkersApi: {
+    mergeWorktree: jest.fn(),
+    generateCommitMessage: jest.fn(),
+    startDevServer: jest.fn(),
+  },
 }));
 
-const mockApi = api.taskApi as jest.Mocked<typeof api.taskApi>;
+const mockApi = api.taskApi as any;
+const mockWorkersApi = api.claudeWorkersApi as any;
 
 // Mock socket.io
 jest.mock('socket.io-client', () => ({
@@ -45,7 +51,7 @@ const mockTask = {
   endTime: undefined,
   duration: undefined,
   bddScenarios: [],
-  executorId: undefined,
+  executorId: 'worker-123',
   validationRuns: [],
 };
 
@@ -83,6 +89,27 @@ describe('TaskDetail', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockApi.getTask.mockResolvedValue(mockTask);
+    mockWorkersApi.mergeWorktree.mockResolvedValue(undefined);
+    mockWorkersApi.generateCommitMessage.mockResolvedValue({
+      commitMessage: 'Task task-123: Auto message',
+      changedFiles: [],
+      diffStat: '',
+      summary: { filesChanged: 0, fileTypes: {}, directories: [] },
+    });
+    mockWorkersApi.startDevServer.mockResolvedValue({
+      servers: [{ type: 'backend', port: 3002 }],
+    });
+    if (!window.prompt) {
+      window.prompt = jest.fn();
+    }
+    if (!window.confirm) {
+      window.confirm = jest.fn();
+    }
+    if (!window.alert || typeof (window.alert as jest.Mock).mockClear !== 'function') {
+      window.alert = jest.fn();
+    } else {
+      (window.alert as jest.Mock).mockClear();
+    }
   });
 
   it('renders task detail page with loading state', () => {
@@ -211,6 +238,47 @@ describe('TaskDetail', () => {
 
     // Test that executor ID is handled
     expect(taskWithExecutor.executorId).toBe('executor-123');
+  });
+
+  it('allows starting dev servers from task header', async () => {
+    const alertSpy = jest.spyOn(window, 'alert').mockImplementation(() => {});
+
+    renderWithProviders();
+
+    const button = await screen.findByRole('button', { name: /Start Dev Servers/i });
+    fireEvent.click(button);
+
+    await waitFor(() => {
+      expect(mockWorkersApi.startDevServer).toHaveBeenCalledWith('worker-123', 'both');
+      expect(alertSpy).toHaveBeenCalled();
+    });
+
+    alertSpy.mockRestore();
+  });
+
+  it('allows auto-generating a merge commit message when task is completed', async () => {
+    const completedTask = {
+      ...mockTask,
+      status: 'completed' as const,
+      executorId: 'worker-999',
+    };
+    mockApi.getTask.mockResolvedValue(completedTask);
+    const promptSpy = jest.spyOn(window, 'prompt').mockReturnValue('Auto commit');
+
+    renderWithProviders();
+
+    const autoMergeButton = await screen.findByRole('button', {
+      name: /Auto-Generate & Merge/i,
+    });
+
+    fireEvent.click(autoMergeButton);
+
+    await waitFor(() => {
+      expect(mockWorkersApi.generateCommitMessage).toHaveBeenCalledWith('worker-999');
+      expect(mockWorkersApi.mergeWorktree).toHaveBeenCalledWith('worker-999', 'Auto commit');
+    });
+
+    promptSpy.mockRestore();
   });
 
   it('handles task deletion', async () => {

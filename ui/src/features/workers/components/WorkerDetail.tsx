@@ -24,42 +24,14 @@ import { Label } from '../../../shared/ui/label';
 import { claudeWorkersApi } from '../../../shared/lib/api';
 import { TaskLogs } from '../../tasks/components/TaskLogs';
 import { DiffViewer } from './DiffViewer';
+import type { Worker, ValidationRun } from '../../../shared/types';
 
-interface ValidationStageResult {
-  id: string;
-  name: string;
-  success: boolean;
-  duration: number;
-  output?: string;
-  error?: string;
-  attempt?: number;
-}
-
-interface ValidationRun {
-  id: string;
-  timestamp: string;
-  success: boolean;
-  duration?: number;
-  stages: ValidationStageResult[];
-}
-
-interface WorkerStatus {
-  id: string;
-  taskId: string;
-  taskContent: string;
-  status: 'starting' | 'running' | 'completed' | 'failed' | 'stopped' | 'validating';
-  startTime: string;
-  endTime?: string;
-  pid?: number;
-  logFile: string;
-  worktreePath?: string;
-  blockedCommands: number;
-  hasPermissionSystem: boolean;
-  validationPassed?: boolean;
-  validationRuns?: number;
+type WorkerDetailStatus = Worker & {
   validationHistory?: ValidationRun[];
-  lastValidationRun?: ValidationRun;
-}
+  lastValidationRun?: ValidationRun | null;
+};
+
+type WorkerDiff = Awaited<ReturnType<typeof claudeWorkersApi.getWorkerDiff>>;
 
 // interface WorkerInteractionResponse {
 //   workerId: string;
@@ -92,29 +64,27 @@ export function WorkerDetail() {
   const queryClient = useQueryClient();
 
   // Fetch worker status
-  const { data: worker, isLoading: isLoadingWorker } = useQuery({
+  const { data: worker, isLoading: isLoadingWorker } = useQuery<WorkerDetailStatus>({
     queryKey: ['worker', workerId],
-    queryFn: async () => {
-      const response = await claudeWorkersApi.getWorkerStatus(workerId!);
-      return response as WorkerStatus;
-    },
+    queryFn: () => claudeWorkersApi.getWorkerStatus<WorkerDetailStatus>(workerId!),
     enabled: !!workerId,
     refetchInterval: 2000, // Refresh every 2 seconds
   });
 
   // Fetch worker diff
-  const { data: workerDiff } = useQuery({
+  const {
+    data: workerDiff,
+    isLoading: isLoadingDiff,
+    isError: isDiffError,
+    error: diffError,
+    isFetching: isFetchingDiff,
+    refetch: refetchWorkerDiff,
+  } = useQuery<WorkerDiff>({
     queryKey: ['worker-diff', workerId],
-    queryFn: async () => {
-      try {
-        return await claudeWorkersApi.getWorkerDiff(workerId!);
-      } catch (error) {
-        console.error('Failed to fetch worker diff:', error);
-        return null;
-      }
-    },
+    queryFn: async () => claudeWorkersApi.getWorkerDiff(workerId!),
     enabled: !!workerId && !!worker?.worktreePath,
     refetchInterval: 5000, // Refresh every 5 seconds
+    retry: false,
   });
 
   // Start worker
@@ -177,7 +147,9 @@ export function WorkerDetail() {
     },
     onError: (error: Error) => {
       console.error('Failed to open VS Code:', error);
-      alert(`❌ Failed to open VS Code: ${error.message}\n\nMake sure VS Code CLI tools are installed.`);
+      alert(
+        `❌ Failed to open VS Code: ${error.message}\n\nMake sure VS Code CLI tools are installed.`
+      );
     },
   });
 
@@ -238,12 +210,14 @@ export function WorkerDetail() {
     mutationFn: async (type: 'backend' | 'frontend' | 'both') => {
       return await claudeWorkersApi.startDevServer(workerId!, type);
     },
-    onSuccess: (data) => {
+    onSuccess: data => {
       refetchDevServerStatus();
       alert(
         `Dev server(s) started successfully!\n\n` +
           data.servers
-            .map(s => `${s.type.charAt(0).toUpperCase() + s.type.slice(1)}: http://localhost:${s.port}`)
+            .map(
+              s => `${s.type.charAt(0).toUpperCase() + s.type.slice(1)}: http://localhost:${s.port}`
+            )
             .join('\n')
       );
     },
@@ -301,7 +275,7 @@ export function WorkerDetail() {
 
   if (isLoadingWorker) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="p-6">
         <div className="flex justify-center items-center h-64">
           <RefreshCw className="h-8 w-8 animate-spin text-blue-600" />
           <span className="ml-2 text-lg">Loading worker details...</span>
@@ -312,7 +286,7 @@ export function WorkerDetail() {
 
   if (!worker) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="p-6">
         <div className="text-center">
           <XCircle className="h-16 w-16 text-red-600 mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Worker Not Found</h1>
@@ -325,10 +299,10 @@ export function WorkerDetail() {
   const StatusIcon = statusIcons[worker.status];
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center space-x-4">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex items-center gap-4 flex-wrap">
           <Button
             variant="outline"
             size="sm"
@@ -348,7 +322,7 @@ export function WorkerDetail() {
             </div>
           </div>
         </div>
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Button
             variant="outline"
             size="sm"
@@ -371,16 +345,14 @@ export function WorkerDetail() {
           </Badge>
         </div>
       </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Worker Information */}
-        <div className="lg:col-span-1 space-y-6">
-          {/* Status Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Worker Status</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+      {/* Worker Information & Actions */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        {/* Status Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Worker Status</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
               <div>
                 <Label className="text-sm font-medium text-gray-700">Task Content:</Label>
                 <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded border mt-1">
@@ -581,15 +553,15 @@ export function WorkerDetail() {
                     )}
                 </div>
               )}
-            </CardContent>
-          </Card>
+          </CardContent>
+        </Card>
 
           {/* Actions Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Actions</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
               {worker.status === 'stopped' && (
                 <div className="space-y-2">
                   <Button
@@ -833,24 +805,75 @@ export function WorkerDetail() {
                   </p>
                 </div>
               )}
-            </CardContent>
-          </Card>
-        </div>
+          </CardContent>
+        </Card>
+      </div>
 
-        {/* Logs Panel */}
-        <div className="lg:col-span-2">
-          <TaskLogs executorId={workerId} />
-        </div>
+      {/* Task Logs */}
+      <div>
+        <TaskLogs executorId={workerId} />
       </div>
 
       {/* Diff Viewer - Full width below */}
-      {workerDiff && (
-        <div className="mt-6">
-          <DiffViewer
-            diff={workerDiff.diff}
-            diffStat={workerDiff.diffStat}
-            changedFiles={workerDiff.changedFiles}
-          />
+      {worker.worktreePath && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-gray-900">Worktree Changes</h2>
+            <div className="flex items-center gap-2">
+              {isFetchingDiff && (
+                <span className="flex items-center text-xs text-gray-500 gap-1">
+                  <RefreshCw className="h-3 w-3 animate-spin" />
+                  Updating…
+                </span>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => refetchWorkerDiff()}
+                disabled={isLoadingDiff}
+                className="flex items-center gap-2"
+              >
+                <RefreshCw className="h-4 w-4" />
+                <span>Refresh Diff</span>
+              </Button>
+            </div>
+          </div>
+
+          {isLoadingDiff && !workerDiff ? (
+            <Card>
+              <CardContent className="flex items-center gap-3 py-10">
+                <RefreshCw className="h-5 w-5 animate-spin text-blue-600" />
+                <span className="text-sm text-gray-600">Loading git diff…</span>
+              </CardContent>
+            </Card>
+          ) : isDiffError ? (
+            <Card>
+              <CardContent className="space-y-2 py-6">
+                <p className="text-sm text-red-600 font-medium">
+                  Failed to load worktree diff for this worker.
+                </p>
+                <p className="text-xs text-gray-600">
+                  {diffError instanceof Error ? diffError.message : 'Unknown error occurred.'}
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => refetchWorkerDiff()}
+                  className="flex items-center gap-2"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  <span>Try Again</span>
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <DiffViewer
+              diff={workerDiff?.diff ?? ''}
+              diffStat={workerDiff?.diffStat ?? ''}
+              changedFiles={workerDiff?.changedFiles ?? []}
+              worktreePath={workerDiff?.worktreePath ?? worker.worktreePath}
+            />
+          )}
         </div>
       )}
     </div>

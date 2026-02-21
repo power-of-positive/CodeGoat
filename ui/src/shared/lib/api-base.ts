@@ -1,6 +1,30 @@
 // Base API utilities and types
 
-const API_BASE_URL = '/api';
+declare global {
+  interface Window {
+    electronAPI?: {
+      platform?: string;
+      apiBase?: string;
+    };
+  }
+}
+
+const cleanEnvValue = (value?: string | null): string | undefined =>
+  value && value.trim().length > 0 ? value : undefined;
+
+const ELECTRON_API_BASE =
+  typeof window !== 'undefined' ? cleanEnvValue(window.electronAPI?.apiBase) : undefined;
+const NODE_API_BASE =
+  typeof process !== 'undefined'
+    ? cleanEnvValue(process.env.VITE_API_BASE_URL) ??
+      cleanEnvValue(process.env.API_BASE_URL) ??
+      cleanEnvValue(process.env.NEXT_PUBLIC_API_BASE_URL) ??
+      (cleanEnvValue(process.env.VITE_API_URL)
+        ? `${cleanEnvValue(process.env.VITE_API_URL)!.replace(/\/$/, '')}/api`
+        : undefined)
+    : undefined;
+
+const API_BASE_URL = ELECTRON_API_BASE ?? NODE_API_BASE ?? '/api';
 const DEFAULT_REQUEST_TIMEOUT_MS = 10000; // 10 seconds default timeout
 
 // API response types

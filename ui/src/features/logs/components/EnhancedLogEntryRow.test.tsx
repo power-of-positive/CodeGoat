@@ -372,7 +372,7 @@ describe('EnhancedLogEntryRow', () => {
     });
 
     it('handles todo tools by name detection', () => {
-      const todoVariations = ['TodoWrite', 'todoread', 'todo_write', 'todo_read', 'todo'];
+      const todoVariations = ['TodoWrite', 'todoread', 'todo_write', 'todo_read', 'pending'];
 
       todoVariations.forEach(toolName => {
         const normalizedEntry: NormalizedEntry = {

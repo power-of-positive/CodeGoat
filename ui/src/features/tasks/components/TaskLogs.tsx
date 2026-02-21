@@ -142,7 +142,7 @@ function LogContent({
   return (
     <Virtuoso
       ref={virtuosoRef}
-      className="h-full rounded-lg"
+      className="h-full w-full rounded-lg"
       data={logEntries}
       itemContent={(index, entry) => (
         <EnhancedLogEntryRow key={entry.id} entry={entry} index={index} />
@@ -194,7 +194,7 @@ export function TaskLogs({ executorId }: TaskLogsProps) {
         onToggleAutoRefresh={() => setAutoRefresh(!autoRefresh)}
       />
       <CardContent className="p-0">
-        <div className="border rounded-lg h-[calc(100vh-16rem)] min-h-[600px]">
+        <div className="border rounded-lg h-[calc(100vh-12rem)] min-h-[700px] w-full overflow-hidden">
           <LogContent logEntries={logEntries} autoScroll={autoScroll} virtuosoRef={virtuosoRef} />
         </div>
         <LogFooter logEntries={logEntries} executorId={executorId} />

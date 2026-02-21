@@ -2,7 +2,6 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   ChartColumn,
-  Settings,
   Menu,
   X,
   Activity,
@@ -14,6 +13,7 @@ import {
   Layers,
   List,
   TrendingUp,
+  FolderGit2,
 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { useSidebar } from '../contexts/SidebarContext';
@@ -76,16 +76,16 @@ const navItems: NavItem[] = [
     description: 'Monitor Claude Code worker processes and logs',
   },
   {
+    href: '/projects',
+    icon: FolderGit2,
+    label: 'Projects',
+    description: 'Manage projects and configure AI agents',
+  },
+  {
     href: '/permissions',
     icon: Shield,
     label: 'Permissions',
     description: 'Configure executor security permissions',
-  },
-  {
-    href: '/settings',
-    icon: Settings,
-    label: 'Settings',
-    description: 'Configure validation pipeline settings',
   },
   {
     href: '/stage-management',

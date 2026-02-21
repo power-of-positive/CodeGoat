@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
@@ -189,7 +189,7 @@ describe('StageManagement', () => {
   });
 
   it('shows add stage form when add button is clicked', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     (settingsApi.getValidationStages as jest.Mock).mockResolvedValue(mockStages);
 
     renderStageManagement();
@@ -206,7 +206,7 @@ describe('StageManagement', () => {
   });
 
   it('can add a new stage', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     const newStage = {
       id: 'new-stage',
       name: 'New Stage',
@@ -227,27 +227,21 @@ describe('StageManagement', () => {
       expect(screen.getByText('Code Linting')).toBeInTheDocument();
     });
 
-    // Find and click the Add Stage button (not the "Add Your First Stage" button)
-    const addButtons = screen.getAllByRole('button');
-    const addStageButton = addButtons.find(
-      button => button.textContent?.includes('Add Stage') && !button.textContent?.includes('First')
-    );
-    expect(addStageButton).toBeInTheDocument();
-    await user.click(addStageButton!);
+    const headerAddButton = screen.getByRole('button', { name: /^Add Stage$/i });
+    await user.click(headerAddButton);
 
-    // Wait for form to appear and fill it out
-    await waitFor(() => {
-      expect(screen.getByLabelText('Stage Name')).toBeInTheDocument();
+    const nameInput = await screen.findByLabelText('Stage Name', { selector: 'input#new-name' });
+    const commandInput = screen.getByLabelText('Command', { selector: 'textarea#new-command' });
+    const addForm = nameInput.closest('form');
+    expect(addForm).not.toBeNull();
+
+    await user.type(nameInput, 'New Stage');
+    await user.type(commandInput, 'npm run new-command');
+
+    const submitButton = within(addForm as HTMLFormElement).getByRole('button', {
+      name: /Add Stage/i,
     });
-
-    await user.type(screen.getByLabelText('Stage Name'), 'New Stage');
-    await user.type(screen.getByLabelText('Command'), 'npm run new-command');
-
-    // Find the submit button in the form - look for the enabled submit button
-    const submitButtons = screen.getAllByRole('button', { name: /Add Stage/i });
-    const enabledSubmitButton = submitButtons.find(button => !button.hasAttribute('disabled'));
-    expect(enabledSubmitButton).toBeInTheDocument();
-    await user.click(enabledSubmitButton!);
+    await user.click(submitButton);
 
     await waitFor(() => {
       expect(settingsApi.addValidationStage).toHaveBeenCalledWith(
@@ -260,7 +254,7 @@ describe('StageManagement', () => {
   });
 
   it('can edit an existing stage', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     (settingsApi.getValidationStages as jest.Mock).mockResolvedValue(mockStages);
     (settingsApi.updateValidationStage as jest.Mock).mockResolvedValue({
       ...mockStages[0],
@@ -279,12 +273,9 @@ describe('StageManagement', () => {
     await user.click(editButtons[0]); // Click the first edit button
 
     // Wait for edit form to appear - look for input fields by their label text
-    await waitFor(() => {
-      expect(screen.getByLabelText('Stage Name')).toBeInTheDocument();
+    const nameField = await screen.findByLabelText('Stage Name', {
+      selector: 'input#name-lint',
     });
-
-    // Find the name input field by its label
-    const nameField = screen.getByLabelText('Stage Name');
     expect(nameField).toBeInTheDocument();
     await user.clear(nameField);
     await user.type(nameField, 'Updated Linting');
@@ -305,7 +296,7 @@ describe('StageManagement', () => {
   });
 
   it('can toggle stage enabled state', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     (settingsApi.getValidationStages as jest.Mock).mockResolvedValue(mockStages);
     (settingsApi.updateValidationStage as jest.Mock).mockResolvedValue({
       ...mockStages[0],
@@ -330,7 +321,7 @@ describe('StageManagement', () => {
   });
 
   it('can delete a stage with confirmation', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     window.confirm = jest.fn(() => true);
 
     (settingsApi.getValidationStages as jest.Mock).mockResolvedValue(mockStages);
@@ -356,7 +347,7 @@ describe('StageManagement', () => {
   });
 
   it('validates form fields correctly', async () => {
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     (settingsApi.getValidationStages as jest.Mock).mockResolvedValue(mockStages);
 
     renderStageManagement();
@@ -367,21 +358,19 @@ describe('StageManagement', () => {
     });
 
     // Click Add Stage button (get the first one)
-    const addStageButtons = screen.getAllByRole('button', { name: /Add Stage/i });
-    await user.click(addStageButtons[0]);
+    const addStageButton = screen.getByRole('button', { name: /^Add Stage$/i });
+    await user.click(addStageButton);
 
     // Wait for form to appear
-    await waitFor(() => {
-      expect(screen.getByLabelText('Stage Name')).toBeInTheDocument();
+    const nameField = await screen.findByLabelText('Stage Name', {
+      selector: 'input#new-name',
     });
+    const addForm = nameField.closest('form') as HTMLFormElement;
+    const formWithin = within(addForm);
 
     // Try to submit empty form - find the submit button in the form context
-    const submitButtons = screen.getAllByRole('button', { name: /Add Stage/i });
-    const formSubmitButton =
-      submitButtons.find(
-        btn => btn.getAttribute('type') === 'submit' || btn.closest('form') !== null
-      ) || submitButtons[submitButtons.length - 1]; // Last button is likely the submit button
-    await user.click(formSubmitButton!);
+    const submitButton = formWithin.getByRole('button', { name: /Add Stage/i });
+    await user.click(submitButton);
 
     // Since this form uses custom validation,
     // check that the form didn't submit by ensuring the API wasn't called
@@ -391,8 +380,8 @@ describe('StageManagement', () => {
 
     // Check for validation error messages displayed in the form
     await waitFor(() => {
-      expect(screen.getByText('Stage name is required')).toBeInTheDocument();
-      expect(screen.getByText('Command is required')).toBeInTheDocument();
+      expect(formWithin.getByText('Stage name is required')).toBeInTheDocument();
+      expect(formWithin.getByText('Command is required')).toBeInTheDocument();
     });
   });
 

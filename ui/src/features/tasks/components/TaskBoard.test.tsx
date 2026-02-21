@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
 import '@testing-library/jest-dom';
 import { TaskBoard } from './TaskBoard';
-import { taskApi } from '../../../shared/lib/api';
+import { taskApi, claudeWorkersApi } from '../../../shared/lib/api';
 import { Task } from '../../../shared/types/index';
 
 // Mock the API
@@ -21,6 +21,7 @@ jest.mock('../../../shared/lib/api', () => ({
     getWorkerStatus: jest.fn(),
     stopWorker: jest.fn(),
     getWorkerLogs: jest.fn(),
+    startDevServer: jest.fn(),
   },
 }));
 
@@ -54,6 +55,8 @@ const mockTasks: Task[] = [
     duration: 7200000, // 2 hours in milliseconds
   },
 ];
+
+const mockWorkersApi = claudeWorkersApi as any;
 
 const createTestQueryClient = () =>
   new QueryClient({
@@ -267,6 +270,31 @@ describe('TaskBoard', () => {
 
     // Form should be hidden
     expect(screen.queryByText('Create New Task')).not.toBeInTheDocument();
+  });
+
+  it('starts dev servers for a task when requested', async () => {
+    (taskApi.getTasks as jest.Mock).mockResolvedValue(mockTasks);
+    (mockWorkersApi.startDevServer as jest.Mock).mockResolvedValue({
+      servers: [{ type: 'backend', port: 3002 }],
+    });
+    const alertSpy = jest.spyOn(window, 'alert').mockImplementation(() => {});
+
+    renderWithProviders(<TaskBoard />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Kanban')).toBeInTheDocument();
+    });
+
+    const buttons = screen.getAllByRole('button', { name: /Start Dev Servers/i });
+    expect(buttons.length).toBeGreaterThan(0);
+    fireEvent.click(buttons[0]);
+
+    await waitFor(() => {
+      expect(mockWorkersApi.startDevServer).toHaveBeenCalledWith('claude_code', 'both');
+      expect(alertSpy).toHaveBeenCalled();
+    });
+
+    alertSpy.mockRestore();
   });
 
   it('should display task action buttons', async () => {

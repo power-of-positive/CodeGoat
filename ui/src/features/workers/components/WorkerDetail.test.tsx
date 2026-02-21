@@ -265,14 +265,14 @@ describe('WorkerDetail', () => {
     renderWithProviders();
 
     await waitFor(() => {
-      const refreshButton = screen.getByRole('button', { name: /refresh/i });
-      expect(refreshButton).toBeInTheDocument();
+      const refreshButtons = screen.getAllByRole('button', { name: /refresh/i });
+      expect(refreshButtons.length).toBeGreaterThan(0);
     });
 
     const initialCallCount = (claudeWorkersApi.getWorkerStatus as jest.Mock).mock.calls.length;
 
-    const refreshButton = screen.getByRole('button', { name: /refresh/i });
-    fireEvent.click(refreshButton);
+    const [primaryRefreshButton] = screen.getAllByRole('button', { name: /refresh/i });
+    fireEvent.click(primaryRefreshButton);
 
     // Verify API was called again (should be more than initial count)
     await waitFor(() => {

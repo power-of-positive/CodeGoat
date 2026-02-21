@@ -57,7 +57,7 @@ const getEntryIcon = (entryType: {
           toolName.toLowerCase() === 'todoread' ||
           toolName.toLowerCase() === 'todo_write' ||
           toolName.toLowerCase() === 'todo_read' ||
-          toolName.toLowerCase() === 'todo'))
+          toolName.toLowerCase() === 'pending'))
     ) {
       return <CheckSquare className="h-4 w-4 text-purple-600" />;
     }
@@ -106,7 +106,7 @@ const getContentClassName = (entryType: {
           entryType.tool_name.toLowerCase() === 'todoread' ||
           entryType.tool_name.toLowerCase() === 'todo_write' ||
           entryType.tool_name.toLowerCase() === 'todo_read' ||
-          entryType.tool_name.toLowerCase() === 'todo')))
+          entryType.tool_name.toLowerCase() === 'pending')))
   ) {
     return `${baseClasses} font-mono bg-zinc-50 dark:bg-zinc-900/40 px-2 py-1 rounded`;
   }

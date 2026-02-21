@@ -104,7 +104,7 @@ export interface UserSystemInfo {
 export interface Task {
   id: string;
   content: string;
-  status: 'pending' | 'in_progress' | 'completed' | 'todo';
+  status: 'pending' | 'in_progress' | 'completed' | 'pending';
   priority: 'low' | 'medium' | 'high';
   taskType: 'story' | 'task';
   startTime?: string;
@@ -265,6 +265,10 @@ export interface Worker {
   hasPermissionSystem: boolean;
   validationPassed?: boolean;
   validationRuns?: number;
+  worktreePath?: string;
+  worktreeExists?: boolean;
+  validationHistory?: ValidationRun[];
+  lastValidationRun?: ValidationRun | null;
 }
 
 // Blocked command tracking

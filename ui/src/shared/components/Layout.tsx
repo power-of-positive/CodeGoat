@@ -14,9 +14,7 @@ export function Layout({ children }: LayoutProps) {
       <Sidebar />
 
       {/* Main content area */}
-      <div
-        className={`${isCollapsed ? 'md:ml-16' : 'md:ml-64'} transition-all duration-300`}
-      >
+      <div className={`${isCollapsed ? 'md:ml-16' : 'md:ml-64'} transition-all duration-300`}>
         <main className="min-h-screen">{children}</main>
       </div>
     </div>

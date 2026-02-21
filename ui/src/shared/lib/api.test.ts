@@ -9,6 +9,7 @@ import {
   permissionApi,
   e2eTestingApi,
 } from './api';
+import { apiRequest, APIError, buildQueryParams } from './api-base';
 
 // Mock fetch
 global.fetch = jest.fn() as jest.MockedFunction<typeof fetch>;
@@ -385,3 +386,55 @@ describe('API Client', () => {
     });
   });
 });
+
+  describe('apiRequest error handling', () => {
+    it('throws APIError when API responds with success=false', async () => {
+      (fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ success: false, message: 'bad-news' }),
+      } as Response);
+
+      await expect(apiRequest('/test-endpoint')).rejects.toBeInstanceOf(APIError);
+    });
+
+    it('wraps AbortError into a timeout APIError', async () => {
+      const abortError = new Error('aborted');
+      abortError.name = 'AbortError';
+
+      (fetch as jest.MockedFunction<typeof fetch>).mockRejectedValueOnce(abortError);
+
+      await expect(apiRequest('/test-endpoint')).rejects.toMatchObject({
+        message: 'Request timeout - server took too long to respond',
+        status: 408,
+      });
+    });
+  });
+
+  describe('apiRequest utilities', () => {
+    it('stringifies primitive request bodies', async () => {
+      (fetch as jest.MockedFunction<typeof fetch>).mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ success: true }),
+      } as Response);
+
+      await apiRequest('/test-endpoint', { method: 'POST', body: 'payload' });
+
+      const [, init] = (fetch as jest.MockedFunction<typeof fetch>).mock.calls[0];
+      expect(init?.body).toBe('payload');
+    });
+
+    it('buildQueryParams skips undefined values and encodes entries', () => {
+      const query = buildQueryParams({
+        taskId: '42',
+        empty: '',
+        unset: undefined,
+        include: true,
+      });
+
+      expect(query).toBe('?taskId=42&include=true');
+    });
+
+    it('buildQueryParams returns empty string when nothing to append', () => {
+      expect(buildQueryParams({})).toBe('');
+    });
+  });

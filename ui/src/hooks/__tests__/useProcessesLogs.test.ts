@@ -5,7 +5,8 @@ describe('useProcessesLogs', () => {
   const mockProcesses: ExecutionProcess[] = [
     {
       id: 'process-1',
-      task_attempt_id: 'attempt-1',
+      task_id: 'task-1',
+      worker_id: 'worker-1',
       run_reason: 'codingagent',
       status: 'completed',
       started_at: '2024-01-01T00:00:00Z',
@@ -13,7 +14,8 @@ describe('useProcessesLogs', () => {
     },
     {
       id: 'process-2',
-      task_attempt_id: 'attempt-2',
+      task_id: 'task-2',
+      worker_id: 'worker-2',
       run_reason: 'validation',
       status: 'failed',
       started_at: '2024-01-01T00:10:00Z',

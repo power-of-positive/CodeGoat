@@ -323,7 +323,6 @@ function WorkerActions({
           <span>Blocked ({worker.blockedCommands})</span>
         </Button>
       )}
-
     </div>
   );
 }

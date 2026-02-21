@@ -19,6 +19,7 @@ jest.mock('lucide-react', () => ({
   Layers: () => <div data-testid="layers-icon" />,
   List: () => <div data-testid="list-icon" />,
   TrendingUp: () => <div data-testid="trending-up-icon" />,
+  FolderGit2: () => <div data-testid="folder-git2-icon" />,
 }));
 
 // Mock button component
@@ -79,7 +80,6 @@ describe('Sidebar', () => {
       expect(screen.getByText('BDD Tests')).toBeInTheDocument();
       expect(screen.getByText('Workers')).toBeInTheDocument();
       expect(screen.getByText('Permissions')).toBeInTheDocument();
-      expect(screen.getByText('Settings')).toBeInTheDocument();
       expect(screen.getByText('Stage Management')).toBeInTheDocument();
     });
 
@@ -98,7 +98,6 @@ describe('Sidebar', () => {
       ).toBeInTheDocument();
       expect(screen.getByText('Monitor Claude Code worker processes and logs')).toBeInTheDocument();
       expect(screen.getByText('Configure executor security permissions')).toBeInTheDocument();
-      expect(screen.getByText('Configure validation pipeline settings')).toBeInTheDocument();
       expect(screen.getByText('Advanced stage editing and reordering')).toBeInTheDocument();
     });
 
@@ -113,7 +112,6 @@ describe('Sidebar', () => {
       expect(screen.getByTestId('test-tube-icon')).toBeInTheDocument();
       expect(screen.getByTestId('zap-icon')).toBeInTheDocument();
       expect(screen.getByTestId('shield-icon')).toBeInTheDocument();
-      expect(screen.getByTestId('settings-icon')).toBeInTheDocument();
       expect(screen.getByTestId('layers-icon')).toBeInTheDocument();
     });
 
@@ -169,7 +167,6 @@ describe('Sidebar', () => {
       expect(hrefs).toContain('/bdd-tests');
       expect(hrefs).toContain('/workers');
       expect(hrefs).toContain('/permissions');
-      expect(hrefs).toContain('/settings');
       expect(hrefs).toContain('/stage-management');
     });
 
@@ -179,14 +176,6 @@ describe('Sidebar', () => {
 
       const analyticsLink = screen.getByRole('link', { name: /Analytics View validation metrics/ });
       expect(analyticsLink).toHaveClass('bg-blue-50');
-    });
-
-    it('highlights different active navigation item for different route', () => {
-      useLocation.mockReturnValue({ pathname: '/settings' });
-      renderWithRouter(<Sidebar />, '/settings');
-
-      const settingsLink = screen.getByRole('link', { name: /Settings/ });
-      expect(settingsLink).toHaveClass('bg-blue-50');
     });
 
     it('shows correct hover states for navigation items', () => {

@@ -49,8 +49,8 @@ export const claudeWorkersApi = {
     }
   },
 
-  async getWorkerStatus(workerId: string): Promise<Worker> {
-    return apiRequest<Worker>(`/claude-workers/${workerId}`);
+  async getWorkerStatus<T = Worker>(workerId: string): Promise<T> {
+    return apiRequest<T>(`/claude-workers/${workerId}`);
   },
 
   async stopWorker(workerId: string, cleanupWorktree?: boolean): Promise<void> {

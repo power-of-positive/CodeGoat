@@ -1,69 +1,52 @@
-# React + TypeScript + Vite
+# CodeGoat UI
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This package hosts the React client for the CodeGoat platform. It is built with Vite and
+TypeScript and now includes an Electron wrapper for desktop distribution.
 
-Currently, two official plugins are available:
+## Development
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+```bash
+# Install dependencies (run once)
+npm install
 
-## Expanding the ESLint configuration
+# Start the Vite dev server only
+npm run dev
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+# Start the UI inside Electron (requires backend running on localhost:3000)
+npm run dev:electron
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+> **Heads-up:** The Electron dev script starts the Vite dev server and launches Electron once the
+> renderer is available. The backend API must already be running (e.g., from the repository root:
+> `npm run dev`).
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Building
 
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+# Build the browser bundle
+npm run build
+
+# Build the Electron desktop package (requires backend build in ../dist)
+npm run build:electron
 ```
+
+The Electron build produces output in `dist-electron/`. Before creating a desktop build you should
+compile the backend API from the repository root:
+
+```bash
+npm run build            # from repository root
+cd ui && npm run build   # UI bundle
+npm run build:electron   # Electron distributable
+```
+
+## Project Structure
+
+```
+ui/
+├─ electron/          # Electron main & preload scripts
+├─ public/            # Static assets served by Vite
+├─ src/               # React application source
+├─ dist/              # Built renderer bundle (generated)
+└─ dist-electron/     # Electron packaging output (generated)
+```
+

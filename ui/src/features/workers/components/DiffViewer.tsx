@@ -1,12 +1,21 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../shared/ui/card';
 import { Badge } from '../../../shared/ui/badge';
-import { FileText, Plus, Minus, FileEdit } from 'lucide-react';
+import {
+  FileText,
+  Plus,
+  Minus,
+  FileEdit,
+  FolderGit2,
+  ChevronDown,
+  ChevronRight,
+} from 'lucide-react';
 
 interface DiffViewerProps {
-  diff: string;
-  diffStat: string;
-  changedFiles: Array<{ status: string; path: string }>;
+  diff?: string;
+  diffStat?: string;
+  changedFiles?: Array<{ status: string; path: string }>;
+  worktreePath?: string;
 }
 
 // Parse a unified diff into structured data
@@ -128,10 +137,36 @@ function getFileStatusBadge(status: string) {
   }
 }
 
-export function DiffViewer({ diff, diffStat, changedFiles }: DiffViewerProps) {
-  const parsedDiff = React.useMemo(() => parseDiff(diff), [diff]);
+export function DiffViewer({
+  diff = '',
+  diffStat,
+  changedFiles = [],
+  worktreePath,
+}: DiffViewerProps) {
+  const parsedDiff = React.useMemo(() => parseDiff(diff ?? ''), [diff]);
+  const [expandedFiles, setExpandedFiles] = React.useState<Record<string, boolean>>({});
 
-  if (!diff || diff.trim() === '') {
+  React.useEffect(() => {
+    setExpandedFiles(prev => {
+      const next: Record<string, boolean> = {};
+      parsedDiff.forEach(file => {
+        next[file.path] = prev[file.path] ?? true;
+      });
+      return next;
+    });
+  }, [parsedDiff]);
+
+  const toggleFile = React.useCallback((path: string) => {
+    setExpandedFiles(prev => ({
+      ...prev,
+      [path]: !(prev[path] ?? true),
+    }));
+  }, []);
+
+  const hasTextualDiff = diff.trim() !== '';
+  const hasAnyChanges = hasTextualDiff || changedFiles.length > 0;
+
+  if (!hasAnyChanges) {
     return (
       <Card>
         <CardHeader>
@@ -156,8 +191,15 @@ export function DiffViewer({ diff, diffStat, changedFiles }: DiffViewerProps) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        {worktreePath && (
+          <div className="flex items-center gap-2 text-xs text-gray-600 bg-gray-50 border border-dashed border-gray-200 px-3 py-2 rounded">
+            <FolderGit2 className="h-3 w-3 text-gray-500" />
+            <span className="font-mono truncate">{worktreePath}</span>
+          </div>
+        )}
+
         {/* Stats */}
-        {diffStat && (
+        {diffStat && diffStat.trim() !== '' && (
           <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-md">
             <pre className="text-xs font-mono whitespace-pre-wrap text-gray-700 dark:text-gray-300">
               {diffStat}
@@ -166,83 +208,130 @@ export function DiffViewer({ diff, diffStat, changedFiles }: DiffViewerProps) {
         )}
 
         {/* Changed Files List */}
-        <div className="space-y-2">
-          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-            Changed Files
-          </h3>
-          <div className="space-y-1">
-            {changedFiles.map((file, idx) => (
-              <div
-                key={idx}
-                className="flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700"
-              >
-                {getFileStatusIcon(file.status)}
-                <span className="text-sm font-mono flex-1 text-gray-700 dark:text-gray-300">
-                  {file.path}
-                </span>
-                {getFileStatusBadge(file.status)}
-              </div>
-            ))}
+        {changedFiles.length > 0 && (
+          <div className="space-y-2">
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+              Changed Files
+            </h3>
+            <div className="space-y-1">
+              {changedFiles.map(file => {
+                const key = `${file.status}-${file.path}`;
+                const isCollapsed = expandedFiles[file.path] === false;
+
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => toggleFile(file.path)}
+                    className={`w-full flex items-center gap-2 p-2 bg-gray-50 dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 text-left transition hover:bg-gray-100 dark:hover:bg-gray-700 ${
+                      isCollapsed ? 'opacity-75' : ''
+                    }`}
+                  >
+                    {getFileStatusIcon(file.status)}
+                    <span className="text-sm font-mono flex-1 text-gray-700 dark:text-gray-300">
+                      {file.path}
+                    </span>
+                    {isCollapsed && (
+                      <span className="text-[10px] uppercase tracking-wide text-gray-500">
+                        Collapsed
+                      </span>
+                    )}
+                    {getFileStatusBadge(file.status)}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Diff Content */}
         <div className="space-y-4">
           <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Diff</h3>
-          {parsedDiff.map((file, fileIdx) => (
-            <div
-              key={fileIdx}
-              className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden"
-            >
-              {/* File Header */}
-              <div className="bg-gray-100 dark:bg-gray-800 px-4 py-2 font-mono text-sm font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">
-                {file.path}
-              </div>
+          {parsedDiff.length === 0 ? (
+            <p className="text-xs text-gray-500">
+              No textual diff available. Files may be binary or staged without textual changes.
+            </p>
+          ) : (
+            parsedDiff.map(file => {
+              const isExpanded = expandedFiles[file.path] ?? true;
 
-              {/* Hunks */}
-              {file.hunks.map((hunk, hunkIdx) => (
-                <div key={hunkIdx} className="font-mono text-xs">
-                  {/* Hunk Header */}
-                  <div className="bg-blue-50 dark:bg-blue-900/20 px-4 py-1 text-blue-700 dark:text-blue-300 border-b border-gray-200 dark:border-gray-700">
-                    {hunk.header}
+              return (
+                <div
+                  key={file.path}
+                  className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden"
+                >
+                  {/* File Header */}
+                  <div className="bg-gray-100 dark:bg-gray-800 px-4 py-2 font-mono text-sm font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between gap-3">
+                    <span className="truncate">{file.path}</span>
+                    <button
+                      type="button"
+                      onClick={() => toggleFile(file.path)}
+                      className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800"
+                    >
+                      {isExpanded ? (
+                        <ChevronDown className="h-3 w-3" />
+                      ) : (
+                        <ChevronRight className="h-3 w-3" />
+                      )}
+                      {isExpanded ? 'Collapse' : 'Expand'}
+                    </button>
                   </div>
 
-                  {/* Diff Lines */}
-                  <div>
-                    {hunk.lines.map((line, lineIdx) => {
-                      let bgColor = '';
-                      let textColor = 'text-gray-800 dark:text-gray-200';
-                      let prefix = ' ';
-
-                      if (line.type === 'add') {
-                        bgColor = 'bg-green-50 dark:bg-green-900/20';
-                        textColor = 'text-green-800 dark:text-green-200';
-                        prefix = '+';
-                      } else if (line.type === 'remove') {
-                        bgColor = 'bg-red-50 dark:bg-red-900/20';
-                        textColor = 'text-red-800 dark:text-red-200';
-                        prefix = '-';
-                      }
-
-                      return (
-                        <div
-                          key={lineIdx}
-                          className={`${bgColor} ${textColor} px-4 py-0.5 hover:bg-opacity-80 flex`}
-                        >
-                          <span className="inline-block w-6 text-gray-500 dark:text-gray-400 select-none">
-                            {prefix}
-                          </span>
-                          <span className="flex-1 whitespace-pre-wrap break-all">
-                            {line.content}
-                          </span>
+                  {!isExpanded ? (
+                    <div className="px-4 py-3 text-xs text-gray-500 bg-white dark:bg-gray-900">
+                      Diff collapsed. Click &quot;Expand&quot; to view changes.
+                    </div>
+                  ) : file.hunks.length === 0 ? (
+                    <div className="px-4 py-3 text-xs text-gray-500 bg-white dark:bg-gray-900">
+                      No visible diff hunks for this file.
+                    </div>
+                  ) : (
+                    file.hunks.map((hunk, hunkIdx) => (
+                      <div key={hunkIdx} className="font-mono text-xs">
+                        {/* Hunk Header */}
+                        <div className="bg-blue-50 dark:bg-blue-900/20 px-4 py-1 text-blue-700 dark:text-blue-300 border-b border-gray-200 dark:border-gray-700">
+                          {hunk.header}
                         </div>
-                      );
-                    })}
-                  </div>
+
+                        {/* Diff Lines */}
+                        <div>
+                          {hunk.lines.map((line, lineIdx) => {
+                            let bgColor = '';
+                            let textColor = 'text-gray-800 dark:text-gray-200';
+                            let prefix = ' ';
+
+                            if (line.type === 'add') {
+                              bgColor = 'bg-green-50 dark:bg-green-900/20';
+                              textColor = 'text-green-800 dark:text-green-200';
+                              prefix = '+';
+                            } else if (line.type === 'remove') {
+                              bgColor = 'bg-red-50 dark:bg-red-900/20';
+                              textColor = 'text-red-800 dark:text-red-200';
+                              prefix = '-';
+                            }
+
+                            return (
+                              <div
+                                key={lineIdx}
+                                className={`${bgColor} ${textColor} px-4 py-0.5 hover:bg-opacity-80 flex`}
+                              >
+                                <span className="inline-block w-6 text-gray-500 dark:text-gray-400 select-none">
+                                  {prefix}
+                                </span>
+                                <span className="flex-1 whitespace-pre-wrap break-all">
+                                  {line.content}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
-              ))}
-            </div>
-          ))}
+              );
+            })
+          )}
         </div>
       </CardContent>
     </Card>

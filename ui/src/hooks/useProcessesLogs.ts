@@ -17,11 +17,12 @@ const STREAMING_INTERVAL_MS = 5000;
 
 export interface ExecutionProcess {
   id: string;
-  task_attempt_id: string;
+  task_id: string | null;
+  worker_id: string | null;
   run_reason: string;
   status: string;
-  started_at: string;
-  completed_at?: string;
+  started_at: string | null;
+  completed_at?: string | null;
 }
 
 /**

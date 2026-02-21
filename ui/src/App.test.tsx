@@ -3,13 +3,9 @@ import { render, screen, cleanup } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import App from './App';
 
-// Mock the Analytics and Settings components
+// Mock the Analytics component
 jest.mock('./features/analytics/components/Analytics', () => ({
   Analytics: () => <div>Analytics Page</div>,
-}));
-
-jest.mock('./shared/components/Settings', () => ({
-  Settings: () => <div>Settings Page</div>,
 }));
 
 jest.mock('./features/validation/components/ValidationRunDetail', () => ({

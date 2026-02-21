@@ -54,11 +54,7 @@ interface DialogTitleProps {
 }
 
 export function DialogTitle({ children }: DialogTitleProps) {
-  return (
-    <h2 className="text-xl font-semibold text-gray-900">
-      {children}
-    </h2>
-  );
+  return <h2 className="text-xl font-semibold text-gray-900">{children}</h2>;
 }
 
 interface DialogDescriptionProps {
@@ -66,11 +62,7 @@ interface DialogDescriptionProps {
 }
 
 export function DialogDescription({ children }: DialogDescriptionProps) {
-  return (
-    <p className="text-sm text-gray-600 mt-2">
-      {children}
-    </p>
-  );
+  return <p className="text-sm text-gray-600 mt-2">{children}</p>;
 }
 
 interface DialogContentProps {
@@ -78,11 +70,7 @@ interface DialogContentProps {
 }
 
 export function DialogContent({ children }: DialogContentProps) {
-  return (
-    <div className="p-6">
-      {children}
-    </div>
-  );
+  return <div className="p-6">{children}</div>;
 }
 
 interface DialogFooterProps {

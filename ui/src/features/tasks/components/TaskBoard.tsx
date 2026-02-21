@@ -12,6 +12,7 @@ import {
   MoreVertical,
   ExternalLink,
   Bot,
+  Server,
 } from 'lucide-react';
 import { Button } from '../../../shared/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../shared/ui/card';
@@ -99,7 +100,7 @@ function TaskForm({ task, onSave, onCancel }: TaskFormProps) {
   };
 
   return (
-    <Card className="mb-4">
+    <Card className="mb-4" data-testid="task-form">
       <CardHeader>
         <CardTitle className="text-sm">{task ? 'Edit Task' : 'Create New Task'}</CardTitle>
       </CardHeader>
@@ -113,6 +114,7 @@ function TaskForm({ task, onSave, onCancel }: TaskFormProps) {
               className="w-full p-2 border border-gray-300 rounded-md text-sm"
               rows={3}
               placeholder="Describe the task..."
+              data-testid="task-content-input"
               required
             />
           </div>
@@ -124,6 +126,7 @@ function TaskForm({ task, onSave, onCancel }: TaskFormProps) {
                 value={priority}
                 onChange={e => setPriority(e.target.value as Task['priority'])}
                 className="w-full p-2 border border-gray-300 rounded-md text-sm"
+                data-testid="priority-select"
               >
                 <option value="low">Low</option>
                 <option value="medium">Medium</option>
@@ -137,6 +140,7 @@ function TaskForm({ task, onSave, onCancel }: TaskFormProps) {
                 value={status}
                 onChange={e => setStatus(e.target.value as Task['status'])}
                 className="w-full p-2 border border-gray-300 rounded-md text-sm"
+                data-testid="status-select"
               >
                 <option value="pending">Pending</option>
                 <option value="in_progress">In Progress</option>
@@ -152,6 +156,7 @@ function TaskForm({ task, onSave, onCancel }: TaskFormProps) {
                 value={taskType}
                 onChange={e => setTaskType(e.target.value as Task['taskType'])}
                 className="w-full p-2 border border-gray-300 rounded-md text-sm"
+                data-testid="task-type-select"
               >
                 <option value="task">Technical Task</option>
                 <option value="story">User Story</option>
@@ -166,15 +171,22 @@ function TaskForm({ task, onSave, onCancel }: TaskFormProps) {
                 onChange={e => setExecutorId(e.target.value)}
                 className="w-full p-2 border border-gray-300 rounded-md text-sm"
                 placeholder="claude_code"
+                data-testid="executor-input"
               />
             </div>
           </div>
 
           <div className="flex gap-2">
-            <Button type="submit" size="sm">
+            <Button type="submit" size="sm" data-testid="task-form-submit">
               {task ? 'Update' : 'Create'}
             </Button>
-            <Button type="button" variant="outline" size="sm" onClick={onCancel}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onCancel}
+              data-testid="task-form-cancel"
+            >
               Cancel
             </Button>
           </div>
@@ -191,9 +203,19 @@ interface TaskCardProps {
   onDelete: (id: string) => void;
   onStatusChange: (id: string, status: Task['status']) => void;
   onStartWorker: (task: Task) => void;
+  onStartDevServer: (task: Task) => void;
+  isStartingDevServer: boolean;
 }
 
-function TaskCard({ task, onEdit, onDelete, onStatusChange, onStartWorker }: TaskCardProps) {
+function TaskCard({
+  task,
+  onEdit,
+  onDelete,
+  onStatusChange,
+  onStartWorker,
+  onStartDevServer,
+  isStartingDevServer,
+}: TaskCardProps) {
   const [showActions, setShowActions] = useState(false);
 
   const handleStatusChange = (newStatus: Task['status']) => {
@@ -203,7 +225,7 @@ function TaskCard({ task, onEdit, onDelete, onStatusChange, onStartWorker }: Tas
   };
 
   return (
-    <Card className="mb-3 group hover:shadow-md transition-shadow">
+    <Card className="mb-3 group hover:shadow-md transition-shadow" data-testid="task-card">
       <CardContent className="p-3">
         <div className="flex items-start justify-between mb-2">
           <div className="flex gap-1 flex-wrap">
@@ -335,6 +357,18 @@ function TaskCard({ task, onEdit, onDelete, onStatusChange, onStartWorker }: Tas
               Start Worker
             </Button>
           )}
+          {task.executorId && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-6 text-xs"
+              onClick={() => onStartDevServer(task)}
+              disabled={isStartingDevServer}
+            >
+              <Server className="h-3 w-3 mr-1" />
+              {isStartingDevServer ? 'Starting Dev Servers…' : 'Start Dev Servers'}
+            </Button>
+          )}
         </div>
       </CardContent>
     </Card>
@@ -349,6 +383,9 @@ interface StatusColumnProps {
   onDelete: (id: string) => void;
   onStatusChange: (id: string, status: Task['status']) => void;
   onStartWorker: (task: Task) => void;
+  onStartDevServer: (task: Task) => void;
+  currentDevServerTaskId: string | null;
+  isStartingDevServer: boolean;
 }
 
 function StatusColumn({
@@ -358,11 +395,17 @@ function StatusColumn({
   onDelete,
   onStatusChange,
   onStartWorker,
+  onStartDevServer,
+  currentDevServerTaskId,
+  isStartingDevServer,
 }: StatusColumnProps) {
   const Icon = column.icon;
 
   return (
-    <div className={`flex-1 min-w-80 ${column.bgColor} border ${column.borderColor} rounded-lg`}>
+    <div
+      className={`flex-1 min-w-80 ${column.bgColor} border ${column.borderColor} rounded-lg`}
+      data-testid={`status-column-${column.status}`}
+    >
       <div className="p-4 border-b border-gray-200">
         <div className="flex items-center gap-2">
           <Icon className="h-5 w-5 text-gray-600" />
@@ -388,6 +431,10 @@ function StatusColumn({
                 onDelete={onDelete}
                 onStatusChange={onStatusChange}
                 onStartWorker={onStartWorker}
+                onStartDevServer={onStartDevServer}
+                isStartingDevServer={
+                  isStartingDevServer && currentDevServerTaskId === task.id
+                }
               />
             ))}
           </div>
@@ -447,9 +494,9 @@ export function TaskBoard() {
   });
 
   // Start Claude worker mutation
-  const startWorkerMutation = useMutation({
-    mutationFn: claudeWorkersApi.startWorker,
-    onSuccess: data => {
+const startWorkerMutation = useMutation({
+  mutationFn: claudeWorkersApi.startWorker,
+  onSuccess: data => {
       // The API returns 'workerId' not 'id' - need to handle both for backward compatibility
       const workerId = (data as any).workerId || data.id;
       console.log('Worker started response:', data);
@@ -471,6 +518,27 @@ export function TaskBoard() {
     onError: error => {
       console.error('Failed to start Claude worker:', error);
       alert('Failed to start Claude Code worker. Please check the console for details.');
+  },
+});
+
+  const startDevServerMutation = useMutation({
+    mutationFn: async (task: Task) => {
+      if (!task.executorId) {
+        throw new Error('No executor assigned to this task');
+      }
+      return claudeWorkersApi.startDevServer(task.executorId, 'both');
+    },
+    onSuccess: data => {
+      const summary = Array.isArray(data?.servers)
+        ? data.servers
+            .map(server => `${server.type} (${server.port ?? 'N/A'})`)
+            .join(', ')
+        : 'Dev servers started';
+      alert(`Dev servers started: ${summary}`);
+    },
+    onError: (error: Error) => {
+      console.error('Failed to start dev servers:', error);
+      alert(`Failed to start dev servers: ${error.message}`);
     },
   });
 
@@ -502,17 +570,25 @@ export function TaskBoard() {
     updateTaskMutation.mutate({ id, updates });
   };
 
-  const handleStartWorker = (task: Task) => {
-    if (
-      confirm(
-        `Start Claude Code worker for task: "${task.content}"?\n\nThis will spawn a new process and execute the task automatically.`
-      )
-    ) {
-      startWorkerMutation.mutate({
-        taskId: task.id,
-        taskContent: task.content,
-      });
+const handleStartWorker = (task: Task) => {
+  if (
+    confirm(
+      `Start Claude Code worker for task: "${task.content}"?\n\nThis will spawn a new process and execute the task automatically.`
+    )
+  ) {
+    startWorkerMutation.mutate({
+      taskId: task.id,
+      taskContent: task.content,
+    });
+  }
+};
+
+  const handleStartDevServer = (task: Task) => {
+    if (!task.executorId) {
+      alert('This task does not have an assigned worker. Assign a worker first.');
+      return;
     }
+    startDevServerMutation.mutate(task);
   };
 
   // Group tasks by status
@@ -549,7 +625,7 @@ export function TaskBoard() {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-6" data-testid="task-board">
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -557,7 +633,7 @@ export function TaskBoard() {
             <h1 className="text-2xl font-bold text-gray-900">Kanban</h1>
             <p className="text-gray-600">Kanban board for task management and progress tracking</p>
           </div>
-          <Button onClick={() => setShowCreateForm(true)}>
+          <Button onClick={() => setShowCreateForm(true)} data-testid="add-task-button">
             <Plus className="w-4 h-4 mr-2" />
             Add Task
           </Button>
@@ -607,13 +683,19 @@ export function TaskBoard() {
               onDelete={handleDeleteTask}
               onStatusChange={handleStatusChange}
               onStartWorker={handleStartWorker}
+              onStartDevServer={handleStartDevServer}
+              currentDevServerTaskId={startDevServerMutation.variables?.id ?? null}
+              isStartingDevServer={startDevServerMutation.isPending}
             />
           ))}
         </div>
       </div>
 
       {/* Worker Started Modal */}
-      <Dialog open={!!workerStartedDialog} onOpenChange={(open) => !open && setWorkerStartedDialog(null)}>
+      <Dialog
+        open={!!workerStartedDialog}
+        onOpenChange={open => !open && setWorkerStartedDialog(null)}
+      >
         <DialogHeader onClose={() => setWorkerStartedDialog(null)}>
           <DialogTitle>Worker Started Successfully!</DialogTitle>
         </DialogHeader>
@@ -641,10 +723,7 @@ export function TaskBoard() {
           </div>
         </DialogContent>
         <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => setWorkerStartedDialog(null)}
-          >
+          <Button variant="outline" onClick={() => setWorkerStartedDialog(null)}>
             Close
           </Button>
           <Button
