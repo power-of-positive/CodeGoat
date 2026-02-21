@@ -39,3 +39,4 @@ rust-backend-crates/*
 claude-worktrees/**
 
 ui/dist-electron/*
+never/
