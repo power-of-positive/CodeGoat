@@ -112,6 +112,23 @@ interface ClaudeWorker {
 // In-memory storage for active workers
 const activeWorkers = new Map<string, ClaudeWorker>();
 
+function serializeWorker(worker: ClaudeWorker) {
+  return {
+    id: worker.id,
+    taskId: worker.taskId,
+    taskContent: worker.taskContent,
+    status: worker.status,
+    startTime: worker.startTime,
+    endTime: worker.endTime,
+    pid: worker.pid,
+    logFile: worker.logFile,
+    blockedCommands: worker.blockedCommands,
+    hasPermissionSystem: !!worker.interceptor,
+    validationPassed: worker.validationPassed,
+    validationRuns: worker.validationRuns?.length || 0,
+  };
+}
+
 /**
  * Update task status in database
  */
@@ -871,23 +888,28 @@ router.post('/start', validateRequest(StartWorkerRequestSchema), async (req, res
 });
 
 /**
+ * Get all workers
+ */
+router.get('/', (req, res) => {
+  const workers = Array.from(activeWorkers.values()).map(serializeWorker);
+
+  res.json({
+    success: true,
+    data: workers,
+  });
+});
+
+/**
  * Get status of all workers
  */
 router.get('/status', (req, res) => {
-  const workers = Array.from(activeWorkers.values()).map(worker => ({
-    id: worker.id,
-    taskId: worker.taskId,
-    taskContent: worker.taskContent.substring(0, STRING_TRUNCATE_LENGTH) + '...',
-    status: worker.status,
-    startTime: worker.startTime,
-    endTime: worker.endTime,
-    pid: worker.pid,
-    logFile: worker.logFile,
-    blockedCommands: worker.blockedCommands,
-    hasPermissionSystem: !!worker.interceptor,
-    validationPassed: worker.validationPassed,
-    validationRuns: worker.validationRuns?.length || 0,
-  }));
+  const workers = Array.from(activeWorkers.values()).map(worker => {
+    const serialized = serializeWorker(worker);
+    return {
+      ...serialized,
+      taskContent: worker.taskContent.substring(0, STRING_TRUNCATE_LENGTH) + '...',
+    };
+  });
 
   res.json({
     success: true,

@@ -3,6 +3,7 @@ import { getDatabaseService } from '../services/database';
 import { z } from 'zod';
 import { validateRequest } from '../middleware/validate';
 import { asyncHandler, throwNotFound, throwBadRequest } from '../middleware/error-handler';
+import { parsePagination } from '../middleware/pagination';
 import { createDataResponse, createCollectionResponse } from '../utils/api-response';
 import { AgentType } from '../types/generated/prisma-enums';
 
@@ -44,18 +45,26 @@ const updateProjectSchema = z.object({
 // GET /api/projects - List all projects
 router.get(
   '/',
+  parsePagination,
   asyncHandler(async (req, res) => {
     const db = getDatabaseService();
-    const projects = await db.project.findMany({
-      orderBy: { createdAt: 'desc' },
-      include: {
-        _count: {
-          select: { tasks: true, taskTemplates: true },
-        },
-      },
-    });
+    const { page, perPage, offset } = req.pagination;
 
-    res.json(createCollectionResponse(projects, projects.length, 1, projects.length, req.baseUrl));
+    const [projects, total] = await Promise.all([
+      db.project.findMany({
+        skip: offset,
+        take: perPage,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          _count: {
+            select: { tasks: true, taskTemplates: true },
+          },
+        },
+      }),
+      db.project.count(),
+    ]);
+
+    res.json(createCollectionResponse(projects, total, page, perPage, req.baseUrl));
   })
 );
 
