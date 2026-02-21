@@ -19,11 +19,11 @@ CodeGoat uses SQLite as its primary database, managed through Prisma ORM. The da
 
 - **Projects** - Project definitions and configuration
 - **Tasks** - Unified task tracking with full lifecycle management
-- **TaskAttempts** - Task execution attempts with worktree isolation
 - **TaskTemplates** - Reusable task templates
 - **ValidationRuns** - Validation pipeline execution history
 - **BDDScenarios** - Behavior-driven development test scenarios
-- **ExecutionMetrics** - Performance and cost tracking
+- **ExecutionProcesses** - Worker execution lifecycle metadata
+- **ExecutionProcessLogs** - Streaming stdout/stderr captured as append-only records
 
 ### Key Database Files
 
@@ -100,9 +100,9 @@ model Task {
   content            String?   // Additional content/notes
 
   // Relations
-  attempts           TaskAttempt[]
   validationRuns     ValidationRun[]
   bddScenarios       BDDScenario[]
+  executionProcesses ExecutionProcess[]
 }
 ```
 
@@ -114,18 +114,20 @@ Project
   └── TaskTemplates (many)
 
 Task
-  ├── TaskAttempts (many)
   ├── ValidationRuns (many)
-  └── BDDScenarios (many)
+  ├── BDDScenarios (many)
+  └── ExecutionProcesses (many)
 
-TaskAttempt
-  ├── ExecutionProcesses (many)
-  ├── ExecutorSessions (many)
-  └── ExecutionMetrics (many)
+ExecutionProcess
+  └── ExecutionProcessLogs (many)
 
 ValidationRun
   ├── ValidationStages (many)
   └── ValidationLogs (many)
+
+> Indexed fields: `timestamp`, `success`, `environment`, `session_id`, `git_commit`, `git_branch`
+
+Validation stages are keyed by `stage_id` and now enforce a foreign-key link to `ValidationStageConfig.stage_id`, guaranteeing that recorded results map back to a canonical configuration entry.
 ```
 
 ## Backup and Versioning
@@ -215,21 +217,21 @@ Backups can be managed via REST API:
 
 ```bash
 # Get backup status
-curl http://localhost:3000/api/backup/status
+curl http://localhost:3001/api/backup/status
 
 # List backups
-curl http://localhost:3000/api/backup
+curl http://localhost:3001/api/backup
 
 # Create backup
-curl -X POST http://localhost:3000/api/backup/create \
+curl -X POST http://localhost:3001/api/backup/create \
   -H "Content-Type: application/json" \
   -d '{"description": "API backup"}'
 
 # Restore backup
-curl -X POST http://localhost:3000/api/backup/restore/{backup-filename}.db
+curl -X POST http://localhost:3001/api/backup/restore/{backup-filename}.db
 
 # Delete backup
-curl -X DELETE http://localhost:3000/api/backup/{backup-filename}.db
+curl -X DELETE http://localhost:3001/api/backup/{backup-filename}.db
 ```
 
 See [backup-system.md](./backup-system.md) for complete backup documentation.
@@ -471,7 +473,7 @@ async function seedTestData() {
       id: 'CODEGOAT-001',
       projectId: project.id,
       title: 'Test task',
-      status: 'todo',
+      status: 'pending',
       priority: 'medium',
     },
   });
@@ -488,7 +490,7 @@ describe('Task Operations', () => {
     const task = await prisma.task.create({
       data: {
         title: 'Test Task',
-        status: 'todo',
+        status: 'pending',
         priority: 'high',
       },
     });
@@ -541,7 +543,7 @@ describe('Task API', () => {
       .post('/api/tasks')
       .send({
         title: 'API Test Task',
-        status: 'todo',
+        status: 'pending',
         priority: 'high',
       })
       .expect(200);
@@ -619,15 +621,15 @@ npx prisma generate
 // Bulk insert
 await prisma.task.createMany({
   data: [
-    { title: 'Task 1', status: 'todo', priority: 'high' },
-    { title: 'Task 2', status: 'todo', priority: 'medium' },
-    { title: 'Task 3', status: 'todo', priority: 'low' },
+    { title: 'Task 1', status: 'pending', priority: 'high' },
+    { title: 'Task 2', status: 'pending', priority: 'medium' },
+    { title: 'Task 3', status: 'pending', priority: 'low' },
   ],
 });
 
 // Bulk update
 await prisma.task.updateMany({
-  where: { status: 'todo' },
+  where: { status: 'pending' },
   data: { status: 'pending' },
 });
 
@@ -811,7 +813,7 @@ sqlite3 prisma/kanban.db "PRAGMA foreign_keys = OFF;"
 ```bash
 # 1. Analyze query plan
 sqlite3 prisma/kanban.db
-> EXPLAIN QUERY PLAN SELECT * FROM tasks WHERE status = 'todo';
+> EXPLAIN QUERY PLAN SELECT * FROM tasks WHERE status = 'pending';
 
 # 2. Add indexes
 npx prisma migrate dev --name add_performance_indexes

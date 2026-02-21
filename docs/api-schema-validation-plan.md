@@ -386,6 +386,8 @@ export const ApiResponseSchema = <T extends z.ZodType>(dataSchema: T) =>
   });
 ```
 
+All validation stage payloads must reference a `stage_id` that exists in `ValidationStageConfig`, so runtime reports stay in sync with the configured pipeline.
+
 ### Complete Endpoint Schema
 ```typescript
 // src/shared/schemas/api/claude-workers.schema.ts

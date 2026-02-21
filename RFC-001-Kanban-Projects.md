@@ -57,7 +57,7 @@ CREATE TABLE tasks (
     template_id TEXT REFERENCES task_templates(id) ON DELETE SET NULL,
     title TEXT NOT NULL,
     description TEXT,
-    status TEXT NOT NULL CHECK (status IN ('todo', 'inprogress', 'inreview', 'done', 'cancelled')),
+    status TEXT NOT NULL CHECK (status IN ('pending', 'inprogress', 'inreview', 'done', 'cancelled')),
     priority TEXT DEFAULT 'medium' CHECK (priority IN ('low', 'medium', 'high', 'urgent')),
     tags TEXT, -- JSON array
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
@@ -362,7 +362,7 @@ interface ExecutorSession {
 }
 
 // Enums (from vibe-kanban)
-type TaskStatus = 'todo' | 'inprogress' | 'inreview' | 'done' | 'cancelled';
+type TaskStatus = 'pending' | 'inprogress' | 'inreview' | 'done' | 'cancelled';
 type Priority = 'low' | 'medium' | 'high' | 'urgent';
 type AttemptStatus = 'created' | 'running' | 'completed' | 'failed' | 'cancelled';
 type ProcessType = 'setupscript' | 'codingagent' | 'devserver' | 'validation' | 'cleanup';
@@ -767,7 +767,7 @@ CREATE TABLE tasks (
   template_id TEXT REFERENCES task_templates(id) ON DELETE SET NULL,
   title TEXT NOT NULL,
   description TEXT,
-  status TEXT NOT NULL CHECK (status IN ('todo', 'inprogress', 'inreview', 'done', 'cancelled')),
+  status TEXT NOT NULL CHECK (status IN ('pending', 'inprogress', 'inreview', 'done', 'cancelled')),
   priority TEXT DEFAULT 'medium' CHECK (priority IN ('low', 'medium', 'high', 'urgent')),
   tags TEXT, -- JSON array
   created_at TEXT DEFAULT CURRENT_TIMESTAMP,

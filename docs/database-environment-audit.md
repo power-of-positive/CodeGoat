@@ -203,7 +203,7 @@ LOG_LEVEL=error
 ```bash
 NODE_ENV=production
 DATABASE_URL="file:./prisma/kanban-prod.db"
-PORT=3000
+PORT=3001
 
 # Production-specific
 LOG_LEVEL=info

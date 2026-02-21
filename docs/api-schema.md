@@ -447,11 +447,17 @@ Stop all running executions for this attempt.
 ```typescript
 type ExecutionProcess = {
   id: string;
-  task_attempt_id: string;
+  task_id: string | null;
+  worker_id: string | null;
   run_reason: ExecutionProcessRunReason;
   status: ExecutionProcessStatus;
-  exit_code: bigint | null;
-  started_at: string;
+  command: string | null;
+  args: string | null;
+  working_directory: string | null;
+  stdout_summary: string | null;
+  stderr_summary: string | null;
+  exit_code: number | null;
+  started_at: string | null;
   completed_at: string | null;
   created_at: string;
   updated_at: string;
@@ -460,13 +466,14 @@ type ExecutionProcess = {
 
 ### Execution Process Endpoints
 
-#### `GET /api/execution-processes?task_attempt_id={uuid}`
+#### `GET /api/execution-processes?task_id={uuid}&worker_id={uuid}`
 
-Get all execution processes for a task attempt.
+Get execution processes filtered by task and/or worker.
 
 **Query Parameters**:
 
-- `task_attempt_id` (required): Task attempt UUID
+- `task_id` (optional): Task UUID
+- `worker_id` (optional): Worker UUID
 
 **Response**: `ApiResponse<ExecutionProcess[]>`
 
