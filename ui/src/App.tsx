@@ -16,17 +16,30 @@ import { WorkerDetail } from './features/workers/components/WorkerDetail';
 import StageManagement from './pages/StageManagement';
 import { Layout } from './shared/components/Layout';
 import { ErrorBoundary } from './shared/components/ErrorBoundary';
+import { SidebarProvider } from './shared/contexts/SidebarContext';
 
 // Query client configuration constants
 const MILLISECONDS_PER_SECOND = 1000;
 const SECONDS_PER_MINUTE = 60;
 const QUERY_STALE_TIME_MINUTES = 5;
+const QUERY_TIMEOUT_SECONDS = 10; // 10 seconds timeout for failed requests
+const QUERY_RETRY_COUNT = 1; // Only retry once (2 attempts total)
+const QUERY_RETRY_DELAY_MS = 500; // Short delay between retries
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: MILLISECONDS_PER_SECOND * SECONDS_PER_MINUTE * QUERY_STALE_TIME_MINUTES, // 5 minutes
       refetchOnWindowFocus: false,
+      retry: QUERY_RETRY_COUNT, // Fail faster with fewer retries
+      retryDelay: QUERY_RETRY_DELAY_MS, // Shorter retry delay
+      networkMode: 'online', // Don't retry when offline
+      // Timeout for queries that hang
+      gcTime: MILLISECONDS_PER_SECOND * SECONDS_PER_MINUTE * 5, // 5 minutes garbage collection
+    },
+    mutations: {
+      retry: false, // Don't retry mutations to avoid duplicate operations
+      networkMode: 'online',
     },
   },
 });
@@ -38,8 +51,9 @@ function App(): React.JSX.Element {
       fallbackDescription="The application encountered an unexpected error. Please refresh the page to continue."
     >
       <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
-          <Layout>
+        <SidebarProvider>
+          <BrowserRouter>
+            <Layout>
             <Routes>
               <Route path="/" element={<Navigate to="/analytics" replace />} />
               <Route
@@ -188,6 +202,7 @@ function App(): React.JSX.Element {
             </Routes>
           </Layout>
         </BrowserRouter>
+        </SidebarProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   );

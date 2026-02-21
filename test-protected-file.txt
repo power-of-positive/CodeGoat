@@ -1,0 +1,3 @@
+This is a protected test file.
+DO NOT EDIT OR DELETE.
+This file is used to test the permissions system to ensure unsafe commands are blocked.

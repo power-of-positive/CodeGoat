@@ -103,6 +103,10 @@ interface ClaudeWorker {
   validationRuns: ValidationRun[];
   validationAttempts?: number;
   maxValidationAttempts?: number;
+  devServerBackend?: ChildProcess;
+  devServerFrontend?: ChildProcess;
+  devServerBackendPort?: number;
+  devServerFrontendPort?: number;
 }
 
 // In-memory storage for active workers
@@ -985,6 +989,7 @@ router.post('/clear', (req, res) => {
 router.post('/:workerId/stop', validateParams(StopWorkerParamsSchema), async (req, res) => {
   const { workerId } = req.params;
   const worker = activeWorkers.get(workerId);
+  const cleanupWorktree = req.query.cleanupWorktree === 'true';
 
   if (!worker) {
     return res.status(HTTP_STATUS.NOT_FOUND).json({
@@ -1003,6 +1008,7 @@ router.post('/:workerId/stop', validateParams(StopWorkerParamsSchema), async (re
         `Reason: Worker stopped manually via API/UI\n` +
         `Terminated by: User request\n` +
         `Termination time: ${new Date().toISOString()}\n` +
+        `Cleanup worktree: ${cleanupWorktree}\n` +
         `Signal: SIGTERM\n\n`;
 
       fs.appendFileSync(worker.logFile, logMessage);
@@ -1013,6 +1019,21 @@ router.post('/:workerId/stop', validateParams(StopWorkerParamsSchema), async (re
     worker.process.kill('SIGTERM');
     worker.status = 'stopped';
     worker.endTime = new Date();
+
+    // Clean up worktree if requested
+    if (cleanupWorktree && worker.worktreeManager && worker.worktreePath) {
+      const worktreeManager = worker.worktreeManager;
+      const worktreePath = worker.worktreePath;
+      (async () => {
+        try {
+          console.error(`🧹 Cleaning up worktree for stopped worker ${workerId}: ${worktreePath}`);
+          await worktreeManager.removeWorktree(worktreePath);
+          console.error(`✅ Worktree cleaned up for worker ${workerId}`);
+        } catch (error) {
+          console.error(`❌ Failed to cleanup worktree for worker ${workerId}:`, error);
+        }
+      })();
+    }
 
     // Run validation checks after manual stop (async, don't block the response)
     (async () => {
@@ -1041,8 +1062,73 @@ router.post('/:workerId/stop', validateParams(StopWorkerParamsSchema), async (re
     data: {
       workerId,
       status: worker.status,
+      worktreeCleanedUp: cleanupWorktree,
     },
   });
+});
+
+/**
+ * Delete a worker and clean up its worktree
+ */
+router.delete('/:workerId', validateParams(StopWorkerParamsSchema), async (req, res) => {
+  const { workerId } = req.params;
+  const worker = activeWorkers.get(workerId);
+
+  if (!worker) {
+    return res.status(HTTP_STATUS.NOT_FOUND).json({
+      success: false,
+      error: 'Worker not found',
+    });
+  }
+
+  try {
+    // Stop the worker process if it's still running
+    if (worker.process && (worker.status === 'running' || worker.status === 'validating')) {
+      console.error(`🛑 Stopping worker ${workerId} before deletion`);
+
+      try {
+        const logMessage =
+          `\n=== Worker Deletion ===\n` +
+          `Reason: Worker deleted via API/UI\n` +
+          `Deletion time: ${new Date().toISOString()}\n` +
+          `Signal: SIGTERM\n\n`;
+
+        fs.appendFileSync(worker.logFile, logMessage);
+      } catch (logError) {
+        console.error(`Failed to write deletion log for worker ${workerId}:`, logError);
+      }
+
+      worker.process.kill('SIGTERM');
+      worker.status = 'stopped';
+      worker.endTime = new Date();
+    }
+
+    // Clean up worktree
+    if (worker.worktreeManager && worker.worktreePath) {
+      console.error(`🧹 Cleaning up worktree for worker ${workerId}: ${worker.worktreePath}`);
+      await worker.worktreeManager.removeWorktree(worker.worktreePath);
+      console.error(`✅ Worktree cleaned up for worker ${workerId}`);
+    }
+
+    // Remove from active workers map
+    activeWorkers.delete(workerId);
+
+    console.error(`🗑️ Worker ${workerId} deleted successfully`);
+
+    res.json({
+      success: true,
+      data: {
+        workerId,
+        message: 'Worker and worktree deleted successfully',
+      },
+    });
+  } catch (error) {
+    console.error(`❌ Error deleting worker ${workerId}:`, error);
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      error: `Failed to delete worker: ${(error as Error).message}`,
+    });
+  }
 });
 
 /**
@@ -1382,6 +1468,271 @@ router.post('/:workerId/open-vscode', validateParams(OpenVSCodeParamsSchema), as
     });
   }
 });
+
+/**
+ * Start dev server in worker's worktree
+ */
+router.post(
+  '/:workerId/start-dev-server',
+  validateParams(OpenVSCodeParamsSchema),
+  async (req, res) => {
+    const { workerId } = req.params;
+    const { type } = req.body as { type?: 'backend' | 'frontend' | 'both' };
+    const serverType = type || 'both';
+    const worker = activeWorkers.get(workerId);
+
+    if (!worker) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json({
+        success: false,
+        error: 'Worker not found',
+      });
+    }
+
+    if (!worker.worktreePath) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
+        success: false,
+        error: 'No worktree associated with this worker',
+      });
+    }
+
+    if (!fs.existsSync(worker.worktreePath)) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json({
+        success: false,
+        error: 'Worktree directory not found',
+      });
+    }
+
+    try {
+      const { spawn: spawnProcess } = await import('child_process');
+      const results: { type: string; port: number; pid?: number }[] = [];
+
+      // Start backend dev server
+      if (serverType === 'backend' || serverType === 'both') {
+        if (worker.devServerBackend) {
+          return res.status(HTTP_STATUS.BAD_REQUEST).json({
+            success: false,
+            error: 'Backend dev server is already running',
+          });
+        }
+
+        // Find available port for backend (starting from 3002)
+        const backendPort = 3002 + Math.floor(Math.random() * 1000);
+
+        const backendProcess = spawnProcess('npm', ['run', 'dev'], {
+          cwd: worker.worktreePath,
+          env: { ...process.env, PORT: String(backendPort) },
+          detached: false,
+          stdio: ['ignore', 'pipe', 'pipe'],
+        });
+
+        worker.devServerBackend = backendProcess;
+        worker.devServerBackendPort = backendPort;
+
+        // Log backend server output
+        if (backendProcess.stdout) {
+          backendProcess.stdout.on('data', (data: Buffer) => {
+            console.error(`[Backend Dev Server ${workerId}] ${data.toString()}`);
+          });
+        }
+
+        if (backendProcess.stderr) {
+          backendProcess.stderr.on('data', (data: Buffer) => {
+            console.error(`[Backend Dev Server ${workerId}] ${data.toString()}`);
+          });
+        }
+
+        backendProcess.on('exit', (code: number | null) => {
+          console.error(`Backend dev server for worker ${workerId} exited with code ${code}`);
+          worker.devServerBackend = undefined;
+          worker.devServerBackendPort = undefined;
+        });
+
+        results.push({ type: 'backend', port: backendPort, pid: backendProcess.pid });
+      }
+
+      // Start frontend dev server
+      if (serverType === 'frontend' || serverType === 'both') {
+        if (worker.devServerFrontend) {
+          return res.status(HTTP_STATUS.BAD_REQUEST).json({
+            success: false,
+            error: 'Frontend dev server is already running',
+          });
+        }
+
+        const uiPath = path.join(worker.worktreePath, 'ui');
+        if (!fs.existsSync(uiPath)) {
+          if (serverType === 'frontend') {
+            return res.status(HTTP_STATUS.NOT_FOUND).json({
+              success: false,
+              error: 'UI directory not found in worktree',
+            });
+          }
+        } else {
+          // Find available port for frontend (starting from 5174)
+          const frontendPort = 5174 + Math.floor(Math.random() * 1000);
+
+          const frontendProcess = spawnProcess('npm', ['run', 'dev', '--', '--port', String(frontendPort)], {
+            cwd: uiPath,
+            env: { ...process.env, PORT: String(frontendPort) },
+            detached: false,
+            stdio: ['ignore', 'pipe', 'pipe'],
+          });
+
+          worker.devServerFrontend = frontendProcess;
+          worker.devServerFrontendPort = frontendPort;
+
+          // Log frontend server output
+          if (frontendProcess.stdout) {
+            frontendProcess.stdout.on('data', (data: Buffer) => {
+              console.error(`[Frontend Dev Server ${workerId}] ${data.toString()}`);
+            });
+          }
+
+          if (frontendProcess.stderr) {
+            frontendProcess.stderr.on('data', (data: Buffer) => {
+              console.error(`[Frontend Dev Server ${workerId}] ${data.toString()}`);
+            });
+          }
+
+          frontendProcess.on('exit', (code: number | null) => {
+            console.error(`Frontend dev server for worker ${workerId} exited with code ${code}`);
+            worker.devServerFrontend = undefined;
+            worker.devServerFrontendPort = undefined;
+          });
+
+          results.push({ type: 'frontend', port: frontendPort, pid: frontendProcess.pid });
+        }
+      }
+
+      console.error(`Started dev server(s) for worker ${workerId}:`, results);
+
+      res.json({
+        success: true,
+        data: {
+          message: 'Dev server(s) started successfully',
+          workerId,
+          worktreePath: worker.worktreePath,
+          servers: results,
+        },
+      });
+    } catch (error) {
+      console.error(`Error starting dev server for worker ${workerId}:`, error);
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        error: `Failed to start dev server: ${(error as Error).message}`,
+      });
+    }
+  }
+);
+
+/**
+ * Stop dev server for worker's worktree
+ */
+router.post(
+  '/:workerId/stop-dev-server',
+  validateParams(OpenVSCodeParamsSchema),
+  async (req, res) => {
+    const { workerId } = req.params;
+    const { type } = req.body as { type?: 'backend' | 'frontend' | 'both' };
+    const serverType = type || 'both';
+    const worker = activeWorkers.get(workerId);
+
+    if (!worker) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json({
+        success: false,
+        error: 'Worker not found',
+      });
+    }
+
+    try {
+      const stopped: string[] = [];
+
+      // Stop backend dev server
+      if ((serverType === 'backend' || serverType === 'both') && worker.devServerBackend) {
+        worker.devServerBackend.kill('SIGTERM');
+        worker.devServerBackend = undefined;
+        worker.devServerBackendPort = undefined;
+        stopped.push('backend');
+      }
+
+      // Stop frontend dev server
+      if ((serverType === 'frontend' || serverType === 'both') && worker.devServerFrontend) {
+        worker.devServerFrontend.kill('SIGTERM');
+        worker.devServerFrontend = undefined;
+        worker.devServerFrontendPort = undefined;
+        stopped.push('frontend');
+      }
+
+      if (stopped.length === 0) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+          success: false,
+          error: 'No dev servers are running for this worker',
+        });
+      }
+
+      console.error(`Stopped dev server(s) for worker ${workerId}:`, stopped);
+
+      res.json({
+        success: true,
+        data: {
+          message: `Stopped ${stopped.join(' and ')} dev server(s)`,
+          workerId,
+          stopped,
+        },
+      });
+    } catch (error) {
+      console.error(`Error stopping dev server for worker ${workerId}:`, error);
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        error: `Failed to stop dev server: ${(error as Error).message}`,
+      });
+    }
+  }
+);
+
+/**
+ * Get dev server status for worker
+ */
+router.get(
+  '/:workerId/dev-server-status',
+  validateParams(OpenVSCodeParamsSchema),
+  (req, res) => {
+    const { workerId } = req.params;
+    const worker = activeWorkers.get(workerId);
+
+    if (!worker) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json({
+        success: false,
+        error: 'Worker not found',
+      });
+    }
+
+    const status = {
+      backend: worker.devServerBackend
+        ? {
+            running: true,
+            port: worker.devServerBackendPort,
+            pid: worker.devServerBackend.pid,
+          }
+        : { running: false },
+      frontend: worker.devServerFrontend
+        ? {
+            running: true,
+            port: worker.devServerFrontendPort,
+            pid: worker.devServerFrontend.pid,
+          }
+        : { running: false },
+    };
+
+    res.json({
+      success: true,
+      data: {
+        workerId,
+        status,
+      },
+    });
+  }
+);
 
 /**
  * Get blocked commands for a specific worker
@@ -1739,6 +2090,142 @@ router.post(
 );
 
 /**
+ * Generate commit message based on git diff and task description
+ */
+router.get('/:workerId/generate-commit-message', validateParams(OpenVSCodeParamsSchema), (req, res) => {
+  const { workerId } = req.params;
+  const worker = activeWorkers.get(workerId);
+
+  if (!worker) {
+    return res.status(HTTP_STATUS.NOT_FOUND).json({
+      success: false,
+      error: 'Worker not found',
+    });
+  }
+
+  if (!worker.worktreeManager || !worker.worktreePath) {
+    return res.status(HTTP_STATUS.BAD_REQUEST).json({
+      success: false,
+      error: 'Worker does not have a worktree',
+    });
+  }
+
+  try {
+    const { execSync } = require('child_process');
+    const worktreePath = worker.worktreePath;
+
+    // Check if there are changes
+    const status = execSync('git status --porcelain', {
+      cwd: worktreePath,
+      encoding: 'utf8',
+    });
+
+    if (!status.trim()) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
+        success: false,
+        error: 'No changes to generate commit message for',
+      });
+    }
+
+    // Get the diff stats
+    const diffStat = execSync('git diff --stat', {
+      cwd: worktreePath,
+      encoding: 'utf8',
+    });
+
+    // Get the diff for analysis
+    const diff = execSync('git diff', {
+      cwd: worktreePath,
+      encoding: 'utf8',
+      maxBuffer: 1024 * 1024 * 10, // 10MB buffer for large diffs
+    });
+
+    // Get list of changed files
+    const changedFiles = status
+      .trim()
+      .split('\n')
+      .map((line: string) => {
+        const match = line.match(/^\s*[AMD?]\s+(.+)$/);
+        return match ? match[1] : null;
+      })
+      .filter(Boolean) as string[];
+
+    // Analyze changes to generate a descriptive commit message
+    const fileTypes: Record<string, number> = {};
+    const directories: Set<string> = new Set();
+
+    changedFiles.forEach((file: string) => {
+      const ext = path.extname(file);
+      fileTypes[ext] = (fileTypes[ext] || 0) + 1;
+      const dir = path.dirname(file);
+      if (dir !== '.') {
+        directories.add(dir.split('/')[0]);
+      }
+    });
+
+    // Generate commit message based on analysis
+    let commitMessage = `Task ${worker.taskId}: ${worker.taskContent}`;
+
+    // Add summary of changes
+    const changesSummary: string[] = [];
+
+    if (changedFiles.length === 1) {
+      changesSummary.push(`Updated ${changedFiles[0]}`);
+    } else {
+      changesSummary.push(`Modified ${changedFiles.length} files`);
+
+      // Add file type summary if diverse
+      const topFileTypes = Object.entries(fileTypes)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 2);
+      if (topFileTypes.length > 0) {
+        const typesSummary = topFileTypes
+          .map(([ext, count]) => `${count} ${ext || 'config'} ${count > 1 ? 'files' : 'file'}`)
+          .join(', ');
+        changesSummary.push(typesSummary);
+      }
+
+      // Add directory summary if changes span multiple areas
+      if (directories.size > 0 && directories.size <= 3) {
+        changesSummary.push(`across ${Array.from(directories).join(', ')}`);
+      }
+    }
+
+    if (changesSummary.length > 0) {
+      commitMessage += `\n\n${changesSummary.join(' ')}`;
+    }
+
+    // Add diff stats summary
+    const diffLines = diffStat.split('\n');
+    const statsLine = diffLines[diffLines.length - 2];
+    if (statsLine) {
+      commitMessage += `\n${statsLine.trim()}`;
+    }
+
+    res.json({
+      success: true,
+      data: {
+        commitMessage,
+        changedFiles,
+        diffStat,
+        summary: {
+          filesChanged: changedFiles.length,
+          fileTypes,
+          directories: Array.from(directories),
+        },
+      },
+    });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Failed to generate commit message:', error);
+    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      error: `Failed to generate commit message: ${errorMessage}`,
+    });
+  }
+});
+
+/**
  * Merge changes from worker's worktree
  */
 router.post(
@@ -1846,5 +2333,85 @@ router.post(
     }
   }
 );
+
+// Get git diff for a worker's changes
+router.get('/:workerId/diff', (req, res) => {
+  const { workerId } = req.params;
+
+  const worker = activeWorkers.get(workerId);
+  if (!worker) {
+    return res.status(HTTP_STATUS.NOT_FOUND).json({
+      success: false,
+      error: 'Worker not found',
+    });
+  }
+
+  if (!worker.worktreePath) {
+    return res.status(HTTP_STATUS.BAD_REQUEST).json({
+      success: false,
+      error: 'No worktree associated with this worker',
+    });
+  }
+
+  try {
+    const { execSync } = require('child_process');
+    const worktreePath = worker.worktreePath;
+
+    // Check if the worktree directory exists
+    if (!fs.existsSync(worktreePath)) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json({
+        success: false,
+        error: 'Worktree directory not found',
+      });
+    }
+
+    // Get the diff
+    const diff = execSync('git diff HEAD', {
+      cwd: worktreePath,
+      encoding: 'utf8',
+      maxBuffer: 1024 * 1024 * 10, // 10MB buffer for large diffs
+    }) as string;
+
+    // Get diff stats
+    const diffStat = execSync('git diff --stat HEAD', {
+      cwd: worktreePath,
+      encoding: 'utf8',
+    }) as string;
+
+    // Get list of changed files
+    const changedFiles = (
+      execSync('git diff --name-status HEAD', {
+        cwd: worktreePath,
+        encoding: 'utf8',
+      }) as string
+    )
+      .split('\n')
+      .filter((line: string) => line.trim())
+      .map((line: string) => {
+        const [status, ...pathParts] = line.split('\t');
+        return {
+          status: status.trim(),
+          path: pathParts.join('\t').trim(),
+        };
+      });
+
+    return res.json({
+      success: true,
+      data: {
+        diff,
+        diffStat,
+        changedFiles,
+        worktreePath,
+      },
+    });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error(`Error getting diff for worker ${workerId}:`, error);
+    return res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      error: `Failed to get diff: ${errorMessage}`,
+    });
+  }
+});
 
 export default router;

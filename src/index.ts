@@ -17,7 +17,9 @@ import { createValidationRunRoutes } from './routes/validation-runs';
 import claudeWorkersRouter from './routes/claude-workers';
 import { createOrchestratorRoutes } from './routes/orchestrator';
 import validationStageConfigsRouter from './routes/validation-stage-configs';
+import { createBackupRoutes } from './routes/backup';
 import { createDatabaseService } from './services/database';
+import { createErrorHandler } from './middleware/error-handler';
 
 // Constants
 const BYTES_PER_KB = 1024;
@@ -169,6 +171,7 @@ app.use('/api/validation-runs', createValidationRunRoutes(logger));
 app.use('/api/claude-workers', claudeWorkersRouter);
 app.use('/api/orchestrator', createOrchestratorRoutes(logger));
 app.use('/api/validation-stage-configs', validationStageConfigsRouter);
+app.use('/api/backups', createBackupRoutes(logger));
 
 // Health check endpoint
 app.get('/health', (_req: Request, res: Response) => {
@@ -184,6 +187,9 @@ app.use((req: Request, res: Response) => {
     res.sendFile(path.join(uiDistPath, 'index.html'));
   }
 });
+
+// Global error handler - MUST be registered after all routes
+app.use(createErrorHandler(logger));
 
 // Create HTTP server
 const httpServer = createServer(app);

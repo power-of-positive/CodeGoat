@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   ChartColumn,
@@ -16,6 +16,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { Button } from '../ui/button';
+import { useSidebar } from '../contexts/SidebarContext';
 
 // Constants
 const MOBILE_BREAKPOINT_PX = 768;
@@ -122,7 +123,7 @@ function SidebarHeader({ isCollapsed, onToggle }: { isCollapsed: boolean; onTogg
         className="hidden md:flex h-8 w-8 p-0"
         aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
       >
-        {isCollapsed ? <Menu className="h-4 w-4" /> : <X className="h-4 w-4" />}
+        {isCollapsed ? <Menu className="h-5 w-5" /> : <X className="h-5 w-5" />}
       </Button>
       {/* Mobile close button */}
       <Button
@@ -132,7 +133,7 @@ function SidebarHeader({ isCollapsed, onToggle }: { isCollapsed: boolean; onTogg
         className="md:hidden h-8 w-8 p-0"
         aria-label="Close sidebar"
       >
-        <X className="h-4 w-4" />
+        <X className="h-5 w-5" />
       </Button>
     </div>
   );
@@ -234,31 +235,27 @@ function MobileMenuButton({
 }) {
   return (
     <Button
-      variant="outline"
+      variant="secondary"
       size="sm"
       onClick={onToggle}
       className={`
-        fixed top-4 left-4 z-40 md:hidden
+        fixed top-4 left-4 z-40 md:hidden shadow-md
         ${isCollapsed ? 'block' : 'hidden'}
       `}
       aria-label="Open sidebar"
     >
-      <Menu className="h-4 w-4" />
+      <Menu className="h-5 w-5" />
     </Button>
   );
 }
 
 export function Sidebar({ className = '' }: SidebarProps) {
-  const [isCollapsed, setIsCollapsed] = useState(false);
-
-  const toggleSidebar = () => {
-    setIsCollapsed(!isCollapsed);
-  };
+  const { isCollapsed, toggleSidebar } = useSidebar();
 
   const handleMobileNavigate = () => {
     // Close mobile sidebar on navigation
     if (window.innerWidth < MOBILE_BREAKPOINT_PX) {
-      setIsCollapsed(true);
+      toggleSidebar();
     }
   };
 

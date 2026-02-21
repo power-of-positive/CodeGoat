@@ -78,9 +78,10 @@ export default defineConfig({
       reuseExistingServer: !process.env.CI,
       timeout: 120000,
       env: {
-        NODE_ENV: 'e2e-test',
-        KANBAN_DATABASE_URL: 'file:./prisma/kanban-test.db',
+        NODE_ENV: 'test',
+        // Standard database configuration
         DATABASE_URL: 'file:./prisma/kanban-test.db',
+        KANBAN_DATABASE_URL: 'file:./prisma/kanban-test.db', // Legacy support
         AI_REVIEWER_ENABLED: 'false',
         LOG_LEVEL: 'error',
         PORT: '3001',

@@ -43,7 +43,7 @@ const DEFAULT_CONFIG: CommitMessageConfig = {
     /\bTASK-(\d{3,})\b/gi, // Legacy: TASK-001, TASK-042, etc.
     /\bKANBAN-(\d+)\b/gi, // Legacy: KANBAN-001, etc.
   ],
-  excludePatterns: ['^Merge ', '^Revert ', '^Initial commit', '^WIP', '^fixup!', '^squash!'],
+  excludePatterns: ['^Revert ', '^Initial commit', '^WIP', '^fixup!', '^squash!'],
   apiBaseUrl: 'http://localhost:3000',
 };
 
@@ -140,6 +140,44 @@ function extractTaskId(message: string, patterns: RegExp[]): string | null {
   return null;
 }
 
+/**
+ * Detect if commit message is a merge commit
+ */
+function isMergeCommit(message: string): boolean {
+  return /^Merge\s+(branch|pull\s+request|remote-tracking\s+branch)/i.test(message);
+}
+
+/**
+ * Extract task ID from merge commit message
+ * Handles formats like:
+ * - "Merge branch 'CODEGOAT-042-feature-name'"
+ * - "Merge pull request #123 from user/CODEGOAT-042-fix"
+ * - Regular task ID patterns in merge message
+ */
+function extractTaskIdFromMerge(message: string, patterns: RegExp[]): string | null {
+  // First try to extract from branch name in merge message
+  const branchPatterns = [
+    /Merge\s+branch\s+'([^']+)'/i,
+    /Merge\s+branch\s+"([^"]+)"/i,
+    /Merge\s+pull\s+request\s+#\d+\s+from\s+[^\/]+\/(.+)/i,
+  ];
+
+  for (const branchPattern of branchPatterns) {
+    const branchMatch = message.match(branchPattern);
+    if (branchMatch && branchMatch[1]) {
+      const branchName = branchMatch[1];
+      // Try to extract task ID from branch name
+      const taskId = extractTaskId(branchName, patterns);
+      if (taskId) {
+        return taskId;
+      }
+    }
+  }
+
+  // Fallback to regular task ID extraction from entire message
+  return extractTaskId(message, patterns);
+}
+
 function isExcludedMessage(message: string, excludePatterns: string[]): boolean {
   return excludePatterns.some(pattern => new RegExp(pattern).test(message));
 }
@@ -212,6 +250,14 @@ function extractTaskContent(taskId: string, commitMessage: string): string {
 }
 
 /**
+ * Check if we should enforce strict task validation
+ * Can be disabled via environment variable for flexibility
+ */
+function shouldEnforceTaskValidation(): boolean {
+  return process.env.SKIP_TASK_VALIDATION !== 'true';
+}
+
+/**
  * Create a new task when it doesn't exist
  */
 async function handleNewTask(
@@ -219,6 +265,13 @@ async function handleNewTask(
   taskId: string,
   commitMessage: string
 ): Promise<void> {
+  if (shouldEnforceTaskValidation()) {
+    console.error(`❌ Task ${taskId} does not exist in the database`);
+    console.error(`💡 Please create the task first or use an existing task ID`);
+    console.error(`💡 To bypass this check, set SKIP_TASK_VALIDATION=true`);
+    process.exit(1);
+  }
+
   console.error(`📝 Task ${taskId} not found, creating new task...`);
 
   const content = extractTaskContent(taskId, commitMessage);
@@ -240,13 +293,50 @@ async function handleNewTask(
 }
 
 /**
+ * Handle merge commit - automatically mark task as completed
+ */
+async function handleMergeCommit(
+  config: CommitMessageConfig,
+  task: Task,
+  commitMessage: string
+): Promise<void> {
+  console.error(
+    `🔀 Merge commit detected for task [${task.id}]: ${task.content.substring(0, TASK_CONTENT_DISPLAY_LENGTH)}...`
+  );
+  console.error(`   Current status: ${task.status}, Priority: ${task.priority}`);
+
+  if (task.status === 'completed') {
+    console.error(`✅ Task [${task.id}] is already completed`);
+    return;
+  }
+
+  // Merge commits automatically mark tasks as completed
+  console.error(`🎉 Successful merge detected, marking task [${task.id}] as completed...`);
+  const updated = await updateTaskStatus(config.apiBaseUrl, task.id, 'completed');
+  if (updated) {
+    console.error(`✅ Task [${task.id}] marked as completed after successful merge`);
+  } else {
+    console.error('❌ Failed to update task status to completed');
+    console.error('💡 Task must be marked as completed before merge can proceed');
+    process.exit(1);
+  }
+}
+
+/**
  * Handle existing task status updates
  */
 async function handleExistingTask(
   config: CommitMessageConfig,
   task: Task,
-  commitMessage: string
+  commitMessage: string,
+  isMerge: boolean = false
 ): Promise<void> {
+  // If this is a merge commit, handle it specially
+  if (isMerge) {
+    await handleMergeCommit(config, task, commitMessage);
+    return;
+  }
+
   console.error(
     `✅ Found existing task [${task.id}]: ${task.content.substring(0, TASK_CONTENT_DISPLAY_LENGTH)}...`
   );
@@ -282,14 +372,21 @@ async function handleTaskOperations(
   config: CommitMessageConfig,
   taskId: string,
   commitMessage: string,
-  tasks: Task[]
+  tasks: Task[],
+  isMerge: boolean = false
 ): Promise<void> {
   const task = tasks.find(t => t.id === taskId);
 
   if (!task) {
+    // For merge commits, task MUST exist
+    if (isMerge) {
+      console.error(`❌ Task ${taskId} does not exist in the database`);
+      console.error(`💡 Cannot merge without an existing task - please create the task first`);
+      process.exit(1);
+    }
     await handleNewTask(config, taskId, commitMessage);
   } else {
-    await handleExistingTask(config, task, commitMessage);
+    await handleExistingTask(config, task, commitMessage, isMerge);
   }
 }
 
@@ -306,15 +403,31 @@ async function validateCommitMessage(): Promise<void> {
     process.exit(0);
   }
 
-  // Extract task ID
-  const taskId = extractTaskId(commitMessage, config.taskIdPatterns);
+  // Detect if this is a merge commit
+  const isMerge = isMergeCommit(commitMessage);
+  if (isMerge) {
+    console.error('🔀 Merge commit detected');
+  }
+
+  // Extract task ID (use special extraction for merge commits)
+  const taskId = isMerge
+    ? extractTaskIdFromMerge(commitMessage, config.taskIdPatterns)
+    : extractTaskId(commitMessage, config.taskIdPatterns);
 
   if (!taskId) {
-    console.error('❌ Commit message must contain a valid task reference');
-    console.error('💡 Supported formats:');
-    console.error('   - CODEGOAT-001: implement new feature (recommended)');
-    console.error('   - CODEGOAT-123: fix pagination issue');
-    console.error('   - TASK-456: update dependencies (legacy)');
+    if (isMerge) {
+      console.error('❌ Merge commit must contain a valid task reference in branch name or message');
+      console.error('💡 Supported formats:');
+      console.error('   - Merge branch "CODEGOAT-001-feature-name"');
+      console.error('   - Merge pull request #123 from user/CODEGOAT-042-fix');
+      console.error('   - Branch names containing CODEGOAT-XXX, TASK-XXX, or KANBAN-XXX');
+    } else {
+      console.error('❌ Commit message must contain a valid task reference');
+      console.error('💡 Supported formats:');
+      console.error('   - CODEGOAT-001: implement new feature (recommended)');
+      console.error('   - CODEGOAT-123: fix pagination issue');
+      console.error('   - TASK-456: update dependencies (legacy)');
+    }
     process.exit(1);
   }
 
@@ -329,7 +442,7 @@ async function validateCommitMessage(): Promise<void> {
 
   console.error(`📊 Loaded ${tasks.length} tasks from database`);
 
-  await handleTaskOperations(config, taskId, commitMessage, tasks);
+  await handleTaskOperations(config, taskId, commitMessage, tasks, isMerge);
   console.error('✅ Commit message validation passed');
 }
 
@@ -348,8 +461,11 @@ if (require.main === module) {
 export {
   validateCommitMessage,
   extractTaskId,
+  extractTaskIdFromMerge,
+  isMergeCommit,
   loadTasksFromAPI,
   createTask,
   updateTaskStatus,
   isTaskCompletionCommit,
+  handleMergeCommit,
 };

@@ -13,6 +13,9 @@ import {
   Code2,
   ArrowLeft,
   ExternalLink,
+  Trash2,
+  Server,
+  StopCircle,
 } from 'lucide-react';
 import { Button } from '../../../shared/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../shared/ui/card';
@@ -20,6 +23,7 @@ import { Badge } from '../../../shared/ui/badge';
 import { Label } from '../../../shared/ui/label';
 import { claudeWorkersApi } from '../../../shared/lib/api';
 import { TaskLogs } from '../../tasks/components/TaskLogs';
+import { DiffViewer } from './DiffViewer';
 
 interface ValidationStageResult {
   id: string;
@@ -48,6 +52,7 @@ interface WorkerStatus {
   endTime?: string;
   pid?: number;
   logFile: string;
+  worktreePath?: string;
   blockedCommands: number;
   hasPermissionSystem: boolean;
   validationPassed?: boolean;
@@ -97,6 +102,21 @@ export function WorkerDetail() {
     refetchInterval: 2000, // Refresh every 2 seconds
   });
 
+  // Fetch worker diff
+  const { data: workerDiff } = useQuery({
+    queryKey: ['worker-diff', workerId],
+    queryFn: async () => {
+      try {
+        return await claudeWorkersApi.getWorkerDiff(workerId!);
+      } catch (error) {
+        console.error('Failed to fetch worker diff:', error);
+        return null;
+      }
+    },
+    enabled: !!workerId && !!worker?.worktreePath,
+    refetchInterval: 5000, // Refresh every 5 seconds
+  });
+
   // Start worker
   const startWorkerMutation = useMutation({
     mutationFn: async () => {
@@ -128,6 +148,22 @@ export function WorkerDetail() {
     onError: (error: Error) => {
       console.error('Failed to stop worker:', error);
       alert(`Failed to stop worker: ${error.message}`);
+    },
+  });
+
+  // Delete worker and worktree
+  const deleteWorkerMutation = useMutation({
+    mutationFn: async () => {
+      await claudeWorkersApi.deleteWorker(workerId!);
+    },
+    onSuccess: () => {
+      alert('Worker and worktree deleted successfully');
+      // Navigate back to workers list
+      window.location.href = '/workers';
+    },
+    onError: (error: Error) => {
+      console.error('Failed to delete worker:', error);
+      alert(`Failed to delete worker: ${error.message}`);
     },
   });
 
@@ -178,6 +214,57 @@ export function WorkerDetail() {
     onError: (error: Error) => {
       console.error('Failed to merge changes:', error);
       alert(`❌ Failed to merge changes: ${error.message}`);
+    },
+  });
+
+  // Dev Server Status Query
+  const { data: devServerStatus, refetch: refetchDevServerStatus } = useQuery({
+    queryKey: ['dev-server-status', workerId],
+    queryFn: async () => {
+      if (!workerId) return null;
+      try {
+        return await claudeWorkersApi.getDevServerStatus(workerId);
+      } catch (error) {
+        console.error('Failed to fetch dev server status:', error);
+        return null;
+      }
+    },
+    refetchInterval: 5000, // Poll every 5 seconds
+    enabled: !!workerId,
+  });
+
+  // Start Dev Server
+  const startDevServerMutation = useMutation({
+    mutationFn: async (type: 'backend' | 'frontend' | 'both') => {
+      return await claudeWorkersApi.startDevServer(workerId!, type);
+    },
+    onSuccess: (data) => {
+      refetchDevServerStatus();
+      alert(
+        `Dev server(s) started successfully!\n\n` +
+          data.servers
+            .map(s => `${s.type.charAt(0).toUpperCase() + s.type.slice(1)}: http://localhost:${s.port}`)
+            .join('\n')
+      );
+    },
+    onError: (error: Error) => {
+      console.error('Failed to start dev server:', error);
+      alert(`Failed to start dev server: ${error.message}`);
+    },
+  });
+
+  // Stop Dev Server
+  const stopDevServerMutation = useMutation({
+    mutationFn: async (type: 'backend' | 'frontend' | 'both') => {
+      await claudeWorkersApi.stopDevServer(workerId!, type);
+    },
+    onSuccess: () => {
+      refetchDevServerStatus();
+      alert('Dev server(s) stopped successfully');
+    },
+    onError: (error: Error) => {
+      console.error('Failed to stop dev server:', error);
+      alert(`Failed to stop dev server: ${error.message}`);
     },
   });
 
@@ -323,7 +410,7 @@ export function WorkerDetail() {
                 )}
                 <div>
                   <Label className="font-medium text-gray-700">Log File:</Label>
-                  <p className="text-xs text-gray-500 font-mono bg-gray-50 p-1 rounded">
+                  <p className="text-xs text-gray-500 font-mono bg-gray-50 p-1 rounded break-all overflow-hidden max-w-full">
                     {worker.logFile}
                   </p>
                 </div>
@@ -563,24 +650,57 @@ export function WorkerDetail() {
               {(worker.status === 'completed' || worker.status === 'stopped') &&
                 worker.validationPassed && (
                   <div className="space-y-2">
-                    <Button
-                      onClick={() => {
-                        const commitMessage = prompt(
-                          'Enter a commit message (optional):',
-                          `Task ${worker.taskId}: ${worker.taskContent.substring(0, 50)}...`
-                        );
-                        // If user cancels, commitMessage will be null, so don't proceed
-                        if (commitMessage !== null) {
-                          mergeChangesMutation.mutate(commitMessage || undefined);
-                        }
-                      }}
-                      disabled={mergeChangesMutation.isPending}
-                      className="w-full flex items-center justify-center space-x-2 text-green-600"
-                      variant="outline"
-                    >
-                      <GitMerge className="h-4 w-4" />
-                      <span>{mergeChangesMutation.isPending ? 'Merging...' : 'Merge Changes'}</span>
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={async () => {
+                          try {
+                            const result = await claudeWorkersApi.generateCommitMessage(workerId!);
+                            const commitMessage = prompt(
+                              'Generated commit message (edit if needed):',
+                              result.commitMessage
+                            );
+                            if (commitMessage !== null) {
+                              mergeChangesMutation.mutate(commitMessage || undefined);
+                            }
+                          } catch (error) {
+                            console.error('Failed to generate commit message:', error);
+                            const commitMessage = prompt(
+                              'Enter a commit message (optional):',
+                              `Task ${worker.taskId}: ${worker.taskContent.substring(0, 50)}...`
+                            );
+                            if (commitMessage !== null) {
+                              mergeChangesMutation.mutate(commitMessage || undefined);
+                            }
+                          }
+                        }}
+                        disabled={mergeChangesMutation.isPending}
+                        className="flex-1 flex items-center justify-center space-x-2 text-green-600"
+                        variant="outline"
+                      >
+                        <GitMerge className="h-4 w-4" />
+                        <span>
+                          {mergeChangesMutation.isPending ? 'Merging...' : 'Auto-Generate & Merge'}
+                        </span>
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          const commitMessage = prompt(
+                            'Enter a commit message (optional):',
+                            `Task ${worker.taskId}: ${worker.taskContent.substring(0, 50)}...`
+                          );
+                          if (commitMessage !== null) {
+                            mergeChangesMutation.mutate(commitMessage || undefined);
+                          }
+                        }}
+                        disabled={mergeChangesMutation.isPending}
+                        className="flex items-center justify-center space-x-2 text-green-600"
+                        variant="outline"
+                        size="sm"
+                      >
+                        <GitMerge className="h-4 w-4" />
+                        <span>Manual</span>
+                      </Button>
+                    </div>
                     <p className="text-xs text-gray-500 text-center">
                       Merges successful changes back to main branch
                     </p>
@@ -601,6 +721,118 @@ export function WorkerDetail() {
                   Opens the worker's code directory in VS Code
                 </p>
               </div>
+
+              {/* Dev Server Controls */}
+              {worker.worktreePath && (
+                <div className="space-y-2 pt-2 border-t border-gray-200">
+                  <Label className="text-sm font-semibold text-gray-700">Dev Servers</Label>
+
+                  {/* Show dev server status */}
+                  {devServerStatus?.status && (
+                    <div className="space-y-1 text-xs">
+                      {devServerStatus.status.backend.running && (
+                        <div className="flex items-center justify-between px-2 py-1 bg-green-50 rounded border border-green-200">
+                          <span className="text-green-700 font-medium">Backend Running</span>
+                          <a
+                            href={`http://localhost:${devServerStatus.status.backend.port}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-green-600 hover:text-green-800 flex items-center gap-1"
+                          >
+                            :{devServerStatus.status.backend.port}
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                        </div>
+                      )}
+                      {devServerStatus.status.frontend.running && (
+                        <div className="flex items-center justify-between px-2 py-1 bg-blue-50 rounded border border-blue-200">
+                          <span className="text-blue-700 font-medium">Frontend Running</span>
+                          <a
+                            href={`http://localhost:${devServerStatus.status.frontend.port}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                          >
+                            :{devServerStatus.status.frontend.port}
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Start/Stop buttons */}
+                  <div className="flex gap-2">
+                    {!devServerStatus?.status?.backend.running &&
+                      !devServerStatus?.status?.frontend.running && (
+                        <Button
+                          onClick={() => startDevServerMutation.mutate('both')}
+                          disabled={startDevServerMutation.isPending}
+                          className="flex-1 flex items-center justify-center space-x-2 text-green-600"
+                          variant="outline"
+                          size="sm"
+                        >
+                          <Server className="h-4 w-4" />
+                          <span>
+                            {startDevServerMutation.isPending ? 'Starting...' : 'Start Dev Servers'}
+                          </span>
+                        </Button>
+                      )}
+
+                    {(devServerStatus?.status?.backend.running ||
+                      devServerStatus?.status?.frontend.running) && (
+                      <Button
+                        onClick={() => stopDevServerMutation.mutate('both')}
+                        disabled={stopDevServerMutation.isPending}
+                        className="flex-1 flex items-center justify-center space-x-2 text-red-600"
+                        variant="outline"
+                        size="sm"
+                      >
+                        <StopCircle className="h-4 w-4" />
+                        <span>
+                          {stopDevServerMutation.isPending ? 'Stopping...' : 'Stop Dev Servers'}
+                        </span>
+                      </Button>
+                    )}
+                  </div>
+
+                  <p className="text-xs text-gray-500 text-center">
+                    Run backend and frontend servers in worker's worktree
+                  </p>
+                </div>
+              )}
+
+              {/* Delete Worker Button - Show for stopped/failed/completed workers */}
+              {(worker.status === 'stopped' ||
+                worker.status === 'failed' ||
+                worker.status === 'completed') && (
+                <div className="space-y-2 pt-4 border-t border-gray-200">
+                  <Button
+                    onClick={() => {
+                      const confirmed = window.confirm(
+                        `Are you sure you want to delete worker ${workerId}?\n\n` +
+                          'This will:\n' +
+                          '• Stop the worker process (if running)\n' +
+                          '• Remove the worker worktree from disk\n' +
+                          '• Delete the worker from the list\n\n' +
+                          'This action cannot be undone.'
+                      );
+                      if (confirmed) {
+                        deleteWorkerMutation.mutate();
+                      }
+                    }}
+                    disabled={deleteWorkerMutation.isPending}
+                    className="w-full flex items-center justify-center space-x-2 text-red-600 hover:bg-red-50"
+                    variant="outline"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    <span>{deleteWorkerMutation.isPending ? 'Deleting...' : 'Delete Worker'}</span>
+                  </Button>
+                  <p className="text-xs text-red-500 text-center font-medium">
+                    ⚠️ Permanently deletes worker and worktree
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -610,6 +842,17 @@ export function WorkerDetail() {
           <TaskLogs executorId={workerId} />
         </div>
       </div>
+
+      {/* Diff Viewer - Full width below */}
+      {workerDiff && (
+        <div className="mt-6">
+          <DiffViewer
+            diff={workerDiff.diff}
+            diffStat={workerDiff.diffStat}
+            changedFiles={workerDiff.changedFiles}
+          />
+        </div>
+      )}
     </div>
   );
 }

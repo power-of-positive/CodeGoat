@@ -653,37 +653,6 @@ describe('WorkersDashboard - Core Functionality', () => {
       });
     });
 
-    it('opens and closes validation runs viewer', async () => {
-      render(<WorkersDashboard />, { wrapper: createWrapper() });
-
-      await waitFor(() => {
-        const workerCard = screen.getByText('Worker abc').closest('.cursor-pointer');
-        expect(workerCard).toBeInTheDocument();
-        if (workerCard) {
-          fireEvent.click(workerCard);
-        }
-      });
-
-      await waitFor(() => {
-        // Look for validation button - should be "Validations (2)" based on validationRuns
-        const validationButton = screen.getByText('Validations (2)');
-        expect(validationButton).toBeInTheDocument();
-        fireEvent.click(validationButton);
-      });
-
-      await waitFor(() => {
-        expect(screen.getByTestId('validation-runs-viewer')).toBeInTheDocument();
-        expect(screen.getByText('Validation Runs for worker-123-abc')).toBeInTheDocument();
-      });
-
-      const closeButton = screen.getByText('Close');
-      fireEvent.click(closeButton);
-
-      await waitFor(() => {
-        expect(screen.queryByTestId('validation-runs-viewer')).not.toBeInTheDocument();
-      });
-    });
-
     it('opens and closes blocked commands viewer', async () => {
       render(<WorkersDashboard />, { wrapper: createWrapper() });
 

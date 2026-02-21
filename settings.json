@@ -182,9 +182,7 @@
       }
     ],
     "enableMetrics": true,
-    "maxAttempts": 3,
-    "executionMode": "sequential",
-    "parallelStages": false
+    "maxAttempts": 3
   },
   "logging": {
     "level": "info",

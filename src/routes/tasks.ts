@@ -170,7 +170,11 @@ function dbTaskToApiTask(dbTask: Task): ApiTask {
     executorId: dbTask.executorId ?? undefined,
     startTime: dbTask.startTime?.toISOString(),
     endTime: dbTask.endTime?.toISOString(),
-    duration: dbTask.duration ?? undefined,
+    // Calculate duration dynamically from startTime and endTime
+    duration: calculateDuration(
+      dbTask.startTime?.toISOString(),
+      dbTask.endTime?.toISOString()
+    ),
   };
 }
 
@@ -453,7 +457,6 @@ function createCreateTaskHandler(logger: ILogger) {
         executorId?: string;
         startTime?: Date;
         endTime?: Date;
-        duration?: number;
       } = {
         id: taskId,
         title: content.trim(), // Set title for unified schema
@@ -470,7 +473,7 @@ function createCreateTaskHandler(logger: ILogger) {
       } else if (status === 'completed') {
         taskData.startTime = new Date();
         taskData.endTime = new Date();
-        taskData.duration = 0;
+        // Duration is calculated dynamically, no need to store it
       }
 
       const dbTask = await db.task.create({
@@ -514,7 +517,6 @@ function createUpdateTaskHandler(logger: ILogger) {
         executorId?: string;
         startTime?: Date;
         endTime?: Date;
-        duration?: number;
       } = {};
 
       // Handle content updates
@@ -607,17 +609,12 @@ function createUpdateTaskHandler(logger: ILogger) {
         ) {
           const endTime = new Date();
           updateData.endTime = endTime;
-          if (existingTask.startTime) {
-            updateData.duration = calculateDuration(
-              existingTask.startTime.toISOString(),
-              endTime.toISOString()
-            );
-          }
+          // Duration is calculated dynamically, no need to store it
         } else if (updates.status === 'completed' && !existingTask.startTime) {
           // If completing a task that was never started
           updateData.startTime = new Date();
           updateData.endTime = new Date();
-          updateData.duration = 0;
+          // Duration is calculated dynamically, no need to store it
         }
       }
 

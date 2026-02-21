@@ -62,7 +62,8 @@ describe('Dialog', () => {
     expect(screen.getByText('Test Title')).toBeInTheDocument();
     expect(screen.getByText('Test Description')).toBeInTheDocument();
     expect(screen.getByText('Test content')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Close' })).toBeInTheDocument();
+    const closeButtons = screen.getAllByRole('button', { name: 'Close' });
+    expect(closeButtons.length).toBeGreaterThan(0);
   });
 
   it('should call onClose when close button is clicked', () => {

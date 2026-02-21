@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Terminal, X, Pause, Play, Download, Trash2, Users, Activity } from 'lucide-react';
 import { Button } from '../../../shared/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../shared/ui/card';
@@ -66,8 +66,19 @@ export function OrchestratorStreamViewer({ sessionId, onClose }: OrchestratorStr
   const containerRef = useRef<HTMLDivElement>(null);
   const isAutoScrollingRef = useRef(true);
 
+  // Add system event
+  const addSystemEvent = useCallback((message: string) => {
+    const systemEvent: StreamEvent = {
+      type: 'info',
+      data: { message },
+      timestamp: new Date().toISOString(),
+      sessionId: 'system',
+    };
+    setEvents(prev => [...prev, systemEvent]);
+  }, []);
+
   // Connect to SSE stream
-  const connect = () => {
+  const connect = useCallback(() => {
     const baseUrl = process.env.REACT_APP_API_BASE_URL || '';
     const url = `${baseUrl}/api/orchestrator/stream${sessionId ? `?sessionId=${sessionId}` : ''}`;
 
@@ -95,28 +106,17 @@ export function OrchestratorStreamViewer({ sessionId, onClose }: OrchestratorStr
       setIsConnected(false);
       addSystemEvent('Stream connection error');
     };
-  };
+  }, [sessionId, isPaused, addSystemEvent]);
 
   // Disconnect from stream
-  const disconnect = () => {
+  const disconnect = useCallback(() => {
     if (eventSourceRef.current) {
       eventSourceRef.current.close();
       eventSourceRef.current = null;
       setIsConnected(false);
       addSystemEvent('Disconnected from stream');
     }
-  };
-
-  // Add system event
-  const addSystemEvent = (message: string) => {
-    const systemEvent: StreamEvent = {
-      type: 'info',
-      data: { message },
-      timestamp: new Date().toISOString(),
-      sessionId: 'system',
-    };
-    setEvents(prev => [...prev, systemEvent]);
-  };
+  }, [addSystemEvent]);
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -144,7 +144,7 @@ export function OrchestratorStreamViewer({ sessionId, onClose }: OrchestratorStr
   useEffect(() => {
     connect();
     return disconnect;
-  }, [sessionId]);
+  }, [connect, disconnect]);
 
   // Format event data for display
   const formatEventData = (event: StreamEvent): string => {

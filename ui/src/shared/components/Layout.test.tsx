@@ -2,6 +2,7 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { Layout } from './Layout';
+import { SidebarProvider } from '../contexts/SidebarContext';
 
 // Mock the Sidebar component
 jest.mock('./Sidebar', () => ({
@@ -12,7 +13,9 @@ describe('Layout', () => {
   const renderLayout = (children: React.ReactNode) => {
     return render(
       <BrowserRouter>
-        <Layout>{children}</Layout>
+        <SidebarProvider>
+          <Layout>{children}</Layout>
+        </SidebarProvider>
       </BrowserRouter>
     );
   };
@@ -30,6 +33,7 @@ describe('Layout', () => {
     const layoutDiv = container.firstChild;
     expect(layoutDiv).toHaveClass('min-h-screen', 'bg-gray-50', 'dark:bg-gray-900');
 
+    // When sidebar is not collapsed (default state), it should have md:ml-64
     const mainContent = container.querySelector('.md\\:ml-64');
     expect(mainContent).toBeInTheDocument();
     expect(mainContent).toHaveClass('transition-all', 'duration-300');

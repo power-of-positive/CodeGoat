@@ -273,7 +273,7 @@ describe('Tasks Route - Story Completion Validation', () => {
         data: expect.objectContaining({
           status: TaskStatus.COMPLETED,
           endTime: expect.any(Date),
-          duration: expect.any(Number),
+          // Duration is calculated dynamically, not stored
         }),
       });
     });

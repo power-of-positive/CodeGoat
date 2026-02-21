@@ -120,9 +120,13 @@ try {
     }
   });
 
-  // Ensure DATABASE_URL is properly set for Prisma
-  if (process.env.KANBAN_DATABASE_URL && !process.env.DATABASE_URL) {
+  // Ensure DATABASE_URL is properly set (backward compatibility)
+  if (!process.env.DATABASE_URL && process.env.KANBAN_DATABASE_URL) {
     process.env.DATABASE_URL = process.env.KANBAN_DATABASE_URL;
+  }
+  // Sync KANBAN_DATABASE_URL for legacy code
+  if (process.env.DATABASE_URL && !process.env.KANBAN_DATABASE_URL) {
+    process.env.KANBAN_DATABASE_URL = process.env.DATABASE_URL;
   }
 } catch {
   // Silently ignore if .env.e2e doesn't exist

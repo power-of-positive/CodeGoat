@@ -138,7 +138,7 @@ describe('Tasks Route - Additional Coverage', () => {
           status: TaskStatus.COMPLETED,
           startTime: expect.any(Date),
           endTime: expect.any(Date),
-          duration: 0,
+          // Duration is calculated dynamically, not stored
         }),
       });
     });
@@ -346,7 +346,7 @@ describe('Tasks Route - Additional Coverage', () => {
           status: TaskStatus.COMPLETED,
           startTime: expect.any(Date),
           endTime: expect.any(Date),
-          duration: 0,
+          // Duration is calculated dynamically, not stored
         }),
       });
     });
@@ -412,7 +412,7 @@ describe('Tasks Route - Additional Coverage', () => {
         data: expect.objectContaining({
           status: TaskStatus.COMPLETED,
           endTime: expect.any(Date),
-          duration: expect.any(Number),
+          // Duration is calculated dynamically, not stored
         }),
       });
     });

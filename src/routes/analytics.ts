@@ -404,5 +404,24 @@ export function createAnalyticsRoutes(logger: ILogger): Router {
   // Validation metrics endpoint for the Analytics page with stage consolidation
   router.get('/validation-metrics', getValidationMetrics(analyticsService, logger));
 
+  // Stub endpoints for advanced analytics (to be implemented)
+  router.get('/performance-comparison', (_req: Request, res: Response) => {
+    res.json({
+      periods: {
+        period1: { successRate: 0, avgDuration: 0, totalRuns: 0, stages: [] },
+        period2: { successRate: 0, avgDuration: 0, totalRuns: 0, stages: [] },
+      },
+      comparison: {
+        overall: { successRate: 0, avgDuration: 0, totalRuns: 0 },
+        stages: [],
+      },
+      insights: { improved: 0, degraded: 0, stable: 0, newStages: 0, removedStages: 0 },
+    });
+  });
+
+  router.get('/historical-timeline', (_req: Request, res: Response) => {
+    res.json({ timeline: [], aggregations: {}, stages: [] });
+  });
+
   return router;
 }

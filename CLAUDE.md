@@ -109,8 +109,9 @@ npx playwright test path/to/test.spec.ts
   - `ClaudeLogProcessor` - Parses and structures Claude output logs
 
 - **Database:** SQLite via Prisma ORM
-  - Shared database with vibe-kanban project
-  - Models: Project, Task, TaskAttempt, TaskTemplate, TodoTask
+  - Environment-specific databases (dev, test, prod)
+  - Models: Project, Task, TaskAttempt, TaskTemplate, ValidationRun, BDDScenario
+  - Automatic backup system with versioning
 
 ### Frontend Structure (React + TypeScript)
 - **Pages:**
@@ -172,16 +173,156 @@ Each stage can be enabled/disabled and configured via `/api/settings/validation`
 - `settings.json` - Runtime configuration for validation, logging, and fallback behavior
 - `settings-precommit.json` - Pre-commit hook configuration
 - `validation-metrics.json` - Historical validation performance metrics
-- `.env` - Environment variables (KANBAN_DATABASE_URL required)
-- `prisma/schema.prisma` - Database schema shared with vibe-kanban
+- `.env` - Environment variables (DATABASE_URL required)
+- `.env.test` - Test environment configuration
+- `.env.production` - Production environment configuration
+- `prisma/schema.prisma` - Database schema definition
 
-## Integration with vibe-kanban
+## Database Configuration
 
-This project integrates with the vibe-kanban task management system:
-- Shared SQLite database for task tracking
-- Todo tasks can be executed by Claude workers
-- Task status syncs between systems
-- Validation results affect task completion
+**Environment Variables** (Industry Standard):
+- **Primary**: `DATABASE_URL` - Standard database connection URL
+- **Legacy**: `KANBAN_DATABASE_URL` - Backward compatibility support
+
+**Database Files**:
+```bash
+prisma/
+├── kanban.db          # Development database
+├── kanban-test.db     # Test database (all test types)
+└── kanban-prod.db     # Production database (not in repo)
+```
+
+**Configuration Utility** (`src/config/database.ts`):
+- `getDatabaseUrl()` - Smart resolution with fallbacks
+- `getTestDatabaseUrl()` - Always returns test database
+- `ensureDatabaseUrl()` - Synchronizes environment variables
+- Auto-detects environment (dev, test, prod)
+
+## API Response Standards
+
+**New Standardized Format** (Introduced 2025-10-31):
+
+### Response Utilities (`src/utils/api-response.ts`)
+
+**Success Responses**:
+- `createDataResponse<T>(data, meta?, links?)` - Single resource responses
+- `createCollectionResponse<T>(data, total, page, perPage, baseUrl)` - Paginated collections
+- Standard envelope: `{ data: T, meta?: {...}, links?: {...} }`
+
+**Error Responses**:
+- `createErrorResponse(code, message, details?, path)` - Standardized errors
+- Error codes: `ErrorCode.VALIDATION_ERROR`, `ErrorCode.NOT_FOUND`, etc.
+- Error envelope: `{ error: { code, message, details, timestamp, path } }`
+
+### Error Handling Middleware (`src/middleware/error-handler.ts`)
+
+**Global Error Handler**:
+- `createErrorHandler(logger)` - Catches and formats all errors
+- Registered in `src/index.ts` after all routes
+- Converts Zod validation errors to standard format
+- Logs errors appropriately based on severity
+
+**Custom Errors**:
+- `AppError(statusCode, code, message, details?)` - Custom error class
+- Helper functions: `throwNotFound()`, `throwBadRequest()`, `throwConflict()`, etc.
+- `asyncHandler(fn)` - Wraps async routes, catches errors automatically
+
+**Usage Example**:
+```typescript
+import { asyncHandler, throwNotFound } from '../middleware/error-handler';
+import { createDataResponse } from '../utils/api-response';
+
+router.get('/:id', asyncHandler(async (req, res) => {
+  const worker = await workerService.getById(req.params.id);
+  if (!worker) throwNotFound('Worker not found');
+  res.json(createDataResponse(worker));
+}));
+```
+
+### Pagination Middleware (`src/middleware/pagination.ts`)
+
+**Standardized Pagination**:
+- `parsePagination` - Middleware extracts `page` and `perPage` from query
+- Calculates `offset` for database queries
+- Enforces limits: min 1, max 100 items per page
+- Attached to `req.pagination: { page, perPage, offset }`
+
+**Usage Example**:
+```typescript
+import { parsePagination } from '../middleware/pagination';
+import { createCollectionResponse } from '../utils/api-response';
+
+router.get('/', parsePagination, asyncHandler(async (req, res) => {
+  const { page, perPage, offset } = req.pagination;
+  const [workers, total] = await Promise.all([
+    db.worker.findMany({ skip: offset, take: perPage }),
+    db.worker.count()
+  ]);
+  res.json(createCollectionResponse(workers, total, page, perPage, req.baseUrl));
+}));
+```
+
+### Query Parser Middleware (`src/middleware/query-parser.ts`)
+
+**Advanced Filtering & Sorting**:
+- `parseQueryOptions` - Parses filters, sorting, field selection, includes
+- Attached to `req.queryOptions: { filter, sort, fields, include }`
+- Helper functions: `buildWhereClause()`, `buildOrderByClause()`, `buildSelectClause()`
+
+**Query Syntax**:
+- Filtering: `?filter[status]=running&filter[priority]=high`
+- Sorting: `?sort=-createdAt,+priority` (- for desc, + for asc)
+- Fields: `?fields=id,title,status` (sparse fieldsets)
+- Include: `?include=scenarios,attempts` (relations)
+
+**Usage Example**:
+```typescript
+import { parseQueryOptions, buildWhereClause, buildOrderByClause } from '../middleware/query-parser';
+
+router.get('/', parsePagination, parseQueryOptions, asyncHandler(async (req, res) => {
+  const { filter, sort } = req.queryOptions;
+  const { page, perPage, offset } = req.pagination;
+
+  const [tasks, total] = await Promise.all([
+    db.task.findMany({
+      where: buildWhereClause(filter),
+      orderBy: buildOrderByClause(sort),
+      skip: offset,
+      take: perPage
+    }),
+    db.task.count({ where: buildWhereClause(filter) })
+  ]);
+
+  res.json(createCollectionResponse(tasks, total, page, perPage, req.baseUrl));
+}));
+```
+
+### Migration Guide
+
+**See**: `docs/api-response-migration-guide.md` for comprehensive migration guide
+
+**Key Points**:
+- New utilities are additive - existing routes still work
+- Migrate routes incrementally to new format
+- Use `asyncHandler()` to eliminate try-catch boilerplate
+- Global error handler ensures consistent error responses
+- Full API design review available in `docs/api-design-review.md`
+
+**Environment Setup**:
+```bash
+# Development
+export DATABASE_URL="file:./prisma/kanban.db"
+
+# Test
+export DATABASE_URL="file:./prisma/kanban-test.db"
+
+# Production
+export DATABASE_URL="file:./prisma/kanban-prod.db"
+```
+
+**Precedence**: `DATABASE_URL` > `KANBAN_DATABASE_URL` > environment default
+
+See `docs/database-management.md` for complete guide.
 
 ## Hook Integration
 

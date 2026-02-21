@@ -194,7 +194,7 @@ export function TaskLogs({ executorId }: TaskLogsProps) {
         onToggleAutoRefresh={() => setAutoRefresh(!autoRefresh)}
       />
       <CardContent className="p-0">
-        <div className="border rounded-lg h-96">
+        <div className="border rounded-lg h-[calc(100vh-16rem)] min-h-[600px]">
           <LogContent logEntries={logEntries} autoScroll={autoScroll} virtuosoRef={virtuosoRef} />
         </div>
         <LogFooter logEntries={logEntries} executorId={executorId} />

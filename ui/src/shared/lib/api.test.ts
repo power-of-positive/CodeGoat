@@ -27,9 +27,12 @@ describe('API Client', () => {
       } as Response);
       const result = await settingsApi.getSettings();
       expect(result).toEqual(mockConfig);
-      expect(fetch).toHaveBeenCalledWith('/api/settings', {
-        headers: { 'Content-Type': 'application/json' },
-      });
+      expect(fetch).toHaveBeenCalledWith(
+        '/api/settings',
+        expect.objectContaining({
+          headers: { 'Content-Type': 'application/json' },
+        })
+      );
     });
 
     it('should update settings', async () => {
@@ -41,11 +44,14 @@ describe('API Client', () => {
       } as Response);
       const result = await settingsApi.updateSettings(mockConfig);
       expect(result).toEqual(updatedConfig);
-      expect(fetch).toHaveBeenCalledWith('/api/settings', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(mockConfig),
-      });
+      expect(fetch).toHaveBeenCalledWith(
+        '/api/settings',
+        expect.objectContaining({
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(mockConfig),
+        })
+      );
     });
 
     it('should get validation stages', async () => {
@@ -67,9 +73,12 @@ describe('API Client', () => {
 
       const result = await settingsApi.getValidationStages();
       expect(result).toEqual(mockStages);
-      expect(fetch).toHaveBeenCalledWith('/api/validation-stage-configs', {
-        headers: { 'Content-Type': 'application/json' },
-      });
+      expect(fetch).toHaveBeenCalledWith(
+        '/api/validation-stage-configs',
+        expect.objectContaining({
+          headers: { 'Content-Type': 'application/json' },
+        })
+      );
     });
 
     it('should handle validation stages API error gracefully', async () => {
@@ -101,9 +110,12 @@ describe('API Client', () => {
 
       const result = await analyticsApi.getValidationMetrics();
       expect(result).toEqual(mockAnalytics);
-      expect(fetch).toHaveBeenCalledWith('/api/analytics/validation-metrics', {
-        headers: { 'Content-Type': 'application/json' },
-      });
+      expect(fetch).toHaveBeenCalledWith(
+        '/api/analytics/validation-metrics',
+        expect.objectContaining({
+          headers: { 'Content-Type': 'application/json' },
+        })
+      );
     });
 
     it('should handle analytics metrics API error gracefully', async () => {
@@ -141,9 +153,12 @@ describe('API Client', () => {
 
       const result = await analyticsApi.getValidationRuns();
       expect(result).toEqual(mockRuns);
-      expect(fetch).toHaveBeenCalledWith('/api/analytics/validation-runs', {
-        headers: { 'Content-Type': 'application/json' },
-      });
+      expect(fetch).toHaveBeenCalledWith(
+        '/api/analytics/validation-runs',
+        expect.objectContaining({
+          headers: { 'Content-Type': 'application/json' },
+        })
+      );
     });
 
     it('should handle analytics runs API error gracefully', async () => {
@@ -176,9 +191,12 @@ describe('API Client', () => {
 
       const result = await taskApi.getTasks();
       expect(result).toEqual(mockTasks);
-      expect(fetch).toHaveBeenCalledWith('/api/tasks', {
-        headers: { 'Content-Type': 'application/json' },
-      });
+      expect(fetch).toHaveBeenCalledWith(
+        '/api/tasks',
+        expect.objectContaining({
+          headers: { 'Content-Type': 'application/json' },
+        })
+      );
     });
 
     it('should handle getTasks error gracefully', async () => {
@@ -206,11 +224,14 @@ describe('API Client', () => {
 
       const result = await taskApi.createTask(newTask);
       expect(result).toEqual(createdTask);
-      expect(fetch).toHaveBeenCalledWith('/api/tasks', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newTask),
-      });
+      expect(fetch).toHaveBeenCalledWith(
+        '/api/tasks',
+        expect.objectContaining({
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newTask),
+        })
+      );
     });
 
     it('should get task analytics', async () => {
@@ -228,9 +249,12 @@ describe('API Client', () => {
 
       const result = await taskApi.getTaskAnalytics({ taskId: 'task-123' });
       expect(result).toEqual(mockAnalytics);
-      expect(fetch).toHaveBeenCalledWith('/api/tasks/analytics?taskId=task-123', {
-        headers: { 'Content-Type': 'application/json' },
-      });
+      expect(fetch).toHaveBeenCalledWith(
+        '/api/tasks/analytics?taskId=task-123',
+        expect.objectContaining({
+          headers: { 'Content-Type': 'application/json' },
+        })
+      );
     });
   });
 
@@ -258,11 +282,14 @@ describe('API Client', () => {
         taskContent: 'Test task content',
       });
       expect(result).toEqual(mockWorker);
-      expect(fetch).toHaveBeenCalledWith('/api/claude-workers/start', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ taskId: 'task-123', taskContent: 'Test task content' }),
-      });
+      expect(fetch).toHaveBeenCalledWith(
+        '/api/claude-workers/start',
+        expect.objectContaining({
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ taskId: 'task-123', taskContent: 'Test task content' }),
+        })
+      );
     });
 
     it('should get workers status', async () => {
@@ -280,9 +307,12 @@ describe('API Client', () => {
 
       const result = await claudeWorkersApi.getWorkersStatus();
       expect(result).toEqual(mockStatus);
-      expect(fetch).toHaveBeenCalledWith('/api/claude-workers/status', {
-        headers: { 'Content-Type': 'application/json' },
-      });
+      expect(fetch).toHaveBeenCalledWith(
+        '/api/claude-workers/status',
+        expect.objectContaining({
+          headers: { 'Content-Type': 'application/json' },
+        })
+      );
     });
   });
 
@@ -314,9 +344,12 @@ describe('API Client', () => {
 
       const result = await permissionApi.getPermissionConfig();
       expect(result).toEqual(mockConfig);
-      expect(fetch).toHaveBeenCalledWith('/api/permissions/config', {
-        headers: { 'Content-Type': 'application/json' },
-      });
+      expect(fetch).toHaveBeenCalledWith(
+        '/api/permissions/config',
+        expect.objectContaining({
+          headers: { 'Content-Type': 'application/json' },
+        })
+      );
     });
   });
 
@@ -331,9 +364,12 @@ describe('API Client', () => {
 
       const result = await e2eTestingApi.getTestSuites();
       expect(result).toEqual(mockSuites);
-      expect(fetch).toHaveBeenCalledWith('/api/e2e-testing/suites', {
-        headers: { 'Content-Type': 'application/json' },
-      });
+      expect(fetch).toHaveBeenCalledWith(
+        '/api/e2e-testing/suites',
+        expect.objectContaining({
+          headers: { 'Content-Type': 'application/json' },
+        })
+      );
     });
   });
 

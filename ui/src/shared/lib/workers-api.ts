@@ -53,9 +53,16 @@ export const claudeWorkersApi = {
     return apiRequest<Worker>(`/claude-workers/${workerId}`);
   },
 
-  async stopWorker(workerId: string): Promise<void> {
-    await apiRequest<void>(`/claude-workers/${workerId}/stop`, {
+  async stopWorker(workerId: string, cleanupWorktree?: boolean): Promise<void> {
+    const queryParams = cleanupWorktree ? '?cleanupWorktree=true' : '';
+    await apiRequest<void>(`/claude-workers/${workerId}/stop${queryParams}`, {
       method: 'POST',
+    });
+  },
+
+  async deleteWorker(workerId: string): Promise<void> {
+    await apiRequest<void>(`/claude-workers/${workerId}`, {
+      method: 'DELETE',
     });
   },
 
@@ -141,5 +148,66 @@ export const claudeWorkersApi = {
       method: 'POST',
       body: options || {},
     });
+  },
+
+  async startDevServer(
+    workerId: string,
+    type?: 'backend' | 'frontend' | 'both'
+  ): Promise<{
+    message: string;
+    workerId: string;
+    worktreePath: string;
+    servers: Array<{ type: string; port: number; pid?: number }>;
+  }> {
+    return apiRequest(`/claude-workers/${workerId}/start-dev-server`, {
+      method: 'POST',
+      body: { type: type || 'both' },
+    });
+  },
+
+  async stopDevServer(
+    workerId: string,
+    type?: 'backend' | 'frontend' | 'both'
+  ): Promise<{
+    message: string;
+    workerId: string;
+    stopped: string[];
+  }> {
+    return apiRequest(`/claude-workers/${workerId}/stop-dev-server`, {
+      method: 'POST',
+      body: { type: type || 'both' },
+    });
+  },
+
+  async getDevServerStatus(workerId: string): Promise<{
+    workerId: string;
+    status: {
+      backend: { running: boolean; port?: number; pid?: number };
+      frontend: { running: boolean; port?: number; pid?: number };
+    };
+  }> {
+    return apiRequest(`/claude-workers/${workerId}/dev-server-status`);
+  },
+
+  async generateCommitMessage(workerId: string): Promise<{
+    commitMessage: string;
+    changedFiles: string[];
+    diffStat: string;
+    summary: {
+      filesChanged: number;
+      fileTypes: Record<string, number>;
+      directories: string[];
+    };
+  }> {
+    return apiRequest(`/claude-workers/${workerId}/generate-commit-message`);
+  },
+
+  async getWorkerDiff(workerId: string): Promise<{
+    diff: string;
+    diffStat: string;
+    changedFiles: Array<{ status: string; path: string }>;
+    worktreePath: string;
+  }> {
+    return apiRequest(`/claude-workers/${workerId}/diff`);
   },
 };

@@ -12,6 +12,7 @@ jest.mock('../../../shared/lib/api', () => ({
     getWorkers: jest.fn(),
     startWorker: jest.fn(),
     stopWorker: jest.fn(),
+    deleteWorker: jest.fn(),
     getWorkerLogs: jest.fn(),
     mergeWorktree: jest.fn(),
     openVSCode: jest.fn(),
@@ -22,6 +23,10 @@ jest.mock('../../../shared/lib/api', () => ({
     sendFollowUp: jest.fn(),
     mergeWorker: jest.fn(),
     mergeWorkerChanges: jest.fn(),
+    startDevServer: jest.fn(),
+    stopDevServer: jest.fn(),
+    getDevServerStatus: jest.fn(),
+    generateCommitMessage: jest.fn(),
   },
 }));
 
@@ -78,6 +83,7 @@ const mockWorkerStatus = {
   endTime: undefined,
   pid: 12345,
   logFile: '/path/to/logs.txt',
+  worktreePath: '/path/to/worktree',
   blockedCommands: 2,
   hasPermissionSystem: true,
   validationPassed: undefined,
@@ -112,8 +118,31 @@ const renderWithProviders = (workerId: string = 'worker-123') => {
 describe('WorkerDetail', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+
+    // Mock window.alert and window.prompt
+    global.alert = jest.fn();
+    global.prompt = jest.fn(() => 'Test commit message');
+    global.confirm = jest.fn(() => true);
+
     (claudeWorkersApi.getWorkerStatus as jest.Mock).mockResolvedValue(mockWorkerStatus);
     (claudeWorkersApi.getWorkerLogs as jest.Mock).mockResolvedValue(mockWorkerLogs);
+    (claudeWorkersApi.getDevServerStatus as jest.Mock).mockResolvedValue({
+      workerId: 'worker-123',
+      status: {
+        backend: { running: false },
+        frontend: { running: false },
+      },
+    });
+    (claudeWorkersApi.generateCommitMessage as jest.Mock).mockResolvedValue({
+      commitMessage: 'Task task-456: Implement feature X\n\nModified 3 files',
+      changedFiles: ['file1.ts', 'file2.ts', 'file3.ts'],
+      diffStat: '3 files changed, 50 insertions(+), 10 deletions(-)',
+      summary: {
+        filesChanged: 3,
+        fileTypes: { '.ts': 3 },
+        directories: ['src'],
+      },
+    });
   });
 
   it('renders worker detail page with loading state', () => {
@@ -562,16 +591,17 @@ describe('WorkerDetail', () => {
       renderWithProviders();
 
       await waitFor(() => {
-        const mergeButton = screen.getByRole('button', { name: /merge changes/i });
+        const mergeButton = screen.getByRole('button', { name: /auto-generate & merge/i });
         expect(mergeButton).toBeInTheDocument();
       });
 
-      const mergeButton = screen.getByRole('button', { name: /merge changes/i });
+      const mergeButton = screen.getByRole('button', { name: /auto-generate & merge/i });
       fireEvent.click(mergeButton);
 
       await waitFor(() => {
+        expect(claudeWorkersApi.generateCommitMessage).toHaveBeenCalledWith('worker-123');
         expect(claudeWorkersApi.mergeWorkerChanges).toHaveBeenCalledWith('worker-123', {
-          commitMessage: undefined,
+          commitMessage: 'Test commit message',
         });
       });
     });
@@ -662,7 +692,7 @@ describe('WorkerDetail', () => {
       renderWithProviders();
 
       await waitFor(() => {
-        const mergeButton = screen.getByRole('button', { name: /merge changes/i });
+        const mergeButton = screen.getByRole('button', { name: /auto-generate & merge/i });
         fireEvent.click(mergeButton);
       });
 

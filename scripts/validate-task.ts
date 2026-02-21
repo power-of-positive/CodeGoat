@@ -49,9 +49,13 @@ dotenv.config({ path: envPath, override: true });
 console.log = originalConsoleLog;
 console.warn = originalConsoleWarn;
 
-// Ensure DATABASE_URL is set for Prisma when in test context
-if (isPreCommitContext && process.env.KANBAN_DATABASE_URL) {
+// Ensure DATABASE_URL is properly set (backward compatibility)
+if (!process.env.DATABASE_URL && process.env.KANBAN_DATABASE_URL) {
   process.env.DATABASE_URL = process.env.KANBAN_DATABASE_URL;
+}
+// Sync KANBAN_DATABASE_URL for legacy code
+if (process.env.DATABASE_URL && !process.env.KANBAN_DATABASE_URL) {
+  process.env.KANBAN_DATABASE_URL = process.env.DATABASE_URL;
 }
 
 import fs from 'fs/promises';
@@ -284,7 +288,7 @@ class ValidationRunner {
     stage: ValidationStage,
     stageNumber: number,
     totalStages: number
-  ): Promise<boolean> {
+  ): Promise<{ success: boolean; isCritical: boolean }> {
     console.error(`${colors.bright}[${stageNumber}/${totalStages}] ${stage.name}${colors.reset}`);
     console.error(`${colors.cyan}    Command: ${stage.command}${colors.reset}`);
 
@@ -294,28 +298,30 @@ class ValidationRunner {
     if (stageResult.success) {
       this.results.passed++;
       console.error(`${colors.green}    ✅ Passed (${stageResult.duration}ms)${colors.reset}\n`);
-      return true;
+      return { success: true, isCritical: false };
     } else {
       this.results.failed++;
       console.error(`${colors.red}    ❌ Failed (${stageResult.duration}ms)${colors.reset}`);
       if (stageResult.error) {
         console.error(`${colors.red}    Error: ${stageResult.error}${colors.reset}`);
       }
-      console.error('');
 
-      if (!stage.continueOnFailure) {
+      const isCritical = !stage.continueOnFailure;
+
+      if (isCritical) {
         const fixGuidance = this.getStageFixGuidance(stage, stageResult);
         console.error(
-          `${colors.red}Stage failed and continueOnFailure is false. Stopping pipeline.${colors.reset}`
+          `${colors.red}Stage failed (critical stage - continueOnFailure is false)${colors.reset}`
         );
-        console.error(`${colors.yellow}Fix guidance: ${fixGuidance}${colors.reset}\n`);
-        return false;
+        console.error(`${colors.yellow}Fix guidance: ${fixGuidance}${colors.reset}`);
+        console.error(`${colors.cyan}    Continuing to run remaining stages to collect all failures...${colors.reset}\n`);
       } else {
         console.error(
           `${colors.yellow}Stage failed but continuing due to continueOnFailure setting${colors.reset}\n`
         );
-        return true;
       }
+
+      return { success: false, isCritical };
     }
   }
 
@@ -495,17 +501,35 @@ class ValidationRunner {
   }
 
   private async runSequentialStages(): Promise<boolean> {
+    let hasCriticalFailures = false;
+    const criticalFailedStages: string[] = [];
+
+    // Always run all stages to collect complete failure information
     for (let i = 0; i < this.enabledStages.length; i++) {
-      const shouldContinue = await this.processStage(
+      const result = await this.processStage(
         this.enabledStages[i],
         i + 1,
         this.enabledStages.length
       );
-      if (!shouldContinue) {
-        return false;
+
+      // Track critical failures but continue executing remaining stages
+      if (!result.success && result.isCritical) {
+        hasCriticalFailures = true;
+        criticalFailedStages.push(this.enabledStages[i].name);
       }
     }
-    return true;
+
+    // Print summary of critical failures if any
+    if (hasCriticalFailures) {
+      console.error(
+        `\n${colors.red}❌ ${criticalFailedStages.length} critical stage(s) failed:${colors.reset}`
+      );
+      for (const stageName of criticalFailedStages) {
+        console.error(`${colors.red}  - ${stageName}${colors.reset}`);
+      }
+    }
+
+    return !hasCriticalFailures;
   }
 
   async runValidation(): Promise<boolean> {

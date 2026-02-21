@@ -12,7 +12,6 @@ import {
   GitMerge,
   Code2,
   ShieldAlert,
-  FileCheck,
 } from 'lucide-react';
 import { Button } from '../../../shared/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../../shared/ui/card';
@@ -45,7 +44,6 @@ interface WorkerCardProps {
   onMergeWorktree: (workerId: string) => void;
   onOpenVSCode: (workerId: string) => void;
   onViewBlockedCommands: (workerId: string) => void;
-  onViewValidationRuns: (workerId: string) => void;
 }
 
 const statusStyles = {
@@ -263,7 +261,6 @@ function WorkerActions({
     onMergeWorktree: (workerId: string) => void;
     onOpenVSCode: (workerId: string) => void;
     onViewBlockedCommands: (workerId: string) => void;
-    onViewValidationRuns: (workerId: string) => void;
   };
 }) {
   const canMerge =
@@ -327,17 +324,6 @@ function WorkerActions({
         </Button>
       )}
 
-      {worker.validationRuns && worker.validationRuns > 0 && (
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => actions.onViewValidationRuns(worker.id)}
-          className="flex items-center space-x-1 text-purple-600"
-        >
-          <FileCheck className="h-3 w-3" />
-          <span>Validations ({worker.validationRuns})</span>
-        </Button>
-      )}
     </div>
   );
 }
@@ -349,7 +335,6 @@ export function WorkerCard({
   onMergeWorktree,
   onOpenVSCode,
   onViewBlockedCommands,
-  onViewValidationRuns,
 }: WorkerCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -359,7 +344,6 @@ export function WorkerCard({
     onMergeWorktree,
     onOpenVSCode,
     onViewBlockedCommands,
-    onViewValidationRuns,
   };
 
   return (

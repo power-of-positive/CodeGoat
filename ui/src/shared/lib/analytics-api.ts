@@ -62,8 +62,10 @@ export const analyticsApi = {
     limit?: number;
     offset?: number;
   }): Promise<ValidationRun[]> {
-    const queryParams = buildQueryParams(options || {});
-    return apiRequest<ValidationRun[]>(`/analytics/stage-history${queryParams}`);
+    const { stage, ...rest } = options || {};
+    const stageId = stage || 'lint';
+    const queryParams = buildQueryParams(rest);
+    return apiRequest<ValidationRun[]>(`/analytics/stages/${stageId}/history${queryParams}`);
   },
 
   async getStageStatistics(options?: {
@@ -71,8 +73,10 @@ export const analyticsApi = {
     stage?: string;
     includeDetails?: boolean;
   }): Promise<unknown> {
-    const queryParams = buildQueryParams(options || {});
-    return apiRequest<unknown>(`/analytics/stage-statistics${queryParams}`);
+    const { stage, ...rest } = options || {};
+    const stageId = stage || 'lint';
+    const queryParams = buildQueryParams(rest);
+    return apiRequest<unknown>(`/analytics/stages/${stageId}/statistics${queryParams}`);
   },
 
   async getStageAnalytics(options?: {
@@ -94,8 +98,8 @@ export const analyticsApi = {
     return apiRequest<ValidationRun[]>(`/analytics/validation-runs-db${queryParams}`);
   },
 
-  async getValidationRunDetailsFromDB(runId: string): Promise<ValidationRun[]> {
-    return apiRequest<ValidationRun[]>(`/analytics/validation-run-details/${runId}`);
+  async getValidationRunDetailsFromDB(runId: string): Promise<unknown> {
+    return apiRequest<unknown>(`/validation-runs/${runId}`);
   },
 
   async getPerformanceComparison(options?: {

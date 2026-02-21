@@ -8,7 +8,6 @@ import { PageLoading } from '../shared/ui/loading';
 import { claudeWorkersApi } from '../shared/lib/api';
 import LogsViewer from '../features/logs/components/LogsViewer';
 import { WorkerCard } from '../features/workers/components/WorkerCard';
-import { ValidationRunsViewer } from '../features/validation/components/ValidationRunsViewer';
 import { BlockedCommandsViewer } from '../features/permissions/components/BlockedCommandsViewer';
 import { OrchestratorPanel } from '../features/orchestrator/components/OrchestratorPanel';
 import type { UnifiedLogEntry } from '../shared/types/logs';
@@ -232,7 +231,6 @@ function useWorkerActions(
   },
   setters: {
     setSelectedBlockedWorkerId: (id: string) => void;
-    setSelectedValidationWorkerId: (id: string) => void;
   }
 ) {
   const handleViewLogs = (workerId: string) => {
@@ -259,17 +257,12 @@ function useWorkerActions(
     setters.setSelectedBlockedWorkerId(workerId);
   };
 
-  const handleViewValidationRuns = (workerId: string) => {
-    setters.setSelectedValidationWorkerId(workerId);
-  };
-
   return {
     handleViewLogs,
     handleStopWorker,
     handleMergeWorktree,
     handleOpenVSCode,
     handleViewBlockedCommands,
-    handleViewValidationRuns,
   };
 }
 
@@ -389,7 +382,6 @@ function WorkersList({
     handleMergeWorktree: (workerId: string) => void;
     handleOpenVSCode: (workerId: string) => void;
     handleViewBlockedCommands: (workerId: string) => void;
-    handleViewValidationRuns: (workerId: string) => void;
   };
 }) {
   if (workers.length === 0) {
@@ -418,7 +410,6 @@ function WorkersList({
           onMergeWorktree={actions.handleMergeWorktree}
           onOpenVSCode={actions.handleOpenVSCode}
           onViewBlockedCommands={actions.handleViewBlockedCommands}
-          onViewValidationRuns={actions.handleViewValidationRuns}
         />
       ))}
     </div>
@@ -433,12 +424,10 @@ function DashboardModals({
   selections: {
     selectedWorkerId: string | null;
     selectedBlockedWorkerId: string | null;
-    selectedValidationWorkerId: string | null;
   };
   setters: {
     setSelectedWorkerId: (id: string | null) => void;
     setSelectedBlockedWorkerId: (id: string | null) => void;
-    setSelectedValidationWorkerId: (id: string | null) => void;
   };
 }) {
   return (
@@ -453,12 +442,6 @@ function DashboardModals({
         <BlockedCommandsViewer
           workerId={selections.selectedBlockedWorkerId}
           onClose={() => setters.setSelectedBlockedWorkerId(null)}
-        />
-      )}
-      {selections.selectedValidationWorkerId && (
-        <ValidationRunsViewer
-          workerId={selections.selectedValidationWorkerId}
-          onClose={() => setters.setSelectedValidationWorkerId(null)}
         />
       )}
     </>
@@ -483,7 +466,6 @@ function WorkersError() {
 export function WorkersDashboard() {
   const [selectedWorkerId, setSelectedWorkerId] = useState<string | null>(null);
   const [selectedBlockedWorkerId, setSelectedBlockedWorkerId] = useState<string | null>(null);
-  const [selectedValidationWorkerId, setSelectedValidationWorkerId] = useState<string | null>(null);
   const [showOrchestrator, setShowOrchestrator] = useState(false);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -500,19 +482,17 @@ export function WorkersDashboard() {
   });
 
   const mutations = useWorkerMutations(queryClient);
-  const setters = { setSelectedBlockedWorkerId, setSelectedValidationWorkerId };
+  const setters = { setSelectedBlockedWorkerId };
   const actions = useWorkerActions(navigate, mutations, setters);
 
   const selections = {
     selectedWorkerId,
     selectedBlockedWorkerId,
-    selectedValidationWorkerId,
   };
 
   const modalSetters = {
     setSelectedWorkerId,
     setSelectedBlockedWorkerId,
-    setSelectedValidationWorkerId,
   };
 
   if (isLoading) {

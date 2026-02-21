@@ -495,7 +495,7 @@ describe('Analytics Routes', () => {
       expect(routes).toBeDefined();
 
       // The router should have the expected stack of routes
-      expect(routes.stack).toHaveLength(12); // 12 routes defined (added validation-metrics endpoint)
+      expect(routes.stack).toHaveLength(14); // 14 routes defined (added validation-metrics, performance-comparison, and historical-timeline endpoints)
     });
 
     it('should validate that AnalyticsService is properly mocked', () => {

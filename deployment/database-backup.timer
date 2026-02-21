@@ -1,0 +1,14 @@
+[Unit]
+Description=CodeGoat Database Backup Timer
+Requires=database-backup.service
+
+[Timer]
+# Run hourly
+OnCalendar=hourly
+# Run immediately if the system was down during scheduled time
+Persistent=true
+# Add random delay of 0-5 minutes to avoid load spikes
+RandomizedDelaySec=300
+
+[Install]
+WantedBy=timers.target

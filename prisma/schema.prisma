@@ -7,7 +7,9 @@ generator client {
 
 datasource db {
   provider = "sqlite"
-  url      = env("KANBAN_DATABASE_URL")
+  // Primary: DATABASE_URL (industry standard)
+  // Fallback: KANBAN_DATABASE_URL (legacy support)
+  url      = env("DATABASE_URL")
 }
 
 // String-based enums for SQLite compatibility

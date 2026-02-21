@@ -2,6 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
+import { SidebarProvider } from '../contexts/SidebarContext';
 
 // Mock lucide-react icons
 jest.mock('lucide-react', () => ({
@@ -52,7 +53,11 @@ jest.mock('react-router-dom', () => {
 const { useLocation } = jest.requireMock('react-router-dom');
 
 const renderWithRouter = (component: React.ReactElement, initialRoute = '/') => {
-  return render(<MemoryRouter initialEntries={[initialRoute]}>{component}</MemoryRouter>);
+  return render(
+    <MemoryRouter initialEntries={[initialRoute]}>
+      <SidebarProvider>{component}</SidebarProvider>
+    </MemoryRouter>
+  );
 };
 
 describe('Sidebar', () => {

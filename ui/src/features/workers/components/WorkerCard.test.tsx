@@ -56,7 +56,6 @@ describe('WorkerCard', () => {
     onMergeWorktree: jest.fn(),
     onOpenVSCode: jest.fn(),
     onViewBlockedCommands: jest.fn(),
-    onViewValidationRuns: jest.fn(),
   };
 
   const baseWorker = {
@@ -409,11 +408,6 @@ describe('WorkerCard', () => {
       const blockedButton = screen.getByRole('button', { name: /Blocked \(3\)/ });
       fireEvent.click(blockedButton);
       expect(mockCallbacks.onViewBlockedCommands).toHaveBeenCalledWith('worker-123-456-789');
-
-      // Validations button
-      const validationsButton = screen.getByRole('button', { name: /Validations \(2\)/ });
-      fireEvent.click(validationsButton);
-      expect(mockCallbacks.onViewValidationRuns).toHaveBeenCalledWith('worker-123-456-789');
     });
   });
 

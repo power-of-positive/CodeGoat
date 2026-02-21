@@ -4,6 +4,15 @@
   "strictMode": false,
   "rules": [
     {
+      "id": "39e0bb45-6357-4af7-ad61-cdfb819cdec0",
+      "action": "file_write",
+      "scope": "specific_path",
+      "target": "test-protected-file.txt",
+      "allowed": false,
+      "reason": "Testing permission system - this file should never be edited",
+      "priority": 950
+    },
+    {
       "id": "1537d200-c49d-44e8-a0fb-a9767df53a66",
       "action": "file_write",
       "scope": "pattern",
@@ -103,31 +112,6 @@
       "priority": 900
     },
     {
-      "id": "allow-worktree-operations",
-      "action": "file_write",
-      "scope": "worktree",
-      "allowed": true,
-      "reason": "File operations allowed in worktree",
-      "priority": 200
-    },
-    {
-      "id": "deny-outside-worktree",
-      "action": "file_write",
-      "scope": "global",
-      "allowed": false,
-      "reason": "File operations outside worktree are forbidden",
-      "priority": 150
-    },
-    {
-      "id": "allow-safe-commands",
-      "action": "system_command",
-      "scope": "pattern",
-      "target": "git *",
-      "allowed": true,
-      "reason": "Git commands are allowed",
-      "priority": 120
-    },
-    {
       "id": "allow-claude-execute",
       "action": "claude_execute",
       "scope": "worktree",
@@ -171,12 +155,37 @@
       "priority": 210
     },
     {
+      "id": "allow-worktree-operations",
+      "action": "file_write",
+      "scope": "worktree",
+      "allowed": true,
+      "reason": "File operations allowed in worktree",
+      "priority": 200
+    },
+    {
       "id": "allow-network-requests",
       "action": "network_request",
       "scope": "global",
       "allowed": true,
       "reason": "Network requests allowed for API calls",
       "priority": 180
+    },
+    {
+      "id": "deny-outside-worktree",
+      "action": "file_write",
+      "scope": "global",
+      "allowed": false,
+      "reason": "File operations outside worktree are forbidden",
+      "priority": 150
+    },
+    {
+      "id": "allow-safe-commands",
+      "action": "system_command",
+      "scope": "pattern",
+      "target": "git *",
+      "allowed": true,
+      "reason": "Git commands are allowed",
+      "priority": 120
     }
   ]
 }

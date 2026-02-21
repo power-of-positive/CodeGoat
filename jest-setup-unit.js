@@ -2,6 +2,10 @@
 // Set NODE_ENV to test for all unit tests
 process.env.NODE_ENV = 'test';
 
+// Set test database URL (standard)
+process.env.DATABASE_URL = 'file:./prisma/kanban-test.db';
+process.env.KANBAN_DATABASE_URL = process.env.DATABASE_URL; // Legacy support
+
 // Increase EventEmitter listener limit to prevent warnings
 require('events').EventEmitter.defaultMaxListeners = 50;
 

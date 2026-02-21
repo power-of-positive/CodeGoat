@@ -1,0 +1,15 @@
+[Unit]
+Description=CodeGoat Database Backup Service
+After=network.target
+
+[Service]
+Type=oneshot
+User=codegoat
+WorkingDirectory=/opt/codegoat
+ExecStart=/usr/bin/npm run backup:scheduled:run
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=codegoat-backup
+
+[Install]
+WantedBy=multi-user.target

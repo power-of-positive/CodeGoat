@@ -1,20 +1,24 @@
 import { PrismaClient } from '@prisma/client';
 import { WinstonLogger } from '../logger-winston';
+import { getDatabaseUrl, ensureDatabaseUrl } from '../config/database';
 
 let prisma: PrismaClient | null = null;
 
 export function createDatabaseService(_logger: WinstonLogger) {
   if (!prisma) {
-    // Configure Prisma with appropriate timeout for test environment
+    // Ensure DATABASE_URL is properly set
+    ensureDatabaseUrl();
+
+    // Configure Prisma with appropriate settings
     const prismaOptions: any = {};
 
     if (process.env.NODE_ENV === 'test') {
       prismaOptions.datasources = {
         db: {
-          url: process.env.KANBAN_DATABASE_URL || 'file:../kanban.db',
+          url: getDatabaseUrl(),
         },
       };
-      // Set connection pool timeout for test environment
+      // Reduce logging in test environment
       prismaOptions.log = ['error', 'warn'];
     }
 
