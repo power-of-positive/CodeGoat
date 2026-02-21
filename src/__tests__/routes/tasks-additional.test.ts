@@ -77,10 +77,8 @@ describe('Tasks Route - Additional Coverage', () => {
         duration: null,
         createdAt: new Date(),
         updatedAt: new Date(),
-        projectId: null,
-        parentTaskAttempt: null,
-        templateId: null,
-        tags: null,
+        projectId: null,        templateId: null,
+        tags: [],
         description: null,
       };
 
@@ -94,12 +92,13 @@ describe('Tasks Route - Additional Coverage', () => {
 
       expect(response.status).toBe(201);
       expect(response.body.success).toBe(true);
-      expect(mockDb.task.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({
+      const createArgs = mockDb.task.create.mock.calls[0][0];
+      expect(createArgs.data).toEqual(
+        expect.objectContaining({
           status: TaskStatus.IN_PROGRESS,
           startTime: expect.any(Date),
-        }),
-      });
+        })
+      );
     });
 
     it('should create task with completed status and set timing fields', async () => {
@@ -116,10 +115,8 @@ describe('Tasks Route - Additional Coverage', () => {
         duration: 0,
         createdAt: new Date(),
         updatedAt: new Date(),
-        projectId: null,
-        parentTaskAttempt: null,
-        templateId: null,
-        tags: null,
+        projectId: null,        templateId: null,
+        tags: [],
         description: null,
       };
 
@@ -133,14 +130,14 @@ describe('Tasks Route - Additional Coverage', () => {
 
       expect(response.status).toBe(201);
       expect(response.body.success).toBe(true);
-      expect(mockDb.task.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({
+      const createArgs = mockDb.task.create.mock.calls[0][0];
+      expect(createArgs.data).toEqual(
+        expect.objectContaining({
           status: TaskStatus.COMPLETED,
           startTime: expect.any(Date),
           endTime: expect.any(Date),
-          // Duration is calculated dynamically, not stored
-        }),
-      });
+        })
+      );
     });
 
     it('should handle database errors during task creation', async () => {
@@ -170,10 +167,8 @@ describe('Tasks Route - Additional Coverage', () => {
         duration: null,
         createdAt: new Date(),
         updatedAt: new Date(),
-        projectId: null,
-        parentTaskAttempt: null,
-        templateId: null,
-        tags: null,
+        projectId: null,        templateId: null,
+        tags: [],
         description: null,
       };
 
@@ -202,10 +197,8 @@ describe('Tasks Route - Additional Coverage', () => {
         duration: null,
         createdAt: new Date(),
         updatedAt: new Date(),
-        projectId: null,
-        parentTaskAttempt: null,
-        templateId: null,
-        tags: null,
+        projectId: null,        templateId: null,
+        tags: [],
         description: null,
       };
 
@@ -236,10 +229,8 @@ describe('Tasks Route - Additional Coverage', () => {
       duration: null,
       createdAt: new Date(),
       updatedAt: new Date(),
-      projectId: null,
-      parentTaskAttempt: null,
-      templateId: null,
-      tags: null,
+      projectId: null,      templateId: null,
+      tags: [],
       description: null,
     };
 
@@ -256,13 +247,14 @@ describe('Tasks Route - Additional Coverage', () => {
       });
 
       expect(response.status).toBe(200);
-      expect(mockDb.task.update).toHaveBeenCalledWith({
-        where: { id: 'CODEGOAT-200' },
-        data: expect.objectContaining({
+      const updateArgs = mockDb.task.update.mock.calls[0][0];
+      expect(updateArgs.where).toEqual({ id: 'CODEGOAT-200' });
+      expect(updateArgs.data).toEqual(
+        expect.objectContaining({
           content: 'Updated content',
           title: 'Updated content',
-        }),
-      });
+        })
+      );
     });
 
     it('should update task priority', async () => {
@@ -277,12 +269,13 @@ describe('Tasks Route - Additional Coverage', () => {
       });
 
       expect(response.status).toBe(200);
-      expect(mockDb.task.update).toHaveBeenCalledWith({
-        where: { id: 'CODEGOAT-200' },
-        data: expect.objectContaining({
+      const updateArgs = mockDb.task.update.mock.calls[0][0];
+      expect(updateArgs.where).toEqual({ id: 'CODEGOAT-200' });
+      expect(updateArgs.data).toEqual(
+        expect.objectContaining({
           priority: Priority.HIGH,
-        }),
-      });
+        })
+      );
     });
 
     it('should update task type', async () => {
@@ -297,12 +290,13 @@ describe('Tasks Route - Additional Coverage', () => {
       });
 
       expect(response.status).toBe(200);
-      expect(mockDb.task.update).toHaveBeenCalledWith({
-        where: { id: 'CODEGOAT-200' },
-        data: expect.objectContaining({
+      const updateArgs = mockDb.task.update.mock.calls[0][0];
+      expect(updateArgs.where).toEqual({ id: 'CODEGOAT-200' });
+      expect(updateArgs.data).toEqual(
+        expect.objectContaining({
           taskType: TaskType.STORY,
-        }),
-      });
+        })
+      );
     });
 
     it('should update executorId', async () => {
@@ -317,12 +311,13 @@ describe('Tasks Route - Additional Coverage', () => {
       });
 
       expect(response.status).toBe(200);
-      expect(mockDb.task.update).toHaveBeenCalledWith({
-        where: { id: 'CODEGOAT-200' },
-        data: expect.objectContaining({
+      const updateArgs = mockDb.task.update.mock.calls[0][0];
+      expect(updateArgs.where).toEqual({ id: 'CODEGOAT-200' });
+      expect(updateArgs.data).toEqual(
+        expect.objectContaining({
           executorId: 'new-executor',
-        }),
-      });
+        })
+      );
     });
 
     it('should handle completing task that was never started', async () => {
@@ -340,15 +335,15 @@ describe('Tasks Route - Additional Coverage', () => {
       });
 
       expect(response.status).toBe(200);
-      expect(mockDb.task.update).toHaveBeenCalledWith({
-        where: { id: 'CODEGOAT-200' },
-        data: expect.objectContaining({
+      const updateArgs = mockDb.task.update.mock.calls[0][0];
+      expect(updateArgs.where).toEqual({ id: 'CODEGOAT-200' });
+      expect(updateArgs.data).toEqual(
+        expect.objectContaining({
           status: TaskStatus.COMPLETED,
           startTime: expect.any(Date),
           endTime: expect.any(Date),
-          // Duration is calculated dynamically, not stored
-        }),
-      });
+        })
+      );
     });
 
     it('should handle database errors during update', async () => {
@@ -377,13 +372,14 @@ describe('Tasks Route - Additional Coverage', () => {
       });
 
       expect(response.status).toBe(200);
-      expect(mockDb.task.update).toHaveBeenCalledWith({
-        where: { id: 'CODEGOAT-200' },
-        data: expect.objectContaining({
+      const updateArgs = mockDb.task.update.mock.calls[0][0];
+      expect(updateArgs.where).toEqual({ id: 'CODEGOAT-200' });
+      expect(updateArgs.data).toEqual(
+        expect.objectContaining({
           status: TaskStatus.IN_PROGRESS,
           startTime: expect.any(Date),
-        }),
-      });
+        })
+      );
     });
 
     it('should transition task from in_progress to completed with duration', async () => {
@@ -407,14 +403,14 @@ describe('Tasks Route - Additional Coverage', () => {
       });
 
       expect(response.status).toBe(200);
-      expect(mockDb.task.update).toHaveBeenCalledWith({
-        where: { id: 'CODEGOAT-200' },
-        data: expect.objectContaining({
+      const updateArgs = mockDb.task.update.mock.calls[0][0];
+      expect(updateArgs.where).toEqual({ id: 'CODEGOAT-200' });
+      expect(updateArgs.data).toEqual(
+        expect.objectContaining({
           status: TaskStatus.COMPLETED,
           endTime: expect.any(Date),
-          // Duration is calculated dynamically, not stored
-        }),
-      });
+        })
+      );
     });
   });
 
@@ -433,10 +429,8 @@ describe('Tasks Route - Additional Coverage', () => {
         duration: null,
         createdAt: new Date(),
         updatedAt: new Date(),
-        projectId: null,
-        parentTaskAttempt: null,
-        templateId: null,
-        tags: null,
+        projectId: null,        templateId: null,
+        tags: [],
         description: null,
       };
 
@@ -478,10 +472,8 @@ describe('Tasks Route - Additional Coverage', () => {
         duration: null,
         createdAt: new Date(),
         updatedAt: new Date(),
-        projectId: null,
-        parentTaskAttempt: null,
-        templateId: null,
-        tags: null,
+        projectId: null,        templateId: null,
+        tags: [],
         description: null,
       };
 
@@ -551,10 +543,8 @@ describe('Tasks Route - Additional Coverage', () => {
           duration: '30m',
           createdAt: new Date(),
           updatedAt: new Date(),
-          projectId: null,
-          parentTaskAttempt: null,
-          templateId: null,
-          tags: null,
+          projectId: null,          templateId: null,
+          tags: [],
           description: null,
         },
       ];
@@ -598,10 +588,8 @@ describe('Tasks Route - Additional Coverage', () => {
         duration: null,
         createdAt: new Date(),
         updatedAt: new Date(),
-        projectId: null,
-        parentTaskAttempt: null,
-        templateId: null,
-        tags: null,
+        projectId: null,        templateId: null,
+        tags: [],
         description: null,
         validationRuns: [
           {
@@ -670,10 +658,8 @@ describe('Tasks Route - Additional Coverage', () => {
           duration: null,
           createdAt: new Date(),
           updatedAt: new Date(),
-          projectId: null,
-          parentTaskAttempt: null,
-          templateId: null,
-          tags: null,
+          projectId: null,          templateId: null,
+          tags: [],
           description: null,
         },
       ];
@@ -685,12 +671,14 @@ describe('Tasks Route - Additional Coverage', () => {
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
       expect(response.body.data).toHaveLength(1);
-      expect(mockDb.task.findMany).toHaveBeenCalledWith({
-        where: {
-          OR: [{ projectId: null }, { id: { startsWith: 'CODEGOAT-' } }],
-        },
-        orderBy: [{ priority: 'desc' }, { createdAt: 'desc' }],
-      });
+      expect(mockDb.task.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            OR: [{ projectId: null }, { id: { startsWith: 'CODEGOAT-' } }],
+          },
+          orderBy: [{ priority: 'desc' }, { createdAt: 'desc' }],
+        })
+      );
     });
 
     it('should handle database errors when listing tasks', async () => {
@@ -1025,5 +1013,135 @@ describe('Tasks Route - Additional Coverage', () => {
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Failed to delete BDD scenario');
     }, 30000);
+  });
+
+  describe('PUT /api/tasks/:id/scenarios/:scenarioId - additional updates', () => {
+    const baseScenario = {
+      id: 'scenario-advanced',
+      taskId: 'CODEGOAT-300',
+      title: 'Original Title',
+      feature: 'Authentication',
+      description: 'Original description',
+      gherkinContent: 'Given a user exists',
+      status: BDDScenarioStatus.PENDING,
+      executedAt: null,
+      executionDuration: null,
+      errorMessage: null,
+    };
+
+    it('trims fields and records execution metadata when status changes', async () => {
+      mockDb.task.findUnique.mockResolvedValue({ id: 'CODEGOAT-300' });
+      mockDb.bDDScenario.findFirst.mockResolvedValue(baseScenario);
+      const executedAt = new Date();
+      mockDb.bDDScenario.update.mockResolvedValue({
+        ...baseScenario,
+        title: 'Updated Title',
+        feature: 'Security',
+        description: 'Updated description',
+        gherkinContent: 'Updated gherkin',
+        status: BDDScenarioStatus.PASSED,
+        executedAt,
+        executionDuration: 4200,
+        errorMessage: 'none',
+      });
+
+      const response = await request(app)
+        .put('/api/tasks/CODEGOAT-300/scenarios/scenario-advanced')
+        .send({
+          title: ' Updated Title ',
+          feature: ' Security ',
+          description: ' Updated description ',
+          gherkinContent: ' Updated gherkin ',
+          status: 'passed',
+          executionDuration: 4200,
+          errorMessage: 'none',
+        });
+
+      expect(response.status).toBe(200);
+      expect(mockDb.bDDScenario.update).toHaveBeenCalledWith({
+        where: { id: 'scenario-advanced' },
+        data: expect.objectContaining({
+          title: 'Updated Title',
+          feature: 'Security',
+          description: 'Updated description',
+          gherkinContent: 'Updated gherkin',
+          status: BDDScenarioStatus.PASSED,
+        }),
+      });
+      expect(response.body.data.status).toBe('passed');
+    });
+  });
+
+  describe('GET /api/tasks/:id/scenarios/:scenarioId/executions - edge cases', () => {
+    const baseScenario = { id: 'scenario-exec', taskId: 'CODEGOAT-400' };
+
+    it('returns 404 when scenario does not exist', async () => {
+      mockDb.bDDScenario.findFirst.mockResolvedValue(null);
+
+      const response = await request(app).get(
+        '/api/tasks/CODEGOAT-400/scenarios/scenario-exec/executions'
+      );
+
+      expect(response.status).toBe(404);
+      expect(response.body.message).toBe('Scenario not found');
+    });
+
+    it('handles errors when fetching execution history', async () => {
+      mockDb.bDDScenario.findFirst.mockResolvedValue(baseScenario);
+      mockDb.bDDScenarioExecution.findMany.mockRejectedValue(new Error('history error'));
+
+      const response = await request(app).get(
+        '/api/tasks/CODEGOAT-400/scenarios/scenario-exec/executions'
+      );
+
+      expect(response.status).toBe(500);
+      expect(response.body.message).toBe('Failed to fetch execution history');
+    });
+  });
+
+  describe('POST /api/tasks/:id/scenarios/:scenarioId/executions - validation and failure', () => {
+    const baseScenario = {
+      id: 'scenario-exec',
+      taskId: 'CODEGOAT-500',
+      gherkinContent: 'Given a scenario',
+    };
+
+    it('requires status field in execution requests', async () => {
+      const response = await request(app)
+        .post('/api/tasks/CODEGOAT-500/scenarios/scenario-exec/executions')
+        .send({});
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toBe('Status is required');
+    });
+
+    // Execution creation errors fall through validation because status is required before DB calls
+  });
+
+  describe('GET /api/tasks/:id/scenarios/:scenarioId/analytics - coverage', () => {
+    const baseScenario = { id: 'scenario-analytics', taskId: 'CODEGOAT-600' };
+
+    it('returns 404 when analytics requested for missing scenario', async () => {
+      mockDb.bDDScenario.findFirst.mockResolvedValue(null);
+
+      const response = await request(app).get(
+        '/api/tasks/CODEGOAT-600/scenarios/scenario-analytics/analytics'
+      );
+
+      expect(response.status).toBe(404);
+      expect(response.body.message).toBe('Scenario not found');
+    });
+
+    it('handles analytics retrieval errors', async () => {
+      mockDb.bDDScenario.findFirst.mockResolvedValue(baseScenario);
+      mockDb.bDDScenarioExecution.findMany.mockRejectedValue(new Error('analytics failed'));
+
+      const response = await request(app).get(
+        '/api/tasks/CODEGOAT-600/scenarios/scenario-analytics/analytics'
+      );
+
+      expect(response.status).toBe(500);
+      expect(response.body.message).toBe('Failed to fetch execution analytics');
+    });
   });
 });

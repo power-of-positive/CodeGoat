@@ -644,7 +644,6 @@ Please try a different approach to complete this task.`;
         data: {
           status: TaskStatus.COMPLETED,
           endTime,
-          duration,
         },
       });
 

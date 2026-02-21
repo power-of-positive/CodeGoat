@@ -2,6 +2,8 @@ import request from 'supertest';
 import express from 'express';
 import { createSettingsRoutes } from '../../routes/settings';
 import { createMockLogger } from '../../test-helpers/logger.mock';
+import { SettingsService } from '../../services/settings.service';
+import { ZodError } from 'zod';
 import fs from 'fs/promises';
 
 jest.mock('fs/promises');
@@ -321,6 +323,65 @@ describe('Settings Routes', () => {
     });
   });
 
+  describe('Validation settings routes', () => {
+    it('should handle service errors when fetching validation settings', async () => {
+      const spy = jest
+        .spyOn(SettingsService.prototype, 'getValidationSettings')
+        .mockRejectedValueOnce(new Error('load failed'));
+
+      const response = await request(app).get('/settings/validation').expect(500);
+
+      expect(response.body.error).toBe('Failed to load validation settings');
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'Failed to load validation settings',
+        expect.any(Error)
+      );
+      spy.mockRestore();
+    });
+
+    it('should surface validation errors from settings service', async () => {
+      const validSettings = { enabled: true, autoRun: false, stages: ['lint'] };
+      const zodError = new ZodError([]);
+
+      const spy = jest
+        .spyOn(SettingsService.prototype, 'updateValidationSettings')
+        .mockRejectedValueOnce(zodError);
+
+      await request(app)
+        .put('/settings/validation')
+        .send(validSettings)
+        .expect(400)
+        .expect(res => {
+          expect(res.body).toEqual({
+            error: 'Invalid validation settings',
+            details: expect.any(Array),
+          });
+        });
+
+      spy.mockRestore();
+    });
+
+    it('should handle validation settings update errors', async () => {
+      const validSettings = { enabled: true, autoRun: false, stages: ['lint', 'test'] };
+
+      const spy = jest
+        .spyOn(SettingsService.prototype, 'updateValidationSettings')
+        .mockRejectedValueOnce(new Error('persist failed'));
+
+      const response = await request(app)
+        .put('/settings/validation')
+        .send(validSettings)
+        .expect(500);
+
+      expect(response.body.error).toBe('Failed to update validation settings');
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'Failed to update validation settings',
+        expect.any(Error)
+      );
+      spy.mockRestore();
+    });
+  });
+
   describe('PUT /settings/validation/stages/:id', () => {
     it('should update validation stage', async () => {
       const existingSettings = {
@@ -400,6 +461,97 @@ describe('Settings Routes', () => {
             details: expect.any(Array),
           });
         });
+    });
+  });
+
+  describe('Validation stage service errors', () => {
+    it('should handle stage retrieval errors', async () => {
+      const spy = jest
+        .spyOn(SettingsService.prototype, 'getValidationStage')
+        .mockRejectedValueOnce(new Error('lookup failed'));
+
+      await request(app)
+        .get('/settings/validation/stages/lint')
+        .expect(500)
+        .expect({ error: 'Failed to get validation stage' });
+
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'Failed to get validation stage',
+        expect.any(Error)
+      );
+      spy.mockRestore();
+    });
+
+    it('should return 404 when stage is missing', async () => {
+      const spy = jest
+        .spyOn(SettingsService.prototype, 'getValidationStage')
+        .mockResolvedValueOnce(undefined as any);
+
+      await request(app)
+        .get('/settings/validation/stages/missing')
+        .expect(404)
+        .expect({ error: 'Validation stage not found' });
+
+      spy.mockRestore();
+    });
+
+    it('should handle failures when listing validation stages', async () => {
+      const spy = jest
+        .spyOn(SettingsService.prototype, 'getEnabledValidationStages')
+        .mockRejectedValueOnce(new Error('list failed'));
+
+      await request(app)
+        .get('/settings/validation/stages')
+        .expect(500)
+        .expect({ error: 'Failed to get validation stages' });
+
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'Failed to get validation stages',
+        expect.any(Error)
+      );
+      spy.mockRestore();
+    });
+
+    it('should handle validation stage update service failures', async () => {
+      const spy = jest
+        .spyOn(SettingsService.prototype, 'updateValidationStage')
+        .mockRejectedValueOnce(new Error('update failed'));
+
+      const payload = {
+        name: 'Updated Stage',
+        command: 'npm run lint',
+        timeout: 60000,
+        priority: 1,
+      };
+
+      const response = await request(app)
+        .put('/settings/validation/stages/lint')
+        .send(payload)
+        .expect(500);
+
+      expect(response.body.error).toBe('Failed to update validation stage');
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'Failed to update validation stage',
+        expect.any(Error)
+      );
+      spy.mockRestore();
+    });
+
+    it('should handle validation stage removal service failures', async () => {
+      const spy = jest
+        .spyOn(SettingsService.prototype, 'removeValidationStage')
+        .mockRejectedValueOnce(new Error('remove failed'));
+
+      const response = await request(app)
+        .delete('/settings/validation/stages/lint')
+        .expect(500);
+
+      expect(response.body.error).toBe('Failed to remove validation stage');
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'Failed to remove validation stage',
+        expect.any(Error)
+      );
+      spy.mockRestore();
     });
   });
 

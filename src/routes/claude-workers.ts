@@ -900,6 +900,35 @@ router.get('/status', (req, res) => {
   });
 });
 
+function mapValidationRunToResponse(validationRun: ValidationRun) {
+  const stages = validationRun.stages.map((stage, index) => ({
+    id: `${validationRun.id}-stage-${index + 1}`,
+    name: stage.name,
+    success: stage.status === 'passed',
+    duration: stage.duration ?? 0,
+    attempt: index + 1,
+    output: stage.output,
+    error: stage.error,
+    command: stage.command,
+    status: stage.status,
+  }));
+
+  const totalDuration = stages.reduce((sum, stage) => sum + (stage.duration ?? 0), 0);
+
+  return {
+    id: validationRun.id,
+    timestamp:
+      validationRun.timestamp instanceof Date
+        ? validationRun.timestamp.toISOString()
+        : new Date(validationRun.timestamp).toISOString(),
+    stages,
+    success: validationRun.overallStatus === 'passed',
+    duration: totalDuration,
+    overallStatus: validationRun.overallStatus,
+    metricsFile: validationRun.metricsFile,
+  };
+}
+
 /**
  * Get specific worker status
  */
@@ -914,6 +943,14 @@ router.get('/:workerId', validateParams(GetWorkerParamsSchema), (req, res) => {
     });
   }
 
+  const worktreePath = worker.worktreePath;
+  const worktreeExists = worktreePath ? fs.existsSync(worktreePath) : false;
+  const validationHistory = worker.validationRuns
+    ? worker.validationRuns.map(mapValidationRunToResponse)
+    : [];
+  const lastValidationRun =
+    validationHistory.length > 0 ? validationHistory[validationHistory.length - 1] : null;
+
   res.json({
     success: true,
     data: {
@@ -925,6 +962,14 @@ router.get('/:workerId', validateParams(GetWorkerParamsSchema), (req, res) => {
       endTime: worker.endTime,
       pid: worker.pid,
       logFile: worker.logFile,
+      blockedCommands: worker.blockedCommands,
+      hasPermissionSystem: !!worker.interceptor,
+      worktreePath,
+      worktreeExists,
+      validationPassed: worker.validationPassed,
+      validationRuns: validationHistory.length,
+      lastValidationRun,
+      validationHistory,
     },
   });
 });
@@ -1571,12 +1616,16 @@ router.post(
           // Find available port for frontend (starting from 5174)
           const frontendPort = 5174 + Math.floor(Math.random() * 1000);
 
-          const frontendProcess = spawnProcess('npm', ['run', 'dev', '--', '--port', String(frontendPort)], {
-            cwd: uiPath,
-            env: { ...process.env, PORT: String(frontendPort) },
-            detached: false,
-            stdio: ['ignore', 'pipe', 'pipe'],
-          });
+          const frontendProcess = spawnProcess(
+            'npm',
+            ['run', 'dev', '--', '--port', String(frontendPort)],
+            {
+              cwd: uiPath,
+              env: { ...process.env, PORT: String(frontendPort) },
+              detached: false,
+              stdio: ['ignore', 'pipe', 'pipe'],
+            }
+          );
 
           worker.devServerFrontend = frontendProcess;
           worker.devServerFrontendPort = frontendPort;
@@ -1693,46 +1742,42 @@ router.post(
 /**
  * Get dev server status for worker
  */
-router.get(
-  '/:workerId/dev-server-status',
-  validateParams(OpenVSCodeParamsSchema),
-  (req, res) => {
-    const { workerId } = req.params;
-    const worker = activeWorkers.get(workerId);
+router.get('/:workerId/dev-server-status', validateParams(OpenVSCodeParamsSchema), (req, res) => {
+  const { workerId } = req.params;
+  const worker = activeWorkers.get(workerId);
 
-    if (!worker) {
-      return res.status(HTTP_STATUS.NOT_FOUND).json({
-        success: false,
-        error: 'Worker not found',
-      });
-    }
-
-    const status = {
-      backend: worker.devServerBackend
-        ? {
-            running: true,
-            port: worker.devServerBackendPort,
-            pid: worker.devServerBackend.pid,
-          }
-        : { running: false },
-      frontend: worker.devServerFrontend
-        ? {
-            running: true,
-            port: worker.devServerFrontendPort,
-            pid: worker.devServerFrontend.pid,
-          }
-        : { running: false },
-    };
-
-    res.json({
-      success: true,
-      data: {
-        workerId,
-        status,
-      },
+  if (!worker) {
+    return res.status(HTTP_STATUS.NOT_FOUND).json({
+      success: false,
+      error: 'Worker not found',
     });
   }
-);
+
+  const status = {
+    backend: worker.devServerBackend
+      ? {
+          running: true,
+          port: worker.devServerBackendPort,
+          pid: worker.devServerBackend.pid,
+        }
+      : { running: false },
+    frontend: worker.devServerFrontend
+      ? {
+          running: true,
+          port: worker.devServerFrontendPort,
+          pid: worker.devServerFrontend.pid,
+        }
+      : { running: false },
+  };
+
+  res.json({
+    success: true,
+    data: {
+      workerId,
+      status,
+    },
+  });
+});
 
 /**
  * Get blocked commands for a specific worker
@@ -2092,138 +2137,142 @@ router.post(
 /**
  * Generate commit message based on git diff and task description
  */
-router.get('/:workerId/generate-commit-message', validateParams(OpenVSCodeParamsSchema), (req, res) => {
-  const { workerId } = req.params;
-  const worker = activeWorkers.get(workerId);
+router.get(
+  '/:workerId/generate-commit-message',
+  validateParams(OpenVSCodeParamsSchema),
+  (req, res) => {
+    const { workerId } = req.params;
+    const worker = activeWorkers.get(workerId);
 
-  if (!worker) {
-    return res.status(HTTP_STATUS.NOT_FOUND).json({
-      success: false,
-      error: 'Worker not found',
-    });
-  }
-
-  if (!worker.worktreeManager || !worker.worktreePath) {
-    return res.status(HTTP_STATUS.BAD_REQUEST).json({
-      success: false,
-      error: 'Worker does not have a worktree',
-    });
-  }
-
-  try {
-    const { execSync } = require('child_process');
-    const worktreePath = worker.worktreePath;
-
-    // Check if there are changes
-    const status = execSync('git status --porcelain', {
-      cwd: worktreePath,
-      encoding: 'utf8',
-    });
-
-    if (!status.trim()) {
-      return res.status(HTTP_STATUS.BAD_REQUEST).json({
+    if (!worker) {
+      return res.status(HTTP_STATUS.NOT_FOUND).json({
         success: false,
-        error: 'No changes to generate commit message for',
+        error: 'Worker not found',
       });
     }
 
-    // Get the diff stats
-    const diffStat = execSync('git diff --stat', {
-      cwd: worktreePath,
-      encoding: 'utf8',
-    });
-
-    // Get the diff for analysis
-    const diff = execSync('git diff', {
-      cwd: worktreePath,
-      encoding: 'utf8',
-      maxBuffer: 1024 * 1024 * 10, // 10MB buffer for large diffs
-    });
-
-    // Get list of changed files
-    const changedFiles = status
-      .trim()
-      .split('\n')
-      .map((line: string) => {
-        const match = line.match(/^\s*[AMD?]\s+(.+)$/);
-        return match ? match[1] : null;
-      })
-      .filter(Boolean) as string[];
-
-    // Analyze changes to generate a descriptive commit message
-    const fileTypes: Record<string, number> = {};
-    const directories: Set<string> = new Set();
-
-    changedFiles.forEach((file: string) => {
-      const ext = path.extname(file);
-      fileTypes[ext] = (fileTypes[ext] || 0) + 1;
-      const dir = path.dirname(file);
-      if (dir !== '.') {
-        directories.add(dir.split('/')[0]);
-      }
-    });
-
-    // Generate commit message based on analysis
-    let commitMessage = `Task ${worker.taskId}: ${worker.taskContent}`;
-
-    // Add summary of changes
-    const changesSummary: string[] = [];
-
-    if (changedFiles.length === 1) {
-      changesSummary.push(`Updated ${changedFiles[0]}`);
-    } else {
-      changesSummary.push(`Modified ${changedFiles.length} files`);
-
-      // Add file type summary if diverse
-      const topFileTypes = Object.entries(fileTypes)
-        .sort(([, a], [, b]) => b - a)
-        .slice(0, 2);
-      if (topFileTypes.length > 0) {
-        const typesSummary = topFileTypes
-          .map(([ext, count]) => `${count} ${ext || 'config'} ${count > 1 ? 'files' : 'file'}`)
-          .join(', ');
-        changesSummary.push(typesSummary);
-      }
-
-      // Add directory summary if changes span multiple areas
-      if (directories.size > 0 && directories.size <= 3) {
-        changesSummary.push(`across ${Array.from(directories).join(', ')}`);
-      }
+    if (!worker.worktreeManager || !worker.worktreePath) {
+      return res.status(HTTP_STATUS.BAD_REQUEST).json({
+        success: false,
+        error: 'Worker does not have a worktree',
+      });
     }
 
-    if (changesSummary.length > 0) {
-      commitMessage += `\n\n${changesSummary.join(' ')}`;
-    }
+    try {
+      const { execSync } = require('child_process');
+      const worktreePath = worker.worktreePath;
 
-    // Add diff stats summary
-    const diffLines = diffStat.split('\n');
-    const statsLine = diffLines[diffLines.length - 2];
-    if (statsLine) {
-      commitMessage += `\n${statsLine.trim()}`;
-    }
+      // Check if there are changes
+      const status = execSync('git status --porcelain', {
+        cwd: worktreePath,
+        encoding: 'utf8',
+      });
 
-    res.json({
-      success: true,
-      data: {
-        commitMessage,
-        changedFiles,
-        diffStat,
-        summary: {
-          filesChanged: changedFiles.length,
-          fileTypes,
-          directories: Array.from(directories),
+      if (!status.trim()) {
+        return res.status(HTTP_STATUS.BAD_REQUEST).json({
+          success: false,
+          error: 'No changes to generate commit message for',
+        });
+      }
+
+      // Get the diff stats
+      const diffStat = execSync('git diff --stat', {
+        cwd: worktreePath,
+        encoding: 'utf8',
+      });
+
+      // Get the diff for analysis
+      const diff = execSync('git diff', {
+        cwd: worktreePath,
+        encoding: 'utf8',
+        maxBuffer: 1024 * 1024 * 10, // 10MB buffer for large diffs
+      });
+
+      // Get list of changed files
+      const changedFiles = status
+        .trim()
+        .split('\n')
+        .map((line: string) => {
+          const match = line.match(/^\s*[AMD?]\s+(.+)$/);
+          return match ? match[1] : null;
+        })
+        .filter(Boolean) as string[];
+
+      // Analyze changes to generate a descriptive commit message
+      const fileTypes: Record<string, number> = {};
+      const directories: Set<string> = new Set();
+
+      changedFiles.forEach((file: string) => {
+        const ext = path.extname(file);
+        fileTypes[ext] = (fileTypes[ext] || 0) + 1;
+        const dir = path.dirname(file);
+        if (dir !== '.') {
+          directories.add(dir.split('/')[0]);
+        }
+      });
+
+      // Generate commit message based on analysis
+      let commitMessage = `Task ${worker.taskId}: ${worker.taskContent}`;
+
+      // Add summary of changes
+      const changesSummary: string[] = [];
+
+      if (changedFiles.length === 1) {
+        changesSummary.push(`Updated ${changedFiles[0]}`);
+      } else {
+        changesSummary.push(`Modified ${changedFiles.length} files`);
+
+        // Add file type summary if diverse
+        const topFileTypes = Object.entries(fileTypes)
+          .sort(([, a], [, b]) => b - a)
+          .slice(0, 2);
+        if (topFileTypes.length > 0) {
+          const typesSummary = topFileTypes
+            .map(([ext, count]) => `${count} ${ext || 'config'} ${count > 1 ? 'files' : 'file'}`)
+            .join(', ');
+          changesSummary.push(typesSummary);
+        }
+
+        // Add directory summary if changes span multiple areas
+        if (directories.size > 0 && directories.size <= 3) {
+          changesSummary.push(`across ${Array.from(directories).join(', ')}`);
+        }
+      }
+
+      if (changesSummary.length > 0) {
+        commitMessage += `\n\n${changesSummary.join(' ')}`;
+      }
+
+      // Add diff stats summary
+      const diffLines = diffStat.split('\n');
+      const statsLine = diffLines[diffLines.length - 2];
+      if (statsLine) {
+        commitMessage += `\n${statsLine.trim()}`;
+      }
+
+      res.json({
+        success: true,
+        data: {
+          commitMessage,
+          changedFiles,
+          diffStat,
+          summary: {
+            filesChanged: changedFiles.length,
+            fileTypes,
+            directories: Array.from(directories),
+          },
         },
-      },
-    });
-  } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    console.error('Failed to generate commit message:', error);
-    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
-      success: false,
-      error: `Failed to generate commit message: ${errorMessage}`,
-    });
+      });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Failed to generate commit message:', error);
+      res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        error: `Failed to generate commit message: ${errorMessage}`,
+      });
+    }
   }
-});
+);
 
 /**
  * Merge changes from worker's worktree
@@ -2413,5 +2462,28 @@ router.get('/:workerId/diff', (req, res) => {
     });
   }
 });
+
+export type { ClaudeWorker };
+
+export const __testHelpers = {
+  setWorker(worker: ClaudeWorker) {
+    activeWorkers.set(worker.id, worker);
+  },
+  clearWorkers() {
+    activeWorkers.clear();
+  },
+  getWorker(workerId: string) {
+    return activeWorkers.get(workerId);
+  },
+  monitorCommandOutput,
+  isNonCommand,
+  ensureLogDirectory,
+  generateWorkerId,
+  runValidationChecks,
+  getMaxValidationAttempts,
+  updateTaskStatus,
+  mapValidationRunToResponse,
+  restartWorkerWithFeedback,
+};
 
 export default router;

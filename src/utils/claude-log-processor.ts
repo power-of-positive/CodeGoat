@@ -180,7 +180,7 @@ export class ClaudeLogProcessor {
     }
 
     // Todo management
-    if (lowerName.includes('todo')) {
+    if (lowerName.includes('pending')) {
       return { action: 'todo_management' };
     }
 

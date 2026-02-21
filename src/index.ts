@@ -18,6 +18,7 @@ import claudeWorkersRouter from './routes/claude-workers';
 import { createOrchestratorRoutes } from './routes/orchestrator';
 import validationStageConfigsRouter from './routes/validation-stage-configs';
 import { createBackupRoutes } from './routes/backup';
+import projectsRouter from './routes/projects';
 import { createDatabaseService } from './services/database';
 import { createErrorHandler } from './middleware/error-handler';
 
@@ -172,6 +173,7 @@ app.use('/api/claude-workers', claudeWorkersRouter);
 app.use('/api/orchestrator', createOrchestratorRoutes(logger));
 app.use('/api/validation-stage-configs', validationStageConfigsRouter);
 app.use('/api/backups', createBackupRoutes(logger));
+app.use('/api/projects', projectsRouter);
 
 // Health check endpoint
 app.get('/health', (_req: Request, res: Response) => {

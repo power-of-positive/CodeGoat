@@ -80,14 +80,16 @@ export function createErrorHandler(logger: ILogger) {
         });
       }
 
-      res.status(HTTP_STATUS.UNPROCESSABLE_ENTITY).json(
-        createErrorResponse(
-          ErrorCode.VALIDATION_ERROR,
-          'Request validation failed',
-          details,
-          req.path
-        )
-      );
+      res
+        .status(HTTP_STATUS.UNPROCESSABLE_ENTITY)
+        .json(
+          createErrorResponse(
+            ErrorCode.VALIDATION_ERROR,
+            'Request validation failed',
+            details,
+            req.path
+          )
+        );
       return;
     }
 
@@ -101,9 +103,9 @@ export function createErrorHandler(logger: ILogger) {
         });
       }
 
-      res.status(error.statusCode).json(
-        createErrorResponse(error.code, error.message, error.details, req.path)
-      );
+      res
+        .status(error.statusCode)
+        .json(createErrorResponse(error.code, error.message, error.details, req.path));
       return;
     }
 
@@ -120,9 +122,9 @@ export function createErrorHandler(logger: ILogger) {
         });
       }
 
-      res.status(HTTP_STATUS.NOT_FOUND).json(
-        createErrorResponse(ErrorCode.NOT_FOUND, error.message, undefined, req.path)
-      );
+      res
+        .status(HTTP_STATUS.NOT_FOUND)
+        .json(createErrorResponse(ErrorCode.NOT_FOUND, error.message, undefined, req.path));
       return;
     }
 
@@ -136,9 +138,9 @@ export function createErrorHandler(logger: ILogger) {
         });
       }
 
-      res.status(HTTP_STATUS.CONFLICT).json(
-        createErrorResponse(ErrorCode.CONFLICT, error.message, undefined, req.path)
-      );
+      res
+        .status(HTTP_STATUS.CONFLICT)
+        .json(createErrorResponse(ErrorCode.CONFLICT, error.message, undefined, req.path));
       return;
     }
 
@@ -152,9 +154,9 @@ export function createErrorHandler(logger: ILogger) {
         });
       }
 
-      res.status(HTTP_STATUS.UNAUTHORIZED).json(
-        createErrorResponse(ErrorCode.UNAUTHORIZED, error.message, undefined, req.path)
-      );
+      res
+        .status(HTTP_STATUS.UNAUTHORIZED)
+        .json(createErrorResponse(ErrorCode.UNAUTHORIZED, error.message, undefined, req.path));
       return;
     }
 
@@ -168,9 +170,9 @@ export function createErrorHandler(logger: ILogger) {
         });
       }
 
-      res.status(HTTP_STATUS.FORBIDDEN).json(
-        createErrorResponse(ErrorCode.FORBIDDEN, error.message, undefined, req.path)
-      );
+      res
+        .status(HTTP_STATUS.FORBIDDEN)
+        .json(createErrorResponse(ErrorCode.FORBIDDEN, error.message, undefined, req.path));
       return;
     }
 
@@ -189,7 +191,7 @@ export function createErrorHandler(logger: ILogger) {
         ? 'An unexpected error occurred'
         : error.message || 'An unexpected error occurred';
 
-    const details:  Record<string, string> | undefined =
+    const details: Record<string, string> | undefined =
       process.env.NODE_ENV === 'production'
         ? undefined
         : {
@@ -197,9 +199,9 @@ export function createErrorHandler(logger: ILogger) {
             name: error.name,
           };
 
-    res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json(
-      createErrorResponse(ErrorCode.INTERNAL_ERROR, message, details, req.path)
-    );
+    res
+      .status(HTTP_STATUS.INTERNAL_SERVER_ERROR)
+      .json(createErrorResponse(ErrorCode.INTERNAL_ERROR, message, details, req.path));
   };
 }
 
@@ -254,10 +256,7 @@ export const throwForbidden = (message: string, details?: Record<string, string>
   throw new AppError(HTTP_STATUS.FORBIDDEN, ErrorCode.FORBIDDEN, message, details);
 };
 
-export const throwValidationError = (
-  message: string,
-  details?: Record<string, string>
-): never => {
+export const throwValidationError = (message: string, details?: Record<string, string>): never => {
   throw new AppError(
     HTTP_STATUS.UNPROCESSABLE_ENTITY,
     ErrorCode.VALIDATION_ERROR,

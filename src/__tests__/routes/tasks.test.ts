@@ -63,10 +63,8 @@ describe('Tasks Route - Story Completion Validation', () => {
       createdAt: new Date('2024-01-01T09:00:00Z'),
       updatedAt: new Date('2024-01-01T10:00:00Z'),
       // Add other unified Task fields
-      projectId: null,
-      parentTaskAttempt: null,
-      templateId: null,
-      tags: null,
+      projectId: null,      templateId: null,
+      tags: [],
       description: null,
     };
 
@@ -268,14 +266,14 @@ describe('Tasks Route - Story Completion Validation', () => {
       expect(response.body.data.status).toBe('completed');
 
       // Ensure task update was called
-      expect(mockDb.task.update).toHaveBeenCalledWith({
-        where: { id: 'CODEGOAT-001' },
-        data: expect.objectContaining({
+      const updateArgs = mockDb.task.update.mock.calls[0][0];
+      expect(updateArgs.where).toEqual({ id: 'CODEGOAT-001' });
+      expect(updateArgs.data).toEqual(
+        expect.objectContaining({
           status: TaskStatus.COMPLETED,
           endTime: expect.any(Date),
-          // Duration is calculated dynamically, not stored
-        }),
-      });
+        })
+      );
     });
 
     it('should allow regular task completion without BDD scenario validation', async () => {
@@ -356,10 +354,8 @@ describe('Tasks Route - Story Completion Validation', () => {
           duration: null,
           createdAt: new Date(),
           updatedAt: new Date(),
-          projectId: null,
-          parentTaskAttempt: null,
-          templateId: null,
-          tags: null,
+          projectId: null,          templateId: null,
+          tags: [],
           description: null,
         },
         {
@@ -375,10 +371,8 @@ describe('Tasks Route - Story Completion Validation', () => {
           duration: '2h 0m',
           createdAt: new Date(),
           updatedAt: new Date(),
-          projectId: null,
-          parentTaskAttempt: null,
-          templateId: null,
-          tags: null,
+          projectId: null,          templateId: null,
+          tags: [],
           description: null,
         },
       ];
@@ -394,12 +388,14 @@ describe('Tasks Route - Story Completion Validation', () => {
       expect(response.body.data[1].id).toBe('CODEGOAT-002');
       expect(response.body.data[1].status).toBe('completed');
 
-      expect(mockDb.task.findMany).toHaveBeenCalledWith({
-        where: {
-          OR: [{ projectId: null }, { id: { startsWith: 'CODEGOAT-' } }],
-        },
-        orderBy: [{ priority: 'desc' }, { createdAt: 'desc' }],
-      });
+      expect(mockDb.task.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            OR: [{ projectId: null }, { id: { startsWith: 'CODEGOAT-' } }],
+          },
+          orderBy: [{ priority: 'desc' }, { createdAt: 'desc' }],
+        })
+      );
     });
 
     it('should handle database errors', async () => {
@@ -438,10 +434,8 @@ describe('Tasks Route - Story Completion Validation', () => {
         duration: null,
         createdAt: new Date(),
         updatedAt: new Date(),
-        projectId: null,
-        parentTaskAttempt: null,
-        templateId: null,
-        tags: null,
+        projectId: null,        templateId: null,
+        tags: [],
         description: null,
         validationRuns: [],
         bddScenarios: [],
@@ -513,10 +507,8 @@ describe('Tasks Route - Story Completion Validation', () => {
         duration: null,
         createdAt: new Date(),
         updatedAt: new Date(),
-        projectId: null,
-        parentTaskAttempt: null,
-        templateId: null,
-        tags: null,
+        projectId: null,        templateId: null,
+        tags: [],
         description: null,
       };
 
@@ -529,16 +521,17 @@ describe('Tasks Route - Story Completion Validation', () => {
       expect(response.body.data.content).toBe('New test task');
       expect(response.body.data.status).toBe('pending');
 
-      expect(mockDb.task.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({
+      const createArgs = mockDb.task.create.mock.calls[0][0];
+      expect(createArgs.data).toEqual(
+        expect.objectContaining({
           id: 'CODEGOAT-006',
           title: 'New test task',
           content: 'New test task',
           status: TaskStatus.PENDING,
           priority: Priority.HIGH,
           taskType: TaskType.TASK,
-        }),
-      });
+        })
+      );
     });
 
     it('should handle missing content', async () => {
@@ -587,10 +580,8 @@ describe('Tasks Route - Story Completion Validation', () => {
         duration: null,
         createdAt: new Date(),
         updatedAt: new Date(),
-        projectId: null,
-        parentTaskAttempt: null,
-        templateId: null,
-        tags: null,
+        projectId: null,        templateId: null,
+        tags: [],
         description: null,
       };
 

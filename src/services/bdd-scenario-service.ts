@@ -1,5 +1,11 @@
 import { PrismaClient, BDDScenario, BDDScenarioExecution } from '@prisma/client';
-import { BDDScenarioStatus, BDDScenarioStatusType } from '../types/enums';
+import {
+  BDDScenarioStatus,
+  BDDScenarioStatusType,
+  TaskStatus,
+  Priority,
+  TaskType,
+} from '../types/enums';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 
@@ -285,9 +291,9 @@ export class BDDScenarioService {
           id: 'comprehensive-bdd',
           title: 'Comprehensive BDD Scenarios for All User-Facing Features',
           content: 'Comprehensive BDD Scenarios for All User-Facing Features',
-          status: 'IN_PROGRESS',
-          priority: 'HIGH',
-          taskType: 'STORY',
+          status: TaskStatus.IN_PROGRESS,
+          priority: Priority.HIGH,
+          taskType: TaskType.STORY,
           executorId: 'system',
         },
       });

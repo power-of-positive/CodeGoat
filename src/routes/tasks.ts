@@ -1,16 +1,12 @@
 import express from 'express';
 import type { ILogger } from '../logger-interface';
 import { getDatabaseService } from '../services/database';
-import { Task } from '@prisma/client';
+import type { Task, BDDScenario, ValidationRun } from '@prisma/client';
 import {
-  TaskStatus,
-  Priority,
-  BDDScenarioStatus,
-  TaskType,
-  TaskStatusType,
-  PriorityType,
-  TaskTypeType,
-  BDDScenarioStatusType,
+  TaskStatus as TaskStatusEnum,
+  Priority as PriorityEnum,
+  BDDScenarioStatus as BDDScenarioStatusEnum,
+  TaskType as TaskTypeEnum,
 } from '../types/enums';
 import { validateRequest, validateParams, validateQuery } from '../middleware/validate';
 import {
@@ -55,6 +51,12 @@ const TIME_CALC_CONSTANTS = {
   MS_PER_HOUR: TIME_BASE.MINUTES_PER_HOUR * TIME_BASE.SECONDS_PER_MINUTE * TIME_BASE.MS_PER_SECOND,
 } as const;
 
+type TaskStatusValue = (typeof TaskStatusEnum)[keyof typeof TaskStatusEnum];
+type PriorityValue = (typeof PriorityEnum)[keyof typeof PriorityEnum];
+type TaskTypeValue = (typeof TaskTypeEnum)[keyof typeof TaskTypeEnum];
+type BDDScenarioStatusValue =
+  (typeof BDDScenarioStatusEnum)[keyof typeof BDDScenarioStatusEnum];
+
 interface ApiTask {
   id: string; // CODEGOAT-001, CODEGOAT-055, etc.
   content: string;
@@ -68,62 +70,46 @@ interface ApiTask {
 }
 
 // Status mapping between API and Prisma enum
-const statusMapping: Record<string, TaskStatusType> = {
-  pending: TaskStatus.PENDING,
-  in_progress: TaskStatus.IN_PROGRESS,
-  completed: TaskStatus.COMPLETED,
+const statusMapping: Record<string, TaskStatusValue> = {
+  pending: TaskStatusEnum.PENDING,
+  in_progress: TaskStatusEnum.IN_PROGRESS,
+  completed: TaskStatusEnum.COMPLETED,
 };
 
 // Priority mapping between API and Prisma enum
-const priorityMapping: Record<string, PriorityType> = {
-  low: Priority.LOW,
-  medium: Priority.MEDIUM,
-  high: Priority.HIGH,
-};
-
-// TaskType mapping between API and Prisma enum
-const taskTypeMapping: Record<string, TaskTypeType> = {
-  story: TaskType.STORY,
-  task: TaskType.TASK,
+const priorityMapping: Record<string, PriorityValue> = {
+  low: PriorityEnum.LOW,
+  medium: PriorityEnum.MEDIUM,
+  high: PriorityEnum.HIGH,
 };
 
 // Reverse mappings for API responses
-const reverseStatusMapping: Record<TaskStatusType, string> = {
-  [TaskStatus.PENDING]: 'pending',
-  [TaskStatus.IN_PROGRESS]: 'in_progress',
-  [TaskStatus.COMPLETED]: 'completed',
-  [TaskStatus.TODO]: 'todo',
-  [TaskStatus.INPROGRESS]: 'inprogress',
-  [TaskStatus.INREVIEW]: 'inreview',
-  [TaskStatus.DONE]: 'done',
-  [TaskStatus.CANCELLED]: 'cancelled',
+const reverseStatusMapping: Record<TaskStatusValue, string> = {
+  [TaskStatusEnum.PENDING]: 'pending',
+  [TaskStatusEnum.IN_PROGRESS]: 'in_progress',
+  [TaskStatusEnum.COMPLETED]: 'completed',
 };
 
-const reversePriorityMapping: Record<PriorityType, string> = {
-  [Priority.LOW]: 'low',
-  [Priority.MEDIUM]: 'medium',
-  [Priority.HIGH]: 'high',
-  [Priority.URGENT]: 'urgent',
-};
-
-const reverseTaskTypeMapping: Record<TaskTypeType, string> = {
-  [TaskType.STORY]: 'story',
-  [TaskType.TASK]: 'task',
+const reversePriorityMapping: Record<PriorityValue, string> = {
+  [PriorityEnum.LOW]: 'low',
+  [PriorityEnum.MEDIUM]: 'medium',
+  [PriorityEnum.HIGH]: 'high',
+  [PriorityEnum.URGENT]: 'urgent',
 };
 
 // BDD Scenario status mapping
-const bddStatusMapping: Record<string, BDDScenarioStatusType> = {
-  pending: BDDScenarioStatus.PENDING,
-  passed: BDDScenarioStatus.PASSED,
-  failed: BDDScenarioStatus.FAILED,
-  skipped: BDDScenarioStatus.SKIPPED,
+const bddStatusMapping: Record<string, BDDScenarioStatusValue> = {
+  pending: BDDScenarioStatusEnum.PENDING,
+  passed: BDDScenarioStatusEnum.PASSED,
+  failed: BDDScenarioStatusEnum.FAILED,
+  skipped: BDDScenarioStatusEnum.SKIPPED,
 };
 
-const reverseBddStatusMapping: Record<BDDScenarioStatusType, string> = {
-  [BDDScenarioStatus.PENDING]: 'pending',
-  [BDDScenarioStatus.PASSED]: 'passed',
-  [BDDScenarioStatus.FAILED]: 'failed',
-  [BDDScenarioStatus.SKIPPED]: 'skipped',
+const reverseBddStatusMapping: Record<BDDScenarioStatusValue, string> = {
+  [BDDScenarioStatusEnum.PENDING]: 'pending',
+  [BDDScenarioStatusEnum.PASSED]: 'passed',
+  [BDDScenarioStatusEnum.FAILED]: 'failed',
+  [BDDScenarioStatusEnum.SKIPPED]: 'skipped',
 };
 
 /**
@@ -153,31 +139,6 @@ async function generateNextTaskId(): Promise<string> {
   return `CODEGOAT-${nextNumber.toString().padStart(3, '0')}`;
 }
 
-// Helper function to convert database task to API format
-function dbTaskToApiTask(dbTask: Task): ApiTask {
-  return {
-    id: dbTask.id,
-    content: dbTask.content ?? dbTask.title, // Use content for todo tasks, title for regular tasks
-    status: reverseStatusMapping[
-      dbTask.status as keyof typeof reverseStatusMapping
-    ] as ApiTask['status'],
-    priority: reversePriorityMapping[
-      dbTask.priority as keyof typeof reversePriorityMapping
-    ] as ApiTask['priority'],
-    taskType: reverseTaskTypeMapping[
-      (dbTask.taskType ?? TaskType.TASK) as keyof typeof reverseTaskTypeMapping
-    ] as ApiTask['taskType'],
-    executorId: dbTask.executorId ?? undefined,
-    startTime: dbTask.startTime?.toISOString(),
-    endTime: dbTask.endTime?.toISOString(),
-    // Calculate duration dynamically from startTime and endTime
-    duration: calculateDuration(
-      dbTask.startTime?.toISOString(),
-      dbTask.endTime?.toISOString()
-    ),
-  };
-}
-
 // Helper function to calculate duration in milliseconds
 function calculateDuration(startTime?: string, endTime?: string): number | undefined {
   if (!startTime || !endTime) {
@@ -202,7 +163,22 @@ function createGetAllTasksHandler(logger: ILogger) {
         orderBy: [{ priority: 'desc' }, { createdAt: 'desc' }],
       });
 
-      const tasks = dbTasks.map(dbTaskToApiTask);
+      const tasks = dbTasks.map(task => ({
+        id: task.id,
+        content: task.content ?? task.title,
+        status: reverseStatusMapping[
+          task.status as keyof typeof reverseStatusMapping
+        ] as ApiTask['status'],
+        priority: reversePriorityMapping[
+          task.priority as keyof typeof reversePriorityMapping
+        ] as ApiTask['priority'],
+        taskType: (task.taskType ?? TaskTypeEnum.TASK) as ApiTask['taskType'],
+        executorId: task.executorId ?? undefined,
+        startTime: task.startTime?.toISOString(),
+        endTime: task.endTime?.toISOString(),
+        duration: calculateDuration(task.startTime?.toISOString(), task.endTime?.toISOString()),
+      }));
+
       res.json({ success: true, data: tasks });
     } catch (error) {
       logger.error('Error fetching tasks:', error as Error);
@@ -226,28 +202,28 @@ function createGetTaskAnalyticsHandler(logger: ILogger) {
       // Get overall statistics
       const totalTasks = await db.task.count({ where: todoTasksFilter });
       const completedTasks = await db.task.count({
-        where: { ...todoTasksFilter, status: TaskStatus.COMPLETED },
+        where: { ...todoTasksFilter, status: TaskStatusEnum.COMPLETED },
       });
       const inProgressTasks = await db.task.count({
-        where: { ...todoTasksFilter, status: TaskStatus.IN_PROGRESS },
+        where: { ...todoTasksFilter, status: TaskStatusEnum.IN_PROGRESS },
       });
       const pendingTasks = await db.task.count({
-        where: { ...todoTasksFilter, status: TaskStatus.PENDING },
+        where: { ...todoTasksFilter, status: TaskStatusEnum.PENDING },
       });
 
       // Get completion rate by priority
       const priorityStats = await Promise.all([
-        db.task.count({ where: { ...todoTasksFilter, priority: Priority.HIGH } }),
+        db.task.count({ where: { ...todoTasksFilter, priority: PriorityEnum.HIGH } }),
         db.task.count({
-          where: { ...todoTasksFilter, priority: Priority.HIGH, status: TaskStatus.COMPLETED },
+          where: { ...todoTasksFilter, priority: PriorityEnum.HIGH, status: TaskStatusEnum.COMPLETED },
         }),
-        db.task.count({ where: { ...todoTasksFilter, priority: Priority.MEDIUM } }),
+        db.task.count({ where: { ...todoTasksFilter, priority: PriorityEnum.MEDIUM } }),
         db.task.count({
-          where: { ...todoTasksFilter, priority: Priority.MEDIUM, status: TaskStatus.COMPLETED },
+          where: { ...todoTasksFilter, priority: PriorityEnum.MEDIUM, status: TaskStatusEnum.COMPLETED },
         }),
-        db.task.count({ where: { ...todoTasksFilter, priority: Priority.LOW } }),
+        db.task.count({ where: { ...todoTasksFilter, priority: PriorityEnum.LOW } }),
         db.task.count({
-          where: { ...todoTasksFilter, priority: Priority.LOW, status: TaskStatus.COMPLETED },
+          where: { ...todoTasksFilter, priority: PriorityEnum.LOW, status: TaskStatusEnum.COMPLETED },
         }),
       ]);
 
@@ -255,7 +231,7 @@ function createGetTaskAnalyticsHandler(logger: ILogger) {
       const completedTasksWithDuration = await db.task.findMany({
         where: {
           ...todoTasksFilter,
-          status: TaskStatus.COMPLETED,
+          status: TaskStatusEnum.COMPLETED,
           startTime: { not: null },
           endTime: { not: null },
         },
@@ -284,7 +260,7 @@ function createGetTaskAnalyticsHandler(logger: ILogger) {
       const recentCompletions = await db.task.findMany({
         where: {
           ...todoTasksFilter,
-          status: TaskStatus.COMPLETED,
+          status: TaskStatusEnum.COMPLETED,
           endTime: {
             gte: thirtyDaysAgo,
           },
@@ -304,7 +280,7 @@ function createGetTaskAnalyticsHandler(logger: ILogger) {
         const completedOnDay = await db.task.count({
           where: {
             ...todoTasksFilter,
-            status: TaskStatus.COMPLETED,
+            status: TaskStatusEnum.COMPLETED,
             endTime: {
               gte: startOfDay,
               lt: endOfDay,
@@ -355,7 +331,21 @@ function createGetTaskAnalyticsHandler(logger: ILogger) {
                   : '0',
             },
           },
-          recentCompletions: recentCompletions.map(dbTaskToApiTask),
+          recentCompletions: recentCompletions.map(task => ({
+            id: task.id,
+            content: task.content ?? task.title,
+            status: reverseStatusMapping[
+              task.status as keyof typeof reverseStatusMapping
+            ] as ApiTask['status'],
+            priority: reversePriorityMapping[
+              task.priority as keyof typeof reversePriorityMapping
+            ] as ApiTask['priority'],
+            taskType: (task.taskType ?? TaskTypeEnum.TASK) as ApiTask['taskType'],
+            executorId: task.executorId ?? undefined,
+            startTime: task.startTime?.toISOString(),
+            endTime: task.endTime?.toISOString(),
+            duration: calculateDuration(task.startTime?.toISOString(), task.endTime?.toISOString()),
+          })),
           dailyCompletions: dailyStats,
         },
       });
@@ -372,7 +362,7 @@ function createGetTaskByIdHandler(logger: ILogger) {
   return async (req: express.Request, res: express.Response) => {
     try {
       const db = getDatabaseService();
-      const dbTask = await db.task.findUnique({
+      const dbTask = (await db.task.findUnique({
         where: { id: req.params.id },
         include: {
           validationRuns: {
@@ -383,7 +373,7 @@ function createGetTaskByIdHandler(logger: ILogger) {
             orderBy: { createdAt: 'asc' },
           },
         },
-      });
+      })) as (Task & { validationRuns: ValidationRun[]; bddScenarios: BDDScenario[] }) | null;
 
       if (!dbTask) {
         return res
@@ -391,28 +381,50 @@ function createGetTaskByIdHandler(logger: ILogger) {
           .json({ success: false, message: 'Task not found' });
       }
 
-      const task = dbTaskToApiTask(dbTask);
-
-      // Convert BDD scenarios to API format
-      const bddScenarios = dbTask.bddScenarios.map(scenario => ({
-        id: scenario.id,
-        title: scenario.title,
-        feature: scenario.feature,
-        description: scenario.description,
-        gherkinContent: scenario.gherkinContent,
-        status: reverseBddStatusMapping[scenario.status as keyof typeof reverseBddStatusMapping],
-        executedAt: scenario.executedAt?.toISOString(),
-        executionDuration: scenario.executionDuration,
-        errorMessage: scenario.errorMessage,
-      }));
+      const response: ApiTask & {
+        validationRuns: ValidationRun[];
+        bddScenarios: Array<{
+          id: string;
+          title: string;
+          feature: string;
+          description: string;
+          gherkinContent: string;
+          status: string;
+          executedAt?: string;
+          executionDuration?: number;
+          errorMessage?: string | null;
+        }>;
+      } = {
+        id: dbTask.id,
+        content: dbTask.content ?? dbTask.title,
+        status: reverseStatusMapping[
+          dbTask.status as keyof typeof reverseStatusMapping
+        ] as ApiTask['status'],
+        priority: reversePriorityMapping[
+          dbTask.priority as keyof typeof reversePriorityMapping
+        ] as ApiTask['priority'],
+        taskType: (dbTask.taskType ?? TaskTypeEnum.TASK) as ApiTask['taskType'],
+        executorId: dbTask.executorId ?? undefined,
+        startTime: dbTask.startTime?.toISOString(),
+        endTime: dbTask.endTime?.toISOString(),
+        duration: calculateDuration(dbTask.startTime?.toISOString(), dbTask.endTime?.toISOString()),
+        validationRuns: dbTask.validationRuns,
+        bddScenarios: dbTask.bddScenarios.map((scenario: BDDScenario) => ({
+          id: scenario.id,
+          title: scenario.title,
+          feature: scenario.feature,
+          description: scenario.description,
+          gherkinContent: scenario.gherkinContent,
+          status: reverseBddStatusMapping[scenario.status as keyof typeof reverseBddStatusMapping],
+          executedAt: scenario.executedAt?.toISOString(),
+          executionDuration: scenario.executionDuration ?? undefined,
+          errorMessage: scenario.errorMessage ?? undefined,
+        })),
+      };
 
       res.json({
         success: true,
-        data: {
-          ...task,
-          validationRuns: dbTask.validationRuns,
-          bddScenarios: bddScenarios,
-        },
+        data: response,
       });
     } catch (error) {
       logger.error('Error fetching task:', error as Error);
@@ -441,9 +453,9 @@ function createCreateTaskHandler(logger: ILogger) {
       }
 
       const db = getDatabaseService();
-      const dbStatus = statusMapping[status] || TaskStatus.PENDING;
-      const dbPriority = priorityMapping[priority] || Priority.MEDIUM;
-      const dbTaskType = taskTypeMapping[taskType] || TaskType.TASK;
+      const dbStatus = statusMapping[status] || TaskStatusEnum.PENDING;
+      const dbPriority = priorityMapping[priority] || PriorityEnum.MEDIUM;
+      const dbTaskType: TaskTypeValue = (taskType as TaskTypeValue) || TaskTypeEnum.TASK;
 
       const taskId = await generateNextTaskId();
 
@@ -451,9 +463,9 @@ function createCreateTaskHandler(logger: ILogger) {
         id: string;
         title: string;
         content: string;
-        status: TaskStatusType;
-        priority: PriorityType;
-        taskType: TaskTypeType;
+        status: TaskStatusValue;
+        priority: PriorityValue;
+        taskType: TaskTypeValue;
         executorId?: string;
         startTime?: Date;
         endTime?: Date;
@@ -480,10 +492,25 @@ function createCreateTaskHandler(logger: ILogger) {
         data: taskData,
       });
 
-      const newTask = dbTaskToApiTask(dbTask);
-
-      logger.info('Task created:', { taskId: newTask.id, content: newTask.content });
-      res.status(HTTP_STATUS.CREATED).json({ success: true, data: newTask });
+      logger.info('Task created:', { taskId: dbTask.id, content: dbTask.content ?? dbTask.title });
+      res.status(HTTP_STATUS.CREATED).json({
+        success: true,
+        data: {
+          id: dbTask.id,
+          content: dbTask.content ?? dbTask.title,
+          status: reverseStatusMapping[
+            dbTask.status as keyof typeof reverseStatusMapping
+          ] as ApiTask['status'],
+          priority: reversePriorityMapping[
+            dbTask.priority as keyof typeof reversePriorityMapping
+          ] as ApiTask['priority'],
+          taskType: (dbTask.taskType ?? TaskTypeEnum.TASK) as ApiTask['taskType'],
+          executorId: dbTask.executorId ?? undefined,
+          startTime: dbTask.startTime?.toISOString(),
+          endTime: dbTask.endTime?.toISOString(),
+          duration: calculateDuration(dbTask.startTime?.toISOString(), dbTask.endTime?.toISOString()),
+        },
+      });
     } catch (error) {
       logger.error('Error creating task:', error as Error);
       res
@@ -511,9 +538,9 @@ function createUpdateTaskHandler(logger: ILogger) {
       const updateData: {
         content?: string;
         title?: string;
-        status?: TaskStatusType;
-        priority?: PriorityType;
-        taskType?: TaskTypeType;
+        status?: TaskStatusValue;
+        priority?: PriorityValue;
+        taskType?: TaskTypeValue;
         executorId?: string;
         startTime?: Date;
         endTime?: Date;
@@ -532,7 +559,8 @@ function createUpdateTaskHandler(logger: ILogger) {
 
       // Handle taskType updates
       if (updates.taskType !== undefined) {
-        updateData.taskType = taskTypeMapping[updates.taskType] || existingTask.taskType;
+        updateData.taskType =
+          (updates.taskType as TaskTypeValue) || existingTask.taskType || TaskTypeEnum.TASK;
       }
 
       // Handle executorId updates
@@ -547,7 +575,7 @@ function createUpdateTaskHandler(logger: ILogger) {
           reverseStatusMapping[existingTask.status as keyof typeof reverseStatusMapping]
       ) {
         // Validate story completion requirements
-        if (updates.status === 'completed' && existingTask.taskType === TaskType.STORY) {
+        if (updates.status === 'completed' && existingTask.taskType === TaskTypeEnum.STORY) {
           // Check if story has BDD scenarios
           const bddScenarios = await db.bDDScenario.findMany({
             where: { taskId: req.params.id },
@@ -580,7 +608,7 @@ function createUpdateTaskHandler(logger: ILogger) {
 
           // Check if all linked tests have passed
           const failedOrPendingScenarios = bddScenarios.filter(
-            scenario => scenario.status !== BDDScenarioStatus.PASSED
+            scenario => scenario.status !== BDDScenarioStatusEnum.PASSED
           );
 
           if (failedOrPendingScenarios.length > 0) {
@@ -601,11 +629,11 @@ function createUpdateTaskHandler(logger: ILogger) {
 
         updateData.status = statusMapping[updates.status];
 
-        if (updates.status === 'in_progress' && existingTask.status === TaskStatus.PENDING) {
+        if (updates.status === 'in_progress' && existingTask.status === TaskStatusEnum.PENDING) {
           updateData.startTime = new Date();
         } else if (
           updates.status === 'completed' &&
-          existingTask.status === TaskStatus.IN_PROGRESS
+          existingTask.status === TaskStatusEnum.IN_PROGRESS
         ) {
           const endTime = new Date();
           updateData.endTime = endTime;
@@ -623,10 +651,31 @@ function createUpdateTaskHandler(logger: ILogger) {
         data: updateData,
       });
 
-      const updatedTask = dbTaskToApiTask(updatedDbTask);
-
-      logger.info('Task updated:', { taskId: updatedTask.id, status: updatedTask.status });
-      res.json({ success: true, data: updatedTask });
+      logger.info('Task updated:', {
+        taskId: updatedDbTask.id,
+        status: updatedDbTask.status,
+      });
+      res.json({
+        success: true,
+        data: {
+          id: updatedDbTask.id,
+          content: updatedDbTask.content ?? updatedDbTask.title,
+          status: reverseStatusMapping[
+            updatedDbTask.status as keyof typeof reverseStatusMapping
+          ] as ApiTask['status'],
+          priority: reversePriorityMapping[
+            updatedDbTask.priority as keyof typeof reversePriorityMapping
+          ] as ApiTask['priority'],
+          taskType: (updatedDbTask.taskType ?? TaskTypeEnum.TASK) as ApiTask['taskType'],
+          executorId: updatedDbTask.executorId ?? undefined,
+          startTime: updatedDbTask.startTime?.toISOString(),
+          endTime: updatedDbTask.endTime?.toISOString(),
+          duration: calculateDuration(
+            updatedDbTask.startTime?.toISOString(),
+            updatedDbTask.endTime?.toISOString()
+          ),
+        },
+      });
     } catch (error) {
       logger.error('Error updating task:', error as Error);
       res
@@ -690,7 +739,7 @@ function createCreateScenarioHandler(logger: ILogger) {
           .json({ success: false, message: 'Task not found' });
       }
 
-      const dbStatus = bddStatusMapping[status] || BDDScenarioStatus.PENDING;
+      const dbStatus = bddStatusMapping[status] || BDDScenarioStatusEnum.PENDING;
 
       const scenario = await db.bDDScenario.create({
         data: {
@@ -764,7 +813,7 @@ function createUpdateScenarioHandler(logger: ILogger) {
         feature?: string;
         description?: string;
         gherkinContent?: string;
-        status?: BDDScenarioStatusType;
+        status?: BDDScenarioStatusValue;
         executedAt?: Date;
         executionDuration?: number;
         errorMessage?: string;
@@ -792,7 +841,7 @@ function createUpdateScenarioHandler(logger: ILogger) {
         // If status is being set to passed or failed, record execution time
         if (
           (updates.status === 'passed' || updates.status === 'failed') &&
-          existingScenario.status === BDDScenarioStatus.PENDING
+          existingScenario.status === BDDScenarioStatusEnum.PENDING
         ) {
           updateData.executedAt = new Date();
         }
@@ -962,7 +1011,7 @@ function createCreateExecutionHandler(logger: ILogger) {
           .json({ success: false, message: 'Scenario not found' });
       }
 
-      const dbStatus = bddStatusMapping[status] || BDDScenarioStatus.PENDING;
+      const dbStatus = bddStatusMapping[status] || BDDScenarioStatusEnum.PENDING;
 
       const execution = await db.bDDScenarioExecution.create({
         data: {
@@ -1051,10 +1100,10 @@ function createGetScenarioAnalyticsHandler(logger: ILogger) {
       });
 
       const totalExecutions = executions.length;
-      const passedExecutions = executions.filter(e => e.status === BDDScenarioStatus.PASSED).length;
-      const failedExecutions = executions.filter(e => e.status === BDDScenarioStatus.FAILED).length;
+      const passedExecutions = executions.filter(e => e.status === BDDScenarioStatusEnum.PASSED).length;
+      const failedExecutions = executions.filter(e => e.status === BDDScenarioStatusEnum.FAILED).length;
       const skippedExecutions = executions.filter(
-        e => e.status === BDDScenarioStatus.SKIPPED
+        e => e.status === BDDScenarioStatusEnum.SKIPPED
       ).length;
 
       const successRate = totalExecutions > 0 ? (passedExecutions / totalExecutions) * 100 : 0;
@@ -1082,13 +1131,13 @@ function createGetScenarioAnalyticsHandler(logger: ILogger) {
             acc[date] = { date, total: 0, passed: 0, failed: 0, skipped: 0 };
           }
           acc[date].total++;
-          if (execution.status === BDDScenarioStatus.PASSED) {
+          if (execution.status === BDDScenarioStatusEnum.PASSED) {
             acc[date].passed++;
           }
-          if (execution.status === BDDScenarioStatus.FAILED) {
+          if (execution.status === BDDScenarioStatusEnum.FAILED) {
             acc[date].failed++;
           }
-          if (execution.status === BDDScenarioStatus.SKIPPED) {
+          if (execution.status === BDDScenarioStatusEnum.SKIPPED) {
             acc[date].skipped++;
           }
           return acc;

@@ -1,5 +1,6 @@
 import { ConfigLoader } from '../config';
 import * as fs from 'fs';
+import * as yaml from 'yaml';
 
 // Mock fs module
 jest.mock('fs');
@@ -171,6 +172,117 @@ models:
 
       const reloadedConfig = configLoader.reload();
       expect(reloadedConfig.modelConfig?.models['updated-model']?.name).toBe('updated-model');
+    });
+  });
+
+  describe('updateModel and deleteModel', () => {
+    const defaultConfig = `
+models:
+  default-model:
+    name: "default"
+    model: "openrouter/default"
+    provider: "openrouter"
+    baseUrl: "https://openrouter.ai/api/v1"
+    apiKey: "default"
+    enabled: true
+`;
+
+    const makeUserConfig = () => `
+models:
+  user-model:
+    name: "user"
+    model: "openrouter/user"
+    provider: "openrouter"
+    baseUrl: "https://openrouter.ai/api/v1"
+    apiKey: "os.environ/USER_API_KEY"
+    enabled: true
+`;
+
+    let userConfigContent: string;
+
+    beforeEach(() => {
+      userConfigContent = makeUserConfig();
+      mockFs.existsSync.mockImplementation((path: fs.PathLike) => {
+        const p = path.toString();
+        return p.includes('config.default.yaml') || p.includes('config.user.yaml');
+      });
+      mockFs.readFileSync.mockImplementation((path: fs.PathOrFileDescriptor) => {
+        const p = path.toString();
+        if (p.includes('config.default.yaml')) {
+          return defaultConfig;
+        }
+        if (p.includes('config.user.yaml')) {
+          return userConfigContent;
+        }
+        return '';
+      });
+      mockFs.writeFileSync.mockImplementation((path: fs.PathOrFileDescriptor, data: string | NodeJS.ArrayBufferView) => {
+        const p = path.toString();
+        if (p.includes('config.user.yaml') && typeof data === 'string') {
+          userConfigContent = data;
+        }
+      });
+
+      configLoader.load();
+    });
+
+    it('updates an existing model and normalizes api key', () => {
+      configLoader.updateModel('user-model', {
+        name: 'updated',
+        model: 'anthropic/claude-3',
+        apiKey: 'anthropic-secret',
+        provider: 'anthropic',
+      });
+
+      const parsed = yaml.parse(userConfigContent);
+      expect(parsed.models['user-model'].provider).toBe('anthropic');
+      expect(parsed.models['user-model'].apiKey).toBe('os.environ/ANTHROPIC_SECRET_API_KEY');
+    });
+
+    it('throws when updating missing model', () => {
+      expect(() =>
+        configLoader.updateModel('missing-model', {
+          name: 'missing',
+          model: 'openai/gpt-4',
+          apiKey: 'openai',
+          provider: 'openai',
+        })
+      ).toThrow(/Model not found/);
+    });
+
+    it('deletes an existing model', () => {
+      configLoader.deleteModel('user-model');
+
+      const parsed = yaml.parse(userConfigContent);
+      expect(parsed.models['user-model']).toBeUndefined();
+    });
+
+    it('lists models with default flag', () => {
+      const models = configLoader.getAllModels();
+      const defaultEntry = models.find(model => model.id === 'default-model');
+      const userEntry = models.find(model => model.id === 'user-model');
+
+      expect(defaultEntry?.isDefault).toBe(true);
+      expect(userEntry?.isDefault).toBe(false);
+    });
+
+    it('throws when saving a new model fails', () => {
+      mockFs.writeFileSync.mockImplementation(() => {
+        throw new Error('disk full');
+      });
+
+      expect(() =>
+        configLoader.addModel({
+          name: 'failing-model',
+          model: 'openrouter/fail',
+          apiKey: 'fail',
+          provider: 'openrouter',
+        })
+      ).toThrow(/Failed to add model: disk full/);
+    });
+
+    it('throws when deleting missing model', () => {
+      expect(() => configLoader.deleteModel('missing')).toThrow(/Model not found/);
     });
   });
 

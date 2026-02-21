@@ -242,7 +242,9 @@ function parseInclude(includeParam: string | undefined): string[] {
  * // { status: 'completed', priority: { in: ['high', 'urgent'] } }
  * ```
  */
-export function buildWhereClause(filters: Record<string, string | string[]>): Record<string, unknown> {
+export function buildWhereClause(
+  filters: Record<string, string | string[]>
+): Record<string, unknown> {
   const where: Record<string, unknown> = {};
 
   Object.entries(filters).forEach(([field, value]) => {

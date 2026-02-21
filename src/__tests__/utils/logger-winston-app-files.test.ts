@@ -2,6 +2,8 @@ import { WinstonLogger } from '../../logger-winston';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
+import { EventEmitter } from 'events';
+import type { Request, Response } from 'express';
 
 describe('WinstonLogger - App Log Files Prevention', () => {
   let tempDir: string;
@@ -213,6 +215,60 @@ describe('WinstonLogger - App Log Files Prevention', () => {
     it('should detect test environment correctly', () => {
       // WinstonLogger should detect we're in Jest
       expect(WinstonLogger.isTestEnvironment()).toBe(true);
+    });
+  });
+
+  describe('Middleware logging', () => {
+    it('captures request and response metadata with sanitized headers', () => {
+      logger = new WinstonLogger({
+        logsDir: tempDir,
+        enableConsole: false,
+        enableFile: false,
+        forceTestEnvironment: true,
+      });
+
+      const internalLogger = (logger as any).logger;
+      const infoSpy = jest.spyOn(internalLogger, 'info');
+
+      const req = {
+        method: 'POST',
+        path: '/api/test',
+        ip: '127.0.0.1',
+        headers: { 'user-agent': 'jest', authorization: 'secret-token' },
+        body: { foo: 'bar' },
+        get: (header: string) => (header === 'user-agent' ? 'jest' : undefined),
+      } as unknown as Request;
+
+      class ResponseStub extends EventEmitter {
+        statusCode = 201;
+        private storedHeaders: Record<string, unknown> = {
+          'content-type': 'application/json',
+          'set-cookie': 'session=secret',
+        };
+        end = jest.fn();
+        getHeaders() {
+          return this.storedHeaders;
+        }
+      }
+
+      const res = new ResponseStub() as unknown as Response;
+      const middleware = logger.middleware();
+      const next = jest.fn();
+
+      middleware(req, res, next);
+      expect(next).toHaveBeenCalled();
+
+      const writeChunk = JSON.stringify({ ok: true });
+      (res as any).end(writeChunk);
+
+      const logCall = infoSpy.mock.calls.find(call => call[0] === 'HTTP Request');
+      expect(logCall).toBeDefined();
+      const meta = logCall?.[1] as Record<string, unknown>;
+      const requestHeaders = (meta?.requestHeaders as Record<string, string>) ?? {};
+      const responseHeaders = (meta?.responseHeaders as Record<string, string>) ?? {};
+      expect(requestHeaders.authorization).toBe('[REDACTED]');
+      expect(responseHeaders['set-cookie']).toBe('[REDACTED]');
+      expect(meta?.responseBody).toEqual({ ok: true });
     });
   });
 });

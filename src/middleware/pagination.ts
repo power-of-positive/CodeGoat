@@ -80,7 +80,9 @@ export function parsePagination(req: Request, res: Response, next: NextFunction)
     Math.max(
       PAGINATION_DEFAULTS.MIN_PER_PAGE,
       parseInt(
-        typeof perPageRaw === 'string' ? perPageRaw : String(perPageRaw || PAGINATION_DEFAULTS.PER_PAGE)
+        typeof perPageRaw === 'string'
+          ? perPageRaw
+          : String(perPageRaw || PAGINATION_DEFAULTS.PER_PAGE)
       )
     )
   );

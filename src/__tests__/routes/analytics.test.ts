@@ -6,7 +6,6 @@ import { ILogger } from '../../logger-interface';
 
 // Mock the AnalyticsService and dependencies
 jest.mock('../../services/analytics.service');
-jest.mock('../../services/stage-consolidation.service');
 jest.mock('../../services/database');
 
 describe('Analytics Routes', () => {
@@ -24,7 +23,10 @@ describe('Analytics Routes', () => {
       getSession: jest.fn(),
       getRecentSessions: jest.fn(),
       cleanupSessions: jest.fn(),
+      getStageHistory: jest.fn(),
+      getStageStatistics: jest.fn(),
       getValidationRuns: jest.fn().mockResolvedValue([]),
+      getValidationRunStatistics: jest.fn(),
     };
 
     mockLogger = {
@@ -56,19 +58,6 @@ describe('Analytics Routes', () => {
       },
     };
 
-    // Mock stage consolidation service
-    const mockStageConsolidationService = {
-      consolidateStages: jest.fn().mockReturnValue([
-        {
-          stageId: 'lint',
-          name: 'Code Linting',
-          enabled: true,
-          priority: 1,
-        },
-      ]),
-      mergeStageStatistics: jest.fn().mockReturnValue([]),
-    };
-
     // Mock the constructors
     (AnalyticsService as jest.MockedClass<typeof AnalyticsService>).mockImplementation(
       () => mockAnalyticsService
@@ -79,10 +68,6 @@ describe('Analytics Routes', () => {
       .fn()
       .mockReturnValue(mockDatabaseService);
 
-    // Mock StageConsolidationService constructor
-    require('../../services/stage-consolidation.service').StageConsolidationService = jest
-      .fn()
-      .mockImplementation(() => mockStageConsolidationService);
 
     // Create Express app with the routes
     app = express();
@@ -485,6 +470,144 @@ describe('Analytics Routes', () => {
       });
 
       expect(mockLogger.error).toHaveBeenCalledWith('Failed to cleanup sessions', error);
+    });
+  });
+
+  describe('Stage analytics', () => {
+    it('returns stage history data', async () => {
+      mockAnalyticsService.getStageHistory.mockResolvedValue(['history']);
+
+      const response = await request(app)
+        .get('/api/analytics/stages/lint/history?days=7')
+        .expect(200);
+
+      expect(response.body).toEqual({ stageId: 'lint', history: ['history'] });
+      expect(mockAnalyticsService.getStageHistory).toHaveBeenCalledWith('lint', 7);
+    });
+
+    it('handles stage history errors', async () => {
+      const error = new Error('history error');
+      mockAnalyticsService.getStageHistory.mockRejectedValue(error);
+
+      await request(app).get('/api/analytics/stages/lint/history').expect(500);
+      expect(mockLogger.error).toHaveBeenCalledWith('Failed to get stage history', error);
+    });
+
+    it('returns stage statistics', async () => {
+      mockAnalyticsService.getStageStatistics.mockResolvedValue({ successRate: 80 });
+
+      const response = await request(app)
+        .get('/api/analytics/stages/lint/statistics')
+        .expect(200);
+
+      expect(response.body).toEqual({ stageId: 'lint', statistics: { successRate: 80 } });
+      expect(mockAnalyticsService.getStageStatistics).toHaveBeenCalledWith('lint');
+    });
+
+    it('handles stage statistics errors', async () => {
+      const error = new Error('stats error');
+      mockAnalyticsService.getStageStatistics.mockRejectedValue(error);
+
+      await request(app).get('/api/analytics/stages/lint/statistics').expect(500);
+      expect(mockLogger.error).toHaveBeenCalledWith('Failed to get stage statistics', error);
+    });
+  });
+
+  describe('Validation analytics', () => {
+    it('returns validation run list', async () => {
+      const runs = [{ id: 'run-1' }];
+      mockAnalyticsService.getValidationRuns.mockResolvedValue(runs);
+
+      const response = await request(app)
+        .get('/api/analytics/validation-runs?limit=5')
+        .expect(200);
+
+      expect(response.body).toEqual({ validationRuns: runs });
+      expect(mockAnalyticsService.getValidationRuns).toHaveBeenCalledWith(5, undefined);
+    });
+
+    it('handles validation runs errors', async () => {
+      const error = new Error('runs error');
+      mockAnalyticsService.getValidationRuns.mockRejectedValue(error);
+
+      await request(app).get('/api/analytics/validation-runs').expect(500);
+      expect(mockLogger.error).toHaveBeenCalledWith('Failed to get validation runs', error);
+    });
+
+    it('returns validation statistics summary', async () => {
+      const stats = { totalRuns: 10 };
+      mockAnalyticsService.getValidationRunStatistics.mockResolvedValue(stats);
+
+      const response = await request(app)
+        .get('/api/analytics/validation-statistics')
+        .expect(200);
+
+      expect(response.body).toEqual({ statistics: stats });
+      expect(mockAnalyticsService.getValidationRunStatistics).toHaveBeenCalled();
+    });
+
+    it('handles validation statistics errors', async () => {
+      const error = new Error('stats error');
+      mockAnalyticsService.getValidationRunStatistics.mockRejectedValue(error);
+
+      await request(app).get('/api/analytics/validation-statistics').expect(500);
+      expect(mockLogger.error).toHaveBeenCalledWith('Failed to get validation statistics', error);
+    });
+
+    it('provides consolidated validation metrics', async () => {
+      const runs = [
+        {
+          success: true,
+          totalTime: 100,
+          stages: [
+            { stageName: 'lint', stageId: 'lint', name: 'Lint', success: true, duration: 50 },
+          ],
+        },
+        {
+          success: false,
+          totalTime: 200,
+          stages: [
+            { stageName: 'lint', stageId: 'lint', name: 'Lint', success: false, duration: 80 },
+          ],
+        },
+      ];
+      mockAnalyticsService.getValidationRuns.mockResolvedValue(runs);
+
+      const response = await request(app).get('/api/analytics/validation-metrics');
+
+      if (response.status !== 200) {
+        const lastCall = mockLogger.error.mock.calls[mockLogger.error.mock.calls.length - 1];
+        const errorMessage = lastCall && lastCall[1] ? lastCall[1].message : undefined;
+        throw new Error(
+          `Validation metrics failed: ${response.status} ${JSON.stringify(response.body)} logs: ${JSON.stringify(
+            mockLogger.error.mock.calls
+          )} message: ${errorMessage}`
+        );
+      }
+
+      expect(response.body.totalRuns).toBe(2);
+      expect(response.body.stages.length).toBeGreaterThan(0);
+      expect(response.body.stages[0]).toEqual(expect.objectContaining({ stageName: expect.any(String) }));
+    });
+
+    it('handles validation metrics errors', async () => {
+      const error = new Error('metrics error');
+      mockAnalyticsService.getValidationRuns.mockRejectedValue(error);
+
+      await request(app).get('/api/analytics/validation-metrics').expect(500);
+      expect(mockLogger.error).toHaveBeenCalledWith('Failed to get validation metrics', error);
+    });
+  });
+
+  describe('Utility endpoints', () => {
+    it('returns stubbed performance comparison data', async () => {
+      const response = await request(app).get('/api/analytics/performance-comparison').expect(200);
+      expect(response.body).toHaveProperty('periods');
+    });
+
+    it('returns stubbed historical timeline data', async () => {
+      const response = await request(app).get('/api/analytics/historical-timeline').expect(200);
+      expect(response.body).toHaveProperty('timeline');
     });
   });
 
