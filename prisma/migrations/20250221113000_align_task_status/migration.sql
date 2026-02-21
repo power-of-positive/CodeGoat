@@ -1,12 +1,5 @@
--- Normalize legacy task statuses to the canonical Kanban states
-UPDATE "tasks"
-SET "status" = 'pending'
-WHERE "status" IN ('pending');
-
-UPDATE "tasks"
-SET "status" = 'in_progress'
-WHERE "status" IN ('inprogress', 'inreview');
-
-UPDATE "tasks"
-SET "status" = 'completed'
-WHERE "status" IN ('done', 'cancelled');
+-- NOTE:
+-- This migration originally contained data updates that assumed "tasks" already
+-- existed, but its timestamp is earlier than the initial schema migration.
+-- Keep this migration as an intentional no-op and run status normalization in a
+-- later migration once all task tables exist.

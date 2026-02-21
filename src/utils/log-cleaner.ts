@@ -41,12 +41,17 @@ export class LogCleaner {
     const files = await this.getLogFiles();
 
     for (const file of files) {
+      // Skip already-rotated files; only rotate active log files.
+      if (this.isRotatedLogFile(file)) {
+        continue;
+      }
+
       const filePath = path.join(this.config.logsDir, file);
       const stats = await fs.stat(filePath);
 
       if (stats.size > this.config.maxLogSize) {
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-        const rotatedName = `${path.parse(file).name}_${timestamp}.log`;
+        const rotatedName = `${this.getRotationBaseName(file)}_${timestamp}.log`;
         const rotatedPath = path.join(this.config.logsDir, rotatedName);
 
         await fs.rename(filePath, rotatedPath);
@@ -54,6 +59,17 @@ export class LogCleaner {
         await fs.writeFile(filePath, '');
       }
     }
+  }
+
+  private isRotatedLogFile(fileName: string): boolean {
+    // Example rotated format: app_2026-02-21T15-50-31-125Z.log
+    return /_\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z\.log$/i.test(fileName);
+  }
+
+  private getRotationBaseName(fileName: string): string {
+    const parsed = path.parse(fileName).name;
+    const base = parsed.replace(/_\d{4}-\d{2}-\d{2}T.*$/i, '');
+    return base || parsed;
   }
 
   private async cleanOldLogs(): Promise<void> {
