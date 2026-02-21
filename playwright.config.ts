@@ -73,7 +73,7 @@ export default defineConfig({
   /* Web server configuration - Playwright automatically manages server lifecycle */
   webServer: [
     {
-      command: 'npm run dev',
+      command: 'npm run start:test',
       port: 3001,
       reuseExistingServer: !process.env.CI,
       timeout: 120000,
