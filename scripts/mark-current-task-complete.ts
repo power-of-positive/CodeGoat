@@ -17,7 +17,7 @@ async function markCurrentTaskComplete() {
     const result = await prisma.task.update({
       where: { id: completedTaskId },
       data: {
-        status: 'COMPLETED',
+        status: 'completed',
         updatedAt: new Date(),
       },
     });
@@ -30,7 +30,7 @@ async function markCurrentTaskComplete() {
       backup.tasks = backup.tasks.map(
         (task: { id: string; status: string; [key: string]: unknown }) => {
           if (task.id === completedTaskId) {
-            return { ...task, status: 'COMPLETED' };
+            return { ...task, status: 'completed' };
           }
           return task;
         }

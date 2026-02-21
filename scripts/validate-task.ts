@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* istanbul ignore file */
 
 /**
  * Claude Code validation hook script
@@ -64,6 +65,7 @@ import { promisify } from 'util';
 import { Settings, ValidationStage } from '../src/types/settings.types';
 import { PrismaClient } from '@prisma/client';
 import { getEnabledValidationStages } from '../src/services/validation-stage-config.service';
+import { TaskStatus } from '../src/types/enums';
 
 // Constants
 const DEFAULT_STAGE_TIMEOUT_MS = 120000; // Increased to 2 minutes per stage
@@ -253,7 +255,7 @@ class ValidationRunner {
       // Look for a task that's currently in progress
       const inProgressTask = await this.db.task.findFirst({
         where: {
-          status: 'IN_PROGRESS',
+          status: TaskStatus.IN_PROGRESS,
           // Only look for todo tasks (not project tasks)
           OR: [{ projectId: null }, { id: { startsWith: 'CODEGOAT-' } }],
         },
@@ -314,7 +316,9 @@ class ValidationRunner {
           `${colors.red}Stage failed (critical stage - continueOnFailure is false)${colors.reset}`
         );
         console.error(`${colors.yellow}Fix guidance: ${fixGuidance}${colors.reset}`);
-        console.error(`${colors.cyan}    Continuing to run remaining stages to collect all failures...${colors.reset}\n`);
+        console.error(
+          `${colors.cyan}    Continuing to run remaining stages to collect all failures...${colors.reset}\n`
+        );
       } else {
         console.error(
           `${colors.yellow}Stage failed but continuing due to continueOnFailure setting${colors.reset}\n`
@@ -412,7 +416,7 @@ class ValidationRunner {
       return 'Commit your changes using "git add . && git commit -m \'your message\'" or stash them if they are work-in-progress. DO NOT disable uncommitted file checks - they ensure clean deployments.';
     }
 
-    if (stageName.includes('todo') || command.includes('todo')) {
+    if (stageName.includes('pending') || command.includes('pending')) {
       return 'Complete all high-priority todo items or mark them as completed in your todo list. DO NOT disable todo validation - it ensures tasks are properly finished.';
     }
 

@@ -416,7 +416,9 @@ async function validateCommitMessage(): Promise<void> {
 
   if (!taskId) {
     if (isMerge) {
-      console.error('❌ Merge commit must contain a valid task reference in branch name or message');
+      console.error(
+        '❌ Merge commit must contain a valid task reference in branch name or message'
+      );
       console.error('💡 Supported formats:');
       console.error('   - Merge branch "CODEGOAT-001-feature-name"');
       console.error('   - Merge pull request #123 from user/CODEGOAT-042-fix');

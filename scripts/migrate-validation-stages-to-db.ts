@@ -64,7 +64,7 @@ function convertStageToDbFormat(stage: ValidationStage): ValidationStageConfig {
     category = 'security';
   } else if (id.includes('dead-code') || id.includes('duplication')) {
     category = 'quality';
-  } else if (id.includes('uncommitted') || id.includes('todo')) {
+  } else if (id.includes('uncommitted') || id.includes('pending')) {
     category = 'validation';
   } else {
     category = 'other';

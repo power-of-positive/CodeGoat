@@ -27,7 +27,6 @@ async function quickSeed() {
           taskType: 'story',
           startTime: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
           endTime: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-          duration: parseDuration('12h 45m'),
         },
       }),
       prisma.task.create({
@@ -50,7 +49,7 @@ async function quickSeed() {
           title: 'Database optimization',
           content: 'Database optimization',
           description: 'Optimize slow queries and add proper indexes',
-          status: 'todo',
+          status: 'pending',
           priority: 'medium',
           taskType: 'task',
         },
@@ -62,7 +61,7 @@ async function quickSeed() {
           title: 'Write integration tests',
           content: 'Write integration tests',
           description: 'Add comprehensive test coverage for API endpoints',
-          status: 'todo',
+          status: 'pending',
           priority: 'low',
           taskType: 'task',
         },
@@ -79,7 +78,6 @@ async function quickSeed() {
           taskType: 'story',
           startTime: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
           endTime: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
-          duration: parseDuration('32h 20m'),
         },
       }),
     ]);

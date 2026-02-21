@@ -79,7 +79,7 @@ async function upsertDummyData() {
         projectId: 'project-ecom',
         title: 'Create product search',
         description: 'Implement Elasticsearch for product search',
-        status: 'todo',
+        status: 'pending',
         priority: 'medium',
         taskType: 'task',
       },
@@ -88,7 +88,7 @@ async function upsertDummyData() {
         projectId: 'project-ecom',
         title: 'Add user reviews',
         description: 'Allow users to rate and review products',
-        status: 'todo',
+        status: 'pending',
         priority: 'low',
         taskType: 'story',
       },
@@ -135,7 +135,7 @@ async function upsertDummyData() {
         projectId: 'project-ai-dash',
         title: 'Add alerting system',
         description: 'Send alerts when metrics exceed thresholds',
-        status: 'todo',
+        status: 'pending',
         priority: 'high',
         taskType: 'story',
       },
@@ -144,7 +144,7 @@ async function upsertDummyData() {
         projectId: 'project-ai-dash',
         title: 'Optimize queries',
         description: 'Improve database query performance',
-        status: 'todo',
+        status: 'pending',
         priority: 'low',
         taskType: 'task',
       },
@@ -182,7 +182,7 @@ async function upsertDummyData() {
         projectId: 'project-mobile-bank',
         title: 'Implement push notifications',
         description: 'Real-time transaction notifications',
-        status: 'todo',
+        status: 'pending',
         priority: 'medium',
         taskType: 'task',
       },
@@ -191,7 +191,7 @@ async function upsertDummyData() {
         projectId: 'project-mobile-bank',
         title: 'Add dark mode',
         description: 'Support for dark theme',
-        status: 'todo',
+        status: 'pending',
         priority: 'low',
         taskType: 'task',
       },
@@ -246,20 +246,16 @@ async function upsertDummyData() {
             title: task.title,
             content: task.title,
             description: task.description,
-            status: task.status,
-            priority: task.priority,
-            taskType: task.taskType,
+            status: task.status as 'pending' | 'in_progress' | 'completed',
+            priority: task.priority as 'low' | 'medium' | 'high' | 'urgent',
+            taskType: task.taskType as 'story' | 'task',
             startTime:
-              task.status !== 'todo' && task.status !== 'pending'
+              task.status !== 'pending'
                 ? new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000)
                 : null,
             endTime:
               task.status === 'completed'
                 ? new Date(Date.now() - Math.random() * 2 * 24 * 60 * 60 * 1000)
-                : null,
-            duration:
-              task.status === 'completed'
-                ? parseDuration(`${Math.floor(Math.random() * 48)}h ${Math.floor(Math.random() * 60)}m`)
                 : null,
           },
         })

@@ -1,5 +1,4 @@
 import { PrismaClient } from '@prisma/client';
-import { parseDuration } from '../src/utils/parse-duration';
 
 const prisma = new PrismaClient();
 
@@ -48,7 +47,6 @@ async function simpleSeed() {
           taskType: 'story',
           startTime: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
           endTime: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-          duration: parseDuration('16h 30m'),
         },
       }),
       prisma.task.create({
@@ -76,7 +74,6 @@ async function simpleSeed() {
           taskType: 'story',
           startTime: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
           endTime: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-          duration: parseDuration('24h 15m'),
         },
       }),
       prisma.task.create({
@@ -86,7 +83,7 @@ async function simpleSeed() {
           title: 'Add model comparison',
           content: 'Add model comparison',
           description: 'Compare performance across different models',
-          status: 'todo',
+          status: 'pending',
           priority: 'medium',
           taskType: 'task',
         },

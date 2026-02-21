@@ -16,7 +16,7 @@ async function updateFinalBatch() {
       const result = await prisma.task.update({
         where: { id: taskId },
         data: {
-          status: 'COMPLETED',
+          status: 'completed',
           updatedAt: new Date(),
         },
       });
@@ -30,7 +30,7 @@ async function updateFinalBatch() {
       backup.tasks = backup.tasks.map(
         (task: { id: string; status: string; [key: string]: unknown }) => {
           if (completedTaskIds.includes(task.id)) {
-            return { ...task, status: 'COMPLETED' };
+            return { ...task, status: 'completed' };
           }
           return task;
         }

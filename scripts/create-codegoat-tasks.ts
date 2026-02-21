@@ -115,9 +115,9 @@ async function createCodegoatTasks() {
             id: taskData.id,
             title: taskData.content, // Add required title field
             content: taskData.content,
-            status: 'PENDING',
-            priority: taskData.priority,
-            taskType: taskData.taskType,
+            status: 'pending',
+            priority: taskData.priority.toLowerCase() as 'low' | 'medium' | 'high',
+            taskType: taskData.taskType.toLowerCase() as 'story' | 'task',
           },
         });
 

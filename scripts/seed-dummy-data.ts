@@ -79,7 +79,7 @@ async function seedDummyData() {
         projectId: 'project-1',
         title: 'Create product search',
         description: 'Implement Elasticsearch for product search',
-        status: 'todo',
+        status: 'pending',
         priority: 'medium',
         taskType: 'task',
       },
@@ -88,7 +88,7 @@ async function seedDummyData() {
         projectId: 'project-1',
         title: 'Add user reviews',
         description: 'Allow users to rate and review products',
-        status: 'todo',
+        status: 'pending',
         priority: 'low',
         taskType: 'story',
       },
@@ -135,7 +135,7 @@ async function seedDummyData() {
         projectId: 'project-2',
         title: 'Add alerting system',
         description: 'Send alerts when metrics exceed thresholds',
-        status: 'todo',
+        status: 'pending',
         priority: 'high',
         taskType: 'story',
       },
@@ -144,7 +144,7 @@ async function seedDummyData() {
         projectId: 'project-2',
         title: 'Optimize queries',
         description: 'Improve database query performance',
-        status: 'todo',
+        status: 'pending',
         priority: 'low',
         taskType: 'task',
       },
@@ -182,7 +182,7 @@ async function seedDummyData() {
         projectId: 'project-3',
         title: 'Implement push notifications',
         description: 'Real-time transaction notifications',
-        status: 'todo',
+        status: 'pending',
         priority: 'medium',
         taskType: 'task',
       },
@@ -191,7 +191,7 @@ async function seedDummyData() {
         projectId: 'project-3',
         title: 'Add dark mode',
         description: 'Support for dark theme',
-        status: 'todo',
+        status: 'pending',
         priority: 'low',
         taskType: 'task',
       },
@@ -208,53 +208,16 @@ async function seedDummyData() {
             title: task.title,
             content: task.title,
             description: task.description,
-            status: task.status,
-            priority: task.priority,
-            taskType: task.taskType,
+            status: task.status as 'pending' | 'in_progress' | 'completed',
+            priority: task.priority as 'low' | 'medium' | 'high' | 'urgent',
+            taskType: task.taskType as 'story' | 'task',
             startTime:
-              task.status !== 'todo'
+              task.status !== 'pending'
                 ? new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000)
                 : null,
             endTime:
               task.status === 'completed'
                 ? new Date(Date.now() - Math.random() * 2 * 24 * 60 * 60 * 1000)
-                : null,
-            duration:
-              task.status === 'completed'
-                ? parseDuration(`${Math.floor(Math.random() * 48)}h ${Math.floor(Math.random() * 60)}m`)
-                : null,
-          },
-        })
-      )
-    );
-
-    // Create Task Attempts
-    console.log('🔄 Creating task attempts...');
-    const attemptData = [
-      { taskId: 'task-ec-1', status: 'completed', executor: 'claude-3-opus' },
-      { taskId: 'task-ec-2', status: 'failed', executor: 'claude-3-sonnet' },
-      { taskId: 'task-ec-2', status: 'completed', executor: 'claude-3-opus' },
-      { taskId: 'task-ai-1', status: 'completed', executor: 'gpt-4-turbo' },
-      { taskId: 'task-ai-2', status: 'failed', executor: 'claude-3-sonnet' },
-      { taskId: 'task-mb-1', status: 'completed', executor: 'claude-3-opus' },
-    ];
-
-    const attempts = await Promise.all(
-      attemptData.map((attempt, index) =>
-        prisma.taskAttempt.create({
-          data: {
-            id: `attempt-${index + 1}`,
-            taskId: attempt.taskId,
-            worktreePath: `/tmp/worktree-${index + 1}`,
-            branchName: `feature/task-${index + 1}`,
-            executor: attempt.executor,
-            status: attempt.status,
-            mergeCommit: attempt.status === 'completed' ? `abc${index}def` : null,
-            stdout: attempt.status === 'completed' ? 'Task completed successfully' : null,
-            stderr: attempt.status === 'failed' ? 'Error: Task execution failed' : null,
-            completedAt:
-              attempt.status === 'completed'
-                ? new Date(Date.now() - (7 - index) * 24 * 60 * 60 * 1000)
                 : null,
           },
         })
@@ -408,31 +371,6 @@ async function seedDummyData() {
       )
     );
 
-    // Create Execution Metrics
-    console.log('📊 Creating execution metrics...');
-    const metricsData = [
-      { executorId: 'claude-1', taskCount: 15, successCount: 13, avgDuration: 3600000 },
-      { executorId: 'claude-2', taskCount: 8, successCount: 7, avgDuration: 2400000 },
-      { executorId: 'claude-3', taskCount: 12, successCount: 10, avgDuration: 4200000 },
-    ];
-
-    const metrics = await Promise.all(
-      metricsData.map((metric, index) =>
-        prisma.executionMetric.create({
-          data: {
-            id: `metric-${index + 1}`,
-            attemptId: `attempt-${index + 1}`,
-            modelUsed: metric.executorId,
-            promptTokens: Math.floor(Math.random() * 2000 + 500),
-            completionTokens: Math.floor(Math.random() * 1000 + 200),
-            durationMs: metric.avgDuration,
-            success: metric.successCount > 0,
-            validationPassed: metric.successCount > 0,
-          },
-        })
-      )
-    );
-
     // Create AI Models
     console.log('🤖 Creating AI models...');
     const aiModels = await Promise.all([
@@ -484,10 +422,8 @@ async function seedDummyData() {
     const counts = {
       projects: await prisma.project.count(),
       tasks: await prisma.task.count(),
-      taskAttempts: await prisma.taskAttempt.count(),
       bddScenarios: await prisma.bDDScenario.count(),
       validationRuns: await prisma.validationRun.count(),
-      executionMetrics: await prisma.executionMetric.count(),
       aiModels: await prisma.aiModel.count(),
     };
 
@@ -495,10 +431,8 @@ async function seedDummyData() {
     console.log('📊 Summary:');
     console.log(`  - Projects: ${counts.projects}`);
     console.log(`  - Tasks: ${counts.tasks}`);
-    console.log(`  - Task Attempts: ${counts.taskAttempts}`);
     console.log(`  - BDD Scenarios: ${counts.bddScenarios}`);
     console.log(`  - Validation Runs: ${counts.validationRuns}`);
-    console.log(`  - Execution Metrics: ${counts.executionMetrics}`);
     console.log(`  - AI Models: ${counts.aiModels}`);
   } catch (error) {
     console.error('❌ Error seeding database:', error);

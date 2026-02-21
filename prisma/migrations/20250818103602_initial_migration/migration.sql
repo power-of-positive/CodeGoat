@@ -19,7 +19,7 @@ CREATE TABLE "tasks" (
     "template_id" TEXT,
     "title" TEXT NOT NULL,
     "description" TEXT,
-    "status" TEXT NOT NULL DEFAULT 'todo',
+    "status" TEXT NOT NULL DEFAULT 'pending',
     "priority" TEXT NOT NULL DEFAULT 'medium',
     "tags" TEXT,
     "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,

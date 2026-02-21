@@ -9,7 +9,6 @@ CREATE TABLE IF NOT EXISTS "todo_tasks" (
     "priority" TEXT NOT NULL DEFAULT 'medium',
     "start_time" DATETIME,
     "end_time" DATETIME,
-    "duration" TEXT,
     "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

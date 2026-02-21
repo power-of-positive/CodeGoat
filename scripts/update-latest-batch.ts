@@ -16,7 +16,7 @@ async function updateLatestBatch() {
       const result = await prisma.task.update({
         where: { id: taskId },
         data: {
-          status: 'COMPLETED',
+          status: 'completed',
           updatedAt: new Date(),
         },
       });

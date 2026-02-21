@@ -18,15 +18,11 @@
  */
 export function getDatabaseUrl(): string {
   const url =
-    process.env.DATABASE_URL ||
-    process.env.KANBAN_DATABASE_URL ||
-    getDefaultDatabaseUrl();
+    process.env.DATABASE_URL || process.env.KANBAN_DATABASE_URL || getDefaultDatabaseUrl();
 
   // Validate URL format
   if (!url.startsWith('file:')) {
-    throw new Error(
-      `Invalid database URL format: "${url}". SQLite URLs must start with "file:"`
-    );
+    throw new Error(`Invalid database URL format: "${url}". SQLite URLs must start with "file:"`);
   }
 
   return url;

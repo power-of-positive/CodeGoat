@@ -16,7 +16,7 @@ async function updateRemainingTasks() {
       const result = await prisma.task.update({
         where: { id: taskId },
         data: {
-          status: 'COMPLETED',
+          status: 'completed',
           updatedAt: new Date(),
         },
       });

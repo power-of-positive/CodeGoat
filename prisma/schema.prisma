@@ -12,62 +12,85 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum TaskStatus {
+  pending
+  in_progress
+  completed
+}
+
+enum Priority {
+  low
+  medium
+  high
+  urgent
+}
+
+enum TaskType {
+  story
+  task
+}
+
+enum AgentType {
+  claude_code
+  openai_codex
+  openai_o1
+  anthropic_api
+  custom
+}
+
 // String-based enums for SQLite compatibility
-// TaskStatus: "todo", "inprogress", "inreview", "done", "cancelled", "pending", "in_progress", "completed"
-// Priority: "low", "medium", "high", "urgent"
-// TaskType: "story", "task"
+// TaskStatus enum now enforced via Prisma enum
+// Priority enum now enforced via Prisma enum
+// TaskType enum now enforced via Prisma enum
 // BDDScenarioStatus: "pending", "passed", "failed", "skipped"
 // LogLevel: "debug", "info", "warn", "error"
 
 // Projects table (from vibe-kanban)
 model Project {
-  id            String   @id @default(uuid())
+  id            String    @id @default(uuid())
   name          String
   description   String?
-  gitRepoPath   String   @unique @map("git_repo_path")
-  setupScript   String   @default("") @map("setup_script")
-  devScript     String   @default("") @map("dev_script")
-  cleanupScript String   @default("") @map("cleanup_script")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
-  
+  gitRepoPath   String    @unique @map("git_repo_path")
+  agentType     AgentType @default(claude_code) @map("agent_type")
+  setupScript   String    @default("") @map("setup_script")
+  devScript     String    @default("") @map("dev_script")
+  cleanupScript String    @default("") @map("cleanup_script")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
   tasks         Task[]
   taskTemplates TaskTemplate[]
-  
+
   @@map("projects")
 }
 
 // Unified Tasks table (combines vibe-kanban Task and TodoTask)
 model Task {
-  id                 String     @id @default(uuid()) // Can be UUID or CODEGOAT-XXX format
-  projectId          String?    @map("project_id") // Optional for todo tasks
-  parentTaskAttempt  String?    @map("parent_task_attempt")
-  templateId         String?    @map("template_id")
-  title              String
-  description        String?
-  status             String @default("todo")
-  priority           String @default("medium")
-  tags               String?    // JSON array stored as string
-  createdAt          DateTime   @default(now()) @map("created_at")
-  updatedAt          DateTime   @updatedAt @map("updated_at")
-  
+  id          String     @id @default(uuid()) // Can be UUID or CODEGOAT-XXX format
+  projectId   String?    @map("project_id") // Optional for todo tasks
+  templateId  String?    @map("template_id")
+  title       String
+  description String?
+  status      TaskStatus @default(pending)
+  priority    Priority   @default(medium)
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
   // Todo task specific fields (from TodoTask)
-  taskType           String?     @default("task") @map("task_type")
-  executorId         String?       @map("executor_id")
-  startTime          DateTime?     @map("start_time")
-  endTime            DateTime?     @map("end_time")
-  duration           Int?          // Duration in milliseconds
-  content            String?       // For todo tasks, this mirrors title
-  
-  project            Project?      @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  parentAttempt      TaskAttempt?  @relation("TaskHierarchy", fields: [parentTaskAttempt], references: [id])
-  template           TaskTemplate? @relation(fields: [templateId], references: [id])
-  attempts           TaskAttempt[] @relation("TaskAttempts")
-  
+  taskType   TaskType? @default(task) @map("task_type")
+  executorId String?   @map("executor_id")
+  startTime  DateTime? @map("start_time")
+  endTime    DateTime? @map("end_time")
+  content    String? // For todo tasks, this mirrors title
+
+  project  Project?      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  template TaskTemplate? @relation(fields: [templateId], references: [id])
+
   // Relations from TodoTask
-  validationRuns     ValidationRun[]
-  bddScenarios       BDDScenario[]
-  
+  validationRuns ValidationRun[]
+  bddScenarios   BDDScenario[]
+  executionProcesses ExecutionProcess[]
+
   @@map("tasks")
 }
 
@@ -79,258 +102,208 @@ model TaskTemplate {
   title          String
   description    String?
   defaultPrompt  String   @map("default_prompt")
-  tags           String?  // JSON array stored as string
+  tags           String? // JSON array stored as string
   estimatedHours Int?     @map("estimated_hours")
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
-  
-  project        Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  tasks          Task[]
-  
+
+  project Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tasks   Task[]
+
   @@unique([projectId, templateName])
   @@map("task_templates")
 }
 
-// Task attempts (from vibe-kanban)
-model TaskAttempt {
-  id           String        @id @default(uuid())
-  taskId       String        @map("task_id")
-  worktreePath String        @map("worktree_path")
-  branchName   String        @map("branch_name")
-  mergeCommit  String?       @map("merge_commit")
-  executor     String        // AI model used
-  status       String
-  stdout       String?
-  stderr       String?
-  createdAt    DateTime      @default(now()) @map("created_at")
-  updatedAt    DateTime      @updatedAt @map("updated_at")
-  completedAt  DateTime?     @map("completed_at")
-  
-  task               Task                  @relation("TaskAttempts", fields: [taskId], references: [id], onDelete: Cascade)
-  childTasks         Task[]                @relation("TaskHierarchy")
-  executionProcesses ExecutionProcess[]
-  executorSessions   ExecutorSession[]
-  metrics            ExecutionMetric[]
-  
-  @@map("task_attempts")
-}
-
-// Execution processes (from vibe-kanban)
-model ExecutionProcess {
-  id               String        @id @default(uuid())
-  taskAttemptId    String        @map("task_attempt_id")
-  processType      String   @map("process_type")
-  status           String
-  command          String
-  args             String?       // JSON array stored as string
-  workingDirectory String        @map("working_directory")
-  stdout           String?
-  stderr           String?
-  exitCode         Int?          @map("exit_code")
-  startedAt        DateTime?     @map("started_at")
-  completedAt      DateTime?     @map("completed_at")
-  createdAt        DateTime      @default(now()) @map("created_at")
-  updatedAt        DateTime      @updatedAt @map("updated_at")
-  
-  taskAttempt      TaskAttempt             @relation(fields: [taskAttemptId], references: [id], onDelete: Cascade)
-  logs             ExecutionProcessLog[]
-  
-  @@map("execution_processes")
-}
-
-// Execution process logs (from vibe-kanban)
-model ExecutionProcessLog {
-  id                  String          @id @default(uuid())
-  executionProcessId  String          @map("execution_process_id")
-  stream              String
-  data                String
-  createdAt           DateTime        @default(now()) @map("created_at")
-  
-  executionProcess    ExecutionProcess @relation(fields: [executionProcessId], references: [id], onDelete: Cascade)
-  
-  @@map("execution_process_logs")
-}
-
-// Executor sessions (from vibe-kanban)
-model ExecutorSession {
-  id            String        @id @default(uuid())
-  taskAttemptId String        @map("task_attempt_id")
-  executor      String
-  status        String
-  startedAt     DateTime?     @map("started_at")
-  completedAt   DateTime?     @map("completed_at")
-  createdAt     DateTime      @default(now()) @map("created_at")
-  updatedAt     DateTime      @updatedAt @map("updated_at")
-  
-  taskAttempt   TaskAttempt   @relation(fields: [taskAttemptId], references: [id], onDelete: Cascade)
-  
-  @@map("executor_sessions")
-}
-
-// AI models (CodeGoat enhancement)
 model AiModel {
   id          String   @id @default(uuid())
   name        String   @unique
   description String?
   endpointUrl String   @map("endpoint_url")
   apiKey      String   @map("api_key") // Will be encrypted
-  provider    String   // 'openai', 'anthropic', 'local', 'custom'
+  provider    String // 'openai', 'anthropic', 'local', 'custom'
   modelId     String   @map("model_id")
-  parameters  String?  // JSON stored as string
+  parameters  String? // JSON stored as string
   enabled     Boolean  @default(true)
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
-  
+
   @@map("ai_models")
 }
 
-// Execution metrics (CodeGoat enhancement)
-model ExecutionMetric {
-  id               String      @id @default(uuid())
-  attemptId        String      @map("attempt_id")
-  modelUsed        String      @map("model_used")
-  promptTokens     Int?        @map("prompt_tokens")
-  completionTokens Int?        @map("completion_tokens")
-  durationMs       Int?        @map("duration_ms")
-  success          Boolean
-  validationPassed Boolean?    @map("validation_passed")
-  costEstimate     Float?      @map("cost_estimate")
-  createdAt        DateTime    @default(now()) @map("created_at")
-  
-  attempt          TaskAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
-  
-  @@map("execution_metrics")
-}
-
-
-
 // Validation stage configurations (replacing settings.json validation.stages)
 model ValidationStageConfig {
-  id                String    @id @default(uuid())
-  stageId           String    @unique @map("stage_id") // e.g., 'lint', 'typecheck', 'unit-tests-backend'
-  name              String    // Human-readable name
-  command           String    // Command to execute
-  timeout           Int       @default(60000) // Timeout in milliseconds
-  enabled           Boolean   @default(true)
-  continueOnFailure Boolean   @default(false) @map("continue_on_failure")
-  priority          Int       // Execution order
-  description       String?   // Optional description
-  environment       String?   // Environment requirements
-  category          String?   // Category like 'lint', 'test', 'build'
-  createdAt         DateTime  @default(now()) @map("created_at")
-  updatedAt         DateTime  @updatedAt @map("updated_at")
-  
+  id                String   @id @default(uuid())
+  stageId           String   @unique @map("stage_id") // e.g., 'lint', 'typecheck', 'unit-tests-backend'
+  name              String // Human-readable name
+  command           String // Command to execute
+  timeout           Int      @default(60000) // Timeout in milliseconds
+  enabled           Boolean  @default(true)
+  continueOnFailure Boolean  @default(false) @map("continue_on_failure")
+  priority          Int // Execution order
+  description       String? // Optional description
+  environment       String? // Environment requirements
+  category          String? // Category like 'lint', 'test', 'build'
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  stages ValidationStage[] @relation("StageConfig")
+
   @@map("validation_stage_configs")
 }
 
 // Enhanced Validation runs (Associated with tasks)
 model ValidationRun {
-  id            String    @id @default(uuid())
-  taskId        String?   @map("task_id")
-  sessionId     String?   @map("session_id") // For grouping related runs
-  timestamp     DateTime  @default(now())
-  startTime     BigInt?   @map("start_time") // Unix timestamp in milliseconds
-  totalTime     Int       // Total duration in milliseconds
-  totalStages   Int       @map("total_stages")
-  passedStages  Int       @map("passed_stages")
-  failedStages  Int       @map("failed_stages")
-  success       Boolean   @default(false)
-  triggerType   String?   @map("trigger_type") // 'manual', 'hook', 'api'
-  environment   String?   // 'development', 'ci', 'production'
-  gitCommit     String?   @map("git_commit")
-  gitBranch     String?   @map("git_branch")
-  createdAt     DateTime  @default(now()) @map("created_at")
-  
-  task          Task?     @relation(fields: [taskId], references: [id], onDelete: SetNull)
-  stages        ValidationStage[]
-  logs          ValidationLog[]
-  
+  id           String   @id @default(uuid())
+  taskId       String?  @map("task_id")
+  sessionId    String?  @map("session_id") // For grouping related runs
+  timestamp    DateTime @default(now())
+  startTime    BigInt?  @map("start_time") // Unix timestamp in milliseconds
+  totalTime    Int // Total duration in milliseconds
+  totalStages  Int      @map("total_stages")
+  passedStages Int      @map("passed_stages")
+  failedStages Int      @map("failed_stages")
+  success      Boolean  @default(false)
+  triggerType  String?  @map("trigger_type") // 'manual', 'hook', 'api'
+  environment  String? // 'development', 'ci', 'production'
+  gitCommit    String?  @map("git_commit")
+  gitBranch    String?  @map("git_branch")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  task   Task?             @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  stages ValidationStage[]
+  logs   ValidationLog[]
+
   @@index([timestamp])
   @@index([success])
   @@index([environment])
   @@index([timestamp, success])
   @@index([taskId])
+  @@index([sessionId], map: "idx_validation_runs_session_id")
+  @@index([gitCommit], map: "idx_validation_runs_git_commit")
+  @@index([gitBranch], map: "idx_validation_runs_git_branch")
   @@map("validation_runs")
 }
 
 // Individual validation stage results
 model ValidationStage {
-  id            String        @id @default(uuid())
-  runId         String        @map("run_id")
-  stageId       String        @map("stage_id") // e.g., 'lint', 'typecheck', 'unit-tests-backend'
-  stageName     String        @map("stage_name") // Human-readable name
-  success       Boolean       @default(false)
-  duration      Int           // Duration in milliseconds
-  command       String?       // Command that was executed
-  exitCode      Int?          @map("exit_code")
-  output        String?       // Combined stdout/stderr output
-  errorMessage  String?       @map("error_message")
-  enabled       Boolean       @default(true)
-  continueOnFailure Boolean   @default(false) @map("continue_on_failure")
-  order         Int           // Execution order
-  createdAt     DateTime      @default(now()) @map("created_at")
-  
-  run           ValidationRun @relation(fields: [runId], references: [id], onDelete: Cascade)
-  
+  id                String   @id @default(uuid())
+  runId             String   @map("run_id")
+  stageId           String   @map("stage_id") // e.g., 'lint', 'typecheck', 'unit-tests-backend'
+  stageName         String   @map("stage_name") // Human-readable name
+  success           Boolean  @default(false)
+  duration          Int // Duration in milliseconds
+  command           String? // Command that was executed
+  exitCode          Int?     @map("exit_code")
+  output            String? // Combined stdout/stderr output
+  errorMessage      String?  @map("error_message")
+  enabled           Boolean  @default(true)
+  continueOnFailure Boolean  @default(false) @map("continue_on_failure")
+  order             Int // Execution order
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  run ValidationRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+  config ValidationStageConfig? @relation("StageConfig", fields: [stageId], references: [stageId])
+
+  @@index([stageId], map: "idx_validation_stages_stage_id")
   @@map("validation_stages")
 }
 
 // Detailed validation logs
 model ValidationLog {
-  id            String        @id @default(uuid())
-  runId         String        @map("run_id")
-  stageId       String?       @map("stage_id") // Optional: associate with specific stage
-  level         String      @default("info")
-  message       String
-  timestamp     DateTime      @default(now())
-  metadata      String?       // JSON metadata stored as string
-  createdAt     DateTime      @default(now()) @map("created_at")
-  
-  run           ValidationRun @relation(fields: [runId], references: [id], onDelete: Cascade)
-  
+  id        String   @id @default(uuid())
+  runId     String   @map("run_id")
+  stageId   String?  @map("stage_id") // Optional: associate with specific stage
+  level     String   @default("info")
+  message   String
+  timestamp DateTime @default(now())
+  metadata  String? // JSON metadata stored as string
+  createdAt DateTime @default(now()) @map("created_at")
+
+  run ValidationRun @relation(fields: [runId], references: [id], onDelete: Cascade)
+
   @@map("validation_logs")
 }
 
 // BDD Scenarios (Associated with tasks)
 model BDDScenario {
-  id                String           @id @default(uuid())
-  taskId            String           @map("task_id")
-  title             String
-  feature           String
-  description       String
-  gherkinContent    String           @map("gherkin_content")
-  status            String @default("pending")
-  executedAt        DateTime?        @map("executed_at")
-  executionDuration Int?             @map("execution_duration") // Duration in milliseconds
-  errorMessage      String?          @map("error_message")
-  playwrightTestFile String?         @map("playwright_test_file") // Link to the associated E2E test file
-  playwrightTestName String?         @map("playwright_test_name") // Specific test name within the file
-  cucumberSteps     String?          @map("cucumber_steps") // JSON array of associated cucumber step definitions
-  createdAt         DateTime         @default(now()) @map("created_at")
-  updatedAt         DateTime         @updatedAt @map("updated_at")
-  
-  task              Task             @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  executionHistory  BDDScenarioExecution[]
-  
+  id                 String    @id @default(uuid())
+  taskId             String    @map("task_id")
+  title              String
+  feature            String
+  description        String
+  gherkinContent     String    @map("gherkin_content")
+  status             String    @default("pending")
+  executedAt         DateTime? @map("executed_at")
+  executionDuration  Int?      @map("execution_duration") // Duration in milliseconds
+  errorMessage       String?   @map("error_message")
+  playwrightTestFile String?   @map("playwright_test_file") // Link to the associated E2E test file
+  playwrightTestName String?   @map("playwright_test_name") // Specific test name within the file
+  cucumberSteps      String?   @map("cucumber_steps") // JSON array of associated cucumber step definitions
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  task             Task                   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  executionHistory BDDScenarioExecution[]
+
   @@map("bdd_scenarios")
 }
 
 // BDD Scenario Execution History
 model BDDScenarioExecution {
-  id                String           @id @default(uuid())
-  scenarioId        String           @map("scenario_id")
+  id                String   @id @default(uuid())
+  scenarioId        String   @map("scenario_id")
   status            String
-  executedAt        DateTime         @default(now()) @map("executed_at")
-  executionDuration Int?             @map("execution_duration") // Duration in milliseconds
-  errorMessage      String?          @map("error_message")
-  stepResults       String?          @map("step_results") // JSON array of step execution results
-  environment       String?          // Test environment (dev, staging, prod)
-  executedBy        String?          @map("executed_by") // User or system that executed the test
-  gherkinSnapshot   String?          @map("gherkin_snapshot") // Snapshot of gherkin at time of execution
-  createdAt         DateTime         @default(now()) @map("created_at")
-  
-  scenario          BDDScenario      @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
-  
+  executedAt        DateTime @default(now()) @map("executed_at")
+  executionDuration Int?     @map("execution_duration") // Duration in milliseconds
+  errorMessage      String?  @map("error_message")
+  stepResults       String?  @map("step_results") // JSON array of step execution results
+  environment       String? // Test environment (dev, staging, prod)
+  executedBy        String?  @map("executed_by") // User or system that executed the test
+  gherkinSnapshot   String?  @map("gherkin_snapshot") // Snapshot of gherkin at time of execution
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  scenario BDDScenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+
+  @@index([scenarioId, executedAt], map: "idx_bdd_scenario_execution_timeline")
   @@map("bdd_scenario_executions")
 }
 
+model ExecutionProcess {
+  id               String   @id @default(uuid())
+  taskId           String?  @map("task_id")
+  workerId         String?  @map("worker_id")
+  runReason        String   @map("run_reason")
+  status           String
+  command          String?
+  args             String?
+  workingDirectory String?  @map("working_directory")
+  stdoutSummary    String?  @map("stdout_summary")
+  stderrSummary    String?  @map("stderr_summary")
+  exitCode         Int?     @map("exit_code")
+  startedAt        DateTime? @map("started_at")
+  completedAt      DateTime? @map("completed_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  task Task? @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  logs ExecutionProcessLog[]
+
+  @@index([taskId], map: "idx_execution_processes_task_id")
+  @@index([runReason], map: "idx_execution_processes_run_reason")
+  @@index([status], map: "idx_execution_processes_status")
+  @@map("execution_processes")
+}
+
+model ExecutionProcessLog {
+  id                 String   @id @default(uuid())
+  executionProcessId String   @map("execution_process_id")
+  stream             String
+  sequence           Int      @default(0)
+  content            String
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  process ExecutionProcess @relation(fields: [executionProcessId], references: [id], onDelete: Cascade)
+
+  @@index([executionProcessId, sequence], map: "idx_execution_process_logs_process_sequence")
+  @@map("execution_process_logs")
+}

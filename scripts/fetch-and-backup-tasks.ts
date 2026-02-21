@@ -1,6 +1,6 @@
 #!/usr/bin/env npx tsx
 
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, TaskStatus } from '@prisma/client';
 import fs from 'fs';
 import path from 'path';
 
@@ -8,15 +8,14 @@ const prisma = new PrismaClient();
 
 async function fetchAndBackupTasks() {
   try {
-    // Fetch all tasks with status TODO, PENDING, or IN_PROGRESS
+    // Fetch all tasks that are not completed yet
+    const incompleteStatuses: TaskStatus[] = [TaskStatus.pending, TaskStatus.in_progress];
+
     const tasks = await prisma.task.findMany({
       where: {
-        OR: [
-          { status: 'TODO' },
-          { status: 'PENDING' },
-          { status: 'IN_PROGRESS' },
-          { status: 'INPROGRESS' },
-        ],
+        status: {
+          in: incompleteStatuses,
+        },
       },
       orderBy: [{ priority: 'desc' }, { createdAt: 'asc' }],
     });
@@ -33,7 +32,6 @@ async function fetchAndBackupTasks() {
         description: task.description,
         status: task.status,
         priority: task.priority,
-        tags: task.tags ? JSON.parse(task.tags) : [],
         taskType: task.taskType,
         createdAt: task.createdAt,
         updatedAt: task.updatedAt,
